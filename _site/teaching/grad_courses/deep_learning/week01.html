@@ -68,7 +68,46 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script>
+window.MathJax = {
+  loader: {
+    load: ['[tex]/boldsymbol', '[tex]/mathtools']
+  },
+  tex: {
+    packages: {'[+]': ['boldsymbol', 'mathtools']}
+  }
+};
+</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../../styles.css">
 <meta property="og:title" content="Week 1: Basics of Optimization – Satici Lab">
@@ -260,12 +299,30 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#lecture-notes" id="toc-lecture-notes" class="nav-link active" data-scroll-target="#lecture-notes">Lecture Notes</a></li>
+  <li><a href="#taylor-series-gradient-and-hessian" id="toc-taylor-series-gradient-and-hessian" class="nav-link active" data-scroll-target="#taylor-series-gradient-and-hessian">Taylor series, Gradient, and Hessian</a></li>
+  <li><a href="#gradient-descentascent" id="toc-gradient-descentascent" class="nav-link" data-scroll-target="#gradient-descentascent">Gradient Descent/Ascent</a></li>
+  <li><a href="#symmetric-and-positive-definite-matrices" id="toc-symmetric-and-positive-definite-matrices" class="nav-link" data-scroll-target="#symmetric-and-positive-definite-matrices">Symmetric and Positive Definite Matrices</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
+<div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
+$$
+% Define your custom commands here
+\newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\vectornorm}[1]{\left|\left|#1\right|\right|}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+$$
+</div>
 
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../teaching/robotics.html">Graduate Courses</a></li><li class="breadcrumb-item"><a href="../../../teaching/grad_courses/deep_learning/index.html">Deep Learning</a></li><li class="breadcrumb-item"><a href="../../../teaching/grad_courses/deep_learning/week01.html">Basics of Optimization</a></li></ol></nav>
 <div class="quarto-title">
@@ -286,9 +343,60 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="lecture-notes" class="level2">
-<h2 class="anchored" data-anchor-id="lecture-notes">Lecture Notes</h2>
-<p>Here are the theoretical notes for this week.</p>
+<section id="taylor-series-gradient-and-hessian" class="level2">
+<h2 class="anchored" data-anchor-id="taylor-series-gradient-and-hessian">Taylor series, Gradient, and Hessian</h2>
+<p>Let us consider a local extremum (minima or maxima) of a function <span class="math inline">\(f: \mathbb{R}^2 \to \mathbb{R}\)</span>, <span class="math inline">\(\bm{w} = (w_1, w_2) \mapsto f(\bm{w}) = f(w_1, w_2)\)</span>. We perform a power series (Taylor) expansion around <span class="math inline">\(\bm{w} = \bm{w}^{(0)}\)</span> and just keep the first three terms to obtain</p>
+<p><span id="eq-taylor"><span class="math display">\[
+f(\bm{w}) \approx f\left(\bm{w}^{(0)}\right) + \nabla_wf\left(\bm{w}^{(0)}\right)^\top \delta \bm{w} + \frac{1}{2} \delta \bm{w}^\top \bm{H}_f(\bm{w}) \delta \bm{w},
+\tag{1}\]</span></span></p>
+<p>where the <em>gradient</em> of <span class="math inline">\(f\)</span> is defined by <span class="math inline">\(\nabla_w f(\bm{w}) = \bmat{\pd{f}{w_1}(\bm{w}) &amp; \pd{f}{w_2}(\bm{w})}\)</span>^, <span class="math inline">\(\delta \bm{w} = \bm{w} - \bm{w}^{(0)}\)</span>, and <span class="math inline">\(\bm{H}_f(\bm{w})\)</span> is the <em>Hessian</em> matrix of second derivatives:</p>
+<p><span class="math display">\[
+\bm{H}_f(\bm{w}) = \bmat{
+    \pdd{f}{w_1}(\bm{w}) &amp; \frac{\partial^2 f}{\partial w_1 \partial w_2}(\bm{w}) \\
+    \frac{\partial^2 f}{\partial w_2 \partial w_1}(\bm{w}) &amp; \pdd{f}{w_2}(\bm{w})
+}(\bm{w}).
+\]</span></p>
+<p>If <span class="math inline">\(\bm{w}^{(0)}\)</span> is an extremum, then <span class="math inline">\(\nabla_w f\left(\bm{w}^{(0)}\right) =
+\bm{0}\)</span>, so at such a point, the linear term in <a href="#eq-taylor" class="quarto-xref">Equation&nbsp;1</a> vanishes. Therefore <span class="math inline">\(\bm{w}^{(0)}\)</span> is a local minimum if and only if the Hessian is <em>positive definite</em>. By the same token, it is a local maximum if and only if the Hessian is <em>negative definite</em>.</p>
+</section>
+<section id="gradient-descentascent" class="level2">
+<h2 class="anchored" data-anchor-id="gradient-descentascent">Gradient Descent/Ascent</h2>
+<p>For complicated functions, such as neural nets, it is difficult to solve <span class="math inline">\(\nabla_w f\left(\bm{w}^{(0)}\right) = \bm{0}\)</span> for <span class="math inline">\(\bm{w}^{(0)}\)</span>. Instead, we start at a random point <span class="math inline">\(\bm{w}^{(1)}\)</span> and search for where <span class="math inline">\(\nabla f = \bm{0}\)</span>. To do this, we use the first-order approximation</p>
+<p><span class="math display">\[
+f\left( \bm{w}^{n+1} \right) \approx f\left( \bm{w}^{n} \right) + \nabla_w f\left(\bm{w}^{(n)}\right)^\top \delta \bm{w}^{(n)},
+\]</span></p>
+<p>where <span class="math inline">\(\delta \bm{w}^{(n)} = \bm{w}^{(n+1)} - \bm{w}^{(n)}\)</span>. Then with <span class="math inline">\(\eta &gt; 0\)</span>, we set <span class="math inline">\(\bm{w}^{(n+1)}\)</span> according to</p>
+<p><span class="math display">\[
+\bm{w}^{(n+1)} := \bm{w}^{(n)} \mp \eta \nabla_w f\left( \bm{w}^{(n)}\right).
+\]</span></p>
+<p>Depending on the sign on the right-hand side of this equation, this forces <span class="math inline">\(f\)</span> to decrease or increase, respectively. Indeed, computing the change in <span class="math inline">\(f\)</span> after one iteration, we obtain</p>
+<p><span class="math display">\[\begin{equation}
+\begin{split}
+\Delta f \triangleq f\left(\bm{w}^{(n+1)}\right) - f\left(\bm{w}^{(n)}\right) &amp;=
+\nabla_w f\left( \bm{w}^{(n)} \right) \delta \bm{w}^{(n)} \\
+&amp;= \mp \eta \nabla_w f\left( \bm{w}^{(n)} \right)^\top \nabla_w f\left( \bm{w}^{(n)} \right) \\
+&amp;= \mp \eta \norm{\nabla_w f\left( \bm{w}^{(n)} \right)}{}^2 \lessgtr 0
+\end{split}
+\end{equation}\]</span></p>
+</section>
+<section id="symmetric-and-positive-definite-matrices" class="level2">
+<h2 class="anchored" data-anchor-id="symmetric-and-positive-definite-matrices">Symmetric and Positive Definite Matrices</h2>
+<div id="def-sym" class="theorem definition">
+<p><span class="theorem-title"><strong>Definition 1 (Symmetric Matrix)</strong></span> A matrix <span class="math inline">\(\bm{Q} \in \R^{n\times n}\)</span> is <em>symmetric</em> if</p>
+<p><span class="math display">\[ \bm{Q}^\top = \bm{Q}. \]</span></p>
+<p>The symbol for symmetric matrices of dimension <span class="math inline">\(n\)</span> is <span class="math inline">\(\S_n\)</span>.</p>
+</div>
+<div id="def-psd" class="theorem definition">
+<p><span class="theorem-title"><strong>Definition 2 (Positive Semidefinite Matrix)</strong></span> A matrix <span class="math inline">\(\bm{Q} \in \S_n\)</span> is <em>positive semidefinite</em> if for all <span class="math inline">\(\bm{x} \in \R^n\)</span>,</p>
+<p><span class="math display">\[ \bm{x}^\top \bm{Q x} \geq 0. \]</span></p>
+</div>
+<div id="def-pd" class="theorem definition">
+<p><span class="theorem-title"><strong>Definition 3 (Positive Definite Matrix)</strong></span> A matrix <span class="math inline">\(\bm{Q} \in \S_n\)</span> is <em>positive definite</em> if for all <span class="math inline">\(\bm{x} \in \R^n\)</span> such that <span class="math inline">\(\bm{x} \neq \bm{0}\)</span>,</p>
+<p><span class="math display">\[ \bm{x}^\top \bm{Q x} &gt; 0. \]</span></p>
+</div>
+<div id="def-nd" class="theorem definition">
+<p><span class="theorem-title"><strong>Definition 4 (Negative (Semi)Definite Matrix)</strong></span> A matrix <span class="math inline">\(\bm{Q} \in \S_n\)</span> is <em>negative (semi)definite</em> if its additive inverse, <span class="math inline">\(-\bm{Q}\)</span>, is positive (semi)definite.</p>
+</div>
 
 
 </section>
@@ -367,7 +475,7 @@ ul.task-list li input[type="checkbox"] {
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }

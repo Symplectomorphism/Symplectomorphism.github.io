@@ -3,5 +3,87 @@ title: "Week 1: Basics of Optimization"
 format: html
 ---
 
-## Lecture Notes
-Here are the theoretical notes for this week.
+## Taylor series, Gradient, and Hessian
+
+Let us consider a local extremum (minima or maxima) of a function $f: \mathbb{R}^2 \to \mathbb{R}$, $\bm{w} = (w_1, w_2) \mapsto f(\bm{w}) = f(w_1, w_2)$. We perform a power series (Taylor) expansion around $\bm{w} = \bm{w}^{(0)}$ and just keep the first three terms to obtain
+
+$$
+f(\bm{w}) \approx f\left(\bm{w}^{(0)}\right) + \nabla_wf\left(\bm{w}^{(0)}\right)^\top \delta \bm{w} + \frac{1}{2} \delta \bm{w}^\top \bm{H}_f(\bm{w}) \delta \bm{w},
+$$ {#eq-taylor}
+
+where the _gradient_ of $f$ is defined by $\nabla_w f(\bm{w}) = \bmat{\pd{f}{w_1}(\bm{w}) & \pd{f}{w_2}(\bm{w})}$^\top, $\delta \bm{w} = \bm{w} - \bm{w}^{(0)}$, and $\bm{H}_f(\bm{w})$ is the _Hessian_ matrix of 
+second derivatives:
+
+$$
+\bm{H}_f(\bm{w}) = \bmat{
+    \pdd{f}{w_1}(\bm{w}) & \frac{\partial^2 f}{\partial w_1 \partial w_2}(\bm{w}) \\
+    \frac{\partial^2 f}{\partial w_2 \partial w_1}(\bm{w}) & \pdd{f}{w_2}(\bm{w})
+}(\bm{w}).
+$$
+
+If $\bm{w}^{(0)}$ is an extremum, then $\nabla_w f\left(\bm{w}^{(0)}\right) =
+\bm{0}$, so at such a point, the linear term in @eq-taylor vanishes.
+Therefore $\bm{w}^{(0)}$ is a local minimum if and only if the Hessian is
+_positive definite_. By the same token, it is a local maximum if and only if the Hessian is _negative definite_.
+
+
+## Gradient Descent/Ascent
+
+For complicated functions, such as neural nets, it is difficult to solve 
+$\nabla_w f\left(\bm{w}^{(0)}\right) = \bm{0}$ for $\bm{w}^{(0)}$. Instead, we 
+start at a random point $\bm{w}^{(1)}$ and search for where $\nabla f = \bm{0}$.
+To do this, we use the first-order approximation
+
+$$
+f\left( \bm{w}^{n+1} \right) \approx f\left( \bm{w}^{n} \right) + \nabla_w f\left(\bm{w}^{(n)}\right)^\top \delta \bm{w}^{(n)},
+$$
+
+where $\delta \bm{w}^{(n)} = \bm{w}^{(n+1)} - \bm{w}^{(n)}$. Then with $\eta > 0$, we set $\bm{w}^{(n+1)}$ according to 
+
+$$
+\bm{w}^{(n+1)} := \bm{w}^{(n)} \mp \eta \nabla_w f\left( \bm{w}^{(n)}\right).
+$$
+
+Depending on the sign on the right-hand side of this equation, this forces $f$ to 
+decrease or increase, respectively. Indeed, computing the change in $f$ after one 
+iteration, we obtain
+
+\begin{equation}
+\begin{split}
+\Delta f \triangleq f\left(\bm{w}^{(n+1)}\right) - f\left(\bm{w}^{(n)}\right) &=
+\nabla_w f\left( \bm{w}^{(n)} \right) \delta \bm{w}^{(n)} \\
+&= \mp \eta \nabla_w f\left( \bm{w}^{(n)} \right)^\top \nabla_w f\left( \bm{w}^{(n)} \right) \\
+&= \mp \eta \norm{\nabla_w f\left( \bm{w}^{(n)} \right)}{}^2 \lessgtr 0
+\end{split}
+\end{equation}
+
+
+## Symmetric and Positive Definite Matrices
+
+::: {#def-sym}
+## Symmetric Matrix
+A matrix $\bm{Q} \in \R^{n\times n}$ is _symmetric_ if 
+
+$$ \bm{Q}^\top = \bm{Q}. $$
+
+The symbol for symmetric matrices of dimension $n$ is $\S_n$.
+:::
+
+::: {#def-psd}
+## Positive Semidefinite Matrix
+A matrix $\bm{Q} \in \S_n$ is _positive semidefinite_ if for all $\bm{x} \in \R^n$,
+
+$$ \bm{x}^\top \bm{Q x} \geq 0. $$
+:::
+
+::: {#def-pd}
+## Positive Definite Matrix
+A matrix $\bm{Q} \in \S_n$ is _positive definite_ if for all $\bm{x} \in \R^n$ such that $\bm{x} \neq \bm{0}$,
+
+$$ \bm{x}^\top \bm{Q x} > 0. $$
+:::
+
+::: {#def-nd}
+## Negative (Semi)Definite Matrix
+A matrix $\bm{Q} \in \S_n$ is _negative (semi)definite_ if its additive inverse, $-\bm{Q}$, is positive (semi)definite.
+:::
