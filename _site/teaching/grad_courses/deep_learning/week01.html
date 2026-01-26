@@ -41,6 +41,11 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../../site_libs/bootstrap/bootstrap-eef78bce6e6d37c27bc985c3ac861da9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<meta name="shinylive:serviceworker_dir" content="../../..">
+<script src="../../../site_libs/quarto-contrib/shinylive-0.10.7/shinylive/load-shinylive-sw.js" type="module"></script>
+<script src="../../../site_libs/quarto-contrib/shinylive-0.10.7/shinylive/run-python-blocks.js" type="module"></script>
+<link href="../../../site_libs/quarto-contrib/shinylive-0.10.7/shinylive/shinylive.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/shinylive-quarto-css/shinylive-quarto.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -302,6 +307,7 @@ window.Quarto = {
   <li><a href="#taylor-series-gradient-and-hessian" id="toc-taylor-series-gradient-and-hessian" class="nav-link active" data-scroll-target="#taylor-series-gradient-and-hessian">Taylor series, Gradient, and Hessian</a></li>
   <li><a href="#gradient-descentascent" id="toc-gradient-descentascent" class="nav-link" data-scroll-target="#gradient-descentascent">Gradient Descent/Ascent</a></li>
   <li><a href="#symmetric-and-positive-definite-matrices" id="toc-symmetric-and-positive-definite-matrices" class="nav-link" data-scroll-target="#symmetric-and-positive-definite-matrices">Symmetric and Positive Definite Matrices</a></li>
+  <li><a href="#gradient-descent-example" id="toc-gradient-descent-example" class="nav-link" data-scroll-target="#gradient-descent-example">Gradient-Descent Example</a></li>
   </ul>
 </nav>
     </div>
@@ -349,7 +355,7 @@ $$
 <p><span id="eq-taylor"><span class="math display">\[
 f(\bm{w}) \approx f\left(\bm{w}^{(0)}\right) + \nabla_wf\left(\bm{w}^{(0)}\right)^\top \delta \bm{w} + \frac{1}{2} \delta \bm{w}^\top \bm{H}_f(\bm{w}) \delta \bm{w},
 \tag{1}\]</span></span></p>
-<p>where the <em>gradient</em> of <span class="math inline">\(f\)</span> is defined by <span class="math inline">\(\nabla_w f(\bm{w}) = \bmat{\pd{f}{w_1}(\bm{w}) &amp; \pd{f}{w_2}(\bm{w})}\)</span>^, <span class="math inline">\(\delta \bm{w} = \bm{w} - \bm{w}^{(0)}\)</span>, and <span class="math inline">\(\bm{H}_f(\bm{w})\)</span> is the <em>Hessian</em> matrix of second derivatives:</p>
+<p>where the <em>gradient</em> of <span class="math inline">\(f\)</span> is defined by <span class="math inline">\(\nabla_w f(\bm{w}) = \bmat{\pd{f}{w_1}(\bm{w}) &amp; \pd{f}{w_2}(\bm{w})}^\top\)</span>, <span class="math inline">\(\delta \bm{w} = \bm{w} - \bm{w}^{(0)}\)</span>, and <span class="math inline">\(\bm{H}_f(\bm{w})\)</span> is the <em>Hessian</em> matrix of second derivatives:</p>
 <p><span class="math display">\[
 \bm{H}_f(\bm{w}) = \bmat{
     \pdd{f}{w_1}(\bm{w}) &amp; \frac{\partial^2 f}{\partial w_1 \partial w_2}(\bm{w}) \\
@@ -397,6 +403,119 @@ f\left( \bm{w}^{n+1} \right) \approx f\left( \bm{w}^{n} \right) + \nabla_w f\lef
 <div id="def-nd" class="theorem definition">
 <p><span class="theorem-title"><strong>Definition 4 (Negative (Semi)Definite Matrix)</strong></span> A matrix <span class="math inline">\(\bm{Q} \in \S_n\)</span> is <em>negative (semi)definite</em> if its additive inverse, <span class="math inline">\(-\bm{Q}\)</span>, is positive (semi)definite.</p>
 </div>
+</section>
+<section id="gradient-descent-example" class="level2">
+<h2 class="anchored" data-anchor-id="gradient-descent-example">Gradient-Descent Example</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Because JAX is not yet compatible with WebAssembly (browser-based Python), this example uses standard Numpy and the analytical gradient formula.</p>
+</div>
+</div>
+<pre class="shinylive-python" data-engine="python"><code>#| '!! shinylive warning !!': |
+#|   shinylive does not work in self-contained HTML documents.
+#|   Please set `embed-resources: false` in your metadata.
+#| standalone: true
+#| viewerHeight: 600
+
+from shiny import App, render, ui
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. Define Math Functions (Using NumPy instead of JAX)
+def C(x): 
+    return 0.5 * (np.cos(x[0])**2 + np.sin(x[1])**2)
+
+def grad_C(x):
+    # Analytical gradient derived from C(x)
+    return np.array([
+        -0.5 * 2 * np.cos(x[0]) * np.sin(x[0]), # dx0: -cos*sin
+         0.5 * 2 * np.sin(x[1]) * np.cos(x[1])  # dx1:  sin*cos
+    ])
+
+# 2. Gradient Descent Logic
+def run_gradient_descent(x0, eta, n_iter=50):
+    x = np.array(x0, dtype=np.float64)
+    path = [x.copy()]
+    
+    for _ in range(n_iter):
+        g = grad_C(x)
+        x = x - eta * g
+        path.append(x.copy())
+        
+    return np.array(path)
+
+# 3. Shiny UI
+app_ui = ui.page_fluid(
+    ui.layout_sidebar(
+        ui.sidebar(
+            ui.h4("Parameters"),
+            ui.input_slider("lr", "Learning Rate (η)", 0.0, 2.0, 0.2, step=0.05),
+            ui.input_slider("n_iter", "Iterations", 1, 100, 20),
+            ui.hr(),
+            ui.h5("Start Position"),
+            ui.input_slider("x0", "X0 (Start)", -6.0, 6.0, -5.5),
+            ui.input_slider("x1", "X1 (Start)", -6.0, 6.0, 2.0),
+        ),
+        ui.card(
+            ui.output_plot("descent_plot")
+        )
+    )
+)
+
+# 4. Server Logic
+def server(input, output, session):
+    
+    @output
+    @render.plot
+    def descent_plot():
+        # A. Setup Background Contour
+        pi = np.pi
+        xrange = np.linspace(-2.5*pi, 2.5*pi, 100)
+        yrange = np.linspace(-2.5*pi, 2.5*pi, 100)
+        xx, yy = np.meshgrid(xrange, yrange)
+        
+        # Calculate Z for contour using vectorized numpy
+        # Note: We construct input manually for broadcasting
+        Z = 0.5 * (np.cos(xx)**2 + np.sin(yy)**2)
+
+        # B. Run Algorithm based on inputs
+        start_pos = [input.x0(), input.x1()]
+        path = run_gradient_descent(start_pos, input.lr(), input.n_iter())
+
+        # C. Plotting
+        fig, ax = plt.subplots(figsize=(6,6))
+        
+        # Plot Contour
+        c = ax.contourf(xx, yy, Z, levels=25, cmap='viridis', alpha=0.6)
+        plt.colorbar(c, ax=ax, label='Cost C(x)')
+        
+        # Plot Trajectory
+        ax.plot(path[:,0], path[:,1], 'r.-', linewidth=2, markersize=6, label='Gradient Path')
+        ax.plot(path[0,0], path[0,1], 'ko', markersize=12, label='Start')
+        ax.plot(path[-1,0], path[-1,1], 'w*', markersize=15, markeredgecolor='k', label='End')
+
+        # Place text at 5% x, 95% y (Top Left), relative to axes dimensions
+        formula_text = r"$C(x) = \frac{1}{2} (\cos^2(x_0) + \sin^2(x_1))$"
+        ax.text(0.05, 0.95, formula_text, transform=ax.transAxes, 
+                fontsize=14, verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
+       
+        ax.set_title(f"Gradient Descent (η = {input.lr()})")
+        ax.set_xlabel('$x_0$')
+        ax.set_ylabel('$x_1$')
+        ax.legend(loc='lower right')
+        
+        return fig
+
+app = App(app_ui, server)</code></pre>
 
 
 </section>
@@ -475,7 +594,7 @@ f\left( \bm{w}^{n+1} \right) \approx f\left( \bm{w}^{n} \right) + \nabla_w f\lef
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
+        var filterRegex = new RegExp('/' + window.location.host + '/');
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }

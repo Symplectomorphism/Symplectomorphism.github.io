@@ -1,6 +1,8 @@
 ---
 title: "Week 1: Basics of Optimization"
 format: html
+filters:
+  - shinylive
 ---
 
 ## Taylor series, Gradient, and Hessian
@@ -11,8 +13,7 @@ $$
 f(\bm{w}) \approx f\left(\bm{w}^{(0)}\right) + \nabla_wf\left(\bm{w}^{(0)}\right)^\top \delta \bm{w} + \frac{1}{2} \delta \bm{w}^\top \bm{H}_f(\bm{w}) \delta \bm{w},
 $$ {#eq-taylor}
 
-where the _gradient_ of $f$ is defined by $\nabla_w f(\bm{w}) = \bmat{\pd{f}{w_1}(\bm{w}) & \pd{f}{w_2}(\bm{w})}$^\top, $\delta \bm{w} = \bm{w} - \bm{w}^{(0)}$, and $\bm{H}_f(\bm{w})$ is the _Hessian_ matrix of 
-second derivatives:
+where the _gradient_ of $f$ is defined by $\nabla_w f(\bm{w}) = \bmat{\pd{f}{w_1}(\bm{w}) & \pd{f}{w_2}(\bm{w})}^\top$, $\delta \bm{w} = \bm{w} - \bm{w}^{(0)}$, and $\bm{H}_f(\bm{w})$ is the _Hessian_ matrix of second derivatives:
 
 $$
 \bm{H}_f(\bm{w}) = \bmat{
@@ -87,3 +88,108 @@ $$ \bm{x}^\top \bm{Q x} > 0. $$
 ## Negative (Semi)Definite Matrix
 A matrix $\bm{Q} \in \S_n$ is _negative (semi)definite_ if its additive inverse, $-\bm{Q}$, is positive (semi)definite.
 :::
+
+
+## Gradient-Descent Example
+
+::: {.callout-note}
+Because JAX is not yet compatible with WebAssembly (browser-based Python), this 
+example uses standard Numpy and the analytical gradient formula.
+:::
+
+```{shinylive-python}
+#| standalone: true
+#| viewerHeight: 600
+
+from shiny import App, render, ui
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. Define Math Functions (Using NumPy instead of JAX)
+def C(x): 
+    return 0.5 * (np.cos(x[0])**2 + np.sin(x[1])**2)
+
+def grad_C(x):
+    # Analytical gradient derived from C(x)
+    return np.array([
+        -0.5 * 2 * np.cos(x[0]) * np.sin(x[0]), # dx0: -cos*sin
+         0.5 * 2 * np.sin(x[1]) * np.cos(x[1])  # dx1:  sin*cos
+    ])
+
+# 2. Gradient Descent Logic
+def run_gradient_descent(x0, eta, n_iter=50):
+    x = np.array(x0, dtype=np.float64)
+    path = [x.copy()]
+    
+    for _ in range(n_iter):
+        g = grad_C(x)
+        x = x - eta * g
+        path.append(x.copy())
+        
+    return np.array(path)
+
+# 3. Shiny UI
+app_ui = ui.page_fluid(
+    ui.layout_sidebar(
+        ui.sidebar(
+            ui.h4("Parameters"),
+            ui.input_slider("lr", "Learning Rate (η)", 0.0, 2.0, 0.2, step=0.05),
+            ui.input_slider("n_iter", "Iterations", 1, 100, 20),
+            ui.hr(),
+            ui.h5("Start Position"),
+            ui.input_slider("x0", "X0 (Start)", -6.0, 6.0, -5.5),
+            ui.input_slider("x1", "X1 (Start)", -6.0, 6.0, 2.0),
+        ),
+        ui.card(
+            ui.output_plot("descent_plot")
+        )
+    )
+)
+
+# 4. Server Logic
+def server(input, output, session):
+    
+    @output
+    @render.plot
+    def descent_plot():
+        # A. Setup Background Contour
+        pi = np.pi
+        xrange = np.linspace(-2.5*pi, 2.5*pi, 100)
+        yrange = np.linspace(-2.5*pi, 2.5*pi, 100)
+        xx, yy = np.meshgrid(xrange, yrange)
+        
+        # Calculate Z for contour using vectorized numpy
+        # Note: We construct input manually for broadcasting
+        Z = 0.5 * (np.cos(xx)**2 + np.sin(yy)**2)
+
+        # B. Run Algorithm based on inputs
+        start_pos = [input.x0(), input.x1()]
+        path = run_gradient_descent(start_pos, input.lr(), input.n_iter())
+
+        # C. Plotting
+        fig, ax = plt.subplots(figsize=(6,6))
+        
+        # Plot Contour
+        c = ax.contourf(xx, yy, Z, levels=25, cmap='viridis', alpha=0.6)
+        plt.colorbar(c, ax=ax, label='Cost C(x)')
+        
+        # Plot Trajectory
+        ax.plot(path[:,0], path[:,1], 'r.-', linewidth=2, markersize=6, label='Gradient Path')
+        ax.plot(path[0,0], path[0,1], 'ko', markersize=12, label='Start')
+        ax.plot(path[-1,0], path[-1,1], 'w*', markersize=15, markeredgecolor='k', label='End')
+
+        # Place text at 5% x, 95% y (Top Left), relative to axes dimensions
+        formula_text = r"$C(x) = \frac{1}{2} (\cos^2(x_0) + \sin^2(x_1))$"
+        ax.text(0.05, 0.95, formula_text, transform=ax.transAxes, 
+                fontsize=14, verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
+       
+        ax.set_title(f"Gradient Descent (η = {input.lr()})")
+        ax.set_xlabel('$x_0$')
+        ax.set_ylabel('$x_1$')
+        ax.legend(loc='lower right')
+        
+        return fig
+
+app = App(app_ui, server)
+```
