@@ -1,13 +1,26 @@
 ---
 title: "Week 1: Basics of Optimization"
 format: html
+resources:
+  - chapter5_jit.ipynb
+  - chapter9_prng.ipynb
+  - chapter10.ipynb
+  - The_Cat.jpg
 filters:
   - shinylive
 ---
 
-## Taylor series, Gradient, and Hessian
+::: {.column-body-right}
 
-Let us consider a local extremum (minima or maxima) of a function $f: \mathbb{R}^2 \to \mathbb{R}$, $\bm{w} = (w_1, w_2) \mapsto f(\bm{w}) = f(w_1, w_2)$. We perform a power series (Taylor) expansion around $\bm{w} = \bm{w}^{(0)}$ and just keep the first three terms to obtain
+::: {.panel-tabset}
+
+## Theory
+
+::: {style="max-width: 800px;"}
+
+### Taylor series, Gradient, and Hessian
+
+Let us consider a local extremum (minimum or maximum) of a function $f: \mathbb{R}^2 \to \mathbb{R}$, $\bm{w} = (w_1, w_2) \mapsto f(\bm{w}) = f(w_1, w_2)$. We perform a power series (Taylor) expansion around $\bm{w} = \bm{w}^{(0)}$ and just keep the first three terms to obtain
 
 $$
 f(\bm{w}) \approx f\left(\bm{w}^{(0)}\right) + \nabla_wf\left(\bm{w}^{(0)}\right)^\top \delta \bm{w} + \frac{1}{2} \delta \bm{w}^\top \bm{H}_f(\bm{w}) \delta \bm{w},
@@ -28,7 +41,7 @@ Therefore $\bm{w}^{(0)}$ is a local minimum if and only if the Hessian is
 _positive definite_. By the same token, it is a local maximum if and only if the Hessian is _negative definite_.
 
 
-## Gradient Descent/Ascent
+### Gradient Descent/Ascent
 
 For complicated functions, such as neural nets, it is difficult to solve 
 $\nabla_w f\left(\bm{w}^{(0)}\right) = \bm{0}$ for $\bm{w}^{(0)}$. Instead, we 
@@ -49,6 +62,7 @@ Depending on the sign on the right-hand side of this equation, this forces $f$ t
 decrease or increase, respectively. Indeed, computing the change in $f$ after one 
 iteration, we obtain
 
+```latex
 \begin{equation}
 \begin{split}
 \Delta f \triangleq f\left(\bm{w}^{(n+1)}\right) - f\left(\bm{w}^{(n)}\right) &=
@@ -57,12 +71,13 @@ iteration, we obtain
 &= \mp \eta \norm{\nabla_w f\left( \bm{w}^{(n)} \right)}{}^2 \lessgtr 0
 \end{split}
 \end{equation}
+```
 
 
-## Symmetric and Positive Definite Matrices
+### Symmetric and Positive Definite Matrices
 
 ::: {#def-sym}
-## Symmetric Matrix
+#### Symmetric Matrix
 A matrix $\bm{Q} \in \R^{n\times n}$ is _symmetric_ if 
 
 $$ \bm{Q}^\top = \bm{Q}. $$
@@ -71,26 +86,143 @@ The symbol for symmetric matrices of dimension $n$ is $\S_n$.
 :::
 
 ::: {#def-psd}
-## Positive Semidefinite Matrix
+#### Positive Semidefinite Matrix
 A matrix $\bm{Q} \in \S_n$ is _positive semidefinite_ if for all $\bm{x} \in \R^n$,
 
 $$ \bm{x}^\top \bm{Q x} \geq 0. $$
 :::
 
 ::: {#def-pd}
-## Positive Definite Matrix
+#### Positive Definite Matrix
 A matrix $\bm{Q} \in \S_n$ is _positive definite_ if for all $\bm{x} \in \R^n$ such that $\bm{x} \neq \bm{0}$,
 
 $$ \bm{x}^\top \bm{Q x} > 0. $$
 :::
 
 ::: {#def-nd}
-## Negative (Semi)Definite Matrix
+#### Negative (Semi)Definite Matrix
 A matrix $\bm{Q} \in \S_n$ is _negative (semi)definite_ if its additive inverse, $-\bm{Q}$, is positive (semi)definite.
 :::
 
+### Least Squares Identification
 
-## Gradient-Descent Example
+Given $y(x) = \sin{x}$, $-\pi \leq x \leq \pi$, find the parameters $a$, $b$, $c$, $d$, such that
+
+$$
+y_P(x) = a + bx + cx^s + dx^3
+$$
+
+is a "good" approximation to $y(x) = \sin{x}$. Let 
+
+$$
+\bm{x} = \bmat{x_1 = -\pi & x_2 & \cdots & x_{n-1} & x_n = \pi}
+$$
+
+and 
+
+$$
+\bm{y} = \sin{\bm{x}} = \bmat{\sin{x_1} = 0 & \sin{x_2} & \cdots & \sin{x_{n-1}} & \sin{x_n} = 0}.
+$$
+
+Then, we want to find $a$, $b$, $c$, $d$ such that
+
+$$
+\underbrace{
+\bmat{
+    y_1 \\ y_2 \\ \vdots \\ y_n
+}}_{\bm{Y}\in \R^n} = 
+\bmat{
+    \sin{x_1} \\
+    \sin{x_2} \\
+    \vdots \\
+    \sin{x_n}
+} = 
+\underbrace{\bmat{
+    1 & x_1 & x_1^2 & x_1^3 \\
+    1 & x_2 & x_2^2 & x_2^3 \\
+    \vdots & \vdots & \vdots & \vdots \\
+    1 & x_n & x_n^2 & x_n^3
+}}_{\bm{W} \in \R^{n \times 4}}
+\underbrace{\bmat{
+    a \\ b \\ c \\ d
+}}_{\bm{P} \in \R^4}
+$$
+
+Let us define the error vector $\bm{E} := \bm{Y} - \bm{WP}$ and the total error $e: \R^n \to \R$
+
+$$
+e(\bm{Y}) := \norm{\bm{E}}{}^2 = \bm{E}^\top \bm{E} = \bm{Y}^\top \bm{Y} - 2 \bm{P}^\top \bm{W}^\top \bm{Y} + \bm{P}^\top \bm{W}^\top\bm{W} \bm{P}.
+$$
+
+The gradient of the error function is given by 
+
+$$
+\nabla e(\bm{Y}) = -2 \bm{W}^\top \bm{Y} + 2 \bm{W}^\top\bm{WP} = -2\bm{W}^\top (\bm{Y} - \bm{WP}) = -2\bm{W}^\top\bm{E}.
+$$
+
+Setting this equal to zero, we obtain a linear equation in $\bm{P}$, whose
+solution is given by 
+
+$$
+\bm{P}^* = \left( \bm{W}^\top \bm{W} \right)^{-1} \bm{W}^\top \bm{Y}.
+$$
+
+Note that $\bm{W}^\top \bm{W} \in \S_4$ is invertible if and only if
+$\bm{W}$ has full rank if and only if there are at least $4$ distinct data
+points in the data set $\bm{x}$. The iterative solution to this problem is found
+by picking a guess at a solution, say $\bm{P}^{(0)} = \bm{0}$, and then update
+it until convergence according to the first-order difference equation
+
+$$
+\begin{split}
+\bm{P}^{(n+1)} = \bm{P}^{(n)} - \eta \nabla e(\bm{Y}) &= \bm{P}^{(n)} + 2\eta\bm{W}^\top\left(\bm{Y} - \bm{W}\bm{P}^{(n)}\right) \\
+&= \left(\bm{I} - 2\eta\bm{W}^\top \bm{W}\right)\bm{P}^{(n)} + 2\eta \bm{W}^\top\bm{Y}.
+\end{split}
+$$ {#eq-difference}
+
+:::{.callout-note}
+#### $\bm{W}^\top \bm{W}$ is positive definite if $\bm{W}$ has full rank.
+$\bm{W}^\top \bm{W}$ is obviously symmetric. Taking an arbitrary $\bm{x} \in \R^4$, 
+and letting $\bm{v} = \bm{Wx}$ we see that 
+$$
+\bm{x}^\top \left(\bm{W}^\top \bm{W}\right) \bm{x} = \bm{v}^\top \bm{v} = \norm{\bm{v}}{}^2 \geq 0.
+$$
+Finally, observe that $\bm{v} = \bm{0}$ if and only if $\bm{x} = \bm{0}$ since
+$\bm{W}$ has full rank.  <span style="float:right;">$\square$</span>
+:::
+
+::: {.callout-note}
+#### Continuous Analogue of the Gradient Descent
+This difference @eq-difference has an associated differential equation, namely
+
+$$
+\dot{\bm{P}} = -\alpha\bm{W}^\top\bm{WP} + \alpha\bm{W}^\top \bm{Y}
+$$
+with $\alpha > 0$. Since $\bm{W}^\top \bm{W} \succeq 0$, this is a _stable_
+linear time-invariant ordinary differential equation. Hence, its final value can
+be found by invoking the Final Value Theorem (FVT) from control theory. To apply
+that, take the Laplace transform of the ODE (with zero initial conditions) to
+get
+
+$$
+s \bm{P}(s) = -\alpha \bm{W}^\top \bm{W} \bm{P}(s) + \frac{\alpha \bm{W}^\top\bm{Y}}{s}
+$$
+
+After some rearrangement, the FVT yields
+$$
+\lim_{t \to \infty} \bm{P}(t) = \lim_{s \to 0} s \bm{P}(s) = \lim_{s \to 0} s \left(s\bm{I} + \alpha \bm{W}^\top \bm{W}\right)^{-1}\frac{\alpha \bm{W}^\top \bm{Y}}{s} 
+= \left(\bm{W}^\top\bm{W}\right)^{-1}\bm{W}^\top\bm{Y}.
+$$
+
+:::
+
+
+:::
+
+## Examples
+
+
+### Infinitely-Many Extrema
 
 ::: {.callout-note}
 Because JAX is not yet compatible with WebAssembly (browser-based Python), this 
@@ -99,7 +231,7 @@ example uses standard Numpy and the analytical gradient formula.
 
 ```{shinylive-python}
 #| standalone: true
-#| viewerHeight: 600
+#| viewerHeight: 675
 
 from shiny import App, render, ui
 import numpy as np
@@ -139,6 +271,7 @@ app_ui = ui.page_fluid(
             ui.h5("Start Position"),
             ui.input_slider("x0", "X0 (Start)", -6.0, 6.0, -5.5),
             ui.input_slider("x1", "X1 (Start)", -6.0, 6.0, 2.0),
+            open="always",
         ),
         ui.card(
             ui.output_plot("descent_plot")
@@ -195,7 +328,7 @@ app = App(app_ui, server)
 ```
 
 
-## Least Squares: Closed-Form vs. Gradient Descent
+### Least Squares: Closed-Form vs. Gradient Descent
 
 This interactive application demonstrates **Least Squares Identification** as
 described in the provided notes. We aim to approximate $y = \sin(x)$ using a
@@ -205,11 +338,11 @@ $$ y_P(x) = a + bx + cx^2 + dx^3 $$
 
 We compare two methods:
 
-1.  **Closed Form:** The analytical solution $P^* = (W^T W)^{-1} W^T Y$.
+1.  **Closed Form:** The analytical solution $\bm{P}^* = \left(\bm{W}^\top \bm{W}\right)^{-1} \bm{W}^\top \bm{Y}$.
 2.  **Gradient Descent:** Iteratively minimizing the squared error $e$.
 
 ::: {.callout-tip}
-## Taylor Series Check 
+#### Taylor Series Check 
 The Taylor series for $\sin(x)$ is $x - \frac{x^3}{6} + \dots$.
 Therefore, we expect our coefficients to converge near: $a=0, b=1, c=0, d=-\nicefrac{1}{6}$.
 :::
@@ -289,6 +422,7 @@ app_ui = ui.page_fluid(
             
             ui.hr(),
             ui.input_action_button("reset", "Reset / Re-run"),
+            open="always",
         ),
         ui.card(
             ui.output_plot("main_plot")
@@ -369,3 +503,32 @@ def server(input, output, session):
 
 app = App(app_ui, server)
 ```
+
+## JAX Resources 
+
+Embedding these Jupyter Notebooks makes the website sluggish, so please download them and open locally.
+
+![Save this image as "The_Cat.jpg"](The_Cat.jpg)
+
+```{=html}
+<a href="chapter5_jit.ipynb" download="chapter5_jit.ipynb" class="btn btn-primary" role="button">
+    <i class="bi bi-download"></i> JAX JIT Compilation (.ipynb)
+</a>
+```
+
+```{=html}
+<a href="chapter9_prng.ipynb" download="chapter9_prng.ipynb" class="btn btn-primary" role="button">
+    <i class="bi bi-download"></i> JAX Random Numbers (.ipynb)
+</a>
+```
+
+```{=html}
+<a href="chapter10.ipynb" download="chapter10.ipynb" class="btn btn-primary" role="button">
+    <i class="bi bi-download"></i> JAX PyTrees (.ipynb)
+</a>
+```
+
+
+:::
+
+:::
