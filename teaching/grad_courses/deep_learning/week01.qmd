@@ -175,8 +175,8 @@ def server(input, output, session):
         
         # Plot Trajectory
         ax.plot(path[:,0], path[:,1], 'r.-', linewidth=2, markersize=6, label='Gradient Path')
-        ax.plot(path[0,0], path[0,1], 'ko', markersize=12, label='Start')
-        ax.plot(path[-1,0], path[-1,1], 'w*', markersize=15, markeredgecolor='k', label='End')
+        ax.plot(path[0,0], path[0,1], 'ko', markersize=9, label='Start')
+        ax.plot(path[-1,0], path[-1,1], 'w*', markersize=12, markeredgecolor='k', label='End')
 
         # Place text at 5% x, 95% y (Top Left), relative to axes dimensions
         formula_text = r"$C(x) = \frac{1}{2} (\cos^2(x_0) + \sin^2(x_1))$"
@@ -188,6 +188,182 @@ def server(input, output, session):
         ax.set_xlabel('$x_0$')
         ax.set_ylabel('$x_1$')
         ax.legend(loc='lower right')
+        
+        return fig
+
+app = App(app_ui, server)
+```
+
+
+## Least Squares: Closed-Form vs. Gradient Descent
+
+This interactive application demonstrates **Least Squares Identification** as
+described in the provided notes. We aim to approximate $y = \sin(x)$ using a
+3rd-degree polynomial:
+
+$$ y_P(x) = a + bx + cx^2 + dx^3 $$
+
+We compare two methods:
+
+1.  **Closed Form:** The analytical solution $P^* = (W^T W)^{-1} W^T Y$.
+2.  **Gradient Descent:** Iteratively minimizing the squared error $e$.
+
+::: {.callout-tip}
+## Taylor Series Check 
+The Taylor series for $\sin(x)$ is $x - \frac{x^3}{6} + \dots$.
+Therefore, we expect our coefficients to converge near: $a=0, b=1, c=0, d=-\nicefrac{1}{6}$.
+:::
+
+```{shinylive-python}
+#| standalone: true
+#| viewerHeight: 925
+
+from shiny import App, render, ui, reactive
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 1. Setup Data (Fixed range as per PDF)
+# Generate n points between -pi and pi
+n = 100
+x_data = np.linspace(-np.pi, np.pi, n)
+y_data = np.sin(x_data)
+
+# Construct W matrix (Design Matrix) [1, x, x^2, x^3]
+# As defined in the PDF
+W = np.column_stack([
+    np.ones_like(x_data), 
+    x_data, 
+    x_data**2, 
+    x_data**3
+])
+
+# 2. Closed Form Solution (The "Best" fit)
+# P* = (W.T @ W)^-1 @ W.T @ Y
+WtW = W.T @ W
+WtY = W.T @ y_data
+P_closed = np.linalg.solve(WtW, WtY) # More stable than inv()
+
+# 3. Gradient Descent Implementation
+def run_gd_linear_regression(W, Y, learning_rate, epochs):
+    # Initialize coefficients [a, b, c, d] to zeros
+    P = np.zeros(4)
+    
+    # Track error history
+    errors = []
+    
+    # Loop
+    for _ in range(epochs):
+        # Calculate Prediction: Y_pred = W @ P
+        Y_pred = W @ P
+        
+        # Calculate Error Vector: (Y - Y_pred)
+        error = Y - Y_pred
+        
+        # Calculate Gradient (derived in PDF):
+        # dE/dP = -2 * W.T @ (Y - W @ P)
+        gradient = -2 * W.T @ error
+        
+        # Update Weights: P_new = P_old - eta * gradient
+        P = P - learning_rate * gradient
+        
+        # Store Sum Squared Error
+        sse = np.sum(error**2)
+        errors.append(sse)
+        
+    return P, errors
+
+# 4. Shiny UI
+app_ui = ui.page_fluid(
+    ui.layout_sidebar(
+        ui.sidebar(
+            ui.h4("Hyperparameters"),
+            
+            # Note: Polynomial features grow large (x^3 approx 27). 
+            # Gradients are huge, so Learning Rate must be tiny.
+            ui.input_slider("lr", "Learning Rate", 0.000001, 0.0001, 0.00001, step=0.000001, sep=""),
+            ui.input_slider("epochs", "Iterations", 0, 5000, 100, step=100),
+            
+            ui.hr(),
+            ui.h5("Coefficients (a,b,c,d)"),
+            ui.output_text_verbatim("coeff_display"),
+            
+            ui.hr(),
+            ui.input_action_button("reset", "Reset / Re-run"),
+        ),
+        ui.card(
+            ui.output_plot("main_plot")
+        )
+    )
+)
+
+# 5. Server Logic
+def server(input, output, session):
+    
+    @reactive.Calc
+    def perform_gd():
+        # Re-run when button is clicked or inputs change
+        input.reset() 
+        
+        lr = input.lr()
+        epochs = input.epochs()
+        
+        P_gd, error_history = run_gd_linear_regression(W, y_data, lr, epochs)
+        return P_gd, error_history
+
+    @output
+    @render.text
+    def coeff_display():
+        P_gd, _ = perform_gd()
+        
+        # Format for display
+        return (
+            f"--- Closed Form ---\n"
+            f"a: {P_closed[0]:.4f}\n"
+            f"b: {P_closed[1]:.4f}\n"
+            f"c: {P_closed[2]:.4f}\n"
+            f"d: {P_closed[3]:.4f}\n\n"
+            f"--- Gradient Descent ---\n"
+            f"a: {P_gd[0]:.4f}\n"
+            f"b: {P_gd[1]:.4f}\n"
+            f"c: {P_gd[2]:.4f}\n"
+            f"d: {P_gd[3]:.4f}"
+        )
+
+    @output
+    @render.plot
+    def main_plot():
+        P_gd, error_history = perform_gd()
+        
+        # Generate Predictions
+        y_pred_closed = W @ P_closed
+        y_pred_gd = W @ P_gd
+        
+        # Error metrics
+        mse_closed = np.mean((y_data - y_pred_closed)**2)
+        mse_gd = np.mean((y_data - y_pred_gd)**2)
+
+        # Plotting
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 10))
+        
+        # Plot 1: Curve Fitting
+        ax1.plot(x_data, y_data, 'k-', alpha=0.3, linewidth=4, label='True sin(x)')
+        ax1.plot(x_data, y_pred_closed, 'b--', linewidth=2, label=f'Closed Form (MSE: {mse_closed:.4f})')
+        ax1.plot(x_data, y_pred_gd, 'r-', label=f'Gradient Descent (MSE: {mse_gd:.4f})')
+        
+        ax1.set_title(f"Polynomial Fit (Iter: {input.epochs()})")
+        ax1.set_xlabel("x")
+        ax1.set_ylabel("y")
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        
+        # Plot 2: Error Curve
+        if len(error_history) > 0:
+            ax2.plot(error_history)
+            ax2.set_title("Sum Squared Error over Iterations")
+            ax2.set_xlabel("Epoch")
+            ax2.set_ylabel("Error (SSE)")
+            ax2.set_yscale('log') # Log scale helps visualize convergence
+            ax2.grid(True, alpha=0.3)
         
         return fig
 
