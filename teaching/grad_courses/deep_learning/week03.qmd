@@ -1,0 +1,425 @@
+---
+title: "Week 3: Fundamentals of Deep Neural Networks"
+format: 
+  html: 
+    grid:
+      body-width: 1000px
+      sidebar-width: 250px
+      margin-width: 150px
+filters:
+  - shinylive
+---
+
+
+
+::: {.panel-tabset}
+
+## Deep Neural Networks
+
+::: {.column-margin}
+Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
+:::
+
+These are networks with more than one hidden layer, making intuitive understanding more difficult.
+
+### Composing neural networks
+
+::: {layout="[16, 42, 42]" layout-valign="center"}
+Network 1:
+
+$$
+\begin{split}
+h_1 &= \sigma(\theta_{10} + \theta_{11}x) \\
+h_2 &= \sigma(\theta_{20} + \theta_{21}x) \\
+h_3 &= \sigma(\theta_{30} + \theta_{31}x)
+\end{split}
+$$
+
+$$
+y = \phi_0 + \phi_1h_1 + \phi_2h_2 + \phi_3h_3
+$$
+:::
+
+::: {layout="[16, 42, 42]" layout-valign="center"}
+Network 2:
+
+$$
+\begin{split}
+h_1^\prime &= \sigma(\theta_{10}^\prime + \theta_{11}^\prime y) \\
+h_2^\prime &= \sigma(\theta_{20}^\prime + \theta_{21}^\prime y) \\
+h_3^\prime &= \sigma(\theta_{30}^\prime + \theta_{31}^\prime y)
+\end{split}
+$$
+
+$$
+y^\prime = \phi_0^\prime + \phi_1^\prime h_1 + \phi_2^\prime h_2 + \phi_3^\prime h_3
+$$
+:::
+
+![
+  a) The output $y$ of the first network constitutes the input to the second network
+  b) The first network maps inputs $x \in [-1, 1]$ to outputs $y \in [-1, 1]$
+  using a function comprising three linear regions that are chosen so that they
+  alternate the sign of their slope.  Multiple inputs $x$ (gray circles) now map to 
+  the same output $y$ (cyan circle).
+  c) The second network defines a function comprising three lienar regions that takes
+  $y$ and returns $y^\prime$ (i.e., the cyan circle is mapped to the brown circle).
+  d) The combined effect of these two functions when composed is that (i) three 
+  different inputs $x$ are mapped to any given value of $y$ by the first network and 
+  (ii) are processed in the same way by the second network; the result is that the 
+  function defined by the second network in panel (c) is duplicated three times, 
+  variously flipped and rescaled according to the slope of the regions of panel (b).
+](assets/images/DeepConcat.svg){.lightbox width=80%}
+
+
+::: {layout="[80, 20]" layout-valign="center"}
+![](assets/images/two_hidden_comparison.svg){.lightbox width=100% fig-align="center"}
+
+* 20 parameters
+* (at least) 9 regions
+:::
+
+::: {layout="[80, 20]" layout-valign="center"}
+![](assets/images/shallow_comparison.png){.lightbox width=300 fig-align="center"}
+
+* 19 parameters
+* max 7 regions
+:::
+
+### Combining the two networks into one
+![
+  a) The first network has three hidden units and takes inputs $x_1$ and $x_2$ and returns a scalar output $y$. 
+  This is passed into a second network with two hidden units to produce $y^\prime$.
+  b) The first network produces a function consisting of seven linear regions, one of which is flat.
+  c) The second network defines a function comprising two linear regions in $y \in [-1, 1]$.
+  d) Then these networks are composed, each of the six non-flat regions from the first network is divided into two new regions by the second network to create a total of $13$ linear regions.
+](assets/images/DeepTwoLayer2D.svg){.lightbox width=100% fig-align="center"}
+
+
+::: {layout="[16, 42, 42]" layout-valign="center"}
+Network 1:
+
+$$
+\begin{split}
+h_1 &= \sigma(\theta_{10} + \theta_{11}x) \\
+h_2 &= \sigma(\theta_{20} + \theta_{21}x) \\
+h_3 &= \sigma(\theta_{30} + \theta_{31}x)
+\end{split}
+$$
+
+$$
+y = \phi_0 + \phi_1h_1 + \phi_2h_2 + \phi_3h_3
+$$
+:::
+
+::: {layout="[16, 42, 42]" layout-valign="center"}
+Network 2:
+
+$$
+\begin{split}
+h_1^\prime &= \sigma(\theta_{10}^\prime + \theta_{11}^\prime y) \\
+h_2^\prime &= \sigma(\theta_{20}^\prime + \theta_{21}^\prime y) \\
+h_3^\prime &= \sigma(\theta_{30}^\prime + \theta_{31}^\prime y)
+\end{split}
+$$
+
+$$
+y^\prime = \phi_0^\prime + \phi_1^\prime h_1 + \phi_2^\prime h_2 + \phi_3^\prime h_3
+$$
+:::
+
+Hidden units of the second network in terms of the first:
+$$
+\begin{split}
+h_1^\prime &= \sigma(\theta_{10}^\prime + \theta_{11}^\prime y) = \sigma\left(\theta_{10}^\prime + \theta_{11}^\prime \phi_0 + \theta_{11}^\prime \phi_1h_1 + \theta_{11}^\prime\phi_2h_2 + \theta_{11}^\prime\phi_3h_3 \right) \\
+h_2^\prime &= \sigma(\theta_{20}^\prime + \theta_{21}^\prime y) = \sigma\left(\theta_{20}^\prime + \theta_{21}^\prime \phi_0 + \theta_{21}^\prime \phi_1h_1 + \theta_{21}^\prime\phi_2h_2 + \theta_{21}^\prime\phi_3h_3 \right) \\
+h_3^\prime &= \sigma(\theta_{30}^\prime + \theta_{31}^\prime y) = \sigma\left(\theta_{30}^\prime + \theta_{31}^\prime \phi_0 + \theta_{31}^\prime \phi_1h_1 + \theta_{31}^\prime\phi_2h_2 + \theta_{31}^\prime\phi_3h_3 \right) 
+\end{split}
+$$
+
+which we can rewrite as
+
+$$
+\begin{split}
+h_1^\prime &= \sigma\left(\psi_{10} + \psi_{11}h_1 + \psi_{12}h_2 + \psi_{13}h_3 \right) \\
+h_2^\prime &= \sigma\left(\psi_{20} + \psi_{21}h_1 + \psi_{22}h_2 + \psi_{23}h_3 \right) \\
+h_3^\prime &= \sigma\left(\psi_{30} + \psi_{31}h_1 + \psi_{32}h_2 + \psi_{33}h_3 \right) 
+\end{split}
+$$
+
+### Two-layer network
+
+::: {layout="[50, 50]" layout-valign="center"}
+$$
+\begin{split}
+h_1 &= \sigma(\theta_{10} + \theta_{11}x) \\
+h_2 &= \sigma(\theta_{20} + \theta_{21}x) \\
+h_3 &= \sigma(\theta_{30} + \theta_{31}x)
+\end{split}
+$$ {#eq-first}
+
+$$
+\begin{split}
+h_1^\prime &= \sigma\left(\psi_{10} + \psi_{11}h_1 + \psi_{12}h_2 + \psi_{13}h_3 \right) \\
+h_2^\prime &= \sigma\left(\psi_{20} + \psi_{21}h_1 + \psi_{22}h_2 + \psi_{23}h_3 \right) \\
+h_3^\prime &= \sigma\left(\psi_{30} + \psi_{31}h_1 + \psi_{32}h_2 + \psi_{33}h_3 \right) 
+\end{split}
+$$ {#eq-preact}
+:::
+
+$$
+y^\prime = \phi_0^\prime + \phi_1^\prime h_1^\prime + \phi_2^\prime h_2^\prime + \phi_3^\prime h_3^\prime
+$$ {#eq-final}
+
+---
+
+![Two layer fully connected neural network](assets/images/DeepTwoLayer.svg){#fig-deeptwolayer .lightbox width=100% fig-align="center"}
+
+1. The three hidden units $h_1$, $h_2$, and $h_3$ in the first layer are computed as usual by 
+forming linear functions of the input and passing these through ReLU activation functions (@eq-first).
+2. The pre-activations at the second layer are computed by taking three new linear functions 
+of these hidden units (arguments of the activation functions in @eq-preact). At this point, we 
+effectively have a shallow network with three outputs; we have computed three piecewise linear 
+functions with the "joints" between linear regions in the same places.
+3. At the second hidden layer, another ReLU function $\sigma(\cdot)$ is applied to each function 
+(@eq-preact), which clips them and adds new "joints" to each.
+4. The final output is a linear combination of these hidden units (@eq-final).
+
+* Regardless, it's important not to lose sight of the fact that this is still merely an equation 
+relating input $x$ to output $y^\prime$. Indeed, we can combine equations @eq-first--@eq-final 
+to get one expression:
+
+$$
+\begin{split}
+y^\prime &= \phi_0^\prime + \phi_1^\prime \sigma\left( \psi_{10} + \psi_{11}\sigma(\theta_{10} + \theta_{11}x) + \psi_{12}\sigma(\theta_{20} + \theta_{21}x) + \psi_{13}\sigma(\theta_{30} + \theta_{31}x) \right) \\
+&\quad + \, \phi_2^\prime \sigma \left( \psi_{20} + \psi_{21}\sigma(\theta_{10} + \theta_{11}x) + \psi_{22}\sigma(\theta_{20} + \theta_{21}x) + \psi_{23}\sigma(\theta_{30} + \theta_{31}x) \right) \\
+&\quad + \, \phi_3^\prime \sigma \left( \psi_{30} + \psi_{31}\sigma(\theta_{10} + \theta_{11}x) + \psi_{32}\sigma(\theta_{20} + \theta_{21}x) + \psi_{33}\sigma(\theta_{30} + \theta_{31}x) \right).
+\end{split}
+$$
+
+although this is admittedly rather difficult to understand.
+
+![
+Computation for the deep network in @fig-deeptwolayer.
+](assets/images/DeepBuildUp.svg){.lightbox width=80% fig-align="center"}
+
+::: {.callout-tip}
+### Hyperparameters
+_Hyperparameters_ are parameters that are chosen before the training of the network such as
+
+* $K$ layers: [depth of the network]{style="color: orange;"}
+* $D_k$ hidden units/neurons per layer: [width of the network]{style="color: orange;"}
+
+Typically different hyperparameters are probed by retraining: [hyperparameter optimization]{style="color: orange;"}
+:::
+
+
+### Matrix notation
+
+$$
+\begin{aligned}
+\begin{split}
+h_1 &= \sigma(\theta_{10} + \theta_{11}x) \\
+h_2 &= \sigma(\theta_{20} + \theta_{21}x) \\
+h_3 &= \sigma(\theta_{30} + \theta_{31}x)
+\end{split}
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bmat{
+  h_1 \\ h_2 \\ h_3
+} = \bm{\sigma}\left(
+  \bmat{
+    \theta_{10} \\ \theta_{20} \\ \theta_{30}
+  } + 
+  \bmat{
+    \theta_{11} \\ \theta_{21} \\ \theta_{31}
+  } x
+\right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\begin{split}
+h_1^\prime &= \sigma\left(\psi_{10} + \psi_{11}h_1 + \psi_{12}h_2 + \psi_{13}h_3 \right) \\
+h_2^\prime &= \sigma\left(\psi_{20} + \psi_{21}h_1 + \psi_{22}h_2 + \psi_{23}h_3 \right) \\
+h_3^\prime &= \sigma\left(\psi_{30} + \psi_{31}h_1 + \psi_{32}h_2 + \psi_{33}h_3 \right) 
+\end{split}
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bmat{
+  h_1^\prime \\ h_2^\prime \\ h_3^\prime
+} = \bm{\sigma}\left(
+  \bmat{
+    \psi_{10} \\ \psi_{20} \\ \psi_{30}
+  } + 
+  \bmat{
+    \psi_{11} & \psi_{12} & \psi_{13} \\ 
+    \psi_{21} & \psi_{22} & \psi_{23} \\ 
+    \psi_{31} & \psi_{32} & \psi_{33}
+  }
+  \bmat{
+    h_1 \\ h_2 \\ h_3
+  } 
+\right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+y^\prime = \phi_0^\prime + \phi_1^\prime h_1^\prime + \phi_2^\prime h_2^\prime + \phi_3^\prime h_3^\prime
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+y^\prime = \phi_0^\prime + \bmat{\phi_1^\prime & \phi_2^\prime & \phi_3^\prime}\bmat{h_1^\prime \\ h_2^\prime \\ h_3^\prime}
+\end{aligned}
+$$
+
+---
+
+$$
+\begin{aligned}
+\begin{split}
+\bmat{
+  h_1 \\ h_2 \\ h_3
+} = \bm{\sigma}\left(
+  \bmat{
+    \theta_{10} \\ \theta_{20} \\ \theta_{30}
+  } + 
+  \bmat{
+    \theta_{11} \\ \theta_{21} \\ \theta_{31}
+  } x
+\right)
+\end{split}
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bm{h} = \bm{\sigma}\left( \bm{\theta}_0 + \bm{\theta}x \right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\begin{split}
+\bmat{
+  h_1^\prime \\ h_2^\prime \\ h_3^\prime
+} = \bm{\sigma}\left(
+  \bmat{
+    \psi_{10} \\ \psi_{20} \\ \psi_{30}
+  } + 
+  \bmat{
+    \psi_{11} & \psi_{12} & \psi_{13} \\ 
+    \psi_{21} & \psi_{22} & \psi_{23} \\ 
+    \psi_{31} & \psi_{32} & \psi_{33}
+  }
+  \bmat{
+    h_1 \\ h_2 \\ h_3
+  } 
+\right)
+\end{split}
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bm{h}^\prime = \bm{\sigma}\left( \bm{\psi}_0 + \bm{\Psi}\bm{h} \right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+y^\prime = \phi_0^\prime + \bmat{\phi_1^\prime & \phi_2^\prime & \phi_3^\prime}\bmat{h_1^\prime \\ h_2^\prime \\ h_3^\prime}
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+y = \phi_0^\prime + \bm{\phi}^\prime \bm{h}^\prime
+\end{aligned}
+$$
+
+---
+
+$$
+\begin{aligned}
+\bm{h} = \bm{\sigma}\left( \bm{\theta}_0 + \bm{\theta}x \right)
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bm{h}_1 = \sigma\left(\bm{\beta}_0 + \bm{\Omega}_0 \bm{x} \right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+\bm{h}^\prime = \bm{\sigma}\left( \bm{\psi}_0 + \bm{\Psi}\bm{h} \right)
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bm{h}_2 = \sigma\left( \bm{\beta}_1 + \bm{\Omega}_1 \bm{h}_1 \right)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+y = \phi_0^\prime + \bm{\phi}^\prime \bm{h}^\prime
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xrightarrow{\hspace{1cm}}}} \quad 
+\bm{y} = \bm{\beta}_2 + \bm{\Omega}_2\bm{h}_2
+\end{aligned}
+$$
+
+:::{.callout-note}
+### General equations for a deep fully-connected $K$-layer neural network
+Let $\bm{h}_0 = \bm{x}$, where $\bm{x}$ is the input to the neural network.
+$$
+\bm{h}_{k+1} = \sigma\left(\bm{\beta}_{k} + \bm{\Omega}_{k}\bm{h}_k\right), \;\; k = 0, \ldots, K-1; \quad \bm{y} = \bm{\beta}_K + \bm{\Omega}_K\bm{h}_K.
+$$
+:::
+
+![](assets/images/DeepKLayer.svg){.lightbox width=80% fig-align="center"}
+
+
+### Shallow vs. deep neural networks
+
+The best results are achieved by deep neural netws with many layers.
+
+* 50-1000 layers for many applications
+* Best results in 
+$$
+\begin{rcases}
+\text{• Computer vision} \\
+\text{• Natural language processing} \\
+\text{• Graph neural networks} \\
+\text{• Generative models} \\
+\text{• Reinforcement Learning}
+\end{rcases} 
+\quad 
+\begin{array}{l} 
+\text{All use deep networks} \\ 
+\text{What is the reason?}
+\end{array}
+$$
+
+1. Ability to approximate different functions?
+
+Both obey the universal approximation theorem.
+
+_Argument_: One layer is enough, and deep netwoorks could arrange for the other layers to compute the identity function.
+
+2. Number of linear regions per parameter?
+
+![](assets/images/DeepParams.svg){.lightbox width=80% fig-align="center"}
+
+* Deep networks create many more regions per parameter
+* But, there are dependencies between them
+  - Perhaps symmetries in the real-world help? Unknown.
+
+3. Depth efficiency?
+
+* There are some known functions that require a shallow network with exponentially more hidden units than a deep network to achieve an equivalent approximation.
+* This is known as the [depth efficiency]{style="color: orange;"} of deep networks.
+* But do the real-world functions we want to approximate have this property? Unknown.
+
+4. Large structured networks
+
+* Think about images as input - might be 1M pixels.
+* Fully connected networks are not practical.
+* Solution is to have weights that only operate locally, and share across image.
+* This idea leads to [convolutional networks]{style="color: orange;"}.
+* Gradually integrate information from across the image - needs multiple layers.
+
+5. Fitting and generalization
+
+* Fitting of deep models seems to be easier up to about 20 layers
+* Then needs various tricks to train deeper networks, so fitting becomes harder.
+* Generalization is good in deep networks. Why?
+
+![](assets/images/WhyGDResults.svg){.lightbox width=70% fig-align="center"}
+
+
+## Loss Functions
+
+
+:::
