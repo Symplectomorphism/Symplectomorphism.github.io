@@ -322,6 +322,9 @@ window.Quarto = {
 $$
 % Define your custom commands here
 \newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\S}{\mathbb{S}}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\S}{\mathbb{S}}
 \newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
@@ -334,6 +337,7 @@ $$
 \newcommand{\bm}[1]{\boldsymbol{#1}}
 \newcommand{\nicefrac}[2]{{}^{#1}\!/_{\!#2}}
 \newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
 $$
 </div>
 
@@ -357,6 +361,8 @@ $$
 
 
 <div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Deep Neural Networks</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Loss Functions</a></li></ul>
@@ -824,6 +830,182 @@ y = \phi_0^\prime + \bm{\phi}^\prime \bm{h}^\prime
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 
+<ul>
+<li><p>Training dataset of <span class="math inline">\(I\)</span> pairs of input/output examples: <span class="math inline">\(\left\{\bm{x}_i, \bm{y}_i\right\}_{i=1}^I\)</span></p></li>
+<li><p><span style="color: orange;">Loss function</span> measures how bad the model performs <span class="math inline">\(\mc{L}(\bm{\phi}) \triangleq \mc{L}\left(\bm{\phi}, f(\bm{x}; \bm{\phi}), \left\{\bm{x}_i, \bm{y}_i\right\}_{i=1}^I\right)\)</span></p></li>
+<li><p>Find the parameters that minimize the loss: <span class="math inline">\(\hat{\bm{\phi}} = \argmin_{\bm{\phi}}\; \mc{L}(\bm{\phi})\)</span></p></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/regression.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Univariate regression problem (one output, real value)"><img src="assets/images/regression.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Univariate regression problem (one output, real value)"></a></p>
+</figure>
+</div>
+<figcaption>Univariate regression problem (one output, real value)</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/graph_regression.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="Multivariate regression problem (multiple outputs, real value)"><img src="assets/images/graph_regression.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Multivariate regression problem (multiple outputs, real value)"></a></p>
+</figure>
+</div>
+<figcaption>Multivariate regression problem (multiple outputs, real value)</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/text_classification.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="Binary classification problem (two discrete classes)"><img src="assets/images/text_classification.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Binary classification problem (two discrete classes)"></a></p>
+</figure>
+</div>
+<figcaption>Binary classification problem (two discrete classes)</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/music_genre_classification.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-13" title="Multiclass classification problem (discrete classes, more that two possible values)"><img src="assets/images/music_genre_classification.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Multiclass classification problem (discrete classes, more that two possible values)"></a></p>
+</figure>
+</div>
+<figcaption>Multiclass classification problem (discrete classes, more that two possible values)</figcaption>
+</figure>
+</div>
+<section id="maximum-likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="maximum-likelihood">Maximum likelihood</h3>
+<ul>
+<li><del>
+Model predicts output <span class="math inline">\(\bm{y}\)</span> given input <span class="math inline">\(\bm{x}\)</span>.
+</del></li>
+<li>Model predicts a <span style="color: orange;">conditional probability distribution</span>: <span class="math inline">\(\P(\bm{y} \mid \bm{x})\)</span> over outputs <span class="math inline">\(\bm{y}\)</span> given inputs <span class="math inline">\(\bm{x}\)</span>.</li>
+<li>Loss function aims to make the outputs have high probability!</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/LossDataTypes.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-14" title="a) Regression task, where the goal is to predict a \R-valued output y from the input x based on training data \{x_i, y_i\} (orange points). For each input value x, the ML model predicts a distribution \P(y \mid x) over the output y \in \R (cyan curves show distributions for x = 2.0 and x=7.0). Minimizing the loss function corresponds to maximizing the probability of the training outputs y_i under the distribution predicted from the corresponding inputs x_i. b) To predict discrete classes y \in \{1, 2, 3, 4\} in a classification task, we use a discrete probability distribution, so the model predicts a different histogram over the four possible values of y_i for each value of x_i. c) To predict counts y \in \{0, 1, 2, \ldots\} and d) direction y \in (-\pi, \pi], we use distributions defined over positive integers and circular domains, respectively."><img src="assets/images/LossDataTypes.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="a) Regression task, where the goal is to predict a \R-valued output y from the input x based on training data \{x_i, y_i\} (orange points). For each input value x, the ML model predicts a distribution \P(y \mid x) over the output y \in \R (cyan curves show distributions for x = 2.0 and x=7.0). Minimizing the loss function corresponds to maximizing the probability of the training outputs y_i under the distribution predicted from the corresponding inputs x_i. b) To predict discrete classes y \in \{1, 2, 3, 4\} in a classification task, we use a discrete probability distribution, so the model predicts a different histogram over the four possible values of y_i for each value of x_i. c) To predict counts y \in \{0, 1, 2, \ldots\} and d) direction y \in (-\pi, \pi], we use distributions defined over positive integers and circular domains, respectively."></a></p>
+</figure>
+</div>
+<figcaption>a) Regression task, where the goal is to predict a <span class="math inline">\(\R\)</span>-valued output <span class="math inline">\(y\)</span> from the input <span class="math inline">\(x\)</span> based on training data <span class="math inline">\(\{x_i, y_i\}\)</span> (orange points). For each input value <span class="math inline">\(x\)</span>, the ML model predicts a distribution <span class="math inline">\(\P(y \mid x)\)</span> over the output <span class="math inline">\(y \in \R\)</span> (cyan curves show distributions for <span class="math inline">\(x = 2.0\)</span> and <span class="math inline">\(x=7.0\)</span>). Minimizing the loss function corresponds to maximizing the probability of the training outputs <span class="math inline">\(y_i\)</span> under the distribution predicted from the corresponding inputs <span class="math inline">\(x_i\)</span>. b) To predict discrete classes <span class="math inline">\(y \in \{1, 2, 3, 4\}\)</span> in a classification task, we use a discrete probability distribution, so the model predicts a different histogram over the four possible values of <span class="math inline">\(y_i\)</span> for each value of <span class="math inline">\(x_i\)</span>. c) To predict counts <span class="math inline">\(y \in \{0, 1, 2, \ldots\}\)</span> and d) direction <span class="math inline">\(y \in (-\pi, \pi]\)</span>, we use distributions defined over positive integers and circular domains, respectively.</figcaption>
+</figure>
+</div>
+<section id="computing-a-distribution-over-outputs" class="level4">
+<h4 class="anchored" data-anchor-id="computing-a-distribution-over-outputs">Computing a distribution over outputs</h4>
+<ol type="1">
+<li>Pick a known distribution to model output <span class="math inline">\(y\)</span> with parameters <span class="math inline">\(\theta\)</span>
+<ul>
+<li>Example: Normal distribution <span class="math inline">\(\mc{N}(y; \bm{{\theta}}) = \mc{N}(y; \mu, \sigma^2)\)</span></li>
+</ul></li>
+<li>Use model to precit the parameters <span class="math inline">\(\bm{\theta}\)</span> of this probability distribution.</li>
+</ol>
+</section>
+<section id="maximum-likelihood-criterion" class="level4">
+<h4 class="anchored" data-anchor-id="maximum-likelihood-criterion">Maximum likelihood criterion</h4>
+<p>We choose the model parameters <span class="math inline">\(\bm{\phi}\)</span> so that they maximize the combined probability across all <span class="math inline">\(I\)</span> training examples:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\begin{split}
+\hat{\bm{\phi}} &amp;= \argmax_\phi \left[ \prod_{i=1}^I \P(\bm{y}_i \mid \bm{x}_i; \bm{\theta}_i)\right] \\
+&amp;= \argmax_\phi \left[ \prod_{i=1}^I \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi}))\right]
+\end{split}
+\end{aligned}
+\]</span></p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Assumptions: independent and identically distributed (i.i.d)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>The data is identically distributed</li>
+<li>Conditional distributions <span class="math inline">\(\P(\bm{y}_i \mid \bm{x}_i)\)</span> of the output given the input are <span style="color: DodgerBlue;">independent</span> so the total likelihood of the training data decomposes as <span class="math display">\[
+\P(\bm{y}_1, \bm{y}_2, \ldots, \bm{y}_I \mid \bm{x}_1, \bm{x}_2, \ldots, \bm{x}_I) = \prod_{i=1}^I \P(\bm{y}_i \mid \bm{x}_i).
+\]</span></li>
+</ol>
+</div>
+</div>
+</section>
+<section id="maximizing-log-likelihood" class="level4">
+<h4 class="anchored" data-anchor-id="maximizing-log-likelihood">Maximizing log-likelihood</h4>
+<ul>
+<li>Each term <span class="math inline">\(\P(\bm{y}_i \mid f(\bm{x}_i; \bm{\phi}))\)</span> can be small, so the product of many of these is numerically unstable (too small).</li>
+<li>Instead, we (equivalently) maximize the logarithm of the likelihood:</li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+\begin{split}
+\hat{\bm{\phi}} &amp;= \argmax_\phi \left[ \prod_{i=1}^I \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi}))\right] \\
+&amp;= \argmax_\phi \left[ \log \left( \prod_{i=1}^I \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right] \\
+&amp;= \argmax_\phi \left[  \sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right].
+\end{split}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>The log-likelihood has the practical advantage of using a sum of terms, not a product, so representing it with finite precision is not problematic.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/LossLog.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-15" title="The logarithm is a monotonically increasing function. Hence, it preserves the extrema locations."><img src="assets/images/LossLog.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="The logarithm is a monotonically increasing function. Hence, it preserves the extrema locations."></a></p>
+</figure>
+</div>
+<figcaption>The logarithm is a monotonically increasing function. Hence, it preserves the extrema locations.</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>Minimizing negative log-likelihood
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>By convention, we minimize things (i.e., a loss) <span class="math display">\[
+\begin{aligned}
+\begin{split}
+\hat{\bm{\phi}} &amp;= \argmax_\phi \left[  \sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right] \\
+&amp;= \argmin_\phi \left[ -\sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right] \\
+&amp;= \argmin_\phi \; \mc{L}(\bm{\phi}).
+\end{split}
+\end{aligned}
+\]</span></p>
+</div>
+</div>
+</section>
+<section id="inference" class="level4">
+<h4 class="anchored" data-anchor-id="inference">Inference</h4>
+<ul>
+<li>The network no longer directly predicts the outputs <span class="math inline">\(\bm{y}\)</span> but instead a probability distribution over <span class="math inline">\(\bm{y}\)</span>.</li>
+<li>To obtain a point estimate, we (typically, not necessarily) return the maximum of the distribution <span class="math display">\[
+\hat{\bm{y}} = \argmax_y \; \P(\bm{y} \mid f(\bm{x}; \hat{\bm{\phi}})).
+\]</span></li>
+<li>Often, it is possible to find a closed-form expression for this in terms of the distribution parameters <span class="math inline">\(\bm{\theta}\)</span>, predicted by the model.</li>
+</ul>
+</section>
+</section>
+<section id="recipe-for-constructing-loss-functions" class="level3">
+<h3 class="anchored" data-anchor-id="recipe-for-constructing-loss-functions">Recipe for constructing loss functions</h3>
+<ol type="1">
+<li>Choose a suitable probability distriburtion <span class="math inline">\(\P(\bm{y} \mid \bm{\theta})\)</span> defined over the domain of the predictions <span class="math inline">\(\bm{y}\)</span> with distribution parameters <span class="math inline">\(\bm{\theta}\)</span>.</li>
+<li>Set the ML model <span class="math inline">\(f(\bm{x}; \bm{\phi})\)</span> to predict one or more of these parameters so <span class="math inline">\(\bm{\theta} = f(\bm{x}; \bm{\phi})\)</span>.</li>
+<li>To train the model, find the network parameters <span class="math inline">\(\hat{\bm{\phi}}\)</span> that minimize the negative log-likelihood loss function over the training dataset pairs <span class="math inline">\(\{\bm{x}_i, \bm{y}_i\}\)</span> <span class="math display">\[
+\hat{\bm{\phi}} = \argmin_\phi \; \mc{L}(\bm{\phi}) = \argmin_\phi \left[ -\sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right].
+\]</span></li>
+<li>To perform inference for a new test example <span class="math inline">\(\bm{x}\)</span>, return either the full distribution <span class="math inline">\(\P(\bm{y} \mid f(\bm{x}; \bm{\phi}))\)</span> or the value where this distribution is maximized.</li>
+</ol>
+</section>
 </div>
 </div>
 </div>

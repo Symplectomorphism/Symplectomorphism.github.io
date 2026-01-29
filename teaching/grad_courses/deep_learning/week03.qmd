@@ -421,5 +421,126 @@ _Argument_: One layer is enough, and deep netwoorks could arrange for the other 
 
 ## Loss Functions
 
+::: {.column-margin}
+Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
+:::
+
+* Training dataset of $I$ pairs of input/output examples: $\left\{\bm{x}_i, \bm{y}_i\right\}_{i=1}^I$
+
+* [Loss function]{style="color: orange;"} measures how bad the model performs $\mc{L}(\bm{\phi}) \triangleq \mc{L}\left(\bm{\phi}, f(\bm{x}; \bm{\phi}), \left\{\bm{x}_i, \bm{y}_i\right\}_{i=1}^I\right)$
+
+* Find the parameters that minimize the loss: $\hat{\bm{\phi}} = \argmin_{\bm{\phi}}\; \mc{L}(\bm{\phi})$
+
+![Univariate regression problem (one output, real value)](assets/images/regression.svg){.lightbox width=80% fig-align="center"}
+
+![Multivariate regression problem (multiple outputs, real value)](assets/images/graph_regression.svg){.lightbox width=80% fig-align="center"}
+
+![Binary classification problem (two discrete classes)](assets/images/text_classification.svg){.lightbox width=80% fig-align="center"}
+
+![Multiclass classification problem (discrete classes, more that two possible values)](assets/images/music_genre_classification.svg){.lightbox width=80% fig-align="center"}
+
+### Maximum likelihood
+
+* <del>Model predicts output $\bm{y}$ given input $\bm{x}$.</del>
+* Model predicts a [conditional probability distribution]{style="color: orange;"}: $\P(\bm{y} \mid \bm{x})$ over outputs $\bm{y}$ given inputs $\bm{x}$.
+* Loss function aims to make the outputs have high probability!
+
+![
+ a) Regression task, where the goal is to predict a $\R$-valued output $y$ from the input $x$ based on training data $\{x_i, y_i\}$ (orange points).
+ For each input value $x$, the ML model predicts a distribution $\P(y \mid x)$ over the output $y \in \R$ (cyan curves show distributions 
+ for $x = 2.0$ and $x=7.0$). Minimizing the loss function corresponds to maximizing the probability of the training outputs $y_i$ under the 
+ distribution predicted from the corresponding inputs $x_i$.
+ b) To predict discrete classes $y \in \{1, 2, 3, 4\}$ in a classification task, we use a discrete probability distribution, so the model 
+ predicts a different histogram over the four possible values of $y_i$ for each value of $x_i$.
+ c) To predict counts $y \in \{0, 1, 2, \ldots\}$ and d) direction $y \in (-\pi, \pi]$, we use distributions defined over positive 
+ integers and circular domains, respectively.
+](assets/images/LossDataTypes.svg){.lightbox width=80% fig-align="center"}
+
+#### Computing a distribution over outputs
+
+1. Pick a known distribution to model output $y$ with parameters $\theta$
+    - Example: Normal distribution $\mc{N}(y; \bm{{\theta}}) = \mc{N}(y; \mu, \sigma^2)$
+2. Use model to precit the parameters $\bm{\theta}$ of this probability distribution.
+
+#### Maximum likelihood criterion
+
+We choose the model parameters $\bm{\phi}$ so that they maximize the combined probability across all $I$ training examples:
+
+$$
+\begin{aligned}
+\begin{split}
+\hat{\bm{\phi}} &= \argmax_\phi \left[ \prod_{i=1}^I \P(\bm{y}_i \mid \bm{x}_i; \bm{\theta}_i)\right] \\
+&= \argmax_\phi \left[ \prod_{i=1}^I \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi}))\right]
+\end{split}
+\end{aligned}
+$$
+
+:::{.callout-warning}
+### Assumptions: independent and identically distributed (i.i.d)
+1. The data is identically distributed
+2. Conditional distributions $\P(\bm{y}_i \mid \bm{x}_i)$ of the output given the input are [independent]{style="color: DodgerBlue;"}
+so the total likelihood of the training data decomposes as 
+$$
+\P(\bm{y}_1, \bm{y}_2, \ldots, \bm{y}_I \mid \bm{x}_1, \bm{x}_2, \ldots, \bm{x}_I) = \prod_{i=1}^I \P(\bm{y}_i \mid \bm{x}_i).
+$$
+:::
+
+
+#### Maximizing log-likelihood
+
+* Each term $\P(\bm{y}_i \mid f(\bm{x}_i; \bm{\phi}))$ can be small, so the product of many of these is numerically unstable (too small).
+* Instead, we (equivalently) maximize the logarithm of the likelihood:
+
+$$
+\begin{aligned}
+\begin{split}
+\hat{\bm{\phi}} &= \argmax_\phi \left[ \prod_{i=1}^I \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi}))\right] \\
+&= \argmax_\phi \left[ \log \left( \prod_{i=1}^I \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right] \\
+&= \argmax_\phi \left[  \sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right].
+\end{split}
+\end{aligned}
+$$
+
+* The log-likelihood has the practical advantage of using a sum of terms, not a product, so representing it with finite precision is not problematic.
+
+![The logarithm is a monotonically increasing function. Hence, it preserves the extrema locations.](assets/images/LossLog.svg){.lightbox width=80% fig-align="center"}
+
+:::{.callout-caution}
+### Minimizing negative log-likelihood
+By convention, we minimize things (i.e., a loss)
+$$
+\begin{aligned}
+\begin{split}
+\hat{\bm{\phi}} &= \argmax_\phi \left[  \sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right] \\
+&= \argmin_\phi \left[ -\sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right] \\
+&= \argmin_\phi \; \mc{L}(\bm{\phi}).
+\end{split}
+\end{aligned}
+$$
+:::
+
+#### Inference
+
+* The network no longer directly predicts the outputs $\bm{y}$ but instead a probability distribution over $\bm{y}$.
+* To obtain a point estimate, we (typically, not necessarily) return the maximum of the distribution
+$$
+\hat{\bm{y}} = \argmax_y \; \P(\bm{y} \mid f(\bm{x}; \hat{\bm{\phi}})).
+$$
+* Often, it is possible to find a closed-form expression for this in terms of the distribution parameters $\bm{\theta}$, predicted by the model.
+
+
+### Recipe for constructing loss functions
+
+1. Choose a suitable probability distriburtion $\P(\bm{y} \mid \bm{\theta})$ defined over the domain of the predictions $\bm{y}$
+with distribution parameters $\bm{\theta}$.
+2. Set the ML model $f(\bm{x}; \bm{\phi})$ to predict one or more of these parameters so $\bm{\theta} = f(\bm{x}; \bm{\phi})$.
+3. To train the model, find the network parameters $\hat{\bm{\phi}}$ that minimize the negative log-likelihood loss function 
+over the training dataset pairs $\{\bm{x}_i, \bm{y}_i\}$
+$$
+\hat{\bm{\phi}} = \argmin_\phi \; \mc{L}(\bm{\phi}) = \argmin_\phi \left[ -\sum_{i=1}^I \log \left( \P(\bm{y}_i \mid f(\bm{x}_i ; \bm{\phi})) \right) \right].
+$$
+4. To perform inference for a new test example $\bm{x}$, return either the full distribution $\P(\bm{y} \mid f(\bm{x}; \bm{\phi}))$ or 
+the value where this distribution is maximized.
+
 
 :::
