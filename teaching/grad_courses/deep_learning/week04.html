@@ -555,7 +555,7 @@ z^{(2)} &amp;= W^{(2)} a^{(1)} + b^{(2)}, \quad a^{(2)} = \sigma(z^{(2)}) \\
 z^{(3)} &amp;= W^{(3)} a^{(2)} + b^{(3)}, \quad a^{(3)} = \sigma(z^{(3)})
 \end{aligned}
 \]</span></p>
-<p>Let the cost function be <span class="math display">\[ C(W, b) = \frac{1}{2} \lVert a^{(3)} - y \rVert^2 = \frac{1}{2} \sum_{j=1}^{10} (a_j^{(3)} - y_j)^2. \]</span></p>
+<p>Let the cost function be <span class="math display">\[ C(W, b) = \frac{1}{2} \lVert a^{(3)} - y \rVert^2 = \frac{1}{2} \sum_{j=1}^{n_o} (a_j^{(3)} - y_j)^2. \]</span></p>
 <p><strong>Back-propagation algorithm:</strong> Systematic way to compute <span class="math display">\[
 \begin{aligned}
 &amp;\pd{C}{w_{ij}^{(3)}}, \quad \pd{C}{b_{j}^{(3)}}, \quad \text{for } i = 1, 2, \ldots, n_o, \; j = 1, 2, \ldots, n_h \\
@@ -579,6 +579,250 @@ z^{(3)} &amp;= W^{(3)} a^{(2)} + b^{(3)}, \quad a^{(3)} = \sigma(z^{(3)})
 </section>
 <section id="compute-delta3-triangleq-pdcz3" class="level3">
 <h3 class="anchored" data-anchor-id="compute-delta3-triangleq-pdcz3">Compute <span class="math inline">\(\delta^{(3)} \triangleq \pd{C}{z^{(3)}}\)</span></h3>
+<p>Let’s start chasing the signal. Note first that</p>
+<p><span class="math display">\[
+\pd{C}{a_j^{(3)}} = \pd{}{a_j^{(3)}} \left( \frac{1}{2} \sum_{k=1}^{n_o} (a_k^{(3)} - y_k)^2 \right) = (a_j^{(3)} - y_j).
+\]</span></p>
+<p>so that</p>
+<p><span class="math display">\[
+\pd{C}{z_j^{(3)}} = \pd{C}{a_j^{(3)}} \pd{a_j^{(3)}}{z_j^{(3)}}
+= \pd{C}{a_j^{(3)}} \sigma'(z_j^{(3)})
+= \left(a_j^{(3)} - y_j\right) \sigma'(z_j^{(3)}).
+\]</span></p>
+<p>In matrix form</p>
+<p><span id="eq-bp1"><span class="math display">\[
+\delta^{(3)} = \underbrace{\left(a^{(3)} - y\right)}_{\nabla_a C = \pd{C}{a^{(3)}}} \odot \sigma'(z^{(3)})
+\tag{1}\]</span></span></p>
+</section>
+<section id="compute-delta2-triangleq-pdcz2" class="level3">
+<h3 class="anchored" data-anchor-id="compute-delta2-triangleq-pdcz2">Compute <span class="math inline">\(\delta^{(2)} \triangleq \pd{C}{z^{(2)}}\)</span></h3>
+<p>By the chain rule, we have</p>
+<p><span class="math display">\[
+\bmat{
+  \pd{C}{a_1^{(2)}} &amp; \pd{C}{a_2^{(2)}} &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}
+} =
+\underbrace{\bmat{
+  \pd{C}{z_1^{(3)}} &amp; \pd{C}{z_2^{(3)}} &amp; \cdots &amp; \pd{C}{z_{n_o}^{(3)}}
+}}_{\left(\delta^{(3)}\right)^\top}
+\underbrace{\bmat{
+  \pd{z_1^{(3)}}{a_1^{(2)}} &amp; \pd{z_2^{(3)}}{a_1^{(2)}} &amp; \cdots &amp; \pd{z_{n_o}^{(3)}}{a_1^{(2)}} \\
+  \pd{z_1^{(3)}}{a_2^{(2)}} &amp; \pd{z_2^{(3)}}{a_2^{(2)}} &amp; \cdots &amp; \pd{z_{n_o}^{(3)}}{a_2^{(2)}} \\
+  \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+  \pd{z_1^{(3)}}{a_{n_h}^{(2)}} &amp; \pd{z_2^{(3)}}{a_{n_h}^{(2)}} &amp; \cdots &amp; \pd{z_{n_o}^{(3)}}{a_{n_h}^{(2)}}
+}}_{W^{(3)}}
+\]</span></p>
+<p>Another application of the chain rule gives</p>
+<p><span class="math display">\[
+\begin{aligned}
+\underbrace{\bmat{
+  \pd{C}{z_1^{(2)}} &amp; \pd{C}{z_2^{(2)}} &amp; \cdots &amp; \pd{C}{z_{n_h}^{(2)}}
+}}_{\left(\delta^{(2)}\right)^\top} &amp;=
+\bmat{
+  \pd{C}{a_1^{(2)}}\pd{a_1^{(2)}}{z_1^{(2)}} &amp; \pd{C}{a_2^{(2)}}\pd{a_2^{(2)}}{z_2^{(2)}} &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}\pd{a_{n_h}^{(2)}}{z_{n_h}^{(2)}}
+} \\
+&amp;= \bmat{
+  \pd{C}{a_1^{(2)}}\sigma'(z_1^{(2)}) &amp; \pd{C}{a_2^{(2)}}\sigma'(z_2^{(2)}) &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}\sigma'(z_{n_h}^{(2)})
+} \\
+&amp;= \underbrace{\bmat{
+  \pd{C}{a_1^{(2)}} &amp; \pd{C}{a_2^{(2)}} &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}
+}}_{\left(\delta^{(3)}\right)^\top W^{(3)}} \odot \bmat{
+  \sigma'(z_1^{(2)}) &amp; \sigma'(z_2^{(2)}) &amp; \cdots &amp; \sigma'(z_{n_h}^{(2)})
+}
+\end{aligned}
+\]</span></p>
+<p>Taking the transpose, we obtain <span id="eq-bp2"><span class="math display">\[
+\delta^{(2)} = \left(W^{(3)}\right)^\top \delta^{(3)} \odot \sigma'(z^{(2)}).
+\tag{2}\]</span></span></p>
+</section>
+<section id="compute-pdcb_j3" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcb_j3">Compute <span class="math inline">\(\pd{C}{b_{j}^{(3)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{aligned}
+\pd{C}{b_j^{(3)}} = \sum_{k=1}^{n_o} \pd{C}{z_k^{(3)}} \pd{z_k^{(3)}}{b_j^{(3)}} &amp;= \pd{C}{z_j^{(3)}}\pd{z_j^{(3)}}{b_j^{(3)}} \quad \text{as } z_k^{(3)} = \sum_{\ell=1}^{n_h} w_{k\ell}^{(3)} a_{\ell}^{(2)} + b_k^{(3)} \\
+&amp;= \pd{C}{z_j^{(3)}} \cdot 1 \quad \text{as } z_j^{(3)} = \sum_{\ell=1}^{n_h} w_{j\ell}^{(3)} a_{\ell}^{(2)} + b_j^{(3)}.
+\end{aligned}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp3"><span class="math display">\[
+\pd{C}{b^{(3)}} = \bmat{
+  \pd{C}{b_1^{(3)}} \\
+  \pd{C}{b_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{b_{n_o}^{(3)}}
+} = \bmat{
+  \pd{C}{z_1^{(3)}} \\
+  \pd{C}{z_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{z_{n_o}^{(3)}}
+} = \delta^{(3)}.
+\tag{3}\]</span></span></p>
+</section>
+<section id="compute-pdcw_ij3" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcw_ij3">Compute <span class="math inline">\(\pd{C}{w_{ij}^{(3)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{alignedat}{2}
+\pd{C}{w_{ij}^{(3)}} &amp;= \mathrlap{\sum_{k=1}^{n_o} \pd{C}{z_k^{(3)}} \pd{z_k^{(3)}}{w_{ij}^{(3)}}} \\
+&amp;= \pd{C}{z_j^{(3)}} \pd{z_j^{(3)}}{w_{ij}^{(3)}} &amp;&amp; \quad \text{as} \quad z_k^{(3)} = \sum_{\ell=1}^{n_h} w_{k\ell}^{(3)} a_{\ell}^{(2)} + b_k^{(3)} \\
+&amp;= \pd{C}{z_j^{(3)}} \cdot a_i^{(2)} &amp;&amp; \quad \text{as} \quad z_j^{(3)} = \sum_{\ell=1}^{n_h} w_{j\ell}^{(3)} a_{\ell}^{(2)} + b_j^{(3)}.
+\end{alignedat}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp4"><span class="math display">\[
+\pd{C}{W^{(3)}} = \bmat{
+  \pd{C}{w_{11}^{(3)}} &amp; \pd{C}{w_{12}^{(3)}} &amp; \cdots &amp; \pd{C}{w_{1n_h}^{(3)}} \\
+  \pd{C}{w_{21}^{(3)}} &amp; \pd{C}{w_{22}^{(3)}} &amp; \cdots &amp; \pd{C}{w_{2n_h}^{(3)}} \\
+  \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+  \pd{C}{w_{n_o1}^{(3)}} &amp; \pd{C}{w_{n_o2}^{(3)}} &amp; \cdots &amp; \pd{C}{w_{n_on_h}^{(3)}}
+} = \bmat{
+  \pd{C}{z_1^{(3)}} \\
+  \pd{C}{z_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{z_{n_o}^{(3)}}
+} \bmat{
+  a_1^{(2)} &amp; a_2^{(2)} &amp; \cdots &amp; a_{n_h}^{(2)}
+} = \delta^{(3)} \left(a^{(2)}\right)^\top.
+\tag{4}\]</span></span></p>
+</section>
+<section id="compute-pdcb_j2" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcb_j2">Compute <span class="math inline">\(\pd{C}{b_{j}^{(2)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{aligned}
+\pd{C}{b_j^{(2)}} = \sum_{k=1}^{n_h} \pd{C}{z_k^{(2)}} \pd{z_k^{(2)}}{b_j^{(2)}} &amp;= \pd{C}{z_j^{(2)}}\pd{z_j^{(2)}}{b_j^{(2)}} \quad \text{as } z_k^{(2)} = \sum_{\ell=1}^{n_I} w_{k\ell}^{(2)} a_{\ell}^{(1)} + b_k^{(2)} \\
+&amp;= \pd{C}{z_j^{(2)}} \cdot 1 \quad \text{as } z_j^{(2)} = \sum_{\ell=1}^{n_I} w_{j\ell}^{(2)} a_{\ell}^{(1)} + b_j^{(2)}.
+\end{aligned}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp5"><span class="math display">\[
+\pd{C}{b^{(2)}} = \bmat{
+  \pd{C}{b_1^{(2)}} \\
+  \pd{C}{b_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{b_{n_h}^{(2)}}
+} = \bmat{
+  \pd{C}{z_1^{(2)}} \\
+  \pd{C}{z_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{z_{n_h}^{(2)}}
+} = \delta^{(2)}.
+\tag{5}\]</span></span></p>
+</section>
+<section id="compute-pdcw_ij2" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcw_ij2">Compute <span class="math inline">\(\pd{C}{w_{ij}^{(2)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{alignedat}{2}
+\pd{C}{w_{ij}^{(2)}} &amp;= \mathrlap{\sum_{k=1}^{n_h} \pd{C}{z_k^{(2)}} \pd{z_k^{(2)}}{w_{ij}^{(2)}}} \\
+&amp;= \pd{C}{z_j^{(2)}} \pd{z_j^{(2)}}{w_{ij}^{(2)}} &amp;&amp; \quad \text{as} \quad z_k^{(2)} = \sum_{\ell=1}^{n_I} w_{k\ell}^{(2)} a_{\ell}^{(1)} + b_k^{(2)} \\
+&amp;= \pd{C}{z_j^{(2)}} \cdot a_i^{(1)} &amp;&amp; \quad \text{as} \quad z_j^{(2)} = \sum_{\ell=1}^{n_I} w_{j\ell}^{(2)} a_{\ell}^{(1)} + b_j^{(2)}.
+\end{alignedat}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp6"><span class="math display">\[
+\pd{C}{W^{(2)}} = \bmat{
+  \pd{C}{w_{11}^{(2)}} &amp; \pd{C}{w_{12}^{(2)}} &amp; \cdots &amp; \pd{C}{w_{1n_I}^{(2)}} \\
+  \pd{C}{w_{21}^{(2)}} &amp; \pd{C}{w_{22}^{(2)}} &amp; \cdots &amp; \pd{C}{w_{2n_I}^{(2)}} \\
+  \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+  \pd{C}{w_{n_h1}^{(2)}} &amp; \pd{C}{w_{n_h2}^{(2)}} &amp; \cdots &amp; \pd{C}{w_{n_hn_I}^{(2)}}
+} = \bmat{
+  \pd{C}{z_1^{(2)}} \\
+  \pd{C}{z_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{z_{n_h}^{(2)}}
+} \bmat{
+  a_1^{(1)} &amp; a_2^{(1)} &amp; \cdots &amp; a_{n_I}^{(1)}
+}
+= \delta^{(2)} \left(a^{(1)}\right)^\top.
+\tag{6}\]</span></span></p>
+</section>
+<section id="equations-of-back-propagation" class="level3">
+<h3 class="anchored" data-anchor-id="equations-of-back-propagation">Equations of Back Propagation</h3>
+<p><span class="math display">\[
+C = \frac{1}{2} \| a^{(3)} - y \|^2 = \frac{1}{2} \sum_{j=1}^{n_o} (a_j^{(3)} - y_j)^2
+\]</span></p>
+<p>By <a href="#eq-bp1" class="quarto-xref">Equation&nbsp;1</a> <span class="math display">\[
+\delta^{(3)} = \nabla_a C \odot \sigma'(z^{(3)}) = (a^{(3)} - y) \odot \sigma'(z^{(3)})
+\]</span></p>
+<p>By <a href="#eq-bp3" class="quarto-xref">Equation&nbsp;3</a> <span class="math display">\[
+\pd{C}{b^{(3)}} = \delta^{(3)}
+\]</span></p>
+<p>By <a href="#eq-bp4" class="quarto-xref">Equation&nbsp;4</a> <span class="math display">\[
+\pd{C}{W^{(3)}} = \delta^{(3)} (a^{(2)})^\top
+\]</span></p>
+<p>By <a href="#eq-bp2" class="quarto-xref">Equation&nbsp;2</a> <span class="math display">\[
+\delta^{(2)} = (W^{(3)})^\top \delta^{(3)} \odot \sigma'(z^{(2)})
+\]</span></p>
+<p>By <a href="#eq-bp5" class="quarto-xref">Equation&nbsp;5</a> <span class="math display">\[
+\pd{C}{b^{(2)}} = \delta^{(2)}
+\]</span></p>
+<p>By <a href="#eq-bp6" class="quarto-xref">Equation&nbsp;6</a> <span class="math display">\[
+\pd{C}{W^{(2)}} = \delta^{(2)} (a^{(1)})^\top
+\]</span></p>
+</section>
+<section id="activation-function-calculus" class="level3">
+<h3 class="anchored" data-anchor-id="activation-function-calculus">Activation Function Calculus</h3>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Step Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \begin{cases} 1 &amp; \text{if } z \ge 0 \\ 0 &amp; \text{if } z &lt; 0 \end{cases}, \quad
+\sigma'(z) = \begin{cases} 1 &amp; \text{if } z = 0 \\ 0 &amp; \text{if } z \ne 0 \end{cases}
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Sigmoid Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \frac{1}{1 + e^{-z}}, \quad
+\sigma'(z) = \sigma(z)(1 - \sigma(z))
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Tanh (Hyperbolic Tangent) Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}, \quad
+\sigma'(z) = 1 - \sigma(z)^2
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>ReLU (Rectified Linear Unit) Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \max(0, z), \quad
+\sigma'(z) = \begin{cases} 1 &amp; \text{if } z &gt; 0 \\ 0 &amp; \text{if } z \le 0 \end{cases}
+\]</span></p>
+</div>
+</div>
 </section>
 </div>
 </div>
