@@ -374,7 +374,7 @@ $$
 <div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
 <p>Image credits: <a href="http://neuralnetworksanddeeplearning.com">Deep Learning</a> by Michael Nielsen</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Recognizing handwritten digits</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Demonstrations</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Recognizing handwritten digits</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Backpropagation</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
@@ -432,10 +432,154 @@ f(x) = \left\{ \begin{array}{cl}
 </div>
 </div>
 </div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Short Hand Notation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+a = y(x) =  f(x; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}): \R^{784} \to \R^{10}
+\]</span></p>
+<ul>
+<li>The total number of parameters is <span class="math inline">\(15 \times 784 + 15 + 10 \times 15 + 10 = 11,935\)</span>.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="stochastic-gradient-descent" class="level3">
+<h3 class="anchored" data-anchor-id="stochastic-gradient-descent">Stochastic Gradient Descent</h3>
+<p>Let <span class="math inline">\(\mathcal{D} = \left(x^{(\ell)}, y^{(\ell)}\right)\)</span> for <span class="math inline">\(\ell = 1, \ldots, n\)</span> denote the image-label pairs in the MNIST data set.</p>
+<p>We will use gradient descent to find <span class="math inline">\(W^{(2)} \in \R^{15 \times 784}\)</span>, <span class="math inline">\(b^{(2)} \in \R^{15}\)</span>, <span class="math inline">\(W^{(3)} \in \R^{10 \times 15}\)</span>, <span class="math inline">\(b^{(3)} \in \R^{10}\)</span> that minimize a cost function, say MSE loss: <span class="math display">\[
+\begin{aligned}
+C(W, b) &amp;= \frac{1}{n} \sum_{\ell = 1}^n \frac{1}{2}\lVert f\left(x^{(\ell)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(\ell)} \rVert^2 \\
+&amp;= \frac{1}{n}\sum_{(x,y) \in \mathcal{D}} \underbrace{\frac{1}{2} \lVert f\left(x; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y \rVert^2}_{C_{x, y}}
+\end{aligned}
+\]</span></p>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Weight updates
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\begin{aligned}
+w_{ij}^{(2)} &amp;\leftarrow w_{ij}^{(2)} - \eta \pd{C}{w_{ij}^{(2)}}, \quad b_{j}^{(2)} &amp;\leftarrow b_{j}^{(2)} - \eta \pd{C}{b_{j}^{(2)}} \\
+w_{ij}^{(3)} &amp;\leftarrow w_{ij}^{(3)} - \eta \pd{C}{w_{ij}^{(3)}}, \quad b_{j}^{(3)} &amp;\leftarrow b_{j}^{(3)} - \eta \pd{C}{b_{j}^{(3)}}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>As there are 11,935 weights and biases, each iteration has this many updates!</li>
+</ul>
+</div>
+</div>
+<section id="computational-challenges" class="level4">
+<h4 class="anchored" data-anchor-id="computational-challenges">Computational Challenges</h4>
+<ul>
+<li><p>As <span class="math inline">\(C(W, b) = \frac{1}{n}\sum_{\ell = 1}^n C_{x^\ell, y^\ell}\)</span>, we need to compute <span class="math display">\[
+\nabla C(W, b) = \frac{1}{n}\sum_{\ell = 1}^n \nabla C_{x^{(\ell)}, y^{(\ell)}} \in \R^{11,935}.
+\]</span></p></li>
+<li><p>In other words, for each update of the weights and biases, we need to compute <span class="math display">\[
+\nabla \left(\frac{1}{2} \lVert f\left(x; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y \rVert^2\right) \in \R^{11,935}
+\]</span> for each training image!</p></li>
+<li><p>Notice that <span class="math display">\[
+\frac{1}{n} \sum_{\ell = 1}^n \nabla \left( \frac{1}{2}\lVert f\left(x^{(\ell)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(\ell)} \rVert^2 \right)
+\]</span> is an <strong>average</strong> value of the gradient over all the training images.</p></li>
+<li><p>As <span class="math inline">\(n \simeq 50,000\)</span>, perhaps we can get a good estimate of the average gradient using (say) <span class="math inline">\(100\)</span> training images?</p></li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>SGD in action
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Randomly shuffle the MNIST dataset <span class="math inline">\(\mathcal{D} = \left\{ \left(x^{(1)}, y^{(1)}\right), \ldots, \left(x^{(50,000)}, y^{(50,000)}\right) \right\}\)</span></li>
+<li>Let <span class="math inline">\(m = 100\)</span> be the size of the <strong>mini-batch</strong>.</li>
+<li>Denote by <span class="math inline">\(B^{(k)} = \left\{ \left(x^{(km+1)}, y^{(km+1)}\right), \ldots, \left(x^{((k+1)m)}, y^{((k+1)m)}\right) \right\}\)</span> the <span class="math inline">\(k^{\text{th}}\)</span> mini-batch for <span class="math inline">\(k = 0, \ldots, 499\)</span>.</li>
+<li>Continue to obtain <span class="math inline">\(\nicefrac{n}{m} = 500\)</span> mini-batches.</li>
+</ul>
+<p>The idea is that <span class="math display">\[
+\begin{aligned}
+\nabla C(W, b) &amp;= \frac{1}{n} \sum_{\ell = 1}^n \nabla \left( \frac{1}{2}\lVert f\left(x^{(\ell)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(\ell)} \rVert^2 \right) \\
+&amp;\approx \frac{1}{m} \sum_{j = km+1}^{(k+1)m} \nabla \left( \frac{1}{2}\lVert f\left(x^{(j)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(j)} \rVert^2 \right) \quad \text{(sum over mini-batch k)}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>Estimate the gradient of <span class="math inline">\(C(W, b)\)</span> by averaging the gradients over a mini-batch of data.</li>
+<li>Greatly speeds up learning (updating the weights)</li>
+</ul>
+<p><strong>New updates</strong> <span class="math display">\[
+\begin{aligned}
+w_{ij}^{(2)} &amp;\leftarrow w_{ij}^{(2)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{w_{ij}^{(2)}}, \quad b_{j}^{(2)} &amp;\leftarrow b_{j}^{(2)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{b_{j}^{(2)}} \\
+w_{ij}^{(3)} &amp;\leftarrow w_{ij}^{(3)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{w_{ij}^{(3)}}, \quad b_{j}^{(3)} &amp;\leftarrow b_{j}^{(3)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{b_{j}^{(3)}}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>After running through all the mini-batches, we have updated the weights <span class="math inline">\(\nicefrac{n}{m} = 500\)</span> times and gone through all the MNIST data <strong>once</strong>.
+<ul>
+<li>This is called an <strong>epoch</strong> of training.</li>
+</ul></li>
+<li>Next epoch: Reshuffle the MNIST data and repeat the above.</li>
+<li>After many epochs of training, we hope the neural network can identify handwritten digits.</li>
+</ul>
+</div>
+</div>
+</section>
 </section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
-
+<section id="network-structure" class="level3">
+<h3 class="anchored" data-anchor-id="network-structure">Network Structure</h3>
+<p>We have the following network structure</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_mnist_nn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="assets/images/nielsen_mnist_nn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
+</figure>
+</div>
+<p>corresponding to the following equations <span class="math display">\[
+\begin{aligned}
+z^{(2)} &amp;= W^{(2)} a^{(1)} + b^{(2)}, \quad a^{(2)} = \sigma(z^{(2)}) \\
+z^{(3)} &amp;= W^{(3)} a^{(2)} + b^{(3)}, \quad a^{(3)} = \sigma(z^{(3)})
+\end{aligned}
+\]</span></p>
+<p>Let the cost function be <span class="math display">\[ C(W, b) = \frac{1}{2} \lVert a^{(3)} - y \rVert^2 = \frac{1}{2} \sum_{j=1}^{10} (a_j^{(3)} - y_j)^2. \]</span></p>
+<p><strong>Back-propagation algorithm:</strong> Systematic way to compute <span class="math display">\[
+\begin{aligned}
+&amp;\pd{C}{w_{ij}^{(3)}}, \quad \pd{C}{b_{j}^{(3)}}, \quad \text{for } i = 1, 2, \ldots, n_o, \; j = 1, 2, \ldots, n_h \\
+&amp;\pd{C}{w_{ij}^{(2)}}, \quad \pd{C}{b_{j}^{(2)}}, \quad \text{for } i = 1, 2, \ldots, n_h, \; j = 1, 2, \ldots, n_I.
+\end{aligned}
+\]</span></p>
+<p><strong>Key trick:</strong> First compute <span class="math display">\[
+\delta^{(3)} = \pd{C}{z^{(3)}} = \bmat{
+  \pd{C}{z_1^{(3)}} \\
+  \pd{C}{z_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{z_{n_o}^{(3)}}
+}, \quad
+\delta^{(2)} = \pd{C}{z^{(2)}} = \bmat{
+  \pd{C}{z_1^{(2)}} \\
+  \pd{C}{z_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{z_{n_h}^{(2)}}
+}.
+\]</span></p>
+</section>
+<section id="compute-delta3-triangleq-pdcz3" class="level3">
+<h3 class="anchored" data-anchor-id="compute-delta3-triangleq-pdcz3">Compute <span class="math inline">\(\delta^{(3)} \triangleq \pd{C}{z^{(3)}}\)</span></h3>
+</section>
 </div>
 </div>
 </div>
