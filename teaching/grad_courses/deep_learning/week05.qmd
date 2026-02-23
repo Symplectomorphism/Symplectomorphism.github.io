@@ -454,15 +454,275 @@ accuracy to $97.92\%$.
 :::
 
 
-::: {.callout-warning}
-### More content
-* Dropout
-* Weight Initialization
-* Hyperparameter Selection
-* More Modern Optimizers
+### Dropout
 
-[Continued in this document](assets/misc/Nielsen_Slides_chap3_24.pdf).
+1. Randomly choose $p$ of the hidden neurons to "drop out."
+2. Forward propagate the input $x$ through the modified network.
+3. Backpropagate the error, also through the modified network.
+4. Do this over a mini-batch.
+5. Update the **appropriate** weights and biases.
+
+* Repeat the above on the next minibatch.
+  - That is, randomly choose another $p$ of the hidden neurons to dropout, etc.
+
+![Dropout with $p = 0.5$](assets/images/nielsen_dropout.svg){.lightbox width="80%" fig-align="center"}
+
+* At each update, only a proportion $p$ of the weights are updated.
+* Ater training, run the **full** network.
+  - $\frac{1}{1-p}$ as many hidden neurons will be active compared to training.
+  - Compensate this by scaling the weights **outgoing** from the hidden neurons by $1-p$.
+* We can look at dropout as __averaging__ over different networks.
+* Dropout means that the network learns without relying on being connected to specific other neurons.
+* Dropout makes the model robust to the loss of any individual piece of evidence.
+
+
+### Weight Initialization
+
+:::: {.columns}
+
+::: {.column width="60%"}
+* Initializing the weights as independent standard Gaussian random variables $\mc{N}(0, 1)$ may be naively appropriate.
+* Unfortunately, this is not such a good idea.
+* Consider a binary picture of $1000$ pixels, so $x_j \in \{0, 1\}$ for $j = 1, \ldots, 1000$.
+* Let $z = \sum_{j=1}^{1000} w_j x_j + b$ be the input to one of the hidden neurons.
+* Suppose half the input neurons are on and the other half are off.
+
+$$
+\begin{aligned}
+\E[z] &= \E\left[\sum_{j=1}^{1000} w_j x_j + b\right] = \sum_{j=1}^{1000} \E[w_j] x_j + \E[b] = 0, \\
+\E\left[z^2\right] &= \E\left[\left(\sum_{j=1}^{1000} w_j x_j + b\right)^2\right] = \sum_{j=1}^{1000} \E[w_j^2]x_j^2 + \E[b^2] = 501.
+\end{aligned}
+$$
 :::
+
+::: {.column width="40%" fig-align="center"}
+![ ](assets/images/nielsen_weight_init.svg){.lightbox width="200px" fig-align="center"}
+:::
+
+::::
+
+* Thus, $z = \sum_{j=1}^{1000} w_j x_j + b \sim \mc{N}(0, 501)$. That is, $z$ has a standard deviation of $\sigma = \sqrt{501} \approx 22.4$.
+
+![Bad weight initialization results in high variance of $z$](assets/images/nielsen_weight_init_bad.svg){.lightbox width="80%" fig-align="center"}
+
+* At initialization, we will often have $z \gg 1$ or $z \ll -1$ $\;\Longrightarrow\;$ $\sigma(z) \approx 1$ or $\sigma(z) \approx 0$.
+* Thus $\sigma^\prime(z) \approx 0$, making learning slow.
+  - Slow learning just means that weights do not change much at each update.
+  - Cross-entropy loss only eliminates the problem of $\sigma^\prime(z) \approx 0$ at the **output** layer.
+  - This problem will be at all the hidden layers.
+
+
+#### A better initialization scheme
+
+* Let $n_{\text{in}}$ denote the number of input pixels.
+* Now, choose the weights as independent Gaussian random variables $\mc{N}(0, \frac{1}{n_{\text{in}}})$.
+* Then
+$$
+\sigma^2 = \E\left[z^2\right] = \sum_{j=1}^{1000} \E[w_j^2]x_j^2 + \E[b^2] = 500 \times \frac{1}{1000} + 1 = \frac{3}{2}.
+$$
+
+![
+  Better weight initialization: $\mc{N}(0, \frac{1}{n_{\text{in}}})$ controls the variance of $z$
+](assets/images/nielsen_weight_init_better.svg){.lightbox width="80%" fig-align="center"}
+
+#### Comparison of old and new weight initialization
+
+::: {layout="[50, 50]" layout-valign="center"}
+![
+  $30$ hidden neurons, BCE loss, mini-batch size: 10, $\lambda = 5.0$, $\eta = 0.1$
+](assets/images/nielsen_weight_init_classification_30.svg){.lightbox width="500px" fig-align="center"}
+
+![
+  $100$ hidden neurons, BCE loss, mini-batch size: 10, $\lambda = 5.0$, $\eta = 0.1$
+](assets/images/nielsen_weight_init_classification_100.svg){.lightbox width="500px" fig-align="center"}
+::: 
+
+
+### Choosing Hyperparameters
+
+General approach to choosing hyperparameters is to simplify the problem.
+
+* Eliminate all the data except the digits $0$ and $1$.
+  - This reduces the data by $80\%$, speeding up the training.
+* Try a simple network. Perhaps $[784 10]$ instead of $[784 30 10]$
+* Increase the frequency of monitoring
+  - E.g. try monigoring the validation accuracy after $1000$ images instead of waiting to do so after $50,000$ images (1 epoch).
+* Use fewer validation images.
+  - Instead of computing accuracy on $10,000$ validation images, use only $1000$ images.
+
+Let us fix $30$ hidden neurons, $30$ epochs, mini-batch size: $10$, BCE loss
+
+| $\lambda$ | $\eta$ | Test Speed | Accuracy | Comments |
+|:---:|:---:|:---:|:---:|:---:|
+|$1000.0$ | $10.0$ | Slow | $\nicefrac{967}{10000}$ | |
+|$1000.0$ | $10.0$ | Fast | $\nicefrac{10}{100}$ | Decrease validation dataset size |
+|$20.0$ | $10.0$ | Fast | $\nicefrac{18}{100}$ | Have somthing though not very good |
+|$20.0$ | $100.0$ | Fast | $\nicefrac{10}{100}$ | Back to noise! Need to reduce $\eta$ |
+|$20.0$ | $1.0$ | Fast | $\nicefrac{61}{100}$ | Better! Keep going, adjust other hyperparameters |
+
+![
+  $30$ epochs, mini-batch size: $10$, $\lambda = 5.0$, $50,000$ training images. \
+  $w^{\text{new}} = \left(1 - \frac{\eta \lambda}{n}\right) w^{\text{old}} - \eta \pd{\mc{L}_0}{w}$
+](assets/images/cost_v_lr.png){.lightbox width="80%" fig-align="center"}
+
+Oscillations occur if $\eta$ is too large.
+
+* Theoretically, we want to update the weights until $\pd{\mc{L}_0}{w} = 0$.
+* However, with $\eta$ too large, we can keep overshooting the minimum, i.e. oscillate.
+* If $\eta$ is too small, then it will take "forever" to descent to the minimum value.
+
+::: {.callout-tip}
+### Learning Rate
+* Choose $\eta$ based on the training cost.
+  - The purpose of $\eta$ is to control the step size. 
+  - Monitoring the training cost is the best weay to detect if the step size is too large.
+* First, estimate the **threshold** (maximum value) of $\eta$ as the value at which 
+the cost on the training data decreases during the first few epochs, i.e., the cost 
+should not be oscillating or increasing.
+* For example, try $\eta = 0.01$. If the cost decreases during the first few epochs, then 
+successively try $\eta = 0.1$, $\eta = 1.0$, $\ldots$
+* Keep increasing $\eta$ until the cost oscillates or increases during the first few epochs.
+* If the cost oscillates or increases with $\eta = 0.01$, then successively try 
+$\eta = 0.001$, $\eta = 0.0001$, $\ldots$ until the cost decreases during the first few epochs.
+* The **threshold** is then the largest $\eta$ at which the cost decreases during the first few epochs.
+* To use $\eta$ over many epochs one perhaps divides it by $2$ after (say) $5$ epochs so the 
+steps are smaller as you get closer to the minimum.
+:::
+
+::: {.callout-tip}
+### Early Stopping
+* At the end of each epoch, compute the classification accuracy on the validation data.
+* If the accuracy does not improve for (say) $10$ epochs, stop training.
+  - The stopping rule gives a new hyperparameter.
+:::
+
+::: {.callout-tip}
+### Learning Rate Schedule
+How do we schedule the decreases for the learning rate $\eta$?
+
+* Hold the learning rate constant until the validation accuracy starts to get worse.
+* Then decrease the learning rate by (say) a factor of two.
+* Continue until (say) $\eta$ is $2^{10} = 1024$ times lower than its initial value.
+* Then terminate.
+:::
+
+::: {.callout-note}
+### Regularization Parameter 
+How do we choose $\lambda$?
+
+* Set $\lambda = 0$ and determine the value of $\eta$.
+* Then select a good value of $\lambda$ using the validation data.
+  - Set $\lambda = 1$.
+  - If the accuracy goes up, increase $\lambda$ by a factor of $10$.
+  - Else, decrease $\lambda$ by a factor of $10$.
+:::
+
+
+### Better Optimizers
+
+Recall the update rule for gradient descent:
+
+$$w^{\text{new}} = w^{\text{old}} - \eta \nabla_w \mc{L}(w)$$
+
+#### Gradient Descent via the Hessian
+
+We have the Taylor-series approximation
+
+$$
+\mc{L}(w + \Delta w) \approx \mc{L}(w) + \nabla_w \mc{L}(w)^\top \Delta w + \frac{1}{2} \Delta w^\top H \Delta w, 
+$$
+
+where $H = \nabla_w^2 \mc{L}(w)$ is the Hessian matrix of second-order partial derivatives.
+Let us take the derivative with respect to $\Delta w$ and set equal to zero:
+
+$$
+\pd{\mc{L}(w+\Delta w)}{\Delta w}(w) = \pd{\mc{L}}{w}(w) + \pdd{\mc{L}}{w}(w)\Delta w = 0
+$$
+
+and solve for $\Delta w$:
+
+$$
+\Delta w = -\left( \pdd{\mc{L}}{w}(w) \right)^{-1} \pd{\mc{L}}{w}(w) = -H^{-1} \nabla_w \mc{L}(w)
+$$
+
+This motivates the following update rule, known as the **Newton update rule**:
+
+$$
+w^{\text{new}} = w^{\text{old}} - \eta H^{-1} \nabla_w \mc{L}(w),
+$$
+
+where $\eta$ is chosen so that $\norm{\Delta w}{} = \norm{\eta H^{-1} \nabla_w \mc{L}(w)}{}$ is not too large.
+
+* The Hessian matrix $H \in \S^d$ is a $d \times d$ symmetric matrix, where $d$ is the number of weights in the neural network.
+* Computing the Hessian matrix and its inverse is computationally expensive.
+  - $d$ diagonal elements and $\frac{d(d-1)}{2}$ off-diagonal elements to compute
+  - Requires $d + \frac{d(d-1)}{2} = \frac{d(d+1)}{2}$ computations
+  - E.g. if $d \approx 24,000$, then computing $H$ requires $288 \times 10^6$ computations!
+    - Further, we must then invert this matrix!
+* Hessian approach is thus avoided due to the computations requirements.
+
+#### Momentum Based Gradient Descent
+
+Momentum-based gradient descent uses a similar idea to the Hessian approach, but avoids the computation and inversion of a large matrix.
+
+::: {.callout-important}
+### Key Idea
+* Think of $\mc{L}(w)$ as the potential function of a partical of mass $m$ with $w$ the particle's position.
+* Then $-\nabla_w \mc{L}(w)$ is the force acting on the particle, and $-\nicefrac{1}{m}\nabla_w \mc{L}(w)$ is the acceleration.
+* The change in velocity is $v^{\text{(new)}} - v^{\text{(old)}} = \Delta v = (\Delta t)\nicefrac{1}{m}\nabla_w \mc{L}(w)$, 
+* The change in position is then $w^{\text{(new)}} - w^{\text{(old)}} = \Delta w = (\Delta t) v^{\text{(new)}}$.
+:::
+
+::: {.callout-important}
+### Momentum Based Gradient Descent
+$$
+\begin{aligned}
+v^{\text{(new)}} &= \mu v^{\text{(old)}} - \eta \nabla_w \mc{L}(w)^{(\text{old})} = v^{(old)} - \underbrace{(1-\mu)v^{(old)}}_{\text{viscous friction}} - \eta \nabla_w \mc{L}(w)^{(\text{old})}, && \eta = (\Delta t) \frac{1}{m},\\
+w^{\text{(new)}} &= w^{\text{(old)}} + v^{\text{(new)}}, && \Delta t = 1.
+\end{aligned}
+$$
+:::
+
+* $0 < \mu < 1$ is the **momentum coefficient** hyperparameters.
+* $1 - \mu$ represents the "viscous friction" coefficient.
+* If $\mu = 0$, we simply recover standard gradient descent:
+
+$$
+\begin{aligned}
+v^{\text{(new)}} &= - \eta \nabla_w \mc{L}(w)^{(\text{old})}, \\
+w^{\text{(new)}} &= w^{\text{(old)}} + v^{\text{(new)}}.
+\end{aligned}
+$$
+
+* Define the concetanated vector $\xi = \bmat{v & w}^\top \in \R^{2d}$ and the vector
+$g = \nabla_w \mc{L}(w) \otimes \bmat{1 & 1}^\top \in \R^{2d}$, where $\otimes$ is the Kronecker product.
+* Then the update rule can be written as
+$$
+\xi^{(k+1)} = A \xi^{(k)} - \eta g^{(k)},
+$$
+where
+$$
+A = \bmat{\mu I & 0 \\ \mu I & I}.
+$$
+
+* Rolling out the recursive definition of $\xi^{(k)}$ gives
+$$
+\xi^{(k)} = A^k \xi^{(0)} - \eta \sum_{j=0}^{k-1} A^{k-j-1} g^{(j)}.
+$$
+
+::: {.callout-warning}
+* What is the problem with choosing $\mu > 1$?
+* What is the problem with choosing $\mu < 0$?
+:::
+
+::: {.callout-tip}
+### More content
+[More details can be found in this document](assets/misc/Nielsen_Slides_chap3_24.pdf).
+:::
+
+
+
+
 
 
 ## Spiral Example

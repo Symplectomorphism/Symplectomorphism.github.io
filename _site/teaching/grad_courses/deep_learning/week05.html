@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.8.27">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -40,10 +40,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-dde5a511f69de668eb26e21f44dd46b8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-8402731c99c2101ab41aada8a5804e10.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
 <link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
 <link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
@@ -819,25 +819,448 @@ b &amp;\leftarrow b - \eta \pd{\mc{L}_0}{b}.
 </ul>
 </div>
 </div>
+</section>
+<section id="dropout" class="level3">
+<h3 class="anchored" data-anchor-id="dropout">Dropout</h3>
+<ol type="1">
+<li>Randomly choose <span class="math inline">\(p\)</span> of the hidden neurons to “drop out.”</li>
+<li>Forward propagate the input <span class="math inline">\(x\)</span> through the modified network.</li>
+<li>Backpropagate the error, also through the modified network.</li>
+<li>Do this over a mini-batch.</li>
+<li>Update the <strong>appropriate</strong> weights and biases.</li>
+</ol>
+<ul>
+<li>Repeat the above on the next minibatch.
+<ul>
+<li>That is, randomly choose another <span class="math inline">\(p\)</span> of the hidden neurons to dropout, etc.</li>
+</ul></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_dropout.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-17" title="Dropout with p = 0.5"><img src="assets/images/nielsen_dropout.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Dropout with p = 0.5"></a></p>
+</figure>
+</div>
+<figcaption>Dropout with <span class="math inline">\(p = 0.5\)</span></figcaption>
+</figure>
+</div>
+<ul>
+<li>At each update, only a proportion <span class="math inline">\(p\)</span> of the weights are updated.</li>
+<li>Ater training, run the <strong>full</strong> network.
+<ul>
+<li><span class="math inline">\(\frac{1}{1-p}\)</span> as many hidden neurons will be active compared to training.</li>
+<li>Compensate this by scaling the weights <strong>outgoing</strong> from the hidden neurons by <span class="math inline">\(1-p\)</span>.</li>
+</ul></li>
+<li>We can look at dropout as <strong>averaging</strong> over different networks.</li>
+<li>Dropout means that the network learns without relying on being connected to specific other neurons.</li>
+<li>Dropout makes the model robust to the loss of any individual piece of evidence.</li>
+</ul>
+</section>
+<section id="weight-initialization" class="level3">
+<h3 class="anchored" data-anchor-id="weight-initialization">Weight Initialization</h3>
+<div class="columns">
+<div class="column" style="width:60%;">
+<ul>
+<li>Initializing the weights as independent standard Gaussian random variables <span class="math inline">\(\mc{N}(0, 1)\)</span> may be naively appropriate.</li>
+<li>Unfortunately, this is not such a good idea.</li>
+<li>Consider a binary picture of <span class="math inline">\(1000\)</span> pixels, so <span class="math inline">\(x_j \in \{0, 1\}\)</span> for <span class="math inline">\(j = 1, \ldots, 1000\)</span>.</li>
+<li>Let <span class="math inline">\(z = \sum_{j=1}^{1000} w_j x_j + b\)</span> be the input to one of the hidden neurons.</li>
+<li>Suppose half the input neurons are on and the other half are off.</li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+\E[z] &amp;= \E\left[\sum_{j=1}^{1000} w_j x_j + b\right] = \sum_{j=1}^{1000} \E[w_j] x_j + \E[b] = 0, \\
+\E\left[z^2\right] &amp;= \E\left[\left(\sum_{j=1}^{1000} w_j x_j + b\right)^2\right] = \sum_{j=1}^{1000} \E[w_j^2]x_j^2 + \E[b^2] = 501.
+\end{aligned}
+\]</span></p>
+</div><div class="column" data-fig-align="center" style="width:40%;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_weight_init.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-18"><img src="assets/images/nielsen_weight_init.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" width="200"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>Thus, <span class="math inline">\(z = \sum_{j=1}^{1000} w_j x_j + b \sim \mc{N}(0, 501)\)</span>. That is, <span class="math inline">\(z\)</span> has a standard deviation of <span class="math inline">\(\sigma = \sqrt{501} \approx 22.4\)</span>.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_weight_init_bad.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-19" title="Bad weight initialization results in high variance of z"><img src="assets/images/nielsen_weight_init_bad.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Bad weight initialization results in high variance of z"></a></p>
+</figure>
+</div>
+<figcaption>Bad weight initialization results in high variance of <span class="math inline">\(z\)</span></figcaption>
+</figure>
+</div>
+<ul>
+<li>At initialization, we will often have <span class="math inline">\(z \gg 1\)</span> or <span class="math inline">\(z \ll -1\)</span> <span class="math inline">\(\;\Longrightarrow\;\)</span> <span class="math inline">\(\sigma(z) \approx 1\)</span> or <span class="math inline">\(\sigma(z) \approx 0\)</span>.</li>
+<li>Thus <span class="math inline">\(\sigma^\prime(z) \approx 0\)</span>, making learning slow.
+<ul>
+<li>Slow learning just means that weights do not change much at each update.</li>
+<li>Cross-entropy loss only eliminates the problem of <span class="math inline">\(\sigma^\prime(z) \approx 0\)</span> at the <strong>output</strong> layer.</li>
+<li>This problem will be at all the hidden layers.</li>
+</ul></li>
+</ul>
+<section id="a-better-initialization-scheme" class="level4">
+<h4 class="anchored" data-anchor-id="a-better-initialization-scheme">A better initialization scheme</h4>
+<ul>
+<li>Let <span class="math inline">\(n_{\text{in}}\)</span> denote the number of input pixels.</li>
+<li>Now, choose the weights as independent Gaussian random variables <span class="math inline">\(\mc{N}(0, \frac{1}{n_{\text{in}}})\)</span>.</li>
+<li>Then <span class="math display">\[
+\sigma^2 = \E\left[z^2\right] = \sum_{j=1}^{1000} \E[w_j^2]x_j^2 + \E[b^2] = 500 \times \frac{1}{1000} + 1 = \frac{3}{2}.
+\]</span></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_weight_init_better.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-20" title="Better weight initialization: \mc{N}(0, \frac{1}{n_{\text{in}}}) controls the variance of z"><img src="assets/images/nielsen_weight_init_better.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Better weight initialization: \mc{N}(0, \frac{1}{n_{\text{in}}}) controls the variance of z"></a></p>
+</figure>
+</div>
+<figcaption>Better weight initialization: <span class="math inline">\(\mc{N}(0, \frac{1}{n_{\text{in}}})\)</span> controls the variance of <span class="math inline">\(z\)</span></figcaption>
+</figure>
+</div>
+</section>
+<section id="comparison-of-old-and-new-weight-initialization" class="level4">
+<h4 class="anchored" data-anchor-id="comparison-of-old-and-new-weight-initialization">Comparison of old and new weight initialization</h4>
+<div class="quarto-layout-panel" data-layout="[50, 50]">
+<div class="quarto-layout-row quarto-layout-valign-center">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_weight_init_classification_30.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-21" title="30 hidden neurons, BCE loss, mini-batch size: 10, \lambda = 5.0, \eta = 0.1"><img src="assets/images/nielsen_weight_init_classification_30.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" width="500" alt="30 hidden neurons, BCE loss, mini-batch size: 10, \lambda = 5.0, \eta = 0.1"></a></p>
+</figure>
+</div>
+<figcaption><span class="math inline">\(30\)</span> hidden neurons, BCE loss, mini-batch size: 10, <span class="math inline">\(\lambda = 5.0\)</span>, <span class="math inline">\(\eta = 0.1\)</span></figcaption>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_weight_init_classification_100.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-22" title="100 hidden neurons, BCE loss, mini-batch size: 10, \lambda = 5.0, \eta = 0.1"><img src="assets/images/nielsen_weight_init_classification_100.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" width="500" alt="100 hidden neurons, BCE loss, mini-batch size: 10, \lambda = 5.0, \eta = 0.1"></a></p>
+</figure>
+</div>
+<figcaption><span class="math inline">\(100\)</span> hidden neurons, BCE loss, mini-batch size: 10, <span class="math inline">\(\lambda = 5.0\)</span>, <span class="math inline">\(\eta = 0.1\)</span></figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="choosing-hyperparameters" class="level3">
+<h3 class="anchored" data-anchor-id="choosing-hyperparameters">Choosing Hyperparameters</h3>
+<p>General approach to choosing hyperparameters is to simplify the problem.</p>
+<ul>
+<li>Eliminate all the data except the digits <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span>.
+<ul>
+<li>This reduces the data by <span class="math inline">\(80\%\)</span>, speeding up the training.</li>
+</ul></li>
+<li>Try a simple network. Perhaps <span class="math inline">\([784 10]\)</span> instead of <span class="math inline">\([784 30 10]\)</span></li>
+<li>Increase the frequency of monitoring
+<ul>
+<li>E.g. try monigoring the validation accuracy after <span class="math inline">\(1000\)</span> images instead of waiting to do so after <span class="math inline">\(50,000\)</span> images (1 epoch).</li>
+</ul></li>
+<li>Use fewer validation images.
+<ul>
+<li>Instead of computing accuracy on <span class="math inline">\(10,000\)</span> validation images, use only <span class="math inline">\(1000\)</span> images.</li>
+</ul></li>
+</ul>
+<p>Let us fix <span class="math inline">\(30\)</span> hidden neurons, <span class="math inline">\(30\)</span> epochs, mini-batch size: <span class="math inline">\(10\)</span>, BCE loss</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;"><span class="math inline">\(\lambda\)</span></th>
+<th style="text-align: center;"><span class="math inline">\(\eta\)</span></th>
+<th style="text-align: center;">Test Speed</th>
+<th style="text-align: center;">Accuracy</th>
+<th style="text-align: center;">Comments</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><span class="math inline">\(1000.0\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(10.0\)</span></td>
+<td style="text-align: center;">Slow</td>
+<td style="text-align: center;"><span class="math inline">\(\nicefrac{967}{10000}\)</span></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><span class="math inline">\(1000.0\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(10.0\)</span></td>
+<td style="text-align: center;">Fast</td>
+<td style="text-align: center;"><span class="math inline">\(\nicefrac{10}{100}\)</span></td>
+<td style="text-align: center;">Decrease validation dataset size</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><span class="math inline">\(20.0\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(10.0\)</span></td>
+<td style="text-align: center;">Fast</td>
+<td style="text-align: center;"><span class="math inline">\(\nicefrac{18}{100}\)</span></td>
+<td style="text-align: center;">Have somthing though not very good</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><span class="math inline">\(20.0\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(100.0\)</span></td>
+<td style="text-align: center;">Fast</td>
+<td style="text-align: center;"><span class="math inline">\(\nicefrac{10}{100}\)</span></td>
+<td style="text-align: center;">Back to noise! Need to reduce <span class="math inline">\(\eta\)</span></td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><span class="math inline">\(20.0\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(1.0\)</span></td>
+<td style="text-align: center;">Fast</td>
+<td style="text-align: center;"><span class="math inline">\(\nicefrac{61}{100}\)</span></td>
+<td style="text-align: center;">Better! Keep going, adjust other hyperparameters</td>
+</tr>
+</tbody>
+</table>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/cost_v_lr.png" class="lightbox" data-gallery="quarto-lightbox-gallery-23" title="30 epochs, mini-batch size: 10, \lambda = 5.0, 50,000 training images. w^{\text{new}} = \left(1 - \frac{\eta \lambda}{n}\right) w^{\text{old}} - \eta \pd{\mc{L}_0}{w}"><img src="assets/images/cost_v_lr.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="30 epochs, mini-batch size: 10, \lambda = 5.0, 50,000 training images. w^{\text{new}} = \left(1 - \frac{\eta \lambda}{n}\right) w^{\text{old}} - \eta \pd{\mc{L}_0}{w}"></a></p>
+</figure>
+</div>
+<figcaption><span class="math inline">\(30\)</span> epochs, mini-batch size: <span class="math inline">\(10\)</span>, <span class="math inline">\(\lambda = 5.0\)</span>, <span class="math inline">\(50,000\)</span> training images.<br>
+<span class="math inline">\(w^{\text{new}} = \left(1 - \frac{\eta \lambda}{n}\right) w^{\text{old}} - \eta \pd{\mc{L}_0}{w}\)</span></figcaption>
+</figure>
+</div>
+<p>Oscillations occur if <span class="math inline">\(\eta\)</span> is too large.</p>
+<ul>
+<li>Theoretically, we want to update the weights until <span class="math inline">\(\pd{\mc{L}_0}{w} = 0\)</span>.</li>
+<li>However, with <span class="math inline">\(\eta\)</span> too large, we can keep overshooting the minimum, i.e.&nbsp;oscillate.</li>
+<li>If <span class="math inline">\(\eta\)</span> is too small, then it will take “forever” to descent to the minimum value.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Learning Rate
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Choose <span class="math inline">\(\eta\)</span> based on the training cost.
+<ul>
+<li>The purpose of <span class="math inline">\(\eta\)</span> is to control the step size.</li>
+<li>Monitoring the training cost is the best weay to detect if the step size is too large.</li>
+</ul></li>
+<li>First, estimate the <strong>threshold</strong> (maximum value) of <span class="math inline">\(\eta\)</span> as the value at which the cost on the training data decreases during the first few epochs, i.e., the cost should not be oscillating or increasing.</li>
+<li>For example, try <span class="math inline">\(\eta = 0.01\)</span>. If the cost decreases during the first few epochs, then successively try <span class="math inline">\(\eta = 0.1\)</span>, <span class="math inline">\(\eta = 1.0\)</span>, <span class="math inline">\(\ldots\)</span></li>
+<li>Keep increasing <span class="math inline">\(\eta\)</span> until the cost oscillates or increases during the first few epochs.</li>
+<li>If the cost oscillates or increases with <span class="math inline">\(\eta = 0.01\)</span>, then successively try <span class="math inline">\(\eta = 0.001\)</span>, <span class="math inline">\(\eta = 0.0001\)</span>, <span class="math inline">\(\ldots\)</span> until the cost decreases during the first few epochs.</li>
+<li>The <strong>threshold</strong> is then the largest <span class="math inline">\(\eta\)</span> at which the cost decreases during the first few epochs.</li>
+<li>To use <span class="math inline">\(\eta\)</span> over many epochs one perhaps divides it by <span class="math inline">\(2\)</span> after (say) <span class="math inline">\(5\)</span> epochs so the steps are smaller as you get closer to the minimum.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Early Stopping
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>At the end of each epoch, compute the classification accuracy on the validation data.</li>
+<li>If the accuracy does not improve for (say) <span class="math inline">\(10\)</span> epochs, stop training.
+<ul>
+<li>The stopping rule gives a new hyperparameter.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Learning Rate Schedule
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>How do we schedule the decreases for the learning rate <span class="math inline">\(\eta\)</span>?</p>
+<ul>
+<li>Hold the learning rate constant until the validation accuracy starts to get worse.</li>
+<li>Then decrease the learning rate by (say) a factor of two.</li>
+<li>Continue until (say) <span class="math inline">\(\eta\)</span> is <span class="math inline">\(2^{10} = 1024\)</span> times lower than its initial value.</li>
+<li>Then terminate.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Regularization Parameter
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>How do we choose <span class="math inline">\(\lambda\)</span>?</p>
+<ul>
+<li>Set <span class="math inline">\(\lambda = 0\)</span> and determine the value of <span class="math inline">\(\eta\)</span>.</li>
+<li>Then select a good value of <span class="math inline">\(\lambda\)</span> using the validation data.
+<ul>
+<li>Set <span class="math inline">\(\lambda = 1\)</span>.</li>
+<li>If the accuracy goes up, increase <span class="math inline">\(\lambda\)</span> by a factor of <span class="math inline">\(10\)</span>.</li>
+<li>Else, decrease <span class="math inline">\(\lambda\)</span> by a factor of <span class="math inline">\(10\)</span>.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+</section>
+<section id="better-optimizers" class="level3">
+<h3 class="anchored" data-anchor-id="better-optimizers">Better Optimizers</h3>
+<p>Recall the update rule for gradient descent:</p>
+<p><span class="math display">\[w^{\text{new}} = w^{\text{old}} - \eta \nabla_w \mc{L}(w)\]</span></p>
+<section id="gradient-descent-via-the-hessian" class="level4">
+<h4 class="anchored" data-anchor-id="gradient-descent-via-the-hessian">Gradient Descent via the Hessian</h4>
+<p>We have the Taylor-series approximation</p>
+<p><span class="math display">\[
+\mc{L}(w + \Delta w) \approx \mc{L}(w) + \nabla_w \mc{L}(w)^\top \Delta w + \frac{1}{2} \Delta w^\top H \Delta w,
+\]</span></p>
+<p>where <span class="math inline">\(H = \nabla_w^2 \mc{L}(w)\)</span> is the Hessian matrix of second-order partial derivatives. Let us take the derivative with respect to <span class="math inline">\(\Delta w\)</span> and set equal to zero:</p>
+<p><span class="math display">\[
+\pd{\mc{L}(w+\Delta w)}{\Delta w}(w) = \pd{\mc{L}}{w}(w) + \pdd{\mc{L}}{w}(w)\Delta w = 0
+\]</span></p>
+<p>and solve for <span class="math inline">\(\Delta w\)</span>:</p>
+<p><span class="math display">\[
+\Delta w = -\left( \pdd{\mc{L}}{w}(w) \right)^{-1} \pd{\mc{L}}{w}(w) = -H^{-1} \nabla_w \mc{L}(w)
+\]</span></p>
+<p>This motivates the following update rule, known as the <strong>Newton update rule</strong>:</p>
+<p><span class="math display">\[
+w^{\text{new}} = w^{\text{old}} - \eta H^{-1} \nabla_w \mc{L}(w),
+\]</span></p>
+<p>where <span class="math inline">\(\eta\)</span> is chosen so that <span class="math inline">\(\norm{\Delta w}{} = \norm{\eta H^{-1} \nabla_w \mc{L}(w)}{}\)</span> is not too large.</p>
+<ul>
+<li>The Hessian matrix <span class="math inline">\(H \in \S^d\)</span> is a <span class="math inline">\(d \times d\)</span> symmetric matrix, where <span class="math inline">\(d\)</span> is the number of weights in the neural network.</li>
+<li>Computing the Hessian matrix and its inverse is computationally expensive.
+<ul>
+<li><span class="math inline">\(d\)</span> diagonal elements and <span class="math inline">\(\frac{d(d-1)}{2}\)</span> off-diagonal elements to compute</li>
+<li>Requires <span class="math inline">\(d + \frac{d(d-1)}{2} = \frac{d(d+1)}{2}\)</span> computations</li>
+<li>E.g. if <span class="math inline">\(d \approx 24,000\)</span>, then computing <span class="math inline">\(H\)</span> requires <span class="math inline">\(288 \times 10^6\)</span> computations!
+<ul>
+<li>Further, we must then invert this matrix!</li>
+</ul></li>
+</ul></li>
+<li>Hessian approach is thus avoided due to the computations requirements.</li>
+</ul>
+</section>
+<section id="momentum-based-gradient-descent" class="level4">
+<h4 class="anchored" data-anchor-id="momentum-based-gradient-descent">Momentum Based Gradient Descent</h4>
+<p>Momentum-based gradient descent uses a similar idea to the Hessian approach, but avoids the computation and inversion of a large matrix.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Key Idea
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Think of <span class="math inline">\(\mc{L}(w)\)</span> as the potential function of a partical of mass <span class="math inline">\(m\)</span> with <span class="math inline">\(w\)</span> the particle’s position.</li>
+<li>Then <span class="math inline">\(-\nabla_w \mc{L}(w)\)</span> is the force acting on the particle, and <span class="math inline">\(-\nicefrac{1}{m}\nabla_w \mc{L}(w)\)</span> is the acceleration.</li>
+<li>The change in velocity is <span class="math inline">\(v^{\text{(new)}} - v^{\text{(old)}} = \Delta v = (\Delta t)\nicefrac{1}{m}\nabla_w \mc{L}(w)\)</span>,</li>
+<li>The change in position is then <span class="math inline">\(w^{\text{(new)}} - w^{\text{(old)}} = \Delta w = (\Delta t) v^{\text{(new)}}\)</span>.</li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Momentum Based Gradient Descent
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\begin{aligned}
+v^{\text{(new)}} &amp;= \mu v^{\text{(old)}} - \eta \nabla_w \mc{L}(w)^{(\text{old})} = v^{(old)} - \underbrace{(1-\mu)v^{(old)}}_{\text{viscous friction}} - \eta \nabla_w \mc{L}(w)^{(\text{old})}, &amp;&amp; \eta = (\Delta t) \frac{1}{m},\\
+w^{\text{(new)}} &amp;= w^{\text{(old)}} + v^{\text{(new)}}, &amp;&amp; \Delta t = 1.
+\end{aligned}
+\]</span></p>
+</div>
+</div>
+<ul>
+<li><span class="math inline">\(0 &lt; \mu &lt; 1\)</span> is the <strong>momentum coefficient</strong> hyperparameters.</li>
+<li><span class="math inline">\(1 - \mu\)</span> represents the “viscous friction” coefficient.</li>
+<li>If <span class="math inline">\(\mu = 0\)</span>, we simply recover standard gradient descent:</li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+v^{\text{(new)}} &amp;= - \eta \nabla_w \mc{L}(w)^{(\text{old})}, \\
+w^{\text{(new)}} &amp;= w^{\text{(old)}} + v^{\text{(new)}}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>Define the concetanated vector <span class="math inline">\(\xi = \bmat{v &amp; w}^\top \in \R^{2d}\)</span> and the vector <span class="math inline">\(g = \nabla_w \mc{L}(w) \otimes \bmat{1 &amp; 1}^\top \in \R^{2d}\)</span>, where <span class="math inline">\(\otimes\)</span> is the Kronecker product.</p></li>
+<li><p>Then the update rule can be written as <span class="math display">\[
+\xi^{(k+1)} = A \xi^{(k)} - \eta g^{(k)},
+\]</span> where <span class="math display">\[
+A = \bmat{\mu I &amp; 0 \\ \mu I &amp; I}.
+\]</span></p></li>
+<li><p>Rolling out the recursive definition of <span class="math inline">\(\xi^{(k)}\)</span> gives <span class="math display">\[
+\xi^{(k)} = A^k \xi^{(0)} - \eta \sum_{j=0}^{k-1} A^{k-j-1} g^{(j)}.
+\]</span></p></li>
+</ul>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Warning</span>More content
+Warning
 </div>
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>Dropout</li>
-<li>Weight Initialization</li>
-<li>Hyperparameter Selection</li>
-<li>More Modern Optimizers</li>
+<li>What is the problem with choosing <span class="math inline">\(\mu &gt; 1\)</span>?</li>
+<li>What is the problem with choosing <span class="math inline">\(\mu &lt; 0\)</span>?</li>
 </ul>
-<p><a href="assets/misc/Nielsen_Slides_chap3_24.pdf">Continued in this document</a>.</p>
 </div>
 </div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>More content
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><a href="assets/misc/Nielsen_Slides_chap3_24.pdf">More details can be found in this document</a>.</p>
+</div>
+</div>
+</section>
 </section>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
@@ -845,7 +1268,7 @@ b &amp;\leftarrow b - \eta \pd{\mc{L}_0}{b}.
 <figure class="figure">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="assets/images/spiral_plot.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-17" title="Spiral example"><img src="assets/images/spiral_plot.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Spiral example"></a></p>
+<p><a href="assets/images/spiral_plot.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-24" title="Spiral example"><img src="assets/images/spiral_plot.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Spiral example"></a></p>
 </figure>
 </div>
 <figcaption>Spiral example</figcaption>
@@ -877,7 +1300,7 @@ b &amp;\leftarrow b - \eta \pd{\mc{L}_0}{b}.
 </div><div class="column" style="width:70%;">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="assets/images/spiral_nn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-18"><img src="assets/images/spiral_nn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></a></p>
+<p><a href="assets/images/spiral_nn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-25"><img src="assets/images/spiral_nn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></a></p>
 </figure>
 </div>
 </div>
@@ -899,7 +1322,7 @@ z_3^{(3)} &amp;= \sum_{j=1}^{100} w_{3j}^{(3)} a_j^{(2)} + b_3^{(3)}, &amp;&amp;
 </ul>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="assets/images/spiral_classified.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-19"><img src="assets/images/spiral_classified.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
+<p><a href="assets/images/spiral_classified.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-26"><img src="assets/images/spiral_classified.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
 </figure>
 </div>
 </section>
