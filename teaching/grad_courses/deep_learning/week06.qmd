@@ -1,0 +1,285 @@
+---
+title: "Week 6: Convolutional Neural Networks (CNNs)"
+format: 
+  html: 
+    grid:
+      body-width: 1000px
+      sidebar-width: 250px
+      margin-width: 150px
+filters:
+  - shinylive
+---
+
+
+
+::: {.panel-tabset}
+
+## Basics of Convolutional Neural Networks
+
+::: {.column-margin}
+Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
+:::
+
+* A function $f(\cdot)$ is [invariant]{style="color: orange;"} to a transformation $t(\cdot)$ if
+$$
+f(t(x)) = f(x),
+$$
+that is, the function output is the same even after the transformation is applied.
+
+* A function $f(\cdot)$ is [equivariant]{style="color: orange;"} to a transformation $t(\cdot)$ if
+$$
+f(t(x)) = t(f(x)),
+$$
+that is, the function output is transformed in the same way as the input.
+
+![
+  Invariance and equivariance for translation. 
+  (a-b) In image classification, the goal is to categorize both images as "mountain" regardless of the horizontal 
+  shift that has occurred. In other words, we require the network prediction to be invariant to translation.
+  (c, e) The goal of semantic segmentation is to associate a label with each pixel.
+  (d, f) When the input image is translated, we want the output (colored overlay) to translate in the same way. 
+  In other words, we require the output to be equivariant with respect to translation.
+](assets/images/ConvEquiInv.svg){.lightbox width=100% fig-align="center"}
+
+
+### Convolutional Neural Networks for $1$D inputs
+
+* Convolutional networks consist of convolutional layers, each of which is equivariant to translation.
+  - If we translate the input $x$, then the corresponding output $z$ is translated in the same way.
+  - For example, for a kernel size of three, we have
+  $$
+  z_i = \omega_1 x_{i-1} + \omega_2 x_i + \omega_3 x_{i+1}, 
+  $$
+  where $\bm{\omega} = \bmat{\omega_1 & \omega_2 & \omega_3}^\top$ is the kernel.
+* They also typically include pooling mechanisms that induce partial invariance to translation.
+
+![
+  $1$D convolution with kernel size three. Each output $z_i$ is a weighted sum of the nearest three inputs 
+  $x_{i-1}$, $x_i$, and $x_{i+1}$, where the weights are $\bm{\omega} = \bmat{\omega_1 & \omega_2 & \omega_3}$. 
+  a) Output $z_2$ is computed as $z_2 = \omega_1 x_1 + \omega_2 x_2 + \omega_3 x_3$. b) Output $z_3$ is computed as 
+  $z_3 = \omega_1 x_2 + \omega_2 x_3 + \omega_3 x_4$. c) At position $z_1$, the kernel extends beyond the first 
+  input $x_1$. This can be handled by zero-padding, in which we assume values outside the input are zero. The final 
+  output is treated similarly. d) Alternatively, we could only compute outputs where the kernel fits within the 
+  input range ("valid" convolution); now, the output will be smaller than the input.
+](assets/images/Conv1.svg){.lightbox width=100% fig-align="center"}
+
+
+* [Stride]{style="color: orange;"} is the shift by $k$ positions for each output
+  - Decreases size of output relative to input
+* [Kernel size]{style="color: orange;"} weighs a different number of inputs for each output
+  - Combine information from a smaller/larger area
+  - Larger kernel sizes uses more parameters
+* [Dilated]{style="color:orange;"} or [atrous]{style="color:orange;"} convolution intersperse kernel values with zeros
+  - Combine information from a larger area
+  - Fewer parameters
+
+
+![
+  Stride, kernel size, and dilation. 
+  a) With a stride of two, we evaluate the kernel at every other position, so the first output $z_1$ is computed 
+  from a weighted sum centered at $x_1$, and b) the second output $z_2$ is computed from a weighted sum centered 
+  at $x_3$ and so on. c) The kernel size can also be changed. With a kernel size of five, we take a weighted sum 
+  of the nearest five inputs. d) In dilated or atrous convolution, we intersperse zeros in the weight vector to 
+  allow us to combine information over a large area using fewer weights.
+](assets/images/Conv1a.svg){.lightbox width=100% fig-align="center"}
+
+#### Convolutional Layers
+
+* A convolutional layer computes its output by convolving the input, adding a bias $\beta$, and 
+passing each result through an activation function $\sigma(\cdot)$.
+
+$$
+\begin{aligned}
+\begin{split}
+h_i &= \sigma(\beta + \omega_1 x_{i-1} + \omega_2 x_i + \omega_3 x_{i+1}) \\
+&= \sigma\left( \beta + \sum_{j=1}^3 \omega_j x_{i+j-2} \right)
+\end{split}
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xleftarrow{\hspace{1cm}}}} \quad 
+\text{3 weights, 1 bias}
+\end{aligned}
+$$
+
+* This is a special case of a fully connected layer that computes the $i^{\text{th}}$ hidden unit as:
+$$
+\begin{aligned}
+h_i &= \sigma\left( \beta_i + \sum_{j=1}^3 \omega_{ij} x_j \right)
+&\quad {\color{DodgerBlue} \class{thick-arrow}{\xleftarrow{\hspace{1cm}}}} \quad 
+\text{$D^2$ weights, D biases}
+\end{aligned}
+$$
+
+* A fully connected layer can reproduce this exactly if most weights are set to zero and others are constrained 
+to be identical.
+
+
+![
+  Fully connected vs. convolutional layers. \
+  a) A fully connected layer has a weight connecting each input $x$ to each hidden unit $h$ (colored arrows)
+  and a bias for each hidden unit (not shown).
+  b) Hence, the associated weight matrix $\bm{\Omega}$ has 36 weights relating the six inputs to the six hidden 
+  units.
+  c) A convolutional layer with kernel size three computes each hidden unit as the same weighted sum of the three 
+  neighboring inputs (arrows) plus a bias (not shown).
+  d) The weight matrix is a special case of the fully connected matrix where many weights are zero and others are 
+  repeated (same colors indicate same value, white indicates zero weight).
+  e) A convolutional layer with kernel size three and stride two computes a weighted sum at every other position.
+  f) This is also a special case of a fully connected network with a different sparse weight structure.
+](assets/images/Conv2a.svg){.lightbox width=100% fig-align="center"}
+
+::: {.callout-tip}
+### Exercises
+What are the kernel sizes, strides, dilations? Which ones are valid convolutions?
+
+![](assets/images/cnn_q1.png){.lightbox width=70% fig-align="center"}
+
+![](assets/images/cnn_q2.png){.lightbox width=70% fig-align="center"}
+
+![](assets/images/cnn_q3.png){.lightbox width=70% fig-align="center"}
+:::
+
+
+#### Channels
+
+* If we only apply a single convolution, information will likely be lost
+  * We are averaging nearby inputs
+  * ReLU activation function clips results that are less than zero.
+* It is usual to compute several convolutions in parallel.
+  * Each convlution produces a new set of hidden variables, termed a [feature map]{style="color: orange;"} or [channel]{style="color: orange;"}.
+
+![
+  Channels. Typically, multiple convolutions are applied to the input $\bm{x}$ and stored in channels. \
+  a) A convolution is applied to create hidden units $h_1$ to $h_6$, which form the first channel.
+  b) A second convolution operation isa pplied to create hidden units $h_7$ to $h_{12}$, which form the 
+  second channel. The channels are stored in a $2$D array $\bm{H}_1$ that contain all the hidden units 
+  in the first hidden layer.
+  c) If we add a further convolutional layer, there are now two channels at each input position. Here 
+  the $1$D convolution defines a weighted sum over both input channels at the three closest positions 
+  to create each new output channel.
+](assets/images/Conv4a.svg){.lightbox width=100% fig-align="center"}
+
+* In general, the input and the hidden layers all have multiple channels.
+* If the incoming layer has $C_i$ channels and we select a kernel size $K$ per channel, 
+the hidden units in each output channel are computed as a weighted sum over all $C_i$ channels 
+and $K$ kernel entries using a weight matrix $\bm{\Omega} \in \R^{C_i \times K}$ and one bias.
+  - Hence, if there are $C_o$ channels in the next layer, then we need 
+  $\bm{\Omega} \in \R^{C_i \times C_o \times K}$ weights $\bm{\beta} \in \R^{C_o}$ biases.
+
+
+#### Receptive fields
+
+* Similar to fully connected networks, convolutional networks comprise a sequence of convolutional layers.
+* The __receptive field__ of a hidden unit in the network is the region of the original input that feeds into it.
+
+
+::: {.left-caption}
+![
+  Receptive fields for network with kernel width of three. \ 
+  a) An input with eleven dimensions feeds into a hidden layer with three channels and convolution kernel 
+  of size three. The pre-activations of the three lighlighted hidden units in the first hidden layer $\bm{H}_1$
+  are different weighted sums of the nearest three inputs, so the receptive field in $\bm{H}_1$ has size three. \
+  b) The pre-activations of the four highlights hidden units in layer $\bm{H}_2$ each take a weighted sum of the 
+  three channels in layer $\bm{H}_1$ at each of the three nearest positions. Each hidden unit in layer $\bm{H}_1$
+  weights the nearest three input positions. Hence, hidden units in $\bm{H}_2$ have a receptive field size of five. \
+  c) The hidden units in the third layer (kernel size three, stride two) increases the receptive field size to seven. \
+  d) By the time we add a fourth layer, the receptive field of the hidden units at position three have a 
+  receptive field that covers the entire input.
+](assets/images/ConvNetworkRF.svg){.lightbox width=100% fig-align="center"}
+:::
+
+
+#### Example: MNIST-1D
+
+* The input $\bm{x}$ is a $40$D vector, and the output $\bm{f}$ is a $10$D vector, which is passed through a 
+softmax layer to produce class probabilities.
+
+![
+  a) Templates for 10 classes $y \in \{0, \ldots, 9\}$, based on digits $0-9$.
+  b) Training examples $\bm{x}$ are created by randomly transforming a template and
+  c) adding noise.
+  d) The horizontal offset of the transformed template is then sampled at $40$ vertical positions.
+](assets/images/PerfMNIST1D.svg){.lightbox width=100% fig-align="center"}
+
+* Let us recall the performance of a fully-connected network we looked at in the previous chapters.
+
+::: {.callout-tip}
+### Fully Connected Network for MNIST-1D
+* $D_i = 40$ inputs, $D_o = 10$ outputs, passed through $\operatorname{softmax}$ activation function.
+* Two hidden layers with $D = 100$ hidden units each.
+* Trained using SGD with batch size $100$ and learning rate $\eta = 0.1$ for $6000$ steps ($150$ epochs).
+* Loss: multiway cross-entropy.
+:::
+
+![
+  a) Percent classification error as a function of the training step. The training set errors decrease to 
+  zero, but the test errors do not drop below $\sim 40\%$. This model does not generalize well to new 
+  test data.
+  b) Loss as a function of the training step. The training loss decreases steadily toward zero. The test 
+  loss decreases at first, but subsequently increases as the model becomes increasingly confident about 
+  its (wrong) predictions.
+](assets/images/PerfMNIST1DResults.svg){.lightbox width=100% fig-align="center"}
+
+
+* Instead, let us try a convolutional network with three hidden layers as in the next figure.
+
+
+::: {.left-caption}
+![
+  Convolutional network for classifying MNIST-1D data. The first convolutional layer has 15 channels, 
+  kernel size three, stride two, and only retains "valid" positions to make a hidden layer with 
+  nineteen positions and fifteen channels. The following two convolutional layers have the same setting, 
+  gradually reducing the representation size at each subsequent hidden layer. Finally, a fully connected 
+  layer takes all sixty hidden units from the third hidden layer. It outputs ten activations that are 
+  subsequently passed through a $\operatorname{softmax}$ layer to produce the ten class probabilities.
+](assets/images/ConvDrawMNIST1D.svg){.lightbox width=100% fig-align="center"}
+:::
+
+* This network was trained for $100,000$ steps using SGD without momentum, a learning rate of $0.01$, 
+and a batch size of $100$ on a dataset of $4,000$ examples.
+* The CNN has $2,050$ parameters, whereas a fully connected network with layer sizes $\bmat{285 & 135 & 60}$ 
+would have $59,065$ parameters.
+* The next figure shows both models fit the training data perfectly. However, the test error for the 
+convolutional network is much less than for the fully connected network.
+
+![
+  MNIST-1D results. \
+  a) The convolutional network from the previous figure eventually fits the training data perfectly and has 
+  $\sim 17\%$ test error. \
+  b) A fully connected network with the same number of hidden layers and the number of hidden units in each learns 
+  the training data faster, but fails to generalize well with $\sim 40\%$ test error. \
+  The latter model can reproduce the convolutional model in theory, but fails to do so. The convolutional 
+  structure restricts the possible mappings to those that process every position similarly, and this restriction 
+  improves performance.
+](assets/images/ConvMNIST1D.svg){.lightbox width=100% fig-align="center"}
+
+
+::: {.callout-note}
+### Why does CNN outperform the fully-connected network?
+* Better [inductive bias]{"color:orange;"}, i.e., interpolates between the training data better
+  - Because we have embodied some prior knowledge in the architecture:
+    - forced the network to process each position in the input the same way.
+* The fully connected network has to learn what each digit template looks like at every position.
+* In contrast, the convolutional network shares information across positions and hence learns to 
+identify each category more accurately.
+* Searches through a smaller family of input/output mappings, all of which are plausible.
+:::
+
+
+### Convolutional Neural Networks for $2$D inputs
+
+
+### Downsampling and upsampling
+
+
+
+
+## Convolutional Neural Networks for MNIST
+
+::: {.column-margin}
+Image credits: [Deep Learning](http://neuralnetworksanddeeplearning.com) by Michael Nielsen
+:::
+
+
+
+
+
+:::

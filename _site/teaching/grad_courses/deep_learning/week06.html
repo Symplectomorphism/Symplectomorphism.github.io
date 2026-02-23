@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Week 6: Convolutional Neural Networks (CNNs) – Satici Lab</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../">
+<link href="../../../teaching/kinematics_and_dynamics_machines.html" rel="next">
+<link href="../../../teaching/grad_courses/deep_learning/week05.html" rel="prev">
+<link href="../../../images/monogram_solid-cmyk.png" rel="icon" type="image/png">
+<script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../site_libs/bootstrap/bootstrap-8402731c99c2101ab41aada8a5804e10.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script>
+window.MathJax = {
+  loader: {
+    load: ['[tex]/boldsymbol', '[tex]/mathtools']
+  },
+  tex: {
+    packages: {'[+]': ['boldsymbol', 'mathtools']}
+  }
+};
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../../styles.css">
+<meta property="og:title" content="Week 6: Convolutional Neural Networks (CNNs) – Satici Lab">
+<meta property="og:description" content="Research website for the Satici Lab">
+<meta property="og:image" content="https://Symplectomorphism.github.io/teaching/grad_courses/deep_learning/assets/images/ConvEquiInv.svg">
+<meta property="og:site_name" content="Satici Lab">
+<meta property="og:image:alt" content="Invariance and equivariance for translation. (a-b) In image classification, the goal is to categorize both images as “mountain” regardless of the horizontal shift that has occurred. In other words, we require the network prediction to be invariant to translation. (c, e) The goal of semantic segmentation is to associate a label with each pixel. (d, f) When the input image is translated, we want the output (colored overlay) to translate in the same way. In other words, we require the output to be equivariant with respect to translation.">
+</head>
+
+<body class="nav-sidebar docked nav-fixed slimcontent quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../../images/monogram_solid-blk.png" alt="" class="navbar-logo light-content">
+    <img src="../../../images/monogram_solid-blk.png" alt="" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../../index.html">
+    <span class="navbar-title">Satici Lab</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../research/index.html"> 
+<span class="menu-text">Research</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../publications.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="../../../teaching/index.html" aria-current="page"> 
+<span class="menu-text">Teaching</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../people/index.html"> 
+<span class="menu-text">People</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../positions/index.html"> 
+<span class="menu-text">Positions</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-more" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">More</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-more">    
+        <li>
+    <a class="dropdown-item" href="../../../fun/index.html">
+ <span class="dropdown-text">Fun</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../chiasson/index.html">
+ <span class="dropdown-text">John Chiasson</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://github.com/symplectomorphism"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text">Github</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../teaching/robotics.html">Graduate Courses</a></li><li class="breadcrumb-item"><a href="../../../teaching/grad_courses/deep_learning/index.html">Deep Learning</a></li><li class="breadcrumb-item"><a href="../../../teaching/grad_courses/deep_learning/week06.html">Convolutional Neural Networks (CNNs)</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+  <div id="quarto-announcement" data-announcement-id="308118796d112337113ef5a3a3b7ad7a" class="alert alert-primary hidden"><i class="bi bi-info-circle quarto-announcement-icon"></i><div class="quarto-announcement-content">
+<p>Currently looking for PhD students on robotics, control, and machine learning! Please see the <a href="../../../positions/index.html">positions</a> tab.</p>
+</div><i class="bi bi-x-lg quarto-announcement-action"></i></div>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Teaching</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Graduate Courses</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/robotics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Robotics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/optimization.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Optimization</span></a>
+  </div>
+</li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../../teaching/grad_courses/deep_learning/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Deep Learning</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/week01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Basics of Optimization</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/week02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Intro to Learning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/week03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fundamentals of Deep Neural Networks</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/week04.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recognizing Handwritten Digits</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/week05.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Measuring and Improving Performance</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/week06.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Convolutional Neural Networks (CNNs)</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Undergraduate Courses</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/kinematics_and_dynamics_machines.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Kinematics and Machine Dynamics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/smac.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">System Modeling and Control</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/mechatronics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mechatronics</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
+    </div>
+<!-- main -->
+<main class="content page-columns page-full" id="quarto-document-content">
+<div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
+$$
+% Define your custom commands here
+\newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\vectornorm}[1]{\left|\left|#1\right|\right|}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\nicefrac}[2]{{}^{#1}\!/_{\!#2}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+$$
+</div>
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../teaching/robotics.html">Graduate Courses</a></li><li class="breadcrumb-item"><a href="../../../teaching/grad_courses/deep_learning/index.html">Deep Learning</a></li><li class="breadcrumb-item"><a href="../../../teaching/grad_courses/deep_learning/week06.html">Convolutional Neural Networks (CNNs)</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Week 6: Convolutional Neural Networks (CNNs)</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
+<p>Image credits: <a href="http://neuralnetworksanddeeplearning.com">Deep Learning</a> by Michael Nielsen</p>
+</div></div></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Basics of Convolutional Neural Networks</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Convolutional Neural Networks for MNIST</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+
+<ul>
+<li><p>A function <span class="math inline">\(f(\cdot)\)</span> is <span style="color: orange;">invariant</span> to a transformation <span class="math inline">\(t(\cdot)\)</span> if <span class="math display">\[
+f(t(x)) = f(x),
+\]</span> that is, the function output is the same even after the transformation is applied.</p></li>
+<li><p>A function <span class="math inline">\(f(\cdot)\)</span> is <span style="color: orange;">equivariant</span> to a transformation <span class="math inline">\(t(\cdot)\)</span> if <span class="math display">\[
+f(t(x)) = t(f(x)),
+\]</span> that is, the function output is transformed in the same way as the input.</p></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvEquiInv.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Invariance and equivariance for translation. (a-b) In image classification, the goal is to categorize both images as “mountain” regardless of the horizontal shift that has occurred. In other words, we require the network prediction to be invariant to translation. (c, e) The goal of semantic segmentation is to associate a label with each pixel. (d, f) When the input image is translated, we want the output (colored overlay) to translate in the same way. In other words, we require the output to be equivariant with respect to translation."><img src="assets/images/ConvEquiInv.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Invariance and equivariance for translation. (a-b) In image classification, the goal is to categorize both images as “mountain” regardless of the horizontal shift that has occurred. In other words, we require the network prediction to be invariant to translation. (c, e) The goal of semantic segmentation is to associate a label with each pixel. (d, f) When the input image is translated, we want the output (colored overlay) to translate in the same way. In other words, we require the output to be equivariant with respect to translation."></a></p>
+</figure>
+</div>
+<figcaption>Invariance and equivariance for translation. (a-b) In image classification, the goal is to categorize both images as “mountain” regardless of the horizontal shift that has occurred. In other words, we require the network prediction to be invariant to translation. (c, e) The goal of semantic segmentation is to associate a label with each pixel. (d, f) When the input image is translated, we want the output (colored overlay) to translate in the same way. In other words, we require the output to be equivariant with respect to translation.</figcaption>
+</figure>
+</div>
+<section id="convolutional-neural-networks-for-1d-inputs" class="level3">
+<h3 class="anchored" data-anchor-id="convolutional-neural-networks-for-1d-inputs">Convolutional Neural Networks for <span class="math inline">\(1\)</span>D inputs</h3>
+<ul>
+<li>Convolutional networks consist of convolutional layers, each of which is equivariant to translation.
+<ul>
+<li>If we translate the input <span class="math inline">\(x\)</span>, then the corresponding output <span class="math inline">\(z\)</span> is translated in the same way.</li>
+<li>For example, for a kernel size of three, we have <span class="math display">\[
+z_i = \omega_1 x_{i-1} + \omega_2 x_i + \omega_3 x_{i+1},
+\]</span> where <span class="math inline">\(\bm{\omega} = \bmat{\omega_1 &amp; \omega_2 &amp; \omega_3}^\top\)</span> is the kernel.</li>
+</ul></li>
+<li>They also typically include pooling mechanisms that induce partial invariance to translation.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/Conv1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="1D convolution with kernel size three. Each output z_i is a weighted sum of the nearest three inputs x_{i-1}, x_i, and x_{i+1}, where the weights are \bm{\omega} = \bmat{\omega_1 &amp; \omega_2 &amp; \omega_3}. a) Output z_2 is computed as z_2 = \omega_1 x_1 + \omega_2 x_2 + \omega_3 x_3. b) Output z_3 is computed as z_3 = \omega_1 x_2 + \omega_2 x_3 + \omega_3 x_4. c) At position z_1, the kernel extends beyond the first input x_1. This can be handled by zero-padding, in which we assume values outside the input are zero. The final output is treated similarly. d) Alternatively, we could only compute outputs where the kernel fits within the input range (“valid” convolution); now, the output will be smaller than the input."><img src="assets/images/Conv1.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="1D convolution with kernel size three. Each output z_i is a weighted sum of the nearest three inputs x_{i-1}, x_i, and x_{i+1}, where the weights are \bm{\omega} = \bmat{\omega_1 &amp; \omega_2 &amp; \omega_3}. a) Output z_2 is computed as z_2 = \omega_1 x_1 + \omega_2 x_2 + \omega_3 x_3. b) Output z_3 is computed as z_3 = \omega_1 x_2 + \omega_2 x_3 + \omega_3 x_4. c) At position z_1, the kernel extends beyond the first input x_1. This can be handled by zero-padding, in which we assume values outside the input are zero. The final output is treated similarly. d) Alternatively, we could only compute outputs where the kernel fits within the input range (“valid” convolution); now, the output will be smaller than the input."></a></p>
+</figure>
+</div>
+<figcaption><span class="math inline">\(1\)</span>D convolution with kernel size three. Each output <span class="math inline">\(z_i\)</span> is a weighted sum of the nearest three inputs <span class="math inline">\(x_{i-1}\)</span>, <span class="math inline">\(x_i\)</span>, and <span class="math inline">\(x_{i+1}\)</span>, where the weights are <span class="math inline">\(\bm{\omega} = \bmat{\omega_1 &amp; \omega_2 &amp; \omega_3}\)</span>. a) Output <span class="math inline">\(z_2\)</span> is computed as <span class="math inline">\(z_2 = \omega_1 x_1 + \omega_2 x_2 + \omega_3 x_3\)</span>. b) Output <span class="math inline">\(z_3\)</span> is computed as <span class="math inline">\(z_3 = \omega_1 x_2 + \omega_2 x_3 + \omega_3 x_4\)</span>. c) At position <span class="math inline">\(z_1\)</span>, the kernel extends beyond the first input <span class="math inline">\(x_1\)</span>. This can be handled by zero-padding, in which we assume values outside the input are zero. The final output is treated similarly. d) Alternatively, we could only compute outputs where the kernel fits within the input range (“valid” convolution); now, the output will be smaller than the input.</figcaption>
+</figure>
+</div>
+<ul>
+<li><span style="color: orange;">Stride</span> is the shift by <span class="math inline">\(k\)</span> positions for each output
+<ul>
+<li>Decreases size of output relative to input</li>
+</ul></li>
+<li><span style="color: orange;">Kernel size</span> weighs a different number of inputs for each output
+<ul>
+<li>Combine information from a smaller/larger area</li>
+<li>Larger kernel sizes uses more parameters</li>
+</ul></li>
+<li><span style="color:orange;">Dilated</span> or <span style="color:orange;">atrous</span> convolution intersperse kernel values with zeros
+<ul>
+<li>Combine information from a larger area</li>
+<li>Fewer parameters</li>
+</ul></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/Conv1a.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Stride, kernel size, and dilation. a) With a stride of two, we evaluate the kernel at every other position, so the first output z_1 is computed from a weighted sum centered at x_1, and b) the second output z_2 is computed from a weighted sum centered at x_3 and so on. c) The kernel size can also be changed. With a kernel size of five, we take a weighted sum of the nearest five inputs. d) In dilated or atrous convolution, we intersperse zeros in the weight vector to allow us to combine information over a large area using fewer weights."><img src="assets/images/Conv1a.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Stride, kernel size, and dilation. a) With a stride of two, we evaluate the kernel at every other position, so the first output z_1 is computed from a weighted sum centered at x_1, and b) the second output z_2 is computed from a weighted sum centered at x_3 and so on. c) The kernel size can also be changed. With a kernel size of five, we take a weighted sum of the nearest five inputs. d) In dilated or atrous convolution, we intersperse zeros in the weight vector to allow us to combine information over a large area using fewer weights."></a></p>
+</figure>
+</div>
+<figcaption>Stride, kernel size, and dilation. a) With a stride of two, we evaluate the kernel at every other position, so the first output <span class="math inline">\(z_1\)</span> is computed from a weighted sum centered at <span class="math inline">\(x_1\)</span>, and b) the second output <span class="math inline">\(z_2\)</span> is computed from a weighted sum centered at <span class="math inline">\(x_3\)</span> and so on. c) The kernel size can also be changed. With a kernel size of five, we take a weighted sum of the nearest five inputs. d) In dilated or atrous convolution, we intersperse zeros in the weight vector to allow us to combine information over a large area using fewer weights.</figcaption>
+</figure>
+</div>
+<section id="convolutional-layers" class="level4">
+<h4 class="anchored" data-anchor-id="convolutional-layers">Convolutional Layers</h4>
+<ul>
+<li>A convolutional layer computes its output by convolving the input, adding a bias <span class="math inline">\(\beta\)</span>, and passing each result through an activation function <span class="math inline">\(\sigma(\cdot)\)</span>.</li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+\begin{split}
+h_i &amp;= \sigma(\beta + \omega_1 x_{i-1} + \omega_2 x_i + \omega_3 x_{i+1}) \\
+&amp;= \sigma\left( \beta + \sum_{j=1}^3 \omega_j x_{i+j-2} \right)
+\end{split}
+&amp;\quad {\color{DodgerBlue} \class{thick-arrow}{\xleftarrow{\hspace{1cm}}}} \quad
+\text{3 weights, 1 bias}
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>This is a special case of a fully connected layer that computes the <span class="math inline">\(i^{\text{th}}\)</span> hidden unit as: <span class="math display">\[
+\begin{aligned}
+h_i &amp;= \sigma\left( \beta_i + \sum_{j=1}^3 \omega_{ij} x_j \right)
+&amp;\quad {\color{DodgerBlue} \class{thick-arrow}{\xleftarrow{\hspace{1cm}}}} \quad
+\text{$D^2$ weights, D biases}
+\end{aligned}
+\]</span></p></li>
+<li><p>A fully connected layer can reproduce this exactly if most weights are set to zero and others are constrained to be identical.</p></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/Conv2a.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Fully connected vs.&nbsp;convolutional layers. a) A fully connected layer has a weight connecting each input x to each hidden unit h (colored arrows) and a bias for each hidden unit (not shown). b) Hence, the associated weight matrix \bm{\Omega} has 36 weights relating the six inputs to the six hidden units. c) A convolutional layer with kernel size three computes each hidden unit as the same weighted sum of the three neighboring inputs (arrows) plus a bias (not shown). d) The weight matrix is a special case of the fully connected matrix where many weights are zero and others are repeated (same colors indicate same value, white indicates zero weight). e) A convolutional layer with kernel size three and stride two computes a weighted sum at every other position. f) This is also a special case of a fully connected network with a different sparse weight structure."><img src="assets/images/Conv2a.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Fully connected vs.&nbsp;convolutional layers. a) A fully connected layer has a weight connecting each input x to each hidden unit h (colored arrows) and a bias for each hidden unit (not shown). b) Hence, the associated weight matrix \bm{\Omega} has 36 weights relating the six inputs to the six hidden units. c) A convolutional layer with kernel size three computes each hidden unit as the same weighted sum of the three neighboring inputs (arrows) plus a bias (not shown). d) The weight matrix is a special case of the fully connected matrix where many weights are zero and others are repeated (same colors indicate same value, white indicates zero weight). e) A convolutional layer with kernel size three and stride two computes a weighted sum at every other position. f) This is also a special case of a fully connected network with a different sparse weight structure."></a></p>
+</figure>
+</div>
+<figcaption>Fully connected vs.&nbsp;convolutional layers.<br>
+a) A fully connected layer has a weight connecting each input <span class="math inline">\(x\)</span> to each hidden unit <span class="math inline">\(h\)</span> (colored arrows) and a bias for each hidden unit (not shown). b) Hence, the associated weight matrix <span class="math inline">\(\bm{\Omega}\)</span> has 36 weights relating the six inputs to the six hidden units. c) A convolutional layer with kernel size three computes each hidden unit as the same weighted sum of the three neighboring inputs (arrows) plus a bias (not shown). d) The weight matrix is a special case of the fully connected matrix where many weights are zero and others are repeated (same colors indicate same value, white indicates zero weight). e) A convolutional layer with kernel size three and stride two computes a weighted sum at every other position. f) This is also a special case of a fully connected network with a different sparse weight structure.</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Exercises
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>What are the kernel sizes, strides, dilations? Which ones are valid convolutions?</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/cnn_q1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5"><img src="assets/images/cnn_q1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></a></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/cnn_q2.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6"><img src="assets/images/cnn_q2.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></a></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/cnn_q3.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7"><img src="assets/images/cnn_q3.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:70.0%"></a></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="channels" class="level4">
+<h4 class="anchored" data-anchor-id="channels">Channels</h4>
+<ul>
+<li>If we only apply a single convolution, information will likely be lost
+<ul>
+<li>We are averaging nearby inputs</li>
+<li>ReLU activation function clips results that are less than zero.</li>
+</ul></li>
+<li>It is usual to compute several convolutions in parallel.
+<ul>
+<li>Each convlution produces a new set of hidden variables, termed a <span style="color: orange;">feature map</span> or <span style="color: orange;">channel</span>.</li>
+</ul></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/Conv4a.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Channels. Typically, multiple convolutions are applied to the input \bm{x} and stored in channels. a) A convolution is applied to create hidden units h_1 to h_6, which form the first channel. b) A second convolution operation isa pplied to create hidden units h_7 to h_{12}, which form the second channel. The channels are stored in a 2D array \bm{H}_1 that contain all the hidden units in the first hidden layer. c) If we add a further convolutional layer, there are now two channels at each input position. Here the 1D convolution defines a weighted sum over both input channels at the three closest positions to create each new output channel."><img src="assets/images/Conv4a.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Channels. Typically, multiple convolutions are applied to the input \bm{x} and stored in channels. a) A convolution is applied to create hidden units h_1 to h_6, which form the first channel. b) A second convolution operation isa pplied to create hidden units h_7 to h_{12}, which form the second channel. The channels are stored in a 2D array \bm{H}_1 that contain all the hidden units in the first hidden layer. c) If we add a further convolutional layer, there are now two channels at each input position. Here the 1D convolution defines a weighted sum over both input channels at the three closest positions to create each new output channel."></a></p>
+</figure>
+</div>
+<figcaption>Channels. Typically, multiple convolutions are applied to the input <span class="math inline">\(\bm{x}\)</span> and stored in channels.<br>
+a) A convolution is applied to create hidden units <span class="math inline">\(h_1\)</span> to <span class="math inline">\(h_6\)</span>, which form the first channel. b) A second convolution operation isa pplied to create hidden units <span class="math inline">\(h_7\)</span> to <span class="math inline">\(h_{12}\)</span>, which form the second channel. The channels are stored in a <span class="math inline">\(2\)</span>D array <span class="math inline">\(\bm{H}_1\)</span> that contain all the hidden units in the first hidden layer. c) If we add a further convolutional layer, there are now two channels at each input position. Here the <span class="math inline">\(1\)</span>D convolution defines a weighted sum over both input channels at the three closest positions to create each new output channel.</figcaption>
+</figure>
+</div>
+<ul>
+<li>In general, the input and the hidden layers all have multiple channels.</li>
+<li>If the incoming layer has <span class="math inline">\(C_i\)</span> channels and we select a kernel size <span class="math inline">\(K\)</span> per channel, the hidden units in each output channel are computed as a weighted sum over all <span class="math inline">\(C_i\)</span> channels and <span class="math inline">\(K\)</span> kernel entries using a weight matrix <span class="math inline">\(\bm{\Omega} \in \R^{C_i \times K}\)</span> and one bias.
+<ul>
+<li>Hence, if there are <span class="math inline">\(C_o\)</span> channels in the next layer, then we need <span class="math inline">\(\bm{\Omega} \in \R^{C_i \times C_o \times K}\)</span> weights <span class="math inline">\(\bm{\beta} \in \R^{C_o}\)</span> biases.</li>
+</ul></li>
+</ul>
+</section>
+<section id="receptive-fields" class="level4">
+<h4 class="anchored" data-anchor-id="receptive-fields">Receptive fields</h4>
+<ul>
+<li>Similar to fully connected networks, convolutional networks comprise a sequence of convolutional layers.</li>
+<li>The <strong>receptive field</strong> of a hidden unit in the network is the region of the original input that feeds into it.</li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvNetworkRF.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Receptive fields for network with kernel width of three. &nbsp; a) An input with eleven dimensions feeds into a hidden layer with three channels and convolution kernel of size three. The pre-activations of the three lighlighted hidden units in the first hidden layer \bm{H}_1 are different weighted sums of the nearest three inputs, so the receptive field in \bm{H}_1 has size three. b) The pre-activations of the four highlights hidden units in layer \bm{H}_2 each take a weighted sum of the three channels in layer \bm{H}_1 at each of the three nearest positions. Each hidden unit in layer \bm{H}_1 weights the nearest three input positions. Hence, hidden units in \bm{H}_2 have a receptive field size of five. c) The hidden units in the third layer (kernel size three, stride two) increases the receptive field size to seven. d) By the time we add a fourth layer, the receptive field of the hidden units at position three have a receptive field that covers the entire input."><img src="assets/images/ConvNetworkRF.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Receptive fields for network with kernel width of three. &nbsp; a) An input with eleven dimensions feeds into a hidden layer with three channels and convolution kernel of size three. The pre-activations of the three lighlighted hidden units in the first hidden layer \bm{H}_1 are different weighted sums of the nearest three inputs, so the receptive field in \bm{H}_1 has size three. b) The pre-activations of the four highlights hidden units in layer \bm{H}_2 each take a weighted sum of the three channels in layer \bm{H}_1 at each of the three nearest positions. Each hidden unit in layer \bm{H}_1 weights the nearest three input positions. Hence, hidden units in \bm{H}_2 have a receptive field size of five. c) The hidden units in the third layer (kernel size three, stride two) increases the receptive field size to seven. d) By the time we add a fourth layer, the receptive field of the hidden units at position three have a receptive field that covers the entire input."></a></p>
+</figure>
+</div>
+<figcaption>Receptive fields for network with kernel width of three. &nbsp; a) An input with eleven dimensions feeds into a hidden layer with three channels and convolution kernel of size three. The pre-activations of the three lighlighted hidden units in the first hidden layer <span class="math inline">\(\bm{H}_1\)</span> are different weighted sums of the nearest three inputs, so the receptive field in <span class="math inline">\(\bm{H}_1\)</span> has size three.<br>
+b) The pre-activations of the four highlights hidden units in layer <span class="math inline">\(\bm{H}_2\)</span> each take a weighted sum of the three channels in layer <span class="math inline">\(\bm{H}_1\)</span> at each of the three nearest positions. Each hidden unit in layer <span class="math inline">\(\bm{H}_1\)</span> weights the nearest three input positions. Hence, hidden units in <span class="math inline">\(\bm{H}_2\)</span> have a receptive field size of five.<br>
+c) The hidden units in the third layer (kernel size three, stride two) increases the receptive field size to seven.<br>
+d) By the time we add a fourth layer, the receptive field of the hidden units at position three have a receptive field that covers the entire input.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="example-mnist-1d" class="level4">
+<h4 class="anchored" data-anchor-id="example-mnist-1d">Example: MNIST-1D</h4>
+<ul>
+<li>The input <span class="math inline">\(\bm{x}\)</span> is a <span class="math inline">\(40\)</span>D vector, and the output <span class="math inline">\(\bm{f}\)</span> is a <span class="math inline">\(10\)</span>D vector, which is passed through a softmax layer to produce class probabilities.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/PerfMNIST1D.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="a) Templates for 10 classes y \in \{0, \ldots, 9\}, based on digits 0-9. b) Training examples \bm{x} are created by randomly transforming a template and c) adding noise. d) The horizontal offset of the transformed template is then sampled at 40 vertical positions."><img src="assets/images/PerfMNIST1D.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="a) Templates for 10 classes y \in \{0, \ldots, 9\}, based on digits 0-9. b) Training examples \bm{x} are created by randomly transforming a template and c) adding noise. d) The horizontal offset of the transformed template is then sampled at 40 vertical positions."></a></p>
+</figure>
+</div>
+<figcaption>a) Templates for 10 classes <span class="math inline">\(y \in \{0, \ldots, 9\}\)</span>, based on digits <span class="math inline">\(0-9\)</span>. b) Training examples <span class="math inline">\(\bm{x}\)</span> are created by randomly transforming a template and c) adding noise. d) The horizontal offset of the transformed template is then sampled at <span class="math inline">\(40\)</span> vertical positions.</figcaption>
+</figure>
+</div>
+<ul>
+<li>Let us recall the performance of a fully-connected network we looked at in the previous chapters.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Fully Connected Network for MNIST-1D
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><span class="math inline">\(D_i = 40\)</span> inputs, <span class="math inline">\(D_o = 10\)</span> outputs, passed through <span class="math inline">\(\operatorname{softmax}\)</span> activation function.</li>
+<li>Two hidden layers with <span class="math inline">\(D = 100\)</span> hidden units each.</li>
+<li>Trained using SGD with batch size <span class="math inline">\(100\)</span> and learning rate <span class="math inline">\(\eta = 0.1\)</span> for <span class="math inline">\(6000\)</span> steps (<span class="math inline">\(150\)</span> epochs).</li>
+<li>Loss: multiway cross-entropy.</li>
+</ul>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/PerfMNIST1DResults.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="a) Percent classification error as a function of the training step. The training set errors decrease to zero, but the test errors do not drop below \sim 40\%. This model does not generalize well to new test data. b) Loss as a function of the training step. The training loss decreases steadily toward zero. The test loss decreases at first, but subsequently increases as the model becomes increasingly confident about its (wrong) predictions."><img src="assets/images/PerfMNIST1DResults.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="a) Percent classification error as a function of the training step. The training set errors decrease to zero, but the test errors do not drop below \sim 40\%. This model does not generalize well to new test data. b) Loss as a function of the training step. The training loss decreases steadily toward zero. The test loss decreases at first, but subsequently increases as the model becomes increasingly confident about its (wrong) predictions."></a></p>
+</figure>
+</div>
+<figcaption>a) Percent classification error as a function of the training step. The training set errors decrease to zero, but the test errors do not drop below <span class="math inline">\(\sim 40\%\)</span>. This model does not generalize well to new test data. b) Loss as a function of the training step. The training loss decreases steadily toward zero. The test loss decreases at first, but subsequently increases as the model becomes increasingly confident about its (wrong) predictions.</figcaption>
+</figure>
+</div>
+<ul>
+<li>Instead, let us try a convolutional network with three hidden layers as in the next figure.</li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvDrawMNIST1D.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="Convolutional network for classifying MNIST-1D data. The first convolutional layer has 15 channels, kernel size three, stride two, and only retains “valid” positions to make a hidden layer with nineteen positions and fifteen channels. The following two convolutional layers have the same setting, gradually reducing the representation size at each subsequent hidden layer. Finally, a fully connected layer takes all sixty hidden units from the third hidden layer. It outputs ten activations that are subsequently passed through a \operatorname{softmax} layer to produce the ten class probabilities."><img src="assets/images/ConvDrawMNIST1D.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Convolutional network for classifying MNIST-1D data. The first convolutional layer has 15 channels, kernel size three, stride two, and only retains “valid” positions to make a hidden layer with nineteen positions and fifteen channels. The following two convolutional layers have the same setting, gradually reducing the representation size at each subsequent hidden layer. Finally, a fully connected layer takes all sixty hidden units from the third hidden layer. It outputs ten activations that are subsequently passed through a \operatorname{softmax} layer to produce the ten class probabilities."></a></p>
+</figure>
+</div>
+<figcaption>Convolutional network for classifying MNIST-1D data. The first convolutional layer has 15 channels, kernel size three, stride two, and only retains “valid” positions to make a hidden layer with nineteen positions and fifteen channels. The following two convolutional layers have the same setting, gradually reducing the representation size at each subsequent hidden layer. Finally, a fully connected layer takes all sixty hidden units from the third hidden layer. It outputs ten activations that are subsequently passed through a <span class="math inline">\(\operatorname{softmax}\)</span> layer to produce the ten class probabilities.</figcaption>
+</figure>
+</div>
+</div>
+<ul>
+<li>This network was trained for <span class="math inline">\(100,000\)</span> steps using SGD without momentum, a learning rate of <span class="math inline">\(0.01\)</span>, and a batch size of <span class="math inline">\(100\)</span> on a dataset of <span class="math inline">\(4,000\)</span> examples.</li>
+<li>The CNN has <span class="math inline">\(2,050\)</span> parameters, whereas a fully connected network with layer sizes <span class="math inline">\(\bmat{285 &amp; 135 &amp; 60}\)</span> would have <span class="math inline">\(59,065\)</span> parameters.</li>
+<li>The next figure shows both models fit the training data perfectly. However, the test error for the convolutional network is much less than for the fully connected network.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvMNIST1D.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-13" title="MNIST-1D results. a) The convolutional network from the previous figure eventually fits the training data perfectly and has \sim 17\% test error. b) A fully connected network with the same number of hidden layers and the number of hidden units in each learns the training data faster, but fails to generalize well with \sim 40\% test error. The latter model can reproduce the convolutional model in theory, but fails to do so. The convolutional structure restricts the possible mappings to those that process every position similarly, and this restriction improves performance."><img src="assets/images/ConvMNIST1D.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="MNIST-1D results. a) The convolutional network from the previous figure eventually fits the training data perfectly and has \sim 17\% test error. b) A fully connected network with the same number of hidden layers and the number of hidden units in each learns the training data faster, but fails to generalize well with \sim 40\% test error. The latter model can reproduce the convolutional model in theory, but fails to do so. The convolutional structure restricts the possible mappings to those that process every position similarly, and this restriction improves performance."></a></p>
+</figure>
+</div>
+<figcaption>MNIST-1D results.<br>
+a) The convolutional network from the previous figure eventually fits the training data perfectly and has <span class="math inline">\(\sim 17\%\)</span> test error.<br>
+b) A fully connected network with the same number of hidden layers and the number of hidden units in each learns the training data faster, but fails to generalize well with <span class="math inline">\(\sim 40\%\)</span> test error.<br>
+The latter model can reproduce the convolutional model in theory, but fails to do so. The convolutional structure restricts the possible mappings to those that process every position similarly, and this restriction improves performance.</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Why does CNN outperform the fully-connected network?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Better [inductive bias]{“color:orange;”}, i.e., interpolates between the training data better
+<ul>
+<li>Because we have embodied some prior knowledge in the architecture:
+<ul>
+<li>forced the network to process each position in the input the same way.</li>
+</ul></li>
+</ul></li>
+<li>The fully connected network has to learn what each digit template looks like at every position.</li>
+<li>In contrast, the convolutional network shares information across positions and hence learns to identify each category more accurately.</li>
+<li>Searches through a smaller family of input/output mappings, all of which are plausible.</li>
+</ul>
+</div>
+</div>
+</section>
+</section>
+<section id="convolutional-neural-networks-for-2d-inputs" class="level3">
+<h3 class="anchored" data-anchor-id="convolutional-neural-networks-for-2d-inputs">Convolutional Neural Networks for <span class="math inline">\(2\)</span>D inputs</h3>
+</section>
+<section id="downsampling-and-upsampling" class="level3">
+<h3 class="anchored" data-anchor-id="downsampling-and-upsampling">Downsampling and upsampling</h3>
+</section>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+
+</div>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../../../teaching/grad_courses/deep_learning/week05.html" class="pagination-link" aria-label="Measuring and Improving Performance">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Measuring and Improving Performance</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../../teaching/kinematics_and_dynamics_machines.html" class="pagination-link" aria-label="Kinematics and Machine Dynamics">
+        <span class="nav-page-text">Kinematics and Machine Dynamics</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
