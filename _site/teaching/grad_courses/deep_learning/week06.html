@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.27">
+<meta name="generator" content="quarto-1.8.26">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -40,10 +40,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-8402731c99c2101ab41aada8a5804e10.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dde5a511f69de668eb26e21f44dd46b8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
 <link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
 <link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
@@ -830,6 +830,171 @@ c) A third option is bilinear interpolation between the input values.</figcaptio
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 
+<p>We will use convolutional nets to classify the digits of MNIST</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/chiasson/mnist_sample.png" class="lightbox" data-gallery="quarto-lightbox-gallery-20"><img src="assets/images/chiasson/mnist_sample.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li>State of the art: = 99.67% MNIST test digits can be correctly classified.</li>
+<li>The incorrect classifications are shown below:
+<ul>
+<li>The number at the top right is the correct classification.</li>
+<li>The number at the bottom right is the network’s classification.</li>
+</ul></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_mnist_misclass.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-21"><img src="assets/images/nielsen_mnist_misclass.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<section id="first-cnn-trial" class="level4">
+<h4 class="anchored" data-anchor-id="first-cnn-trial">First CNN trial</h4>
+<ul>
+<li>Recall, we previously obtained approximately <span class="math inline">\(98\%\)</span> accuracy on the test data
+<ul>
+<li>That was a <span class="math inline">\(\bmat{784 &amp; 100 &amp; 10}\)</span> network using BCE loss.</li>
+<li>Hyperparameters: <span class="math inline">\(\lambda = 5.0\)</span>, <span class="math inline">\(\eta = 0.1\)</span>, <span class="math inline">\(\abs{\mc{B}} = 10\)</span>, <span class="math inline">\(n_{\text{epochs}}  = 60\)</span>.</li>
+</ul></li>
+<li>Let’s start with a simple conv/pool layer.</li>
+<li>Next, go from a max-pool maps to a fully-connected layer with <span class="math inline">\(100\)</span> neurons.</li>
+<li>The final layer is to connect the <span class="math inline">\(100\)</span> neurons to <span class="math inline">\(10\)</span> <span class="math inline">\(\operatorname{softmax}\)</span> neurons.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_first_cnn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-22"><img src="assets/images/nielsen_first_cnn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li>M. Nielsen obtains an accuracy of <span class="math inline">\(98.78\%\)</span> on the test data with this configuration.</li>
+</ul>
+</section>
+<section id="second-cnn-iteration" class="level4">
+<h4 class="anchored" data-anchor-id="second-cnn-iteration">Second CNN iteration</h4>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_second_cnn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-23"><img src="assets/images/nielsen_second_cnn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li>Second convolution layer: function from the <span class="math inline">\(20\)</span> pooling maps to <span class="math inline">\(40\)</span> output maps.</li>
+<li>The activations feeding into the second convolution layer are the outputs from the max-pool neurons.</li>
+</ul>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Interpreting the Weight Tensor
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Suppose the first conv layer has only <span class="math inline">\(4\)</span> maps instead of <span class="math inline">\(20\)</span>.</li>
+<li><span class="math inline">\(w_{\ell, m, n}^{(k)} \in \R^{5 \times 5 \times 4}\)</span>, <span class="math inline">\(k = 1, \dots, 40\)</span>: weight tensors from the <span class="math inline">\(1^{\text{st}}\)</span> conv/pool layer to the <span class="math inline">\(2^{\text{nd}}\)</span> conv layer.</li>
+<li>Assume that the network has been trained. What could the kernels <span class="math inline">\(w_{\ell, m, n}^{(k)}\)</span> be looking for?</li>
+<li>For each fixed <span class="math inline">\((\ell, m)\)</span> one of the four weights <span class="math inline">\(w_{\ell, m, 1}^{(k)}, w_{\ell, m, 2}^{(k)}, w_{\ell, m, 3}^{(k)}, w_{\ell, m, 4}^{(k)}\)</span> will be close to <span class="math inline">\(1\)</span> and the other three will be close to <span class="math inline">\(-1\)</span> (or perhaps all four weights are close to <span class="math inline">\(-1\)</span>).</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_directions.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-24"><img src="assets/images/nielsen_directions.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li>Choose (reconstruct) direction <span class="math inline">\(1\)</span> if <span class="math inline">\(w_{\ell, m, 1}^{(k)}\)</span> is maximum, direction <span class="math inline">\(2\)</span> if <span class="math inline">\(w_{\ell, m, 2}^{(k)}\)</span> is maximum, etc.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_argmax.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-25"><img src="assets/images/nielsen_argmax.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<ul>
+<li>The max-pool window is <span class="math inline">\(2 \times 2\)</span> with a <em>stride</em> of <span class="math inline">\(2\)</span>.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_maxpool_map.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-26"><img src="assets/images/nielsen_maxpool_map.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:40.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li><p>Map 1 of conv 2 goes to map 1 of max-pool 2, etc.</p></li>
+<li><p>The <span class="math inline">\(4 \times 4 \times 20\)</span> max-pool 2 neurons are fully connected to a layer of <span class="math inline">\(100\)</span> neurons</p></li>
+<li><p>These <span class="math inline">\(100\)</span> neurons are fully connected to the <span class="math inline">\(10\)</span> <span class="math inline">\(\operatorname{softmax}\)</span> neurons</p></li>
+<li><p>These are trained with the BCE loss to yield an <strong>accuracy</strong> on the test data of <span class="math inline">\(98.7\%\)</span>.</p></li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Why a second convolutional-pooling layer?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>The <span class="math inline">\(2^{\text{nd}}\)</span> conv layer constructs the <span class="math inline">\(40\)</span> tensors <span class="math inline">\(w^{(k)} \in \R^{5 \times 5 \times 20}\)</span> for <span class="math inline">\(k = 1, \dots, 40\)</span>.</li>
+<li>The input to the <span class="math inline">\(2^{\text{nd}}\)</span> conv layer are the <span class="math inline">\(20\)</span> pooled “images” (features) from the <span class="math inline">\(1^{\text{st}}\)</span> conv/pool layer.</li>
+<li>These <span class="math inline">\(20\)</span> pooled “images” are abstract and condensed, but have a lot of spatial structure.</li>
+<li>The <span class="math inline">\(2^{\text{nd}}\)</span> conv layer develops <span class="math inline">\(40\)</span> tensors to characterize this spatial structure.</li>
+</ul>
+</div>
+</div>
+<ul>
+<li>If we further
+<ul>
+<li>add regularization to the training,</li>
+<li>use ReLU instead of sigmoid activations on the hidden layers</li>
+</ul></li>
+<li>We obtain an accuracy on the test data of <span class="math inline">\(99.2\%\)</span>!</li>
+<li>Note that the classification accuracy on the <strong>test data</strong> should be done using the weights from the training epoch with the best classification accuracy on the <strong>validation data</strong>.</li>
+<li>Empirically ReLUs give better classification accuracy than sigmoids.</li>
+<li>We further apply dropout on the fully connected layers.</li>
+</ul>
+</section>
+<section id="final-network" class="level4">
+<h4 class="anchored" data-anchor-id="final-network">Final Network</h4>
+<ul>
+<li>We add a secondary fully connected layer of <span class="math inline">\(100\)</span> neurons before the <span class="math inline">\(\operatorname{softmax}\)</span> output layer.</li>
+<li>We augment the <span class="math inline">\(50,000\)</span> training images with <span class="math inline">\(200,000\)</span> distorted images (translations, rotations, scaling, etc.)</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_final_cnn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-27"><img src="assets/images/nielsen_final_cnn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li>Training this final CNN on the augmented dataset yields a test accuracy of <span class="math inline">\(99.6\%\)</span>!</li>
+</ul>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Why are we able to train?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>We set up a loss function and update weights/bias according to gradient descent.</li>
+<li>Output layer: changed from a squared error to BCE loss to avoid vanishing gradients</li>
+<li>Hidden layer: changed from sigmoid to ReLU to avoid vanishing gradients</li>
+<li>Used conv/pool layers to find patterns (representation learning)
+<ul>
+<li>These use a lot fewer weights than FC layers.</li>
+</ul></li>
+<li>Weight regularization to reduce overfitting</li>
+<li>Use dropout to force all the neurons to be involved in the learning.</li>
+<li>Used data augmentation to force the network to learn the right stuff.</li>
+</ul>
+</div>
+</div>
+</section>
 </div>
 </div>
 </div>

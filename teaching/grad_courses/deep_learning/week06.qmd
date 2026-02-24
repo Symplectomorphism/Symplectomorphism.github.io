@@ -398,7 +398,106 @@ Image credits: [Deep Learning](http://neuralnetworksanddeeplearning.com) by Mich
 :::
 
 
+We will use convolutional nets to classify the digits of MNIST
 
+![](assets/images/chiasson/mnist_sample.png){.lightbox width=80% fig-align="center"}
+
+* State of the art: \nicefrac{9,967}{10,000} = 99.67\% MNIST test digits can be correctly classified.
+* The incorrect classifications are shown below:
+  - The number at the top right is the correct classification.
+  - The number at the bottom right is the network's classification.
+
+![](assets/images/nielsen_mnist_misclass.svg){.lightbox width=80% fig-align="center"}
+
+#### First CNN trial
+
+* Recall, we previously obtained approximately $98\%$ accuracy on the test data
+  - That was a $\bmat{784 & 100 & 10}$ network using BCE loss.
+  - Hyperparameters: $\lambda = 5.0$, $\eta = 0.1$, $\abs{\mc{B}} = 10$, $n_{\text{epochs}}  = 60$.
+
+
+* Let's start with a simple conv/pool layer.
+* Next, go from a max-pool maps to a fully-connected layer with $100$ neurons.
+* The final layer is to connect the $100$ neurons to $10$ $\operatorname{softmax}$ neurons.
+
+![](assets/images/nielsen_first_cnn.svg){.lightbox width=80% fig-align="center"}
+
+* M. Nielsen obtains an accuracy of $98.78\%$ on the test data with this configuration.
+
+#### Second CNN iteration
+
+![](assets/images/nielsen_second_cnn.svg){.lightbox width=80% fig-align="center"}
+
+* Second convolution layer: function from the $20$ pooling maps to $40$ output maps.
+* The activations feeding into the second convolution layer are the outputs from the max-pool neurons.
+
+
+::: {.callout-important}
+### Interpreting the Weight Tensor
+* Suppose the first conv layer has only $4$ maps instead of $20$.
+* $w_{\ell, m, n}^{(k)} \in \R^{5 \times 5 \times 4}$, $k = 1, \dots, 40$: weight tensors from the 
+$1^{\text{st}}$ conv/pool layer to the $2^{\text{nd}}$ conv layer.
+* Assume that the network has been trained. What could the kernels $w_{\ell, m, n}^{(k)}$ be looking for?
+* For each fixed $(\ell, m)$ one of the four weights $w_{\ell, m, 1}^{(k)}, w_{\ell, m, 2}^{(k)}, w_{\ell, m, 3}^{(k)}, w_{\ell, m, 4}^{(k)}$ will be close to $1$ and the other three will be close to $-1$ (or perhaps all four weights 
+are close to $-1$).
+
+![](assets/images/nielsen_directions.svg){.lightbox width=80% fig-align="center"}
+
+* Choose (reconstruct) direction $1$ if $w_{\ell, m, 1}^{(k)}$ is maximum, direction $2$ if $w_{\ell, m, 2}^{(k)}$ is maximum, etc.
+
+![](assets/images/nielsen_argmax.svg){.lightbox width=80% fig-align="center"}
+:::
+
+* The max-pool window is $2 \times 2$ with a _stride_ of $2$.
+
+![](assets/images/nielsen_maxpool_map.svg){.lightbox width=40% fig-align="center"}
+
+* Map 1 of conv 2 goes to map 1 of max-pool 2, etc.
+
+* The $4 \times 4 \times 20$ max-pool 2 neurons are fully connected to a layer of $100$ neurons
+* These $100$ neurons are fully connected to the $10$ $\operatorname{softmax}$ neurons
+* These are trained with the BCE loss to yield an **accuracy** on the test data of $98.7\%$.
+
+
+::: {.callout-note}
+### Why a second convolutional-pooling layer?
+* The $2^{\text{nd}}$ conv layer constructs the $40$ tensors $w^{(k)} \in \R^{5 \times 5 \times 20}$ for $k = 1, \dots, 40$.
+* The input to the $2^{\text{nd}}$ conv layer are the $20$ pooled "images" (features) from the $1^{\text{st}}$ conv/pool layer.
+* These $20$ pooled "images" are abstract and condensed, but have a lot of spatial structure.
+* The $2^{\text{nd}}$ conv layer develops $40$ tensors to characterize this spatial structure.
+:::
+
+
+* If we further
+  - add regularization to the training,
+  - use ReLU instead of sigmoid activations on the hidden layers
+* We obtain an accuracy on the test data of $99.2\%$!
+* Note that the classification accuracy on the __test data__ should be done using the weights 
+from the training epoch with the best classification accuracy on the __validation data__.
+* Empirically ReLUs give better classification accuracy than sigmoids.
+* We further apply dropout on the fully connected layers.
+
+#### Final Network
+
+* We add a secondary fully connected layer of $100$ neurons before the $\operatorname{softmax}$ output layer.
+* We augment the $50,000$ training images with $200,000$ distorted images (translations, rotations, scaling, etc.)
+
+![](assets/images/nielsen_final_cnn.svg){.lightbox width=80% fig-align="center"}
+
+* Training this final CNN on the augmented dataset yields a test accuracy of $99.6\%$!
+
+
+::: {.callout-important}
+### Why are we able to train?
+* We set up a loss function and update weights/bias according to gradient descent.
+* Output layer: changed from a squared error to BCE loss to avoid vanishing gradients
+* Hidden layer: changed from sigmoid to ReLU to avoid vanishing gradients
+* Used conv/pool layers to find patterns (representation learning)
+  - These use a lot fewer weights than FC layers.
+* Weight regularization to reduce overfitting
+* Use dropout to force all the neurons to be involved in the learning.
+* Used data augmentation to force the network to learn the right stuff.
+:::
 
 
 :::
