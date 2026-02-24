@@ -254,7 +254,7 @@ convolutional network is much less than for the fully connected network.
 
 ::: {.callout-note}
 ### Why does CNN outperform the fully-connected network?
-* Better [inductive bias]{"color:orange;"}, i.e., interpolates between the training data better
+* Better [inductive bias]{style="color: orange;"}, i.e., interpolates between the training data better
   - Because we have embodied some prior knowledge in the architecture:
     - forced the network to process each position in the input the same way.
 * The fully connected network has to learn what each digit template looks like at every position.
@@ -266,8 +266,127 @@ identify each category more accurately.
 
 ### Convolutional Neural Networks for $2$D inputs
 
+* The convolutional kernel is now a $2$D object.
+* For example, a $3 \times 3$ kernel $\Omega \in \R^{3 \times 3}$ applied to a $2$D input 
+comprising of elements $x_{ij}$ computes a single layer of hidden units $h_{ij}$ as 
+$$
+h_{ij} = \sigma\left( \beta + \sum_{m=-1}^{1} \sum_{n=-1}^{1} \omega_{mn} x_{i+m, j+n} \right)
+$$
+
+::: {.left-caption}
+![
+  2D convolutional layer. Each output $h_{ij}$ computes a weighted sum of the $3 \times 3$ nearest
+  inputs, adds a bias, and passes the result through an activation function. \
+  a) Here, the output $h_{23}$ (shaded) is a weighted sum of the nine positions from 
+  $x_{12}$ to $x_{34}$ (shaded). \
+  b) Different outputs are computed by translating the kernel across the image grid in two dimensions. \
+  c-d) With zero-padding, positions beyond the image's edge are considered to be zero.
+](assets/images/Conv2D.svg){.lightbox width=100% fig-align="center"}
+:::
+
+* Often, the input is an RGB image, which is treated as a $2$D signal with three channels.
+* Here, a $3 \times 3$ kernel would have $3 \times 3 \times 3$ weights and be applied to the 
+three input channels at each of the $3 \times 3$ positions to create a $2$D output that is the 
+same height and width as the input image (assuming zero-padding).
+* To generate multiple output channels, we repeat this process with different kernel weights and 
+append the result to form a $3$D [tensor]{}{style="color: dodgerblue;"}
+* If the kernel size is $K \times K$, and there are $C_i$ input channels, each output channel is a 
+weighted sum of $C_i \times K \times K$ quantities plus one bias.
+  - It follows that to compute $C_o$ output channels, we need $C_i \times C_o \times K \times K$ 
+  weights and $C_o$ biases.
+
+::: {.left-caption}
+![
+  2D convolutional layer applied to an image. The image is treated as a $2$D input with three channels 
+  corresponding to red, green, and blue components. With a $3 \times 3$ kernel, each pre-activation in 
+  the first hidden layer is computed by pointwise multiplying the $3 \times 3 \times 3$ kernel weights 
+  with the $3 \times 3$ RGB image patch centered at the same position, summing, and adding the bias. 
+  To calculate all the pre-activations in the hidden layer, we "slide" the kernel over the image in both
+  horizontal and vertical directions. The output is a $2$D layer of hidden units. To create multiple 
+  output channels, we would repeat this process with multiple kernels, resulting in a $3$D tensor of 
+  hidden units at hidden layer $\bm{H}_1$.
+](assets/images/ConvImage.svg){.lightbox width=100% fig-align="center"}
+:::
+
 
 ### Downsampling and upsampling
+
+#### Downsampling
+
+* Note that the _max pooling_ operation induces some level of invariance to translation.
+  - If the input is shifted by one pixel, many of these maximum values remain the same.
+
+::: {.left-caption}
+![
+  Methods for scaling down representation size (downsampling). \
+  a) Subsampling. The original $4 \times 4$ representation (left) is reduced to size $2 \times 2$ 
+  (right) by retaining every other input. Colors on the left indicate which inputs contribute to 
+  the outputs on the right. This is effectively what happens with a kernel of stride two, except 
+  that the intermediate values are never computed. \
+  b) Max pooling. Each output comprises the maximum value of the corresponding $2 \times 2$ block. \
+  c) Mean pooling. Each output is the mean of the values in the $2 \times 2$ block.
+](assets/images/ConvDown.svg){.lightbox width=100% fig-align="center"}
+:::
+
+
+#### Upsampling
+
+::: {.left-caption}
+![
+  Methods for scaling up representation size (upsampling). \
+  a) The simplest way to double the size of a $2$D layer is to duplicate each input four times. \
+  b) In networks where we have previously used a max pooling operation, we can redistribute the values 
+  to the same positions they originally came from (i.e., where the maxima were). This is known as 
+  _max unpooling_. \
+  c) A third option is bilinear interpolation between the input values.
+](assets/images/ConvUp.svg){.lightbox width=100% fig-align="center"}
+:::
+
+* There is yet a fourth approach, which is roughly analogous to downsampling using a stride of two.
+  - Recall: in that method there were half as many outputs as inputs.
+  - For kernel size three, each output was a weighted sum of the three closest inputs.
+* In _transposed convolution_, this picture is reversed.
+  - There are twice as many outputs as inputs
+  - Each input contributes to three of the outputs.
+* When we consider the associated weight matrix of this upsampling mechanism, we see that it is 
+the transpose of the matrix for the downsampling mechanism!
+
+::: {.left-caption}
+![
+  Transposed convolution in $1$D. \ 
+  a) Downsampling with kernel size three, stride two, and zero padding. Each output is a weighted sum 
+  of three inputs (arrows indicate weights). \ 
+  b) This can be expressed by a weight matrix (same color indicates shared weight). \ 
+  c) In transposed convolution, each input contributes three values to the output layer, which has 
+  twice as many outputs as inputs. \ 
+  d) The associated weight matrix is the transpose of that in panel (b).
+](assets/images/ConvTranspose.svg){.lightbox width=100% fig-align="center"}
+:::
+
+
+#### Changing the number of channels
+
+* Sometimes we want to change the number of channels between one hidden layer and the next without further 
+spatial pooling. 
+   - Usually done so we can combine the representation with another parallel computation (ResNets).
+* To accomplish this, we apply convolution with kernel size one. 
+  - Each element of the output layer is computed by taking a weighted sum of all the channels at the same 
+  position.
+  - We can repeat this multiple times with different weights to generate as many output channels as we need.
+* The associated convolution weights have size $1 \times 1 \times C_i \times C_o$. 
+  - Hence, this is known as $1 \times 1$ _convolution_.
+* Combined with a bias and activation function, it is equivalent to running the same fully connected 
+network on the input channels at every position.
+
+::: {.left-caption}
+![
+  $1 \times 1$ convolution. To change the number of channels without spatial pooling, we apply a $1 \times 1$
+  kernel. Each output channel is computed by taking a weighted sum of all of the channels at the same position, 
+  adding a bias, and passing through an activation function. Multiple output channels are created by repeating 
+  this operation with different weights and biases.
+](assets/images/Conv1DChannels.svg){.lightbox width=100% fig-align="center"}
+:::
+
 
 
 

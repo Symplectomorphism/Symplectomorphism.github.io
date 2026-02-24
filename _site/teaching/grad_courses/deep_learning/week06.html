@@ -666,7 +666,7 @@ The latter model can reproduce the convolutional model in theory, but fails to d
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>Better [inductive bias]{“color:orange;”}, i.e., interpolates between the training data better
+<li>Better <span style="color: orange;">inductive bias</span>, i.e., interpolates between the training data better
 <ul>
 <li>Because we have embodied some prior knowledge in the architecture:
 <ul>
@@ -683,9 +683,149 @@ The latter model can reproduce the convolutional model in theory, but fails to d
 </section>
 <section id="convolutional-neural-networks-for-2d-inputs" class="level3">
 <h3 class="anchored" data-anchor-id="convolutional-neural-networks-for-2d-inputs">Convolutional Neural Networks for <span class="math inline">\(2\)</span>D inputs</h3>
+<ul>
+<li>The convolutional kernel is now a <span class="math inline">\(2\)</span>D object.</li>
+<li>For example, a <span class="math inline">\(3 \times 3\)</span> kernel <span class="math inline">\(\Omega \in \R^{3 \times 3}\)</span> applied to a <span class="math inline">\(2\)</span>D input comprising of elements <span class="math inline">\(x_{ij}\)</span> computes a single layer of hidden units <span class="math inline">\(h_{ij}\)</span> as <span class="math display">\[
+h_{ij} = \sigma\left( \beta + \sum_{m=-1}^{1} \sum_{n=-1}^{1} \omega_{mn} x_{i+m, j+n} \right)
+\]</span></li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/Conv2D.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-14" title="2D convolutional layer. Each output h_{ij} computes a weighted sum of the 3 \times 3 nearest inputs, adds a bias, and passes the result through an activation function. a) Here, the output h_{23} (shaded) is a weighted sum of the nine positions from x_{12} to x_{34} (shaded). b) Different outputs are computed by translating the kernel across the image grid in two dimensions. c-d) With zero-padding, positions beyond the image’s edge are considered to be zero."><img src="assets/images/Conv2D.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="2D convolutional layer. Each output h_{ij} computes a weighted sum of the 3 \times 3 nearest inputs, adds a bias, and passes the result through an activation function. a) Here, the output h_{23} (shaded) is a weighted sum of the nine positions from x_{12} to x_{34} (shaded). b) Different outputs are computed by translating the kernel across the image grid in two dimensions. c-d) With zero-padding, positions beyond the image’s edge are considered to be zero."></a></p>
+</figure>
+</div>
+<figcaption>2D convolutional layer. Each output <span class="math inline">\(h_{ij}\)</span> computes a weighted sum of the <span class="math inline">\(3 \times 3\)</span> nearest inputs, adds a bias, and passes the result through an activation function.<br>
+a) Here, the output <span class="math inline">\(h_{23}\)</span> (shaded) is a weighted sum of the nine positions from <span class="math inline">\(x_{12}\)</span> to <span class="math inline">\(x_{34}\)</span> (shaded).<br>
+b) Different outputs are computed by translating the kernel across the image grid in two dimensions.<br>
+c-d) With zero-padding, positions beyond the image’s edge are considered to be zero.</figcaption>
+</figure>
+</div>
+</div>
+<ul>
+<li>Often, the input is an RGB image, which is treated as a <span class="math inline">\(2\)</span>D signal with three channels.</li>
+<li>Here, a <span class="math inline">\(3 \times 3\)</span> kernel would have <span class="math inline">\(3 \times 3 \times 3\)</span> weights and be applied to the three input channels at each of the <span class="math inline">\(3 \times 3\)</span> positions to create a <span class="math inline">\(2\)</span>D output that is the same height and width as the input image (assuming zero-padding).</li>
+<li>To generate multiple output channels, we repeat this process with different kernel weights and append the result to form a <span class="math inline">\(3\)</span>D <span>tensor</span>{style=“color: dodgerblue;”}</li>
+<li>If the kernel size is <span class="math inline">\(K \times K\)</span>, and there are <span class="math inline">\(C_i\)</span> input channels, each output channel is a weighted sum of <span class="math inline">\(C_i \times K \times K\)</span> quantities plus one bias.
+<ul>
+<li>It follows that to compute <span class="math inline">\(C_o\)</span> output channels, we need <span class="math inline">\(C_i \times C_o \times K \times K\)</span> weights and <span class="math inline">\(C_o\)</span> biases.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvImage.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-15" title="2D convolutional layer applied to an image. The image is treated as a 2D input with three channels corresponding to red, green, and blue components. With a 3 \times 3 kernel, each pre-activation in the first hidden layer is computed by pointwise multiplying the 3 \times 3 \times 3 kernel weights with the 3 \times 3 RGB image patch centered at the same position, summing, and adding the bias. To calculate all the pre-activations in the hidden layer, we “slide” the kernel over the image in both horizontal and vertical directions. The output is a 2D layer of hidden units. To create multiple output channels, we would repeat this process with multiple kernels, resulting in a 3D tensor of hidden units at hidden layer \bm{H}_1."><img src="assets/images/ConvImage.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="2D convolutional layer applied to an image. The image is treated as a 2D input with three channels corresponding to red, green, and blue components. With a 3 \times 3 kernel, each pre-activation in the first hidden layer is computed by pointwise multiplying the 3 \times 3 \times 3 kernel weights with the 3 \times 3 RGB image patch centered at the same position, summing, and adding the bias. To calculate all the pre-activations in the hidden layer, we “slide” the kernel over the image in both horizontal and vertical directions. The output is a 2D layer of hidden units. To create multiple output channels, we would repeat this process with multiple kernels, resulting in a 3D tensor of hidden units at hidden layer \bm{H}_1."></a></p>
+</figure>
+</div>
+<figcaption>2D convolutional layer applied to an image. The image is treated as a <span class="math inline">\(2\)</span>D input with three channels corresponding to red, green, and blue components. With a <span class="math inline">\(3 \times 3\)</span> kernel, each pre-activation in the first hidden layer is computed by pointwise multiplying the <span class="math inline">\(3 \times 3 \times 3\)</span> kernel weights with the <span class="math inline">\(3 \times 3\)</span> RGB image patch centered at the same position, summing, and adding the bias. To calculate all the pre-activations in the hidden layer, we “slide” the kernel over the image in both horizontal and vertical directions. The output is a <span class="math inline">\(2\)</span>D layer of hidden units. To create multiple output channels, we would repeat this process with multiple kernels, resulting in a <span class="math inline">\(3\)</span>D tensor of hidden units at hidden layer <span class="math inline">\(\bm{H}_1\)</span>.</figcaption>
+</figure>
+</div>
+</div>
 </section>
 <section id="downsampling-and-upsampling" class="level3">
 <h3 class="anchored" data-anchor-id="downsampling-and-upsampling">Downsampling and upsampling</h3>
+<section id="downsampling" class="level4">
+<h4 class="anchored" data-anchor-id="downsampling">Downsampling</h4>
+<ul>
+<li>Note that the <em>max pooling</em> operation induces some level of invariance to translation.
+<ul>
+<li>If the input is shifted by one pixel, many of these maximum values remain the same.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvDown.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-16" title="Methods for scaling down representation size (downsampling). a) Subsampling. The original 4 \times 4 representation (left) is reduced to size 2 \times 2 (right) by retaining every other input. Colors on the left indicate which inputs contribute to the outputs on the right. This is effectively what happens with a kernel of stride two, except that the intermediate values are never computed. b) Max pooling. Each output comprises the maximum value of the corresponding 2 \times 2 block. c) Mean pooling. Each output is the mean of the values in the 2 \times 2 block."><img src="assets/images/ConvDown.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Methods for scaling down representation size (downsampling). a) Subsampling. The original 4 \times 4 representation (left) is reduced to size 2 \times 2 (right) by retaining every other input. Colors on the left indicate which inputs contribute to the outputs on the right. This is effectively what happens with a kernel of stride two, except that the intermediate values are never computed. b) Max pooling. Each output comprises the maximum value of the corresponding 2 \times 2 block. c) Mean pooling. Each output is the mean of the values in the 2 \times 2 block."></a></p>
+</figure>
+</div>
+<figcaption>Methods for scaling down representation size (downsampling).<br>
+a) Subsampling. The original <span class="math inline">\(4 \times 4\)</span> representation (left) is reduced to size <span class="math inline">\(2 \times 2\)</span> (right) by retaining every other input. Colors on the left indicate which inputs contribute to the outputs on the right. This is effectively what happens with a kernel of stride two, except that the intermediate values are never computed.<br>
+b) Max pooling. Each output comprises the maximum value of the corresponding <span class="math inline">\(2 \times 2\)</span> block.<br>
+c) Mean pooling. Each output is the mean of the values in the <span class="math inline">\(2 \times 2\)</span> block.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="upsampling" class="level4">
+<h4 class="anchored" data-anchor-id="upsampling">Upsampling</h4>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvUp.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-17" title="Methods for scaling up representation size (upsampling). a) The simplest way to double the size of a 2D layer is to duplicate each input four times. b) In networks where we have previously used a max pooling operation, we can redistribute the values to the same positions they originally came from (i.e., where the maxima were). This is known as max unpooling. c) A third option is bilinear interpolation between the input values."><img src="assets/images/ConvUp.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Methods for scaling up representation size (upsampling). a) The simplest way to double the size of a 2D layer is to duplicate each input four times. b) In networks where we have previously used a max pooling operation, we can redistribute the values to the same positions they originally came from (i.e., where the maxima were). This is known as max unpooling. c) A third option is bilinear interpolation between the input values."></a></p>
+</figure>
+</div>
+<figcaption>Methods for scaling up representation size (upsampling).<br>
+a) The simplest way to double the size of a <span class="math inline">\(2\)</span>D layer is to duplicate each input four times.<br>
+b) In networks where we have previously used a max pooling operation, we can redistribute the values to the same positions they originally came from (i.e., where the maxima were). This is known as <em>max unpooling</em>.<br>
+c) A third option is bilinear interpolation between the input values.</figcaption>
+</figure>
+</div>
+</div>
+<ul>
+<li>There is yet a fourth approach, which is roughly analogous to downsampling using a stride of two.
+<ul>
+<li>Recall: in that method there were half as many outputs as inputs.</li>
+<li>For kernel size three, each output was a weighted sum of the three closest inputs.</li>
+</ul></li>
+<li>In <em>transposed convolution</em>, this picture is reversed.
+<ul>
+<li>There are twice as many outputs as inputs</li>
+<li>Each input contributes to three of the outputs.</li>
+</ul></li>
+<li>When we consider the associated weight matrix of this upsampling mechanism, we see that it is the transpose of the matrix for the downsampling mechanism!</li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ConvTranspose.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-18" title="Transposed convolution in 1D. &nbsp; a) Downsampling with kernel size three, stride two, and zero padding. Each output is a weighted sum of three inputs (arrows indicate weights). &nbsp; b) This can be expressed by a weight matrix (same color indicates shared weight). &nbsp; c) In transposed convolution, each input contributes three values to the output layer, which has twice as many outputs as inputs. &nbsp; d) The associated weight matrix is the transpose of that in panel (b)."><img src="assets/images/ConvTranspose.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="Transposed convolution in 1D. &nbsp; a) Downsampling with kernel size three, stride two, and zero padding. Each output is a weighted sum of three inputs (arrows indicate weights). &nbsp; b) This can be expressed by a weight matrix (same color indicates shared weight). &nbsp; c) In transposed convolution, each input contributes three values to the output layer, which has twice as many outputs as inputs. &nbsp; d) The associated weight matrix is the transpose of that in panel (b)."></a></p>
+</figure>
+</div>
+<figcaption>Transposed convolution in <span class="math inline">\(1\)</span>D. &nbsp; a) Downsampling with kernel size three, stride two, and zero padding. Each output is a weighted sum of three inputs (arrows indicate weights). &nbsp; b) This can be expressed by a weight matrix (same color indicates shared weight). &nbsp; c) In transposed convolution, each input contributes three values to the output layer, which has twice as many outputs as inputs. &nbsp; d) The associated weight matrix is the transpose of that in panel (b).</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="changing-the-number-of-channels" class="level4">
+<h4 class="anchored" data-anchor-id="changing-the-number-of-channels">Changing the number of channels</h4>
+<ul>
+<li>Sometimes we want to change the number of channels between one hidden layer and the next without further spatial pooling.
+<ul>
+<li>Usually done so we can combine the representation with another parallel computation (ResNets).</li>
+</ul></li>
+<li>To accomplish this, we apply convolution with kernel size one.
+<ul>
+<li>Each element of the output layer is computed by taking a weighted sum of all the channels at the same position.</li>
+<li>We can repeat this multiple times with different weights to generate as many output channels as we need.</li>
+</ul></li>
+<li>The associated convolution weights have size <span class="math inline">\(1 \times 1 \times C_i \times C_o\)</span>.
+<ul>
+<li>Hence, this is known as <span class="math inline">\(1 \times 1\)</span> <em>convolution</em>.</li>
+</ul></li>
+<li>Combined with a bias and activation function, it is equivalent to running the same fully connected network on the input channels at every position.</li>
+</ul>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/Conv1DChannels.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-19" title="1 \times 1 convolution. To change the number of channels without spatial pooling, we apply a 1 \times 1 kernel. Each output channel is computed by taking a weighted sum of all of the channels at the same position, adding a bias, and passing through an activation function. Multiple output channels are created by repeating this operation with different weights and biases."><img src="assets/images/Conv1DChannels.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%" alt="1 \times 1 convolution. To change the number of channels without spatial pooling, we apply a 1 \times 1 kernel. Each output channel is computed by taking a weighted sum of all of the channels at the same position, adding a bias, and passing through an activation function. Multiple output channels are created by repeating this operation with different weights and biases."></a></p>
+</figure>
+</div>
+<figcaption><span class="math inline">\(1 \times 1\)</span> convolution. To change the number of channels without spatial pooling, we apply a <span class="math inline">\(1 \times 1\)</span> kernel. Each output channel is computed by taking a weighted sum of all of the channels at the same position, adding a bias, and passing through an activation function. Multiple output channels are created by repeating this operation with different weights and biases.</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
