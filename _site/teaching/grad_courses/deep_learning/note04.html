@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Recognizing Handwritten Digits – Satici Lab</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../">
+<link href="../../../images/monogram_solid-cmyk.png" rel="icon" type="image/png">
+<script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../site_libs/bootstrap/bootstrap-dde5a511f69de668eb26e21f44dd46b8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script>
+window.MathJax = {
+  loader: {
+    load: ['[tex]/boldsymbol', '[tex]/mathtools']
+  },
+  tex: {
+    packages: {'[+]': ['boldsymbol', 'mathtools']}
+  }
+};
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../../styles.css">
+<meta property="og:title" content="Recognizing Handwritten Digits – Satici Lab">
+<meta property="og:description" content="Research website for the Satici Lab">
+<meta property="og:image" content="assets/images/chiasson/mnist_sample.png">
+<meta property="og:site_name" content="Satici Lab">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../../images/monogram_solid-blk.png" alt="" class="navbar-logo light-content">
+    <img src="../../../images/monogram_solid-blk.png" alt="" class="navbar-logo dark-content">
+    </a>
+    <a class="navbar-brand" href="../../../index.html">
+    <span class="navbar-title">Satici Lab</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../research/index.html"> 
+<span class="menu-text">Research</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../publications.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../teaching/index.html"> 
+<span class="menu-text">Teaching</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../people/index.html"> 
+<span class="menu-text">People</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../positions/index.html"> 
+<span class="menu-text">Positions</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-more" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">More</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-more">    
+        <li>
+    <a class="dropdown-item" href="../../../fun/index.html">
+ <span class="dropdown-text">Fun</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../chiasson/index.html">
+ <span class="dropdown-text">John Chiasson</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://github.com/symplectomorphism"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text">Github</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <div id="quarto-announcement" data-announcement-id="308118796d112337113ef5a3a3b7ad7a" class="alert alert-primary hidden"><i class="bi bi-info-circle quarto-announcement-icon"></i><div class="quarto-announcement-content">
+<p>Currently looking for PhD students on robotics, control, and machine learning! Please see the <a href="../../../positions/index.html">positions</a> tab.</p>
+</div><i class="bi bi-x-lg quarto-announcement-action"></i></div>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+<div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
+$$
+% Define your custom commands here
+\newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\vectornorm}[1]{\left|\left|#1\right|\right|}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\nicefrac}[2]{{}^{#1}\!/_{\!#2}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+$$
+</div>
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Recognizing Handwritten Digits</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Recognizing handwritten digits</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Backpropagation</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>MNIST: <strong>M</strong>odified <strong>N</strong>ational <strong>I</strong>nstitute of <strong>S</strong>tandards and <strong>T</strong>echnology<br>
+Consider handwritten digits from the MNIST database. Each digit is made up of <span class="math inline">\(28 \times 28 = 784\)</span> grayscale pixels.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/chiasson/mnist_sample.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="assets/images/chiasson/mnist_sample.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<ul>
+<li>Consider the <span class="math inline">\(784\)</span> pixel values as the input values to a function.</li>
+<li>Is there a function <span class="math inline">\(y = f(x)\)</span> whose output gives the digit number?</li>
+<li>Specifically, with <span class="math inline">\(x \in \R^{784}\)</span> and <span class="math inline">\(y \in \R^{10}\)</span> we want a function <span class="math inline">\(f(x)\)</span> as follows:</li>
+</ul>
+<p><span class="math display">\[
+f(x) = \left\{ \begin{array}{cl}
+\bmat{1 &amp; 0 &amp; \cdots &amp; 0} &amp; \text{if } x \text{ is an image of a } 0 \\
+\bmat{0 &amp; 1 &amp; \cdots &amp; 0} &amp; \text{if } x \text{ is an image of a } 1 \\
+\vdots &amp; \vdots \\
+\bmat{0 &amp; 0 &amp; \cdots &amp; 1} &amp; \text{if } x \text{ is an image of a } 9
+\end{array} \right.
+\]</span></p>
+<ul>
+<li>A neural network is a way to construct such a function <span class="math inline">\(f(x)\)</span>.</li>
+</ul>
+<section id="network-to-identify-handwritten-digits" class="level3">
+<h3 class="anchored" data-anchor-id="network-to-identify-handwritten-digits">Network to identify handwritten digits</h3>
+<div class="columns" style="display: flex; align-items: center;">
+<div class="column" style="width: 40%; min-width: 0; white-space: normal; overflow-wrap: break-word;">
+<div style="font-size: 0.9em;">
+<ul>
+<li><p>Pixel values: <span class="math inline">\(x \in \R^{784}\)</span>.</p></li>
+<li><p>Outputs: <span class="math inline">\(a = f\left(x; {W}, {b}\right) \in \R^{10}\)</span>.</p></li>
+<li><p><span class="math inline">\({W}^{(2)} \in \R^{15 \times 784}\)</span> <span class="math inline">\({b}^{(2)} \in \R^{15}\)</span></p></li>
+<li><p><span class="math inline">\({W}^{(3)} \in \R^{10 \times 15}\)</span> <span class="math inline">\({b}^{(3)} \in \R^{10}\)</span></p></li>
+<li><p><span class="math inline">\(z^{(2)} = {W}^{(2)} x + {b}^{(2)}\)</span> with output <span class="math inline">\(\sigma\left(z^{(2)}\right)\)</span></p>
+<ul>
+<li><span class="math inline">\(x \in \R^{784}\)</span></li>
+<li><span class="math inline">\({W}^{(2)} \in \R^{15 \times 784}\)</span></li>
+<li><span class="math inline">\({b}^{(2)} \in \R^{15}\)</span></li>
+</ul></li>
+<li><p><span class="math inline">\(z^{(3)} = {W}^{(3)} \sigma\left(z^{(2)}\right) + {b}^{(3)}\)</span> with output <span class="math inline">\(a = \sigma\left(z^{(3)}\right)\)</span></p>
+<ul>
+<li><span class="math inline">\({W}^{(3)} \in \R^{10 \times 15}\)</span></li>
+<li><span class="math inline">\({b}^{(3)} \in \R^{10}\)</span></li>
+</ul></li>
+</ul>
+</div>
+</div><div class="column" style="width: 60%; min-width: 0;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/chiasson/sample_nn.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="assets/images/chiasson/sample_nn.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Short Hand Notation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+a = y(x) =  f(x; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}): \R^{784} \to \R^{10}
+\]</span></p>
+<ul>
+<li>The total number of parameters is <span class="math inline">\(15 \times 784 + 15 + 10 \times 15 + 10 = 11,935\)</span>.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="stochastic-gradient-descent" class="level3">
+<h3 class="anchored" data-anchor-id="stochastic-gradient-descent">Stochastic Gradient Descent</h3>
+<p>Let <span class="math inline">\(\mathcal{D} = \left(x^{(\ell)}, y^{(\ell)}\right)\)</span> for <span class="math inline">\(\ell = 1, \ldots, n\)</span> denote the image-label pairs in the MNIST data set.</p>
+<p>We will use gradient descent to find <span class="math inline">\(W^{(2)} \in \R^{15 \times 784}\)</span>, <span class="math inline">\(b^{(2)} \in \R^{15}\)</span>, <span class="math inline">\(W^{(3)} \in \R^{10 \times 15}\)</span>, <span class="math inline">\(b^{(3)} \in \R^{10}\)</span> that minimize a cost function, say MSE loss: <span class="math display">\[
+\begin{aligned}
+C(W, b) &amp;= \frac{1}{n} \sum_{\ell = 1}^n \frac{1}{2}\lVert f\left(x^{(\ell)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(\ell)} \rVert^2 \\
+&amp;= \frac{1}{n}\sum_{(x,y) \in \mathcal{D}} \underbrace{\frac{1}{2} \lVert f\left(x; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y \rVert^2}_{C_{x, y}}
+\end{aligned}
+\]</span></p>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Weight updates
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\begin{aligned}
+w_{ij}^{(2)} &amp;\leftarrow w_{ij}^{(2)} - \eta \pd{C}{w_{ij}^{(2)}}, \quad b_{j}^{(2)} &amp;\leftarrow b_{j}^{(2)} - \eta \pd{C}{b_{j}^{(2)}} \\
+w_{ij}^{(3)} &amp;\leftarrow w_{ij}^{(3)} - \eta \pd{C}{w_{ij}^{(3)}}, \quad b_{j}^{(3)} &amp;\leftarrow b_{j}^{(3)} - \eta \pd{C}{b_{j}^{(3)}}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>As there are 11,935 weights and biases, each iteration has this many updates!</li>
+</ul>
+</div>
+</div>
+<section id="computational-challenges" class="level4">
+<h4 class="anchored" data-anchor-id="computational-challenges">Computational Challenges</h4>
+<ul>
+<li><p>As <span class="math inline">\(C(W, b) = \frac{1}{n}\sum_{\ell = 1}^n C_{x^\ell, y^\ell}\)</span>, we need to compute <span class="math display">\[
+\nabla C(W, b) = \frac{1}{n}\sum_{\ell = 1}^n \nabla C_{x^{(\ell)}, y^{(\ell)}} \in \R^{11,935}.
+\]</span></p></li>
+<li><p>In other words, for each update of the weights and biases, we need to compute <span class="math display">\[
+\nabla \left(\frac{1}{2} \lVert f\left(x; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y \rVert^2\right) \in \R^{11,935}
+\]</span> for each training image!</p></li>
+<li><p>Notice that <span class="math display">\[
+\frac{1}{n} \sum_{\ell = 1}^n \nabla \left( \frac{1}{2}\lVert f\left(x^{(\ell)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(\ell)} \rVert^2 \right)
+\]</span> is an <strong>average</strong> value of the gradient over all the training images.</p></li>
+<li><p>As <span class="math inline">\(n \simeq 50,000\)</span>, perhaps we can get a good estimate of the average gradient using (say) <span class="math inline">\(100\)</span> training images?</p></li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>SGD in action
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Randomly shuffle the MNIST dataset <span class="math inline">\(\mathcal{D} = \left\{ \left(x^{(1)}, y^{(1)}\right), \ldots, \left(x^{(50,000)}, y^{(50,000)}\right) \right\}\)</span></li>
+<li>Let <span class="math inline">\(m = 100\)</span> be the size of the <strong>mini-batch</strong>.</li>
+<li>Denote by <span class="math inline">\(B^{(k)} = \left\{ \left(x^{(km+1)}, y^{(km+1)}\right), \ldots, \left(x^{((k+1)m)}, y^{((k+1)m)}\right) \right\}\)</span> the <span class="math inline">\(k^{\text{th}}\)</span> mini-batch for <span class="math inline">\(k = 0, \ldots, 499\)</span>.</li>
+<li>Continue to obtain <span class="math inline">\(\nicefrac{n}{m} = 500\)</span> mini-batches.</li>
+</ul>
+<p>The idea is that <span class="math display">\[
+\begin{aligned}
+\nabla C(W, b) &amp;= \frac{1}{n} \sum_{\ell = 1}^n \nabla \left( \frac{1}{2}\lVert f\left(x^{(\ell)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(\ell)} \rVert^2 \right) \\
+&amp;\approx \frac{1}{m} \sum_{j = km+1}^{(k+1)m} \nabla \left( \frac{1}{2}\lVert f\left(x^{(j)}; W^{(2)}, b^{(2)}, W^{(3)}, b^{(3)}\right) - y^{(j)} \rVert^2 \right) \quad \text{(sum over mini-batch k)}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>Estimate the gradient of <span class="math inline">\(C(W, b)\)</span> by averaging the gradients over a mini-batch of data.</li>
+<li>Greatly speeds up learning (updating the weights)</li>
+</ul>
+<p><strong>New updates</strong> <span class="math display">\[
+\begin{aligned}
+w_{ij}^{(2)} &amp;\leftarrow w_{ij}^{(2)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{w_{ij}^{(2)}}, \quad b_{j}^{(2)} &amp;\leftarrow b_{j}^{(2)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{b_{j}^{(2)}} \\
+w_{ij}^{(3)} &amp;\leftarrow w_{ij}^{(3)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{w_{ij}^{(3)}}, \quad b_{j}^{(3)} &amp;\leftarrow b_{j}^{(3)} - \frac{\eta}{m} \sum_{(x, y) \in B^{(k)}} \pd{C_{x,y}}{b_{j}^{(3)}}
+\end{aligned}
+\]</span></p>
+<ul>
+<li>After running through all the mini-batches, we have updated the weights <span class="math inline">\(\nicefrac{n}{m} = 500\)</span> times and gone through all the MNIST data <strong>once</strong>.
+<ul>
+<li>This is called an <strong>epoch</strong> of training.</li>
+</ul></li>
+<li>Next epoch: Reshuffle the MNIST data and repeat the above.</li>
+<li>After many epochs of training, we hope the neural network can identify handwritten digits.</li>
+</ul>
+</div>
+</div>
+</section>
+</section>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<section id="network-structure" class="level3">
+<h3 class="anchored" data-anchor-id="network-structure">Network Structure</h3>
+<p>We have the following network structure</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/nielsen_mnist_nn.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="assets/images/nielsen_mnist_nn.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:100.0%"></a></p>
+</figure>
+</div>
+<p>corresponding to the following equations <span class="math display">\[
+\begin{aligned}
+z^{(2)} &amp;= W^{(2)} a^{(1)} + b^{(2)}, \quad a^{(2)} = \sigma(z^{(2)}) \\
+z^{(3)} &amp;= W^{(3)} a^{(2)} + b^{(3)}, \quad a^{(3)} = \sigma(z^{(3)})
+\end{aligned}
+\]</span></p>
+<p>Let the cost function be <span class="math display">\[ C(W, b) = \frac{1}{2} \lVert a^{(3)} - y \rVert^2 = \frac{1}{2} \sum_{j=1}^{n_o} (a_j^{(3)} - y_j)^2. \]</span></p>
+<p><strong>Back-propagation algorithm:</strong> Systematic way to compute <span class="math display">\[
+\begin{aligned}
+&amp;\pd{C}{w_{ij}^{(3)}}, \quad \pd{C}{b_{j}^{(3)}}, \quad \text{for } i = 1, 2, \ldots, n_o, \; j = 1, 2, \ldots, n_h \\
+&amp;\pd{C}{w_{ij}^{(2)}}, \quad \pd{C}{b_{j}^{(2)}}, \quad \text{for } i = 1, 2, \ldots, n_h, \; j = 1, 2, \ldots, n_I.
+\end{aligned}
+\]</span></p>
+<p><strong>Key trick:</strong> First compute <span class="math display">\[
+\delta^{(3)} = \pd{C}{z^{(3)}} = \bmat{
+  \pd{C}{z_1^{(3)}} \\
+  \pd{C}{z_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{z_{n_o}^{(3)}}
+}, \quad
+\delta^{(2)} = \pd{C}{z^{(2)}} = \bmat{
+  \pd{C}{z_1^{(2)}} \\
+  \pd{C}{z_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{z_{n_h}^{(2)}}
+}.
+\]</span></p>
+</section>
+<section id="compute-delta3-triangleq-pdcz3" class="level3">
+<h3 class="anchored" data-anchor-id="compute-delta3-triangleq-pdcz3">Compute <span class="math inline">\(\delta^{(3)} \triangleq \pd{C}{z^{(3)}}\)</span></h3>
+<p>Let’s start chasing the signal. Note first that</p>
+<p><span class="math display">\[
+\pd{C}{a_j^{(3)}} = \pd{}{a_j^{(3)}} \left( \frac{1}{2} \sum_{k=1}^{n_o} (a_k^{(3)} - y_k)^2 \right) = (a_j^{(3)} - y_j).
+\]</span></p>
+<p>so that</p>
+<p><span class="math display">\[
+\pd{C}{z_j^{(3)}} = \pd{C}{a_j^{(3)}} \pd{a_j^{(3)}}{z_j^{(3)}}
+= \pd{C}{a_j^{(3)}} \sigma'(z_j^{(3)})
+= \left(a_j^{(3)} - y_j\right) \sigma'(z_j^{(3)}).
+\]</span></p>
+<p>In matrix form</p>
+<p><span id="eq-bp1"><span class="math display">\[
+\delta^{(3)} = \underbrace{\left(a^{(3)} - y\right)}_{\nabla_a C = \pd{C}{a^{(3)}}} \odot \sigma'(z^{(3)})
+\tag{1}\]</span></span></p>
+</section>
+<section id="compute-delta2-triangleq-pdcz2" class="level3">
+<h3 class="anchored" data-anchor-id="compute-delta2-triangleq-pdcz2">Compute <span class="math inline">\(\delta^{(2)} \triangleq \pd{C}{z^{(2)}}\)</span></h3>
+<p>By the chain rule, we have</p>
+<p><span class="math display">\[
+\bmat{
+  \pd{C}{a_1^{(2)}} &amp; \pd{C}{a_2^{(2)}} &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}
+} =
+\underbrace{\bmat{
+  \pd{C}{z_1^{(3)}} &amp; \pd{C}{z_2^{(3)}} &amp; \cdots &amp; \pd{C}{z_{n_o}^{(3)}}
+}}_{\left(\delta^{(3)}\right)^\top}
+\underbrace{\bmat{
+  \pd{z_1^{(3)}}{a_1^{(2)}} &amp; \pd{z_2^{(3)}}{a_1^{(2)}} &amp; \cdots &amp; \pd{z_{n_o}^{(3)}}{a_1^{(2)}} \\
+  \pd{z_1^{(3)}}{a_2^{(2)}} &amp; \pd{z_2^{(3)}}{a_2^{(2)}} &amp; \cdots &amp; \pd{z_{n_o}^{(3)}}{a_2^{(2)}} \\
+  \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+  \pd{z_1^{(3)}}{a_{n_h}^{(2)}} &amp; \pd{z_2^{(3)}}{a_{n_h}^{(2)}} &amp; \cdots &amp; \pd{z_{n_o}^{(3)}}{a_{n_h}^{(2)}}
+}}_{W^{(3)}}
+\]</span></p>
+<p>Another application of the chain rule gives</p>
+<p><span class="math display">\[
+\begin{aligned}
+\underbrace{\bmat{
+  \pd{C}{z_1^{(2)}} &amp; \pd{C}{z_2^{(2)}} &amp; \cdots &amp; \pd{C}{z_{n_h}^{(2)}}
+}}_{\left(\delta^{(2)}\right)^\top} &amp;=
+\bmat{
+  \pd{C}{a_1^{(2)}}\pd{a_1^{(2)}}{z_1^{(2)}} &amp; \pd{C}{a_2^{(2)}}\pd{a_2^{(2)}}{z_2^{(2)}} &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}\pd{a_{n_h}^{(2)}}{z_{n_h}^{(2)}}
+} \\
+&amp;= \bmat{
+  \pd{C}{a_1^{(2)}}\sigma'(z_1^{(2)}) &amp; \pd{C}{a_2^{(2)}}\sigma'(z_2^{(2)}) &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}\sigma'(z_{n_h}^{(2)})
+} \\
+&amp;= \underbrace{\bmat{
+  \pd{C}{a_1^{(2)}} &amp; \pd{C}{a_2^{(2)}} &amp; \cdots &amp; \pd{C}{a_{n_h}^{(2)}}
+}}_{\left(\delta^{(3)}\right)^\top W^{(3)}} \odot \bmat{
+  \sigma'(z_1^{(2)}) &amp; \sigma'(z_2^{(2)}) &amp; \cdots &amp; \sigma'(z_{n_h}^{(2)})
+}
+\end{aligned}
+\]</span></p>
+<p>Taking the transpose, we obtain <span id="eq-bp2"><span class="math display">\[
+\delta^{(2)} = \left(W^{(3)}\right)^\top \delta^{(3)} \odot \sigma'(z^{(2)}).
+\tag{2}\]</span></span></p>
+</section>
+<section id="compute-pdcb_j3" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcb_j3">Compute <span class="math inline">\(\pd{C}{b_{j}^{(3)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{aligned}
+\pd{C}{b_j^{(3)}} = \sum_{k=1}^{n_o} \pd{C}{z_k^{(3)}} \pd{z_k^{(3)}}{b_j^{(3)}} &amp;= \pd{C}{z_j^{(3)}}\pd{z_j^{(3)}}{b_j^{(3)}} \quad \text{as } z_k^{(3)} = \sum_{\ell=1}^{n_h} w_{k\ell}^{(3)} a_{\ell}^{(2)} + b_k^{(3)} \\
+&amp;= \pd{C}{z_j^{(3)}} \cdot 1 \quad \text{as } z_j^{(3)} = \sum_{\ell=1}^{n_h} w_{j\ell}^{(3)} a_{\ell}^{(2)} + b_j^{(3)}.
+\end{aligned}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp3"><span class="math display">\[
+\pd{C}{b^{(3)}} = \bmat{
+  \pd{C}{b_1^{(3)}} \\
+  \pd{C}{b_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{b_{n_o}^{(3)}}
+} = \bmat{
+  \pd{C}{z_1^{(3)}} \\
+  \pd{C}{z_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{z_{n_o}^{(3)}}
+} = \delta^{(3)}.
+\tag{3}\]</span></span></p>
+</section>
+<section id="compute-pdcw_ij3" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcw_ij3">Compute <span class="math inline">\(\pd{C}{w_{ij}^{(3)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{alignedat}{2}
+\pd{C}{w_{ij}^{(3)}} &amp;= \mathrlap{\sum_{k=1}^{n_o} \pd{C}{z_k^{(3)}} \pd{z_k^{(3)}}{w_{ij}^{(3)}}} \\
+&amp;= \pd{C}{z_j^{(3)}} \pd{z_j^{(3)}}{w_{ij}^{(3)}} &amp;&amp; \quad \text{as} \quad z_k^{(3)} = \sum_{\ell=1}^{n_h} w_{k\ell}^{(3)} a_{\ell}^{(2)} + b_k^{(3)} \\
+&amp;= \pd{C}{z_j^{(3)}} \cdot a_i^{(2)} &amp;&amp; \quad \text{as} \quad z_j^{(3)} = \sum_{\ell=1}^{n_h} w_{j\ell}^{(3)} a_{\ell}^{(2)} + b_j^{(3)}.
+\end{alignedat}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp4"><span class="math display">\[
+\pd{C}{W^{(3)}} = \bmat{
+  \pd{C}{w_{11}^{(3)}} &amp; \pd{C}{w_{12}^{(3)}} &amp; \cdots &amp; \pd{C}{w_{1n_h}^{(3)}} \\
+  \pd{C}{w_{21}^{(3)}} &amp; \pd{C}{w_{22}^{(3)}} &amp; \cdots &amp; \pd{C}{w_{2n_h}^{(3)}} \\
+  \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+  \pd{C}{w_{n_o1}^{(3)}} &amp; \pd{C}{w_{n_o2}^{(3)}} &amp; \cdots &amp; \pd{C}{w_{n_on_h}^{(3)}}
+} = \bmat{
+  \pd{C}{z_1^{(3)}} \\
+  \pd{C}{z_2^{(3)}} \\
+  \vdots \\
+  \pd{C}{z_{n_o}^{(3)}}
+} \bmat{
+  a_1^{(2)} &amp; a_2^{(2)} &amp; \cdots &amp; a_{n_h}^{(2)}
+} = \delta^{(3)} \left(a^{(2)}\right)^\top.
+\tag{4}\]</span></span></p>
+</section>
+<section id="compute-pdcb_j2" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcb_j2">Compute <span class="math inline">\(\pd{C}{b_{j}^{(2)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{aligned}
+\pd{C}{b_j^{(2)}} = \sum_{k=1}^{n_h} \pd{C}{z_k^{(2)}} \pd{z_k^{(2)}}{b_j^{(2)}} &amp;= \pd{C}{z_j^{(2)}}\pd{z_j^{(2)}}{b_j^{(2)}} \quad \text{as } z_k^{(2)} = \sum_{\ell=1}^{n_I} w_{k\ell}^{(2)} a_{\ell}^{(1)} + b_k^{(2)} \\
+&amp;= \pd{C}{z_j^{(2)}} \cdot 1 \quad \text{as } z_j^{(2)} = \sum_{\ell=1}^{n_I} w_{j\ell}^{(2)} a_{\ell}^{(1)} + b_j^{(2)}.
+\end{aligned}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp5"><span class="math display">\[
+\pd{C}{b^{(2)}} = \bmat{
+  \pd{C}{b_1^{(2)}} \\
+  \pd{C}{b_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{b_{n_h}^{(2)}}
+} = \bmat{
+  \pd{C}{z_1^{(2)}} \\
+  \pd{C}{z_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{z_{n_h}^{(2)}}
+} = \delta^{(2)}.
+\tag{5}\]</span></span></p>
+</section>
+<section id="compute-pdcw_ij2" class="level3">
+<h3 class="anchored" data-anchor-id="compute-pdcw_ij2">Compute <span class="math inline">\(\pd{C}{w_{ij}^{(2)}}\)</span></h3>
+<p><span class="math display">\[
+\begin{alignedat}{2}
+\pd{C}{w_{ij}^{(2)}} &amp;= \mathrlap{\sum_{k=1}^{n_h} \pd{C}{z_k^{(2)}} \pd{z_k^{(2)}}{w_{ij}^{(2)}}} \\
+&amp;= \pd{C}{z_j^{(2)}} \pd{z_j^{(2)}}{w_{ij}^{(2)}} &amp;&amp; \quad \text{as} \quad z_k^{(2)} = \sum_{\ell=1}^{n_I} w_{k\ell}^{(2)} a_{\ell}^{(1)} + b_k^{(2)} \\
+&amp;= \pd{C}{z_j^{(2)}} \cdot a_i^{(1)} &amp;&amp; \quad \text{as} \quad z_j^{(2)} = \sum_{\ell=1}^{n_I} w_{j\ell}^{(2)} a_{\ell}^{(1)} + b_j^{(2)}.
+\end{alignedat}
+\]</span></p>
+<p>More succinctly,</p>
+<p><span id="eq-bp6"><span class="math display">\[
+\pd{C}{W^{(2)}} = \bmat{
+  \pd{C}{w_{11}^{(2)}} &amp; \pd{C}{w_{12}^{(2)}} &amp; \cdots &amp; \pd{C}{w_{1n_I}^{(2)}} \\
+  \pd{C}{w_{21}^{(2)}} &amp; \pd{C}{w_{22}^{(2)}} &amp; \cdots &amp; \pd{C}{w_{2n_I}^{(2)}} \\
+  \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+  \pd{C}{w_{n_h1}^{(2)}} &amp; \pd{C}{w_{n_h2}^{(2)}} &amp; \cdots &amp; \pd{C}{w_{n_hn_I}^{(2)}}
+} = \bmat{
+  \pd{C}{z_1^{(2)}} \\
+  \pd{C}{z_2^{(2)}} \\
+  \vdots \\
+  \pd{C}{z_{n_h}^{(2)}}
+} \bmat{
+  a_1^{(1)} &amp; a_2^{(1)} &amp; \cdots &amp; a_{n_I}^{(1)}
+}
+= \delta^{(2)} \left(a^{(1)}\right)^\top.
+\tag{6}\]</span></span></p>
+</section>
+<section id="equations-of-back-propagation" class="level3">
+<h3 class="anchored" data-anchor-id="equations-of-back-propagation">Equations of Back Propagation</h3>
+<p><span class="math display">\[
+C = \frac{1}{2} \| a^{(3)} - y \|^2 = \frac{1}{2} \sum_{j=1}^{n_o} (a_j^{(3)} - y_j)^2
+\]</span></p>
+<p>By <a href="#eq-bp1" class="quarto-xref">Equation&nbsp;1</a> <span class="math display">\[
+\delta^{(3)} = \nabla_a C \odot \sigma'(z^{(3)}) = (a^{(3)} - y) \odot \sigma'(z^{(3)})
+\]</span></p>
+<p>By <a href="#eq-bp3" class="quarto-xref">Equation&nbsp;3</a> <span class="math display">\[
+\pd{C}{b^{(3)}} = \delta^{(3)}
+\]</span></p>
+<p>By <a href="#eq-bp4" class="quarto-xref">Equation&nbsp;4</a> <span class="math display">\[
+\pd{C}{W^{(3)}} = \delta^{(3)} (a^{(2)})^\top
+\]</span></p>
+<p>By <a href="#eq-bp2" class="quarto-xref">Equation&nbsp;2</a> <span class="math display">\[
+\delta^{(2)} = (W^{(3)})^\top \delta^{(3)} \odot \sigma'(z^{(2)})
+\]</span></p>
+<p>By <a href="#eq-bp5" class="quarto-xref">Equation&nbsp;5</a> <span class="math display">\[
+\pd{C}{b^{(2)}} = \delta^{(2)}
+\]</span></p>
+<p>By <a href="#eq-bp6" class="quarto-xref">Equation&nbsp;6</a> <span class="math display">\[
+\pd{C}{W^{(2)}} = \delta^{(2)} (a^{(1)})^\top
+\]</span></p>
+</section>
+<section id="activation-function-calculus" class="level3">
+<h3 class="anchored" data-anchor-id="activation-function-calculus">Activation Function Calculus</h3>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Step Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \begin{cases} 1 &amp; \text{if } z \ge 0 \\ 0 &amp; \text{if } z &lt; 0 \end{cases}, \quad
+\sigma'(z) = \begin{cases} 1 &amp; \text{if } z = 0 \\ 0 &amp; \text{if } z \ne 0 \end{cases}
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Sigmoid Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \frac{1}{1 + e^{-z}}, \quad
+\sigma'(z) = \sigma(z)(1 - \sigma(z))
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>Tanh (Hyperbolic Tangent) Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}}, \quad
+\sigma'(z) = 1 - \sigma(z)^2
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-none no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">None</span>ReLU (Rectified Linear Unit) Function
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><span class="math display">\[
+\sigma(z) = \max(0, z), \quad
+\sigma'(z) = \begin{cases} 1 &amp; \text{if } z &gt; 0 \\ 0 &amp; \text{if } z \le 0 \end{cases}
+\]</span></p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+
+
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
