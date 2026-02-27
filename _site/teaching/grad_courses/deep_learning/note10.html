@@ -82,6 +82,35 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../../styles.css">
 <meta property="og:title" content="Variational Autoencoders – Satici Lab">
@@ -236,7 +265,7 @@ window.MathJax = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../../teaching/grad_courses/deep_learning/note02.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Intro to Learning</span></a>
+ <span class="menu-text">Introduction to Learning</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -291,6 +320,18 @@ window.MathJax = {
   <div class="sidebar-item-container"> 
   <a href="../../../teaching/grad_courses/deep_learning/note11.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Diffusion Models</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/note12.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Transformers</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../teaching/grad_courses/deep_learning/note13.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reinforcement Learning</span></a>
   </div>
 </li>
       </ul>
@@ -378,6 +419,18 @@ $$
 </header>
 
 
+<ul>
+<li><em>Variational autoencoders</em> (VAEs) are <em>probabilisitic generative models</em>.
+<ul>
+<li>They aim to learn a distribution <span class="math inline">\(p(x)\)</span> over the data.</li>
+<li>After training, it is possible to draw (generate) samples from this distribution.</li>
+<li>Unfortunately, it is not possible to compute the log-likelihood of a sample <span class="math inline">\(x^*\)</span> exactly.</li>
+</ul></li>
+<li>It is possible to define a lower bound on the likelihood.
+<ul>
+<li>The VAE approximates this bound using a Monte Carlo sampling approach.</li>
+</ul></li>
+</ul>
 <div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
@@ -387,6 +440,99 @@ $$
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
+<ul>
+<li>LVMs model a joint distribution <span class="math inline">\(p(\bm{x}, \bm{z})\)</span> of the data <span class="math inline">\(\bm{x}\)</span> and a <em>latent variable</em> <span class="math inline">\(\bm{z}\)</span>.</li>
+<li>They then describe <span class="math inline">\(p(\bm{x})\)</span> as the marginal distribution of the joint distribution: <span class="math display">\[
+  p(\bm{x}) = \int p(\bm{x}, \bm{z}) d\bm{z} = \int p(\bm{x} | \bm{z}) p(\bm{z}) d\bm{z}.
+\]</span></li>
+<li>This is a rather indirect approach to describint <span class="math inline">\(p(\bm{x})\)</span>.
+<ul>
+<li>Useful because expressions for <span class="math inline">\(p(\bm{x} | \bm{z})\)</span> and <span class="math inline">\(p(\bm{z})\)</span> are often much simpler than that for <span class="math inline">\(p(\bm{x})\)</span>.</li>
+</ul></li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Example: Gaussian Mixture Models
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Let’s take a <span class="math inline">\(1\)</span>D mixture of Gaussians
+<ul>
+<li><span class="math inline">\(z\)</span> is discrete: <span class="math inline">\(p(z)\)</span> is a categorical distribution with probability <span class="math inline">\(\lambda_n\)</span> for every possible value of <span class="math inline">\(z\)</span>.</li>
+<li>The likelihood <span class="math inline">\(p(x \mid z = n)\)</span> of the data is normally distributed with mean <span class="math inline">\(\mu_n\)</span> and variance <span class="math inline">\(\sigma_n^2\)</span>. <span class="math display">\[
+\begin{aligned}
+p(z = n) &amp;= \lambda_n \\
+p(x \mid z = n) &amp;= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
+\end{aligned}
+\]</span></li>
+</ul></li>
+<li>The data likelihood is given by marginalizing over the latent variable <span class="math inline">\(z\)</span> <span class="math display">\[
+  p(x) = \sum_{n=1}^N p(x, z=n) = \sum_{n=1}^N p(x \mid z=n) p(z=n) = \sum_{n=1}^N \lambda_n \mathcal{N}(x \mid \mu_n, \sigma_n^2).
+\]</span></li>
+<li>Note that the likelihood and prior are both simple expressions, but the resulting data likelihood is multimodal!</li>
+</ul>
+</div>
+</div>
+<section id="nonlinear-latent-variable-models" class="level3">
+<h3 class="anchored" data-anchor-id="nonlinear-latent-variable-models">Nonlinear latent variable models</h3>
+<p>In a nonlinear latent variabl model, both the data <span class="math inline">\(\bm{x}\)</span> and the latent variable <span class="math inline">\(\bm{z}\)</span> are continuous and multivariate.</p>
+<ul>
+<li>Both the prior <span class="math inline">\(p(\bm{z})\)</span> and the likelihood <span class="math inline">\(p(\bm{x} \mid \bm{z})\)</span> are normally distributed.
+<ul>
+<li><span class="math inline">\(p(\bm{z}) = \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I})\)</span></li>
+<li><span class="math inline">\(p(\bm{x} \mid \bm{z}) = \mathcal{N}(\bm{x} \mid \mu(\bm{z}), \Sigma(\bm{z}))\)</span></li>
+</ul></li>
+<li>The mean and covariance are given by neural networks, in general
+<ul>
+<li>Many times the covariance is fixed and assumed to be diagonal: <span class="math inline">\(\Sigma(\bm{z}) = \sigma^2 \bm{I}\)</span> (<span class="math inline">\(\sigma\)</span> can be learned, too)</li>
+<li>The mean is given by a neural network: <span class="math inline">\(\mu(\bm{z}) = f(\bm{z}; \bm{\phi})\)</span></li>
+</ul></li>
+<li>The data probability <span class="math inline">\(p(\bm{x} \mid \bm{\phi})\)</span> is found by marginalizing over the latent variable <span class="math inline">\(\bm{z}\)</span> <span class="math display">\[ p(\bm{x} \mid \bm{\phi}) = \int p(\bm{x} \mid \bm{z}, \bm{\phi}) p(\bm{z}) d\bm{z} = \int \mathcal{N}\left(\bm{x} \mid f(\bm{z}; \bm{\phi}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z} \]</span></li>
+<li>This can be viewed as an infinite weighted sum (i.e., an infinite mixture)
+<ul>
+<li>Mixture is of spherical Gaussians with different means</li>
+<li>The weights are <span class="math inline">\(p(\bm{z})\)</span> and the means are <span class="math inline">\(f(\bm{z}; \bm{\phi})\)</span></li>
+</ul></li>
+</ul>
+<section id="generation" class="level4">
+<h4 class="anchored" data-anchor-id="generation">Generation</h4>
+<p>A new example <span class="math inline">\(\bm{x}^*\)</span> is generated by <span style="color:dodgerblue;">ancestral sampling</span>.</p>
+<ul>
+<li>Draw <span class="math inline">\(\bm{z}^* \sim p(\bm{z})\)</span></li>
+<li>Draw <span class="math inline">\(\bm{x}^* \sim p(\bm{x} \mid \bm{z}^*)\)</span>
+<ul>
+<li>Pass <span class="math inline">\(\bm{z}^*\)</span> through the decoder network <span class="math inline">\(f(\bm{z}^*; \bm{\phi})\)</span> to compute the mean of <span class="math inline">\(p(\bm{x} \mid \bm{z}^*)\)</span></li>
+<li>Draw <span class="math inline">\(\bm{x}^*\)</span> from <span class="math inline">\(\mathcal{N}(\bm{x}^* \mid f(\bm{z}^*; \bm{\phi}), \sigma^2 \bm{I})\)</span></li>
+</ul></li>
+</ul>
+</section>
+</section>
+<section id="training" class="level3">
+<h3 class="anchored" data-anchor-id="training">Training</h3>
+<ul>
+<li>We want to maximize the log-likelihood over a training dataset <span class="math inline">\(\{ \bm{x}_i \}_{i=1}^I\)</span> w.r.t. <span class="math inline">\(\bm{\phi}\)</span> <span class="math display">\[
+  \bm{\phi}^* = \arg\max_{\bm{\phi}} \sum_{i=1}^I \log p(\bm{x}_i \mid \bm{\phi}) = \arg\max_{\bm{\phi}} \sum_{i=1}^I \log \int p(\bm{x}_i \mid \bm{z}, \bm{\phi}) p(\bm{z}) d\bm{z},
+\]</span> where <span class="math display">\[
+  p(\bm{x}_i \mid \bm{\phi}) = \int \mathcal{N}\left(\bm{x}_i \mid f(\bm{z}; \bm{\phi}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z}.
+\]</span></li>
+<li>Unfortunately, this is intractable to compute directly.
+<ul>
+<li>No closed-form expression for the integral</li>
+<li>No easy way to evaluate it for a particular value of <span class="math inline">\(\bm{x}\)</span></li>
+</ul></li>
+<li>To make progress, we define a <em>lower bound</em> on the log-likelihood.
+<ul>
+<li>Always less than or equal to the log-likelihood for a given value of <span class="math inline">\(\bm{\phi}\)</span></li>
+<li>Depends on some other parameters <span class="math inline">\(\bm{\theta}\)</span></li>
+<li>We will build a network to compute this lower bound and optimize it.</li>
+</ul></li>
+</ul>
+</section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 
