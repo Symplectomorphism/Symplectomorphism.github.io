@@ -44,6 +44,9 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../../site_libs/bootstrap/bootstrap-8402731c99c2101ab41aada8a5804e10.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -115,7 +118,10 @@ window.Quarto = {
 <link rel="stylesheet" href="../../../styles.css">
 <meta property="og:title" content="Variational Autoencoders – Satici Lab">
 <meta property="og:description" content="Research website for the Satici Lab">
+<meta property="og:image" content="https://Symplectomorphism.github.io/teaching/grad_courses/deep_learning/assets/images/kingma_vae_geometry.png">
 <meta property="og:site_name" content="Satici Lab">
+<meta property="og:image:height" content="1355">
+<meta property="og:image:width" content="1073">
 </head>
 
 <body class="nav-sidebar docked nav-fixed slimcontent quarto-light">
@@ -436,10 +442,12 @@ $$
 </div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Latent Variable Models</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">VAEs to Diffusion Models</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Theory</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Appolication to MNIST</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
+<section id="linear-latent-variable-models" class="level3">
+<h3 class="anchored" data-anchor-id="linear-latent-variable-models">Linear latent variable models</h3>
 <ul>
 <li>LVMs model a joint distribution <span class="math inline">\(p(\bm{x}, \bm{z})\)</span> of the data <span class="math inline">\(\bm{x}\)</span> and a <em>latent variable</em> <span class="math inline">\(\bm{z}\)</span>.</li>
 <li>They then describe <span class="math inline">\(p(\bm{x})\)</span> as the marginal distribution of the joint distribution: <span class="math display">\[
@@ -478,25 +486,27 @@ p(x \mid z = n) &amp;= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
 </ul>
 </div>
 </div>
+</section>
 <section id="nonlinear-latent-variable-models" class="level3">
 <h3 class="anchored" data-anchor-id="nonlinear-latent-variable-models">Nonlinear latent variable models</h3>
-<p>In a nonlinear latent variabl model, both the data <span class="math inline">\(\bm{x}\)</span> and the latent variable <span class="math inline">\(\bm{z}\)</span> are continuous and multivariate.</p>
+<p>In a nonlinear latent variable model, both the data <span class="math inline">\(\bm{x}\)</span> and the latent variable <span class="math inline">\(\bm{z}\)</span> are continuous and multivariate.</p>
 <ul>
 <li>Both the prior <span class="math inline">\(p(\bm{z})\)</span> and the likelihood <span class="math inline">\(p(\bm{x} \mid \bm{z})\)</span> are normally distributed.
 <ul>
 <li><span class="math inline">\(p(\bm{z}) = \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I})\)</span></li>
-<li><span class="math inline">\(p(\bm{x} \mid \bm{z}) = \mathcal{N}(\bm{x} \mid \mu(\bm{z}), \Sigma(\bm{z}))\)</span></li>
+<li><span class="math inline">\(p(\bm{x} \mid \bm{z}, \bm{\theta}) = \mathcal{N}(\bm{x} \mid \mu(\bm{z}), \Sigma(\bm{z}))\)</span></li>
 </ul></li>
-<li>The mean and covariance are given by neural networks, in general
+<li>Say, the likelihood is modeling a continuous variable: the mean and covariance are given by neural networks
 <ul>
 <li>Many times the covariance is fixed and assumed to be diagonal: <span class="math inline">\(\Sigma(\bm{z}) = \sigma^2 \bm{I}\)</span> (<span class="math inline">\(\sigma\)</span> can be learned, too)</li>
-<li>The mean is given by a neural network: <span class="math inline">\(\mu(\bm{z}) = f(\bm{z}; \bm{\phi})\)</span></li>
+<li>The mean is given by a neural network: <span class="math inline">\(\mu(\bm{z}) = f(\bm{z}; \bm{\theta})\)</span></li>
 </ul></li>
-<li>The data probability <span class="math inline">\(p(\bm{x} \mid \bm{\phi})\)</span> is found by marginalizing over the latent variable <span class="math inline">\(\bm{z}\)</span> <span class="math display">\[ p(\bm{x} \mid \bm{\phi}) = \int p(\bm{x} \mid \bm{z}, \bm{\phi}) p(\bm{z}) d\bm{z} = \int \mathcal{N}\left(\bm{x} \mid f(\bm{z}; \bm{\phi}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z} \]</span></li>
+<li>The latent variable <span class="math inline">\(\bm{z}\)</span> is lower dimensional than the data <span class="math inline">\(\bm{x}\)</span>.</li>
+<li>In this example, the data probability <span class="math inline">\(p(\bm{x} \mid \bm{\theta})\)</span> is found by marginalizing over the latent variable <span class="math inline">\(\bm{z}\)</span> <span class="math display">\[ p(\bm{x} \mid \bm{\theta}) = \int p(\bm{x} \mid \bm{z}, \bm{\theta}) p(\bm{z}) d\bm{z} = \int \mathcal{N}\left(\bm{x} \mid f(\bm{z}; \bm{\theta}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z} \]</span></li>
 <li>This can be viewed as an infinite weighted sum (i.e., an infinite mixture)
 <ul>
 <li>Mixture is of spherical Gaussians with different means</li>
-<li>The weights are <span class="math inline">\(p(\bm{z})\)</span> and the means are <span class="math inline">\(f(\bm{z}; \bm{\phi})\)</span></li>
+<li>The weights are <span class="math inline">\(p(\bm{z})\)</span> and the means are <span class="math inline">\(f(\bm{z}; \bm{\theta})\)</span></li>
 </ul></li>
 </ul>
 <section id="generation" class="level4">
@@ -506,8 +516,8 @@ p(x \mid z = n) &amp;= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
 <li>Draw <span class="math inline">\(\bm{z}^* \sim p(\bm{z})\)</span></li>
 <li>Draw <span class="math inline">\(\bm{x}^* \sim p(\bm{x} \mid \bm{z}^*)\)</span>
 <ul>
-<li>Pass <span class="math inline">\(\bm{z}^*\)</span> through the decoder network <span class="math inline">\(f(\bm{z}^*; \bm{\phi})\)</span> to compute the mean of <span class="math inline">\(p(\bm{x} \mid \bm{z}^*)\)</span></li>
-<li>Draw <span class="math inline">\(\bm{x}^*\)</span> from <span class="math inline">\(\mathcal{N}(\bm{x}^* \mid f(\bm{z}^*; \bm{\phi}), \sigma^2 \bm{I})\)</span></li>
+<li>Pass <span class="math inline">\(\bm{z}^*\)</span> through the decoder network <span class="math inline">\(f(\bm{z}^*; \bm{\theta})\)</span> to compute the mean of <span class="math inline">\(p(\bm{x} \mid \bm{z}^*)\)</span></li>
+<li>Draw <span class="math inline">\(\bm{x}^*\)</span> from <span class="math inline">\(\mathcal{N}(\bm{x}^* \mid f(\bm{z}^*; \bm{\theta}), \sigma^2 \bm{I})\)</span></li>
 </ul></li>
 </ul>
 </section>
@@ -515,10 +525,10 @@ p(x \mid z = n) &amp;= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
 <section id="training" class="level3">
 <h3 class="anchored" data-anchor-id="training">Training</h3>
 <ul>
-<li>We want to maximize the log-likelihood over a training dataset <span class="math inline">\(\{ \bm{x}_i \}_{i=1}^I\)</span> w.r.t. <span class="math inline">\(\bm{\phi}\)</span> <span class="math display">\[
-  \bm{\phi}^* = \arg\max_{\bm{\phi}} \sum_{i=1}^I \log p(\bm{x}_i \mid \bm{\phi}) = \arg\max_{\bm{\phi}} \sum_{i=1}^I \log \int p(\bm{x}_i \mid \bm{z}, \bm{\phi}) p(\bm{z}) d\bm{z},
-\]</span> where <span class="math display">\[
-  p(\bm{x}_i \mid \bm{\phi}) = \int \mathcal{N}\left(\bm{x}_i \mid f(\bm{z}; \bm{\phi}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z}.
+<li>We want to maximize the log-likelihood over a training dataset <span class="math inline">\(\{ \bm{x}_i \}_{i=1}^I\)</span> with respect to <span class="math inline">\(\bm{\theta}\)</span> <span id="eq-loglikelihood"><span class="math display">\[
+  \bm{\theta}^* = \arg\max_{\bm{\theta}} \sum_{i=1}^I \log p(\bm{x}_i \mid \bm{\theta}) = \argmax_{\bm{\theta}} \sum_{i=1}^I \log \int p(\bm{x}_i \mid \bm{z}, \bm{\theta}) p(\bm{z}) d\bm{z},
+\tag{1}\]</span></span> where for the Gaussian likelihood example, we would have <span class="math display">\[
+  p(\bm{x}_i \mid \bm{\theta}) = \int \mathcal{N}\left(\bm{x}_i \mid f(\bm{z}; \bm{\theta}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z}.
 \]</span></li>
 <li>Unfortunately, this is intractable to compute directly.
 <ul>
@@ -527,11 +537,252 @@ p(x \mid z = n) &amp;= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
 </ul></li>
 <li>To make progress, we define a <em>lower bound</em> on the log-likelihood.
 <ul>
-<li>Always less than or equal to the log-likelihood for a given value of <span class="math inline">\(\bm{\phi}\)</span></li>
-<li>Depends on some other parameters <span class="math inline">\(\bm{\theta}\)</span></li>
+<li>Always less than or equal to the log-likelihood for a given value of <span class="math inline">\(\bm{\theta}\)</span></li>
+<li>Depends on some other parameters <span class="math inline">\(\bm{\phi}\)</span></li>
 <li>We will build a network to compute this lower bound and optimize it.</li>
 </ul></li>
 </ul>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Jensen’s inequality
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A <span style="color:dodgerblue;">concave function</span> <span class="math inline">\(g(\cdot)\)</span> of the expectation of data <span class="math inline">\(y\)</span> is greater than or equal to the expectation of the function of the data: <span class="math display">\[
+    g\left(\mathbb{E}[y]\right) \geq \mathbb{E}[g(y)].
+\]</span></p>
+</div>
+</div>
+<ul>
+<li><p>Using Jensen’s equality with <span class="math inline">\(g = \log\)</span>, we obtain <span class="math display">\[
+\log \E(y) = \log \int p(y)y dy \geq \int p(y) \log{(y)} dy = \E \log{y}.
+\]</span></p></li>
+<li><p>In fact, the slightly more general statement is true: <span class="math display">\[
+\log \int p(y)h(y)dy \geq \int p(y) \log{(h(y))}dy,
+\]</span> for some function <span class="math inline">\(h(y)\)</span> of <span class="math inline">\(y\)</span>.</p></li>
+<li><p>The intractability of <span class="math inline">\(p(\bm{x} \mid \theta)\)</span> is related to the intractability of the posterior distribution <span class="math inline">\(p(\bm{z} \mid \bm{x}, \bm{\theta})\)</span>.</p>
+<ul>
+<li>Note that the joint distribution <span class="math inline">\(p(\bm{x}, \bm{z} \mid \theta)\)</span> is efficient to compute and we have <span class="math display">\[
+p(\bm{z} \mid \bm{x}, \bm{\theta}) = \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{p(\bm{x} \mid \bm{\theta})}
+\]</span></li>
+<li>Since <span class="math inline">\(p(\bm{x}, \bm{z} \mid \bm{\theta})\)</span> <em>is</em> tractable to compute, a tractable marginal likelihood <span class="math inline">\(p(\bm{x} \mid \bm{\theta})\)</span> leads to a tractable posterior <span class="math inline">\(p(\bm{z} \mid \bm{x}, \bm{\theta})\)</span>, and vice versa. Both are <em>intractable</em>!</li>
+</ul></li>
+<li><p>Let us introduce a parametric <em>inference model</em> <span class="math inline">\(q(\bm{z} \mid \bm{x}, \bm{\phi})\)</span>.</p>
+<ul>
+<li>Also called an <em>encoder</em> or <em>recognition model</em>.</li>
+<li>With <span class="math inline">\(\bm{\phi}\)</span>, we indicate the <em>variational parameters</em>.</li>
+<li>We optimize the variational parameters <span class="math inline">\(\bm{\phi}\)</span> such that <span class="math display">\[ q(\bm{z} \mid \bm{x}, \bm{\phi}) \approx p(\bm{z} \mid \bm{x}, \bm{\theta}). \]</span></li>
+</ul></li>
+<li><p>For any choice of inference model <span class="math inline">\(q(\bm{z} \mid \bm{x}, \bm{\phi})\)</span>, including the choice of variational parameters <span class="math inline">\(\bm{\phi}\)</span>, we have <span id="eq-evidence"><span class="math display">\[
+\begin{aligned}
+\log p(\bm{x} \mid \bm{\theta}) &amp;= \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}[\log p(\bm{x} \mid \bm{\theta})] \\
+&amp;= \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{p(\bm{z} \mid \bm{x}, \bm{\theta})} \right) \right] \\
+&amp;= \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})}
+\frac{q(\bm{z} \mid \bm{x}, \bm{\phi})}{p(\bm{z} \mid \bm{x}, \bm{\theta})} \right) \right] \\
+&amp;= \underbrace{\E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} \right) \right]}_{=\mc{L}_{\theta, \phi}(x) \\[1pt] \text{(ELBO)}} + \underbrace{\E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{q(\bm{z} \mid \bm{x}, \bm{\phi})}{p(\bm{z} \mid \bm{x}, \bm{\theta})} \right) \right]}_{=D_{\text{KL}}(q(\bm{z} \mid \bm{x}, \bm{\phi})\;\Vert\; p(\bm{z} \mid \bm{x}, \bm{\theta}))}
+\end{aligned}
+\tag{2}\]</span></span></p></li>
+<li><p>The second term is the Kullback-Leibler (KL) divergence which is nonnegative: <span class="math display">\[
+D_{\text{KL}}(q(\bm{z} \mid \bm{x}, \bm{\phi})\;\Vert\; p(\bm{z} \mid \bm{x}, \bm{\theta})) \geq 0 \]</span> and zero if and only if <span class="math inline">\(q(\bm{z} \mid \bm{x}, \bm{\phi}) = p(\bm{z} \mid \bm{x}, \bm{\theta})\)</span>.</p></li>
+<li><p>The first term is the <em>variational lower bound</em>, also called the <em>evidence lower bound</em> (ELBO): <span id="eq-elbo"><span class="math display">\[
+\mc{L}_{\theta, \phi}(x) = \E_{q_\phi(\bm{z} \mid \bm{x})} \left[ \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right]
+\tag{3}\]</span></span></p></li>
+<li><p>Due to the nonnegativity of the KL divergence, the ELBO is a lower bound on the log-likelihood of the data: <span id="eq-tightness"><span class="math display">\[
+\mc{L}_{\theta, \phi}(\bm{x}) = \log p_\theta(\bm{x}) - D_{\text{KL}}\left(q_\phi(\bm{z} \mid \bm{x})\,\Vert\,p_\theta(\bm{z} \mid \bm{x})\right)
+\leq \log p_\theta(\bm{x}).
+\tag{4}\]</span></span></p></li>
+<li><p>Hence, the KL divergence <span class="math inline">\(D_{\text{KL}}\left(q_\phi(\bm{z} \mid \bm{x})\,\Vert\,p_\theta(\bm{z} \mid \bm{x})\right)\)</span> determines two “distances”:</p>
+<ol type="1">
+<li>By definition, the KL divergence of the approximate posterior from the true posterior.</li>
+<li>The gap between the ELBO <span class="math inline">\(\mc{L}_{\theta, \phi}(\bm{x})\)</span> and the marginal likelihood <span class="math inline">\(\log p_\theta(\bm{x})\)</span>.</li>
+</ol>
+<ul>
+<li>The latter is also called the <em>tightness</em> of the bound.</li>
+<li>The better <span class="math inline">\(q_\phi(\bm{z} \mid \bm{x})\)</span> approximates the true (posterior) distribution <span class="math inline">\(p_\theta(\bm{z} \mid \bm{x})\)</span>, in terms of the KL divergence, the smaller the gap.</li>
+</ul></li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Two for One
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>By looking at <a href="#eq-tightness" class="quarto-xref">Equation&nbsp;4</a>, it can be understood that maximization of the ELBO <span class="math inline">\(\mc{L}_{\theta, \phi}(x)\)</span> with respect to <span class="math inline">\(\bm{\theta}\)</span> and <span class="math inline">\(\bm{\phi}\)</span>, will concurrently optimize the two things we care about:</p>
+<ol type="1">
+<li>It will approximately maximize the marginal likelihood <span class="math inline">\(p_\theta(\bm{x})\)</span>. This means that our <em>generative model</em> or <em>decoder</em> will become better.</li>
+<li>It will minimize the KL divergence of the approximation <span class="math inline">\(q_\phi(\bm{z} \mid \bm{x})\)</span> from the true posterior <span class="math inline">\(p_\theta(\bm{z} \mid \bm{x})\)</span>, so <span class="math inline">\(q_\phi(\bm{z} \mid \bm{x})\)</span> becomes better.</li>
+</ol>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Caution</span>ELBO through Jensen’s inequality
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>We can also see that the ELBO is a lower bound on the log-likelihood by using Jensen’s inequality. <span class="math display">\[
+\begin{aligned}
+\log p(\bm{x} \mid \bm{\theta}) &amp;= \log \int p(\bm{x}, \bm{z} \mid \bm{\theta}) d\bm{z}
+= \log \int p(\bm{x}, \bm{z} \mid \bm{\theta}) \frac{q(\bm{z} \mid \bm{x}, \bm{\phi})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} d\bm{z}
+= \log \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})} \left[ \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} \right] \\
+&amp;\geq \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})} \left[ \log \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} \right]
+= \mc{L}_{\theta, \phi}(x)
+\end{aligned}
+\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Two Models to Learn
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p>Encoder or Recognition or Inference Model <span class="math display">\[
+\begin{aligned}
+(\bm{\mu}, \log \bm{\sigma}) &amp;= \operatorname{EncoderNeuralNet}_\phi(\bm{x}) \\
+q_\phi(\bm{z} \mid \bm{x}) &amp;= \mc{N}(\bm{z}; \bm{\mu}, \operatorname{diag}{(\bm{\sigma})}).
+\end{aligned}
+\]</span></p></li>
+<li><p>Decoder or Generative Model (Binary Data) <span class="math display">\[
+\begin{aligned}
+\bm{p} &amp;= \operatorname{DecoderNeuralNet_\theta(\bm{z})} \\
+\log p_\theta(\bm{x} \mid \bm{z}) &amp;= \sum_{j=1}^D \log p(x_j \mid \bm{z}) = \sum_{j=1}^D \operatorname{Bernoulli(x_j; p_j)} \\
+&amp;= \sum_{j=1}^D \left[ x_j \log p_j + (1-x_j) \log(1-p_j) \right]
+\end{aligned}
+\]</span> where <span class="math inline">\(\forall p_j \in \bm{p}; 0 \leq p_j \leq 1\)</span> (e.g.&nbsp;implemented through a sigmoid nonlinearity as the last layer of the <span class="math inline">\(\operatorname{DecoderNeuralNet}_\theta(\cdot)\)</span>), where <span class="math inline">\(D\)</span> is the dimensionality of <span class="math inline">\(\bm{x}\)</span>, and <span class="math inline">\(\operatorname{Bernoulli}(\cdot; p)\)</span> is the probability mass function of the Bernoulli distribution.</p></li>
+</ol>
+</div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/kingma_vae_geometry.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1"><img src="assets/images/kingma_vae_geometry.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a></p>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Summary
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Since we the log-likelihood is intractable to compute, we cannot perform the optimization in <a href="#eq-loglikelihood" class="quarto-xref">Equation&nbsp;1</a>. Instead, we will maximize the ELBO <span class="math inline">\(\mc{L}_{\theta, \phi}(x)\)</span> with respect to both the decoder and encoder <span class="math inline">\((\bm{\theta}, \bm{\phi})\)</span> as a proxy.</p>
+</div>
+</div>
+</section>
+<section id="how-to-maximize-elbo" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-maximize-elbo">How to maximize ELBO?</h3>
+<ul>
+<li><p>Unbiased gradients of the ELBO with respect to the generative model parameters <span class="math inline">\(\bm{\theta}\)</span> are simple to obtain: <span class="math display">\[
+\begin{aligned}
+\nabla_\theta \mc{L}_{\theta, \phi}(x) &amp;= \nabla_\theta \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right] \\
+&amp;= \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\nabla_\theta\left( \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right) \right] \\
+&amp;\simeq \nabla_\theta\left( \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right) \\
+&amp;= \nabla_\theta \log p_\theta(\bm{x}, \bm{z}).
+\end{aligned}
+\]</span> The last line is a simple Monte Carlo estimator of the second line, where <span class="math inline">\(\bm{z}\)</span> in the last two lines is a random sample from <span class="math inline">\(q_\phi(\bm{z} \mid \bm{x})\)</span>.</p></li>
+<li><p>Unbiased gradients with respect to the <em>variational</em> parmaeters <span class="math inline">\(\bm{\phi}\)</span> are more difficult to obtain.</p>
+<ul>
+<li>ELBO’s expectation is taken with respect to the distribution <span class="math inline">\(q_\phi(\bm{z} \mid \bm{x})\)</span>.</li>
+<li>This is a function of <span class="math inline">\(\bm{\phi}\)</span>!</li>
+</ul></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+\nabla_\phi \mc{L}_{\theta, \phi}(\bm{x}) &amp;= \nabla_\phi \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right] \\
+&amp;\neq \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\nabla_\phi \left( \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right) \right]
+\end{aligned}
+\]</span></p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>The reparametrization trick (law of the unconscious statistician: lotus)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For continuous latent variables and a differentiable encoder and generative model, the ELBO can be straightforwardly differentiated with respect to both <span class="math inline">\(\bm{\phi}\)</span> and <span class="math inline">\(\bm{\theta}\)</span> through a change of variables, also called the <em>reparametrization trick</em>.</p>
+<ul>
+<li>Express the random variable <span class="math inline">\(\bm{z} \sim q_\phi(\bm{z} \mid \bm{x})\)</span> as some differentiable (and invertible) transformation.
+<ul>
+<li>This is a function of another random variable <span class="math inline">\(\bm{\varepsilon}\)</span>, given <span class="math inline">\(\bm{z}\)</span> and <span class="math inline">\(\bm{\phi}\)</span>: <span class="math display">\[ \bm{z} = \bm{h}(\bm{\varepsilon}, \bm{\phi}, \bm{x}) \]</span></li>
+<li>The random variable <span class="math inline">\(\bm{\varepsilon}\)</span> is independent of <span class="math inline">\(\bm{x}\)</span> or <span class="math inline">\(\bm{\phi}\)</span>.</li>
+</ul></li>
+<li>Now, the expectations can be rewritten in terms of <span class="math inline">\(\bm{\varepsilon}\)</span>: <span class="math display">\[ \E_{q_\phi(\bm{z} \mid \bm{x})}[f(\bm{z})] = \E_{p(\bm{\varepsilon})}[f(\bm{z})]. \]</span></li>
+<li>This makes the expectation and gradient operators commutative, and we can form a simple Monte Carlo estimator: <span class="math display">\[
+\begin{aligned}
+\nabla_\phi \E_{q_\phi(\bm{z} \mid \bm{x})}[f(\bm{z})] &amp;= \nabla_\phi \E_{p(\bm{\varepsilon})}[f(\bm{z})] \\
+&amp;= \E_{p(\bm{\varepsilon})}[\nabla_\phi f(\bm{z})] \\
+&amp;\simeq \nabla_\phi f(\bm{z})
+\end{aligned}
+\]</span> where in the last line, <span class="math inline">\(\bm{z} = h(\bm{\varepsilon}, \bm{\phi}, \bm{x})\)</span> with random noise sample <span class="math inline">\(\bm{\varepsilon} \sim p(\bm{\varepsilon})\)</span>.</li>
+</ul>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/trick.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Reparametrization trick. The variational parameters \bm{\phi} affect the objective f through the random variable \bm{z} \sim q_\phi(\bm{z} \mid \bm{x}). We wish to compute gradients \nabla_\phi f to optimize the objective with SGD. In the original form (left), we cannot differentiate f w.r.t. \bm{\phi}, because we cannot directly backpropagate gradients through the random variable \bm{z}. We can “externalize” the randomness in \bm{z} by re-parametrizing the variable as a deterministic and differentiable function of \bm{\phi}, bm{x}, and a newly introduced random variable \bm{\varepsilon} (right). This allows us to “backprop through \bm{z},” and compute gradients \nabla_\phi f."><img src="assets/images/trick.png" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Reparametrization trick. The variational parameters \bm{\phi} affect the objective f through the random variable \bm{z} \sim q_\phi(\bm{z} \mid \bm{x}). We wish to compute gradients \nabla_\phi f to optimize the objective with SGD. In the original form (left), we cannot differentiate f w.r.t. \bm{\phi}, because we cannot directly backpropagate gradients through the random variable \bm{z}. We can “externalize” the randomness in \bm{z} by re-parametrizing the variable as a deterministic and differentiable function of \bm{\phi}, bm{x}, and a newly introduced random variable \bm{\varepsilon} (right). This allows us to “backprop through \bm{z},” and compute gradients \nabla_\phi f."></a></p>
+</figure>
+</div>
+<figcaption>Reparametrization trick. The variational parameters <span class="math inline">\(\bm{\phi}\)</span> affect the objective <span class="math inline">\(f\)</span> through the random variable <span class="math inline">\(\bm{z} \sim q_\phi(\bm{z} \mid \bm{x})\)</span>. We wish to compute gradients <span class="math inline">\(\nabla_\phi f\)</span> to optimize the objective with SGD. In the original form (left), we cannot differentiate <span class="math inline">\(f\)</span> w.r.t. <span class="math inline">\(\bm{\phi}\)</span>, because we cannot directly backpropagate gradients through the random variable <span class="math inline">\(\bm{z}\)</span>. We can “externalize” the randomness in <span class="math inline">\(\bm{z}\)</span> by re-parametrizing the variable as a deterministic and differentiable function of <span class="math inline">\(\bm{\phi}\)</span>, <span class="math inline">\(bm{x}\)</span>, and a newly introduced random variable <span class="math inline">\(\bm{\varepsilon}\)</span> (right). This allows us to “backprop through <span class="math inline">\(\bm{z}\)</span>,” and compute gradients <span class="math inline">\(\nabla_\phi f\)</span>.</figcaption>
+</figure>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Gradient of ELBO
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><p>Under the reparametrization, we can replace an expectation with respect to <span class="math inline">\(q_\phi(\bm{z} \mid \bm{x})\)</span> with one with respect to <span class="math inline">\(p(\bm{\varepsilon})\)</span>.</p>
+<ul>
+<li>Now, the ELBO can be written as <span class="math display">\[
+\begin{aligned}
+\mc{L}_{\theta, \phi}(\bm{x}) &amp;= \E_{q_\phi(\bm{z} \mid \bm{x})} \left[ \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right] \\
+&amp;= \E_{p(\bm{\varepsilon})} \left[ \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right],
+\end{aligned}
+\]</span> where <span class="math inline">\(\bm{z} = \bm{h}(\bm{\varepsilon}, \bm{\phi}, \bm{x})\)</span>.</li>
+</ul></li>
+<li><p>As a result, we can form a simple Monte Carlo estimator <span class="math inline">\(\tilde{\mc{L}}_{\theta, \phi}(\bm{x})\)</span>: <span class="math display">\[
+\begin{aligned}
+\bm{\varepsilon} &amp;\sim p(\bm{\varepsilon}) \\
+\bm{z} &amp;= \bm{h}(\bm{\varepsilon}, \bm{\phi}, \bm{x}) \\
+\tilde{\mc{L}}_{\theta, \phi}(\bm{x}) &amp;= \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x})
+\end{aligned}
+\]</span></p></li>
+<li><p>The resulting gradient <span class="math inline">\(\nabla_\phi \tilde{\mc{L}}_{\theta, \phi}(\bm{x})\)</span> is used to optimize the ELBO using minibatch SGD.</p></li>
+</ul>
+</div>
+</div>
 </section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
@@ -956,6 +1207,38 @@ p(x \mid z = n) &amp;= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
   </div>
 </nav>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
