@@ -438,7 +438,7 @@ $$
 </div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Residual Networks: Theory</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Various Normalizations</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Residual Networks: Theory</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Common residual architectures</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
@@ -626,6 +626,188 @@ $$
 </ul>
 </div>
 </div>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Exploding gradients in residual networks
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Recall that bad weight initialization may lead to
+<ul>
+<li>Exponentially increasing activation magnitudes during the forward pass</li>
+<li>Exponentially increasing gradient magnitudes during the backward pass</li>
+</ul></li>
+<li>We initialize the network parameters so that
+<ul>
+<li>the activations (in the forward pass)</li>
+<li>and the gradients (in the backward pass)
+<ul>
+<li>remains the same between layers.</li>
+</ul></li>
+</ul></li>
+<li>In residual networks, the values in the forward pass increase exponentially as we move through the network.
+<ul>
+<li>This is because each residual block adds a nonnegative quantity to the input.</li>
+<li>Therefore, the variance of the activations increases exponentially with depth.
+<ul>
+<li>When we recombine with the input, the variance doubles!</li>
+<li>It grows exponentially with the number of residual blocks.</li>
+</ul></li>
+</ul></li>
+<li>This limits the possible network depth before floating point precision is exceeded in the forward pass.
+<ul>
+<li>Similar argument applies to the gradients in the backward pass of the backprop algorithm.</li>
+</ul></li>
+<li>Hence, residual networks still suffer from unstable forward propagation and exploding gradients even with He intilialization.
+<ul>
+<li>One way to stabilize the forward and backward passes would be to use He initilization
+<ul>
+<li>and then multiply the combined output of the resdiual block by <span class="math inline">\(\nicefrac{1}{\sqrt{2}}\)</span> to prevent the variance from doubling.</li>
+</ul></li>
+<li>More usual: use <em>batch normalization</em>.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ResidualVariance.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Variance in residual networks. a) He initialization ensures that the expected variance remains unchanged after a linear plus ReLU layer \bm{f}_k. Unfortunately, in residual networks, the input of each block is added back to the output, so the variance doubles at each layer (gray numbers indicate variance) and grows exponentially. b) One approach would be to rescale the signal by \nicefrac{1}{\sqrt{2}} between each residual block. c) A second method uses batch normalization (BN) as the first step in the residual block and initializes the associated offset \delta to zero and the scale \gamma to one. This transforms the input to each layer to have unit variance, and with He intitialization, the output variance will also be one. Now the variance increases linearly with the number of residual blocks. A side-effect is that, at initialization, later network layers are dominated by the residual connection and are hence close to computing the identity."><img src="assets/images/ResidualVariance.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%" alt="Variance in residual networks. a) He initialization ensures that the expected variance remains unchanged after a linear plus ReLU layer \bm{f}_k. Unfortunately, in residual networks, the input of each block is added back to the output, so the variance doubles at each layer (gray numbers indicate variance) and grows exponentially. b) One approach would be to rescale the signal by \nicefrac{1}{\sqrt{2}} between each residual block. c) A second method uses batch normalization (BN) as the first step in the residual block and initializes the associated offset \delta to zero and the scale \gamma to one. This transforms the input to each layer to have unit variance, and with He intitialization, the output variance will also be one. Now the variance increases linearly with the number of residual blocks. A side-effect is that, at initialization, later network layers are dominated by the residual connection and are hence close to computing the identity."></a></p>
+</figure>
+</div>
+<figcaption>Variance in residual networks. a) He initialization ensures that the expected variance remains unchanged after a linear plus ReLU layer <span class="math inline">\(\bm{f}_k\)</span>. Unfortunately, in residual networks, the input of each block is added back to the output, so the variance doubles at each layer (gray numbers indicate variance) and grows exponentially. b) One approach would be to rescale the signal by <span class="math inline">\(\nicefrac{1}{\sqrt{2}}\)</span> between each residual block. c) A second method uses batch normalization (BN) as the first step in the residual block and initializes the associated offset <span class="math inline">\(\delta\)</span> to zero and the scale <span class="math inline">\(\gamma\)</span> to one. This transforms the input to each layer to have unit variance, and with He intitialization, the output variance will also be one. Now the variance increases linearly with the number of residual blocks. A side-effect is that, at initialization, later network layers are dominated by the residual connection and are hence close to computing the identity.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="batch-normalization" class="level3">
+<h3 class="anchored" data-anchor-id="batch-normalization">Batch Normalization</h3>
+<ul>
+<li><em>BatchNorm</em> shifts and rescales each activation <span class="math inline">\(h\)</span> so that its mean and variance across the batch <span class="math inline">\(\mc{B}\)</span> becomes values that are learned during training. <span class="math display">\[
+\begin{aligned}
+m_h &amp;= \frac{1}{|\mc{B}|} \sum_{i \in \mc{B}} h_i \\
+s_h &amp;= \sqrt{\frac{1}{|\mc{B}|} \sum_{i \in \mc{B}} (h_i - m_h)^2},
+\end{aligned}
+\]</span> where all quantities are scalars.</li>
+<li>Then, we use these statistics to <span style="color: dodgerblue;">standardize</span> the batch activations to have mean zero and unit variance: <span id="eq-normalization"><span class="math display">\[
+h_i \leftarrow \frac{h_i - m_h}{s_h + \epsilon}, \qquad \forall i \in \mc{B},
+\tag{2}\]</span></span> where <span class="math inline">\(\epsilon\)</span> is a small number that prevents division by zero if <span class="math inline">\(h_i\)</span> is the same for every member of the batch and <span class="math inline">\(s_h = 0\)</span>.</li>
+<li>Finally, the normalized variable is scaled by <span class="math inline">\(\gamma\)</span> and shifted by <span class="math inline">\(\delta\)</span>: <span class="math display">\[
+h_i \leftarrow \gamma h_i + \delta, \qquad \forall i \in \mc{B}.
+\]</span></li>
+<li>After this operation, the activations have mean <span class="math inline">\(\delta\)</span> and standard deviation <span class="math inline">\(\gamma\)</span> across all members of the batch.
+<ul>
+<li>Both of these quantities are learned during training.</li>
+</ul></li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Batch normalization
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Batch normalization is applied independently to each hidden unit.
+<ul>
+<li>In a standard neural net with <span class="math inline">\(K\)</span> layers, each containing <span class="math inline">\(D\)</span> hidden units, there would be <span class="math inline">\(KD\)</span> learned offsets <span class="math inline">\(\delta\)</span> and <span class="math inline">\(KD\)</span> learned scales <span class="math inline">\(\gamma\)</span>.</li>
+<li>In a convolutional network, the normalizing stats are computed over both the batch and the spatial position.
+<ul>
+<li>If there were <span class="math inline">\(K\)</span> layers, each containing <span class="math inline">\(C\)</span> channels, there would be <span class="math inline">\(KC\)</span> learned offsets and <span class="math inline">\(KC\)</span> learned scales.</li>
+</ul></li>
+</ul></li>
+<li>At test time, we do not have a batch from which we can gather statistics.
+<ul>
+<li>To resolve this, the statistics <span class="math inline">\(m_h\)</span> and <span class="math inline">\(s_h\)</span> are calculated across the whole training dataset and frozen in the final network.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<section id="costs-and-benefits-of-batch-normalization" class="level4">
+<h4 class="anchored" data-anchor-id="costs-and-benefits-of-batch-normalization">Costs and benefits of batch normalization</h4>
+<ul>
+<li>Batch normalization makes the network invariant to rescaling the weights and biases that contribute to each activation
+<ul>
+<li>if these are doubled, then the activations also double</li>
+<li>the estimated standard deviation <span class="math inline">\(s_h\)</span> also doubles, and the normalization in <a href="#eq-normalization" class="quarto-xref">Equation&nbsp;2</a> compensates for these changes.</li>
+</ul></li>
+<li>Since this happens for each hidden unit, there will be a large family of weights and biases that all produce the same effect.</li>
+<li>BatchNorm adds two parameters <span class="math inline">\(\gamma\)</span> and <span class="math inline">\(\delta\)</span> per hidden unit, which makes the model somewhat larger.
+<ul>
+<li>Hence, it both creates redundancy in the weights and biases</li>
+<li>and adds extra parameters to compensate for that redundancy.</li>
+</ul></li>
+<li>This is obviously inefficient, but BatchNorm also provides several benefits.</li>
+</ul>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Stable forward propagation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>If we intiialize the offsets <span class="math inline">\(\delta\)</span> to zero and the scales <span class="math inline">\(\gamma\)</span> to one,
+<ul>
+<li>then each output activation will have unit variance.</li>
+<li>in a regular neural net, this ensures the variance is stable during forward prop at initialization.</li>
+<li>in a resnet, the variance must still increase, but the <span class="math inline">\(k^{\text{th}}\)</span> layer adds one unit of variance, instead of <span class="math inline">\(k\)</span>.</li>
+</ul></li>
+<li>At initialization, this has a side-effect:
+<ul>
+<li>later layers make a smaller change to the overall variation than earlier ones.</li>
+<li>the network is effectively less deep at the start of training since later layers are close to computing the identity.</li>
+<li>as training proceeds, the network can increase the scales <span class="math inline">\(\gamma\)</span> in later layers and can control its own effective depth.</li>
+</ul></li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Higher learning rates
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Empirical studies and theory both show that batch normalization makes the loss surface and its gradient change more smoothly. - This allows the use of higher learning rates as the surface is more predictable.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Regularization
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Noise in the training process can improve generalization by preventing the network from overfitting to the training data.
+<ul>
+<li>This is the idea behind regularization methods such as weight decay and dropout.</li>
+</ul></li>
+<li>Batch normalization adds noise to the training process because the statistics <span class="math inline">\(m_h\)</span> and <span class="math inline">\(s_h\)</span> are estimated from a random batch of training examples.</li>
+</ul>
+</div>
+</div>
+</section>
 </section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
