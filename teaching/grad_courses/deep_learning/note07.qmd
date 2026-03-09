@@ -185,7 +185,126 @@ before performance degrades.
 :::
 
 
-## Various Normalizations
+::: {.callout-important}
+### Exploding gradients in residual networks
+* Recall that bad weight initialization may lead to
+  - Exponentially increasing activation magnitudes during the forward pass
+  - Exponentially increasing gradient magnitudes during the backward pass
+* We initialize the network parameters so that 
+  - the activations (in the forward pass) 
+  - and the gradients (in the backward pass)
+    - remains the same between layers.
+* In residual networks, the values in the forward pass increase exponentially as we move through the network.
+  - This is because each residual block adds a nonnegative quantity to the input.
+  - Therefore, the variance of the activations increases exponentially with depth.
+    - When we recombine with the input, the variance doubles!
+    - It grows exponentially with the number of residual blocks.
+* This limits the possible network depth before floating point precision is exceeded in the forward pass.
+  - Similar argument applies to the gradients in the backward pass of the backprop algorithm.
+* Hence, residual networks still suffer from unstable forward propagation and exploding gradients even with He intilialization.
+  - One way to stabilize the forward and backward passes would be to use He initilization 
+    - and then multiply the combined output of the resdiual block by $\nicefrac{1}{\sqrt{2}}$ to prevent the variance from doubling.
+  - More usual: use _batch normalization_.
+:::
+
+::: {.left-caption}
+![
+  Variance in residual networks. a) He initialization ensures that the expected 
+  variance remains unchanged after a linear plus ReLU layer $\bm{f}_k$. Unfortunately, 
+  in residual networks, the input of each block is added back to the output, so 
+  the variance doubles at each layer (gray numbers indicate variance) and grows 
+  exponentially. b) One approach would be to rescale the signal by $\nicefrac{1}{\sqrt{2}}$ 
+  between each residual block. c) A second method uses batch normalization (BN) as the 
+  first step in the residual block and initializes the associated offset $\delta$ to zero 
+  and the scale $\gamma$ to one. This transforms the input to each layer to have unit 
+  variance, and with He intitialization, the output variance will also be one. Now the 
+  variance increases linearly with the number of residual blocks. A side-effect is that, 
+  at initialization, later network layers are dominated by the residual connection and 
+  are hence close to computing the identity.
+](assets/images/ResidualVariance.svg){.lightbox width=80% fig-align="center"}
+:::
+
+### Batch Normalization
+
+* _BatchNorm_ shifts and rescales each activation $h$ so that its mean and
+variance across the batch $\mc{B}$ becomes values that are learned during
+training.
+$$
+\begin{aligned}
+m_h &= \frac{1}{|\mc{B}|} \sum_{i \in \mc{B}} h_i \\
+s_h &= \sqrt{\frac{1}{|\mc{B}|} \sum_{i \in \mc{B}} (h_i - m_h)^2},
+\end{aligned}
+$$
+where all quantities are scalars.
+* Then, we use these statistics to [standardize]{style="color: dodgerblue;"} the batch 
+activations to have mean zero and unit variance:
+$$
+h_i \leftarrow \frac{h_i - m_h}{s_h + \epsilon}, \qquad \forall i \in \mc{B},
+$$ {#eq-normalization}
+where $\epsilon$ is a small number that prevents division by zero if $h_i$ is the 
+same for every member of the batch and $s_h = 0$.
+* Finally, the normalized variable is scaled by $\gamma$ and shifted by $\delta$:
+$$
+h_i \leftarrow \gamma h_i + \delta, \qquad \forall i \in \mc{B}.
+$$
+* After this operation, the activations have mean $\delta$ and standard deviation $\gamma$ 
+across all members of the batch.
+  - Both of these quantities are learned during training.
+
+::: {.callout-note}
+### Batch normalization
+* Batch normalization is applied independently to each hidden unit.
+  - In a standard neural net with $K$ layers, each containing $D$ hidden units, there would be $KD$ learned offsets $\delta$ and $KD$ learned scales $\gamma$.
+  - In a convolutional network, the normalizing stats are computed over both the batch and the spatial position.
+    * If there were $K$ layers, each containing $C$ channels, there would be $KC$ learned offsets and $KC$ learned scales.
+* At test time, we do not have a batch from which we can gather statistics.
+  - To resolve this, the statistics $m_h$ and $s_h$ are calculated across the whole training dataset and frozen in the final network.
+:::
+
+
+#### Costs and benefits of batch normalization
+* Batch normalization makes the network invariant to rescaling the weights and biases that 
+contribute to each activation
+  - if these are doubled, then the activations also double
+  - the estimated standard deviation $s_h$ also doubles, and the normalization in @eq-normalization
+  compensates for these changes.
+* Since this happens for each hidden unit, there will be a large family of weights and biases 
+that all produce the same effect.
+* BatchNorm adds two parameters $\gamma$ and $\delta$ per hidden unit, which makes the model somewhat larger.
+  - Hence, it both creates redundancy in the weights and biases
+  - and adds extra parameters to compensate for that redundancy.
+* This is obviously inefficient, but BatchNorm also provides several benefits.
+
+::: {.callout-warning}
+### Stable forward propagation
+* If we intiialize the offsets $\delta$ to zero and the scales $\gamma$ to one, 
+  - then each output activation will have unit variance.
+  - in a regular neural net, this ensures the variance is stable during forward prop at initialization.
+  - in a resnet, the variance must still increase, but the $k^{\text{th}}$ layer adds one unit of variance, instead of $k$.
+* At initialization, this has a side-effect:
+  - later layers make a smaller change to the overall variation than earlier ones.
+  - the network is effectively less deep at the start of training since later layers are close to computing the identity.
+  - as training proceeds, the network can increase the scales $\gamma$ in later layers and can control its own effective depth.
+:::
+
+
+::: {.callout-warning}
+### Higher learning rates
+Empirical studies and theory both show that batch normalization makes the loss surface and its gradient 
+change more smoothly.
+  - This allows the use of higher learning rates as the surface is more predictable.
+:::
+
+::: {.callout-warning}
+### Regularization
+* Noise in the training process can improve generalization by preventing the network from overfitting to the training data.
+  - This is the idea behind regularization methods such as weight decay and dropout.
+* Batch normalization adds noise to the training process because the statistics $m_h$ and $s_h$ are estimated from a random batch of training examples.
+:::
+
+
+
+## Common residual architectures
 
 ::: {.column-margin}
 Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
