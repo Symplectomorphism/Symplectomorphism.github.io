@@ -310,5 +310,241 @@ change more smoothly.
 Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
 :::
 
+### ResNet
 
+::: {.left-caption}
+![
+  ResNet blocks. a) A standard block in the ResNet architecture contains a batch normalization 
+  operation, followed by an activation function, and a $3 \times 3$ convolutional layer. 
+  b) A bottleneck ResNet block still integrates information over a $3 \times 3$ region but 
+  uses fewer parameters. It containes three convolutions. The first $1 \times 1$ convolution 
+  reduces the number of channels. The second $3 \times 3$ convolution is applied to the 
+  smaller representation. A final $1 \times 1$ convolution increases the number of channels
+  again so that it can be added back to the input.
+](assets/images/ResidualResNet1.svg){.lightbox width=80% fig-align="center"}
+:::
+
+* The ResNet-200 model contains $200$ layers and was used for image classification on the ImageNet database.
+* The resolution is decreased between adjacent ResNet blocks using convolutiosn with stride two.
+* Channels are added by either appending zeros to the representation or applying an extra $1 \times 1$ convolution.
+* At the start of the network is a $7 \times 7$ convolutional layer, followed by downsampling operation.
+* At the end, a fully connected layer maps the block to a vector of length $1000$.
+  - passed through a softmax layer to generate class probabilities.
+
+
+::: {.left-caption}
+![
+  ResNet-200 model. A standard $7 \times 7$ convolutional layer with stride two is applied, 
+  followed by a MaxPool operation. A series of bottlenect residual blocks follow (number in 
+  brackets is channels after first $1 \times 1$ convolution), with periodic downsampling 
+  and accompanying increases in the number of channels. The network concludes with average 
+  pooling across all spatial positions and a fully connected layer maps to pre-softmax 
+  activation.
+](assets/images/ResidualResnet2.svg){.lightbox width=80% fig-align="center"}
+:::
+
+* The ResNet-200 model achieved a remarkable $4.8\%$ error rate for the correct class, being in the 
+top five and $20.1\%$ for identifying the correct calss correctly.
+  - Compare this to AlexNet ($16.4\%$, $38.1\%$) and VGG ($6.8\%$, $23.7\%$).
+* ResNet-200 was one of the first networks to exceed human performance ($5.1\%$ for being in the top five guesses).
+* Still, this was state-of-the-art in 2016.
+  - Today, the best perofmring model has a $9.0\%$ error for identifying the class correctly.
+  - These newer models are now based on transformers.
+
+::: {.left-caption}
+![
+  ImageNet performance. Each circle represents a different published model.
+  Blue circles represent models that were state-of-the-art. AlexNet and VGG were remarkable 
+  for their time, but are now far from the state-of-the-art. ImageGPT, ViT, SWIN, 
+  and DaViT are transformer-based architectures.
+](assets/images/ConvImageNetPerformance.svg){.lightbox width=80% fig-align="center"}
+:::
+
+### DenseNet
+
+* Residual blocks receive output from the previous layer, modify it by passing it 
+through some network layers, and add it back to the original input.
+* Alternative: concatenate the modified and the original signals.
+  - Increases the representation size (number of channels).
+  - Optional subsequent linear transformation can map back to the original size 
+  ($1 \times 1$ convolution).
+  - Allows the model to add the representations together, take a weighted sum, 
+  or combine them in a more complex way.
+
+
+::: {.left-caption}
+![
+  DenseNet. This architecture uses residual connections to concatenate the outputs of 
+  earlier layers to later ones. Here, the three-channel input image is processed to 
+  form a $32$-channel representation. The input image is concatenated to this to 
+  give a total of $35$ channels. This combined representation is processed to create 
+  another $32$-channel representation, and both earlier representations are 
+  concatenated to this to create a total of $67$ channels and so on.
+](assets/images/ResidualDensenet.svg){.lightbox width=80% fig-align="center"}
+:::
+
+* In practice, concatenating the representations can only be sustained for a few layers
+  - The number of channels (hence the number of parameters to process them) becomes increasingly large.
+  - Problem is alleviated by applying a $1 \times 1$ convolution to reduce the number of channels
+  before the next $3 \times 3$ convolution is applied.
+* In a CNN, the input is periodically downsampled.
+  - Concatenation across the downsampling makes no sense (different representation sizes)
+  - The chain of concatenation is broken at this point and a smaller representation starts a new chain.
+
+
+### U-Nets and hourglass networks
+
+* In U-Nets, the encoder repeatedly downsamples the image until the receptive fields 
+are large and information is integrated across the image.
+* Then, the decoder upsamples it back to the size of the origianl image.
+* The final output is a probability over possible object classes at each pixel.
+* One drawback of the said architecture is that the low-resolution reprsentation
+in the middle must "remember" the high-resolution details to make the final
+result accurate.
+  - This is unnecessary if residual connects transfer the representations from the 
+  encoder to their partner in the decoder.
+
+::: {.left-caption}
+![
+  U-Net for segmenting HeLa cells. The U-Net has an encoder-decoder structure, in 
+  which the representation is downsampled (orange blocks) and then re-upsampled 
+  (blue blocks). The encoder uses regular convolutions, and the decoder uses 
+  transposed convolutions. Residual connections append the last prersentation at 
+  each scale in the encoder to the first reprsentation at the same scale in the 
+  decoder (orange arrows). The original U-Net used "valid" convolutions, so the 
+  size decreased slightly with each layer, even without downsampling. Hence, the 
+  representations from the encoder were cropped (dashed squares) before 
+  appending to the decoder.
+](assets/images/ResidualUNet.svg){.lightbox width=80% fig-align="center"}
+:::
+
+::: {.left-caption}
+![
+  Segmentation using U-Net in $3$D. a) Three slices through a $3$D volume of mouse 
+  cortex taken by scanning electron microscope. b) A single U-Net is used to classify 
+  voxels as being inside or outside neurites. Connected regions are identified with 
+  differnt colors. c) For a better result, an ensemble of five U-Nets is trained, and 
+  a voxel is only classified as belonging to the cell if all five networks agree.
+](assets/images/ResidualUNetResults.svg){.lightbox width=80% fig-align="center"}
+:::
+
+* _Hourglass networks_ are similar to U-Nets but they 
+  - apply further convolutional alyers in the skip connections
+  - add the result back to the decoder rather than concatenating it.
+* A series of these models form a _stacked hourglass network_ 
+  - they alternate between considering the image at local and global levels.
+
+::: {.left-caption}
+![
+  Stacked hourglass networks for pose estimation. a) The network input is an image 
+  containing a person, and the output is a set of heatmaps, with one heatmap for each 
+  joint. This is formulated as a regression problem where the targets are heatmap 
+  images with small, highlighted regions at the ground-truth joint positions. The 
+  peak of the estimated heatmap is used to establish each final joint position. b) 
+  The architecture consists of initial convolutional and residual layers followed by 
+  a series of hourglass blocks. c) Each hourglass block consists of an encoder-decoder 
+  network similar to the U-Net except that the convolutions use zero-padding, some 
+  further processing is done in the residual links, and these links add this processed 
+  representation rather than concatenate it. Each blue cuboid is itself a bottleneck 
+  residual layer.
+](assets/images/ResidualStackedHourglass.svg){.lightbox width=80% fig-align="center"}
+:::
+
+
+::: {.callout-important}
+### Why residual connections help
+::: {.left-caption}
+![
+  Visualizing neural network loss surfaces. Each plot shows the loss surface in two 
+  random directions in parameter space around the minimum found by SGD for an image 
+  classification task on the CIFAR-10 dataset. These directrions are normalized to 
+  facilitate side-by-side comparison. a) Residual net with $56$ layers. b) Results 
+  from the same network without skip connections. The surface is smoother with the 
+  skip connections. This facilitates learning and makes the final network 
+  performance more robust to minor errors in the parameters, so will likely 
+  generalize better.
+](assets/images/ResidualSurface.svg){.lightbox width=80% fig-align="center"}
+:::
+:::
+
+
+## Batch normalization and its alternatives
+
+::: {.column-margin}
+Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
+:::
+
+* Batch normalization helps stabilize the forward propagation of signals 
+through a network
+  * It is shows that causes gradient explosion in ReLU networks without skip connections
+  * Each layer incrasing the magnitude of the gradients by $\sqrt{\nicefrac{\pi}{\pi-1}} \approx 1.21$.
+  * This effect is also present in residual networks.
+* Still, the benefit of removing the $2^K$ increases in magnitude in the forward
+pass outweighs the harm done by increasing gradients by $1.21^K$ in the backward pass. 
+
+::: {.left-caption}
+![
+  Normalization schemes. BatchNorm modifies each channel separately but adjusts each 
+  batch member in the same way based on statistics gathered across the batch and spatial position.
+  Ghost batch normalization computes these statistics from only part of the batch to make them 
+  more variable. LayerNorm computes statistics for each batch member separately, based on 
+  statistics gathered across the channels and spatial position. It retains a separate 
+  learned scaling factor for each channel. GroupNorm normalizes within each group of channels 
+  and also retains a separate scale and offset parameter for each channel. InstanceNorm 
+  normalizes within each channel separately, computing the statistics only across spatial position.
+](assets/images/ResidualNormTypes.svg){.lightbox width=80% fig-align="center"}
+:::
+
+::: {.callout-tip}
+### Ghost batch normalization (GhostNorm)
+* Uses only part of the batch to compute the normalization statistics
+  - This makes them noisier
+  - increasing the amount of regularization when the batch size is very large.
+:::
+
+* When the batch size is very small or the fluctuations within a batch are very large (e.g. NLP), 
+the statistics in BatchNorm may become unreliable.
+* _Batch renormalization_ has been proposed to address this issue.
+  - It keeps track of running statistics for the mean and variance of the activations
+* Another problem with batch normalization is that it is unsuitable for use in recurrent neural networks.
+  - These are networks for processing sequences, in which the previous output is fed back as an additional
+  input as we move through the sequence.  
+  - Here, the statistics must be stored at each step in the sequence
+  - It is unclear what to do if a test sequence is longer than the training sequence.
+* Third problem: batch normalization needs access to the whole batch
+  - This may not be readily available when training is distributed across several machines.
+
+::: {.callout-tip}
+## Layer normalization (LayerNorm)
+* LayerNorm avoids using batch statistics by normalizing each data example separately
+  - uses statistics gathered across the channels and spatial direction.
+  - there is still a separate learned scale $\gamma$ and offset $\delta$ per channel.
+:::
+
+::: {.callout-tip}
+## Group normalization (GroupNorm)
+* GroupNorm is similar to LayerNorm but divides the channels into groups 
+  - computes the statistics for each group separately across the within-group channels and spatial positions.
+  - there are still separate scale and offset parameters per channel.
+:::
+
+::: {.callout-tip}
+### Instance normalization (InstanceNorm)
+* InstanceNorm takes GroupNorm to the extreme, where the number of groups $=$ number of channels.
+:::
+
+::: {.callout-important}
+### Why batch normalization helps
+* BatchNorm helps control the initial gradients in a residual network.
+  - However, the _exact_ mechanism by which BatchNorm improves performance is not well understood.
+* It is empirically verified that adding BatchNorm has the effect of smoothing out the loss surface.
+  - This allows for larger learning rates.
+  - It was empirially shown that one can exponentially incrase learning rate schedule with BatchNorm.
+    - This is because BatchNorm makes the newtwork invariant to the scales of the weight matrices.
+* It is shown theoretically that for any parameter initialization, the distance to the 
+_nearest_ optimum is less for networks with batch normalization.
+* Finally, BatchNorm has a regularizing effect due to statistical fluctuations
+from the random composition of the batch.
+:::
+  
 :::
