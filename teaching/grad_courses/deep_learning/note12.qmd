@@ -1,5 +1,5 @@
 ---
-title: "Transformers"
+title: "Variational Autoencoders"
 format: 
   html: 
     grid:
@@ -10,591 +10,421 @@ filters:
   - shinylive
 ---
 
-- This chapter introduces **transformers**, initially targeted at natural language processing (NLP) problems.
-- The **network input** is a series of high-dimensional embeddings representing words or word fragments.
-- **Language datasets** share some characteristics of image data:
-  - The number of input variables can be very large.
-  - Statistics are similar at every position; it's not sensible to re-learn the meaning of the word *dog* at every possible position.
-- However, text sequences **vary in length**, and unlike images, there is **no easy way to resize** them.
-
-### Processing text data
-
-To motivate the transformer, consider the following passage:
-
-> The restaurant refused to serve me a ham sandwich because it only cooks vegetarian food. In the end, they just gave me two slices of bread. Their ambiance was just as good as the food and service.
-
-The goal is to design a network to process this text into a representation suitable for downstream tasks, such as:
-
-- **Sentiment analysis**: Classifying the review as positive or negative.
-- **Question answering**: e.g., "Does the restaurant serve steak?".
-
-We can make three immediate observations:
-
-1. **Large Encoded Input**: 
-   - Even a small 37-word passage with embedding vectors of length 1024 results in $37 \times 1024 = 37,888$ units.
-   - For realistic datasets with thousands of words, fully connected layers become impractical.
-
-2. **Variable Input Lengths**: 
-   - Sentences vary in length, making it difficult to apply a standard fully connected network.
-   - **Solution**: The network should share parameters across different input positions, analogous to how CNNs share parameters across image regions.
-
-3. **Ambiguity and Attention**:
-   - Language is inherently ambiguous. For instance, the pronoun ***it*** in the first sentence refers to the *restaurant*, not the *ham sandwich*.
-   - To resolve this, the word ***it*** must be connected to ***restaurant***.
-   - **Attention**: In transformer parlance, the word pays "attention" to related words. These connections must extend across large text spans (e.g., ***their*** also refers back to the *restaurant*).
-
+* _Variational autoencoders_ (VAEs) are _probabilisitic generative models_.
+  - They aim to learn a distribution $p(x)$ over the data.
+  - After training, it is possible to draw (generate) samples from this distribution.
+  - Unfortunately, it is not possible to compute the log-likelihood of a sample $x^*$ exactly.
+* It is possible to define a lower bound on the likelihood. 
+  - The VAE approximates this bound using a Monte Carlo sampling approach.
 
 ::: {.panel-tabset}
 
-## Self-Attention
+
+## Theory
+
+::: {.column-margin}
+Image credits: 
+[Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0] and \
+[An Introduction to Variational Autoencoders](https://arxiv.org/abs/1906.02691) by Kingma, D. P. and Welling, M.
+:::
+
+### Linear latent variable models
+
+* LVMs model a joint distribution $p(\bm{x}, \bm{z})$ of the data $\bm{x}$ and a _latent variable_ $\bm{z}$.
+* They then describe $p(\bm{x})$ as the marginal distribution of the joint distribution:
+$$
+    p(\bm{x}) = \int p(\bm{x}, \bm{z}) d\bm{z} = \int p(\bm{x} | \bm{z}) p(\bm{z}) d\bm{z}.
+$$
+* This is a rather indirect approach to describint $p(\bm{x})$.
+  - Useful because expressions for $p(\bm{x} | \bm{z})$ and $p(\bm{z})$ are often much simpler than that for $p(\bm{x})$.
+
+
+::: {.callout-tip}
+### Example: Gaussian Mixture Models
+* Let's take a $1$D mixture of Gaussians
+  - $z$ is discrete: $p(z)$ is a categorical distribution with probability $\lambda_n$ for every possible value of $z$.
+  - The likelihood $p(x \mid z = n)$ of the data is normally distributed with mean $\mu_n$ and variance $\sigma_n^2$.
+$$
+\begin{aligned}
+  p(z = n) &= \lambda_n \\
+  p(x \mid z = n) &= \mathcal{N}(x \mid \mu_n, \sigma_n^2).
+\end{aligned}
+$$
+* The data likelihood is given by marginalizing over the latent variable $z$
+$$
+    p(x) = \sum_{n=1}^N p(x, z=n) = \sum_{n=1}^N p(x \mid z=n) p(z=n) = \sum_{n=1}^N \lambda_n \mathcal{N}(x \mid \mu_n, \sigma_n^2).
+$$
+* Note that the likelihood and prior are both simple expressions, but the resulting data likelihood is multimodal!
+:::
+
+::: {.left-caption}
+![
+  Mixture of Gaussians (MoG). \
+  a) The MoG describes a complex probability distribution (cyan curve) as a weighted sum of Gaussian components 
+  (dashed curves). \
+  b) This sum is the marginalization of the joint density $p(x, z)$ between the continuous observed data $x$ and a 
+  discrete latent variable $z$.
+](assets/images/VAEMixGauss.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+### Nonlinear latent variable models
+
+In a nonlinear latent variable model, both the data $\bm{x}$ and the latent variable $\bm{z}$ are continuous and multivariate.
+
+* Both the prior $p(\bm{z})$ and the likelihood $p(\bm{x} \mid \bm{z})$ are normally distributed.
+  - $p(\bm{z}) = \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I})$
+  - $p(\bm{x} \mid \bm{z}, \bm{\theta}) = \mathcal{N}(\bm{x} \mid \mu(\bm{z}), \Sigma(\bm{z}))$
+* Say, the likelihood is modeling a continuous variable: the mean and covariance are given by neural networks
+  - Many times the covariance is fixed and assumed to be diagonal: $\Sigma(\bm{z}) = \sigma^2 \bm{I}$ ($\sigma$ can be learned, too)
+  - The mean is given by a neural network: $\mu(\bm{z}) = f(\bm{z}; \bm{\theta})$
+* The latent variable $\bm{z}$ is lower dimensional than the data $\bm{x}$.
+* In this example, the data probability $p(\bm{x} \mid \bm{\theta})$ is found by marginalizing over the latent variable $\bm{z}$
+$$ p(\bm{x} \mid \bm{\theta}) = \int p(\bm{x} \mid \bm{z}, \bm{\theta}) p(\bm{z}) d\bm{z} = \int \mathcal{N}\left(\bm{x} \mid f(\bm{z}; \bm{\theta}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z} $$
+
+::: {.left-caption}
+![
+  Nonlinear latent variable model. A complex $2$D density $p(\bm{x})$ (right) is created as 
+  the marginalization of the joint distribution $p(\bm{x}, z)$ (left) over the latent 
+  variable $z$; to create $p(\bm{x})$, we integrate the $3$D volume over the dimension $z$. 
+  For each $z$, the distribution over $\bm{x}$ is a spherical Gaussian (two slices shown) 
+  with a mean $f(\bm{z}; \bm{\theta})$ that is a nonlinear function of $z$ and depends 
+  on parameters $\theta$. The distribution $p(\bm{x})$ is a weighted sum of these Gaussians.
+](assets/images/VAENonLinearLVM_th.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+* This can be viewed as an infinite weighted sum (i.e., an infinite mixture)
+  - Mixture is of spherical Gaussians with different means
+  - The weights are $p(\bm{z})$ and the means are $f(\bm{z}; \bm{\theta})$
+
+#### Generation
+
+A new example $\bm{x}^*$ is generated by [ancestral sampling]{style="color:dodgerblue;"}.
+
+* Draw $\bm{z}^* \sim p(\bm{z})$
+* Draw $\bm{x}^* \sim p(\bm{x} \mid \bm{z}^*)$
+  - Pass $\bm{z}^*$ through the decoder network $f(\bm{z}^*; \bm{\theta})$ to compute the mean of $p(\bm{x} \mid \bm{z}^*)$
+  - Draw $\bm{x}^*$ from $\mathcal{N}(\bm{x}^* \mid f(\bm{z}^*; \bm{\theta}), \sigma^2 \bm{I})$
+
+::: {.left-caption}
+![
+  Generation from nonlinear latent variable model. a) We draw a sample $z^*$ from the prior probability 
+  $p(z)$ over the latent variable. b) A sample $\bm{x}^*$ is then drawn from $p(\bm{x} \mid z^*, \bm{\theta})$.
+  This is a spherical Gaussian with a mean that is a nonlinear function $f(\cdot; \bm{\theta})$ of $z^*$ and 
+  a fixed variance $\sigma^2 \bm{I}$. c) If we repeat this process many times, we recover the density 
+  $p(\bm{x} \mid \bm{\theta})$.
+](assets/images/VAENonLinearLVMGen_th.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+### Training
+
+* We want to maximize the log-likelihood over a training dataset $\{ \bm{x}_i \}_{i=1}^I$ with respect to $\bm{\theta}$
+$$ 
+    \bm{\theta}^* = \arg\max_{\bm{\theta}} \sum_{i=1}^I \log p(\bm{x}_i \mid \bm{\theta}) = \argmax_{\bm{\theta}} \sum_{i=1}^I \log \int p(\bm{x}_i \mid \bm{z}, \bm{\theta}) p(\bm{z}) d\bm{z},
+$$ {#eq-loglikelihood}
+where for the Gaussian likelihood example, we would have 
+$$
+    p(\bm{x}_i \mid \bm{\theta}) = \int \mathcal{N}\left(\bm{x}_i \mid f(\bm{z}; \bm{\theta}), \sigma^2 \bm{I}\right) \mathcal{N}(\bm{z} \mid \bm{0}, \bm{I}) d\bm{z}.
+$$
+* Unfortunately, this is intractable to compute directly.
+  - No closed-form expression for the integral
+  - No easy way to evaluate it for a particular value of $\bm{x}$
+* To make progress, we define a _lower bound_ on the log-likelihood.
+  - Always less than or equal to the log-likelihood for a given value of $\bm{\theta}$
+  - Depends on some other parameters $\bm{\phi}$
+  - We will build a network to compute this lower bound and optimize it.
+
+::: {.callout-important}
+### Jensen's inequality
+A [concave function]{style="color:dodgerblue;"} $g(\cdot)$ of the expectation of data $y$ 
+is greater than or equal to the expectation of the function of the data:
+$$
+    g\left(\mathbb{E}[y]\right) \geq \mathbb{E}[g(y)].
+$$
+:::
+
+* Using Jensen's equality with $g = \log$, we obtain
+$$
+\log \E(y) = \log \int p(y)y dy \geq \int p(y) \log{(y)} dy = \E \log{y}.
+$$
+* In fact, the slightly more general statement is true:
+$$
+\log \int p(y)h(y)dy \geq \int p(y) \log{(h(y))}dy,
+$$
+for some function $h(y)$ of $y$.
+
+* The intractability of $p(\bm{x} \mid \theta)$ is related to the intractability 
+of the posterior distribution $p(\bm{z} \mid \bm{x}, \bm{\theta})$.
+  - Note that the joint distribution $p(\bm{x}, \bm{z} \mid \theta)$ is 
+  efficient to compute and we have
+$$
+p(\bm{z} \mid \bm{x}, \bm{\theta}) = \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{p(\bm{x} \mid \bm{\theta})}
+$$
+  - Since $p(\bm{x}, \bm{z} \mid \bm{\theta})$ _is_ tractable to compute, a tractable marginal 
+  likelihood $p(\bm{x} \mid \bm{\theta})$ leads to a tractable posterior $p(\bm{z} \mid \bm{x}, \bm{\theta})$, 
+  and vice versa. Both are _intractable_!
+
+::: {.left-caption}
+![
+  Posterior distribution over the latent variable. a) The posterior distribution $p(z \mid \bm{x}^*, \bm{\theta})$
+  is the distribution over the values of the latent variable $z$ that could be responsible for a data point $\bm{x}^*$. 
+  We calculate this via Bayes's rule $p(z \mid \bm{x}^*, \bm{\theta}) \propto p(\bm{x}^* \mid z, \bm{\theta}) p(z)$.
+  b) We compute the first term on the right hand side (the likelihood) by assessing the probability of $\bm{x}^*$ 
+  against the symmetric Gaussian associated with each value of $z$. Here, it was more likely to have been created 
+  from $z_1$ than $z_2$. The second term is the prior probability $p(z)$ over the latent variable. Combining these 
+  two factors and normalizing so the distribution sums to one gives us the posterior distribution $p(z \mid \bm{x}^*, \bm{\theta})$.
+](assets/images/VAENonLinearLVMPost2_th.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+* Let us introduce a parametric _inference model_ $q(\bm{z} \mid \bm{x}, \bm{\phi})$.
+  - Also called an _encoder_ or _recognition model_.
+  - With $\bm{\phi}$, we indicate the _variational parameters_. 
+  - We optimize the variational parameters $\bm{\phi}$ such that $$ q(\bm{z} \mid \bm{x}, \bm{\phi}) \approx p(\bm{z} \mid \bm{x}, \bm{\theta}). $$ 
+
+* For any choice of inference model $q(\bm{z} \mid \bm{x}, \bm{\phi})$, including the choice of 
+variational parameters $\bm{\phi}$, we have
+$$
+\begin{aligned}
+\log p(\bm{x} \mid \bm{\theta}) &= \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}[\log p(\bm{x} \mid \bm{\theta})] \\
+&= \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{p(\bm{z} \mid \bm{x}, \bm{\theta})} \right) \right] \\
+&= \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} 
+\frac{q(\bm{z} \mid \bm{x}, \bm{\phi})}{p(\bm{z} \mid \bm{x}, \bm{\theta})} \right) \right] \\
+&= \underbrace{\E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} \right) \right]}_{=\mc{L}_{\theta, \phi}(x) \\[1pt] \text{(ELBO)}} + \underbrace{\E_{q(\bm{z} \mid \bm{x}, \bm{\phi})}\left[ \log \left( \frac{q(\bm{z} \mid \bm{x}, \bm{\phi})}{p(\bm{z} \mid \bm{x}, \bm{\theta})} \right) \right]}_{=D_{\text{KL}}(q(\bm{z} \mid \bm{x}, \bm{\phi})\;\Vert\; p(\bm{z} \mid \bm{x}, \bm{\theta}))}
+\end{aligned}
+$$ {#eq-evidence}
+
+* The second term is the Kullback-Leibler (KL) divergence which is nonnegative:
+$$
+D_{\text{KL}}(q(\bm{z} \mid \bm{x}, \bm{\phi})\;\Vert\; p(\bm{z} \mid \bm{x}, \bm{\theta})) \geq 0 $$
+and zero if and only if $q(\bm{z} \mid \bm{x}, \bm{\phi}) = p(\bm{z} \mid \bm{x}, \bm{\theta})$.
+
+* The first term is the _variational lower bound_, also called the _evidence lower bound_ (ELBO):
+$$
+\mc{L}_{\theta, \phi}(x) = \E_{q_\phi(\bm{z} \mid \bm{x})} \left[ \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right]
+$$ {#eq-elbo}
+
+* Due to the nonnegativity of the KL divergence, the ELBO is a lower bound on the 
+log-likelihood of the data:
+$$
+\mc{L}_{\theta, \phi}(\bm{x}) = \log p_\theta(\bm{x}) - D_{\text{KL}}\left(q_\phi(\bm{z} \mid \bm{x})\,\Vert\,p_\theta(\bm{z} \mid \bm{x})\right)
+\leq \log p_\theta(\bm{x}).
+$$ {#eq-tightness}
+
+* Hence, the KL divergence $D_{\text{KL}}\left(q_\phi(\bm{z} \mid \bm{x})\,\Vert\,p_\theta(\bm{z} \mid \bm{x})\right)$ determines two "distances":
+  1. By definition, the KL divergence of the approximate posterior from the true posterior.
+  2. The gap between the ELBO $\mc{L}_{\theta, \phi}(\bm{x})$ and the marginal likelihood $\log p_\theta(\bm{x})$.
+    - The latter is also called the _tightness_ of the bound.
+    - The better $q_\phi(\bm{z} \mid \bm{x})$ approximates the true (posterior) distribution $p_\theta(\bm{z} \mid \bm{x})$, 
+    in terms of the KL divergence, the smaller the gap.
+
+::: {.left-caption}
+![
+  Variational approximation. The posterior $p(\bm{z} \mid \bm{x}^*, \bm{\theta})$ is intractable 
+  to compute. The variational approximation chooses a family of distributions $q(\bm{z} \mid \bm{x}, \bm{\phi})$
+  (here Gaussians) and tries to find the closest member of this family to the true posterior. a) Sometimes, the 
+  approximation (cyan curve) is good and lies close tot he true posterior (orange curve). b) However, if the 
+  posterior is multi-modal (as in the previous figure), then the Gaussian approximation will be poor.
+](assets/images/VAEVariational_swap.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+::: {.callout-tip}
+### Two for One
+By looking at @eq-tightness, it can be understood that maximization of the ELBO $\mc{L}_{\theta, \phi}(x)$ with respect to 
+$\bm{\theta}$ and $\bm{\phi}$, will concurrently optimize the two things we care about:
+
+1. It will approximately maximize the marginal likelihood $p_\theta(\bm{x})$. This means that our _generative model_ or 
+_decoder_ will become better. 
+2. It will minimize the KL divergence of the approximation $q_\phi(\bm{z} \mid \bm{x})$ from the true posterior 
+$p_\theta(\bm{z} \mid \bm{x})$, so $q_\phi(\bm{z} \mid \bm{x})$ becomes better.
+:::
+
+
+::: {.callout-caution}
+### ELBO through Jensen's inequality
+We can also see that the ELBO is a lower bound on the log-likelihood by using Jensen's inequality. 
+$$
+\begin{aligned}
+\log p(\bm{x} \mid \bm{\theta}) &= \log \int p(\bm{x}, \bm{z} \mid \bm{\theta}) d\bm{z} 
+= \log \int p(\bm{x}, \bm{z} \mid \bm{\theta}) \frac{q(\bm{z} \mid \bm{x}, \bm{\phi})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} d\bm{z}
+= \log \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})} \left[ \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} \right] \\
+&\geq \E_{q(\bm{z} \mid \bm{x}, \bm{\phi})} \left[ \log \frac{p(\bm{x}, \bm{z} \mid \bm{\theta})}{q(\bm{z} \mid \bm{x}, \bm{\phi})} \right] 
+= \mc{L}_{\theta, \phi}(x)
+\end{aligned}
+$$
+:::
+
+::: {.left-caption}
+![
+  Evidence lower bound (ELBO). The goal is to maximize the log-likelihood $\log p_\theta(\bm{x})$ (black curve)
+  with respect to the parameters $\bm{\theta}$. The ELBO is a function that lies everywhere below the log-likelihood.
+  It is a function of both $\bm{\theta}$ and a second set of parameters $\bm{\phi}$. For fixed $\bm{\phi}$, we get 
+  a function of $\bm{\theta}$ (two colored curves for different values of $\bm{\phi}$). Consequently, we can 
+  increase the log-likelihood by either improving the ELBO with respect to a) the new parameters $\bm{\phi}$ 
+  (moving from colored curve to colored curve) or b) the original parameters $\bm{\theta}$ (moving along the 
+  current colored curve).
+](assets/images/VAEELBO_th.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+
+::: {.callout-warning}
+### Two Models to Learn
+1. Encoder or Recognition or Inference Model
+$$
+\begin{aligned}
+(\bm{\mu}, \log \bm{\sigma}) &= \operatorname{EncoderNeuralNet}_\phi(\bm{x}) \\
+q_\phi(\bm{z} \mid \bm{x}) &= \mc{N}(\bm{z}; \bm{\mu}, \operatorname{diag}{(\bm{\sigma})}).
+\end{aligned}
+$$
+
+2. Decoder or Generative Model (Binary Data)
+$$
+\begin{aligned}
+\bm{p} &= \operatorname{DecoderNeuralNet_\theta(\bm{z})} \\
+\log p_\theta(\bm{x} \mid \bm{z}) &= \sum_{j=1}^D \log p(x_j \mid \bm{z}) = \sum_{j=1}^D \operatorname{Bernoulli(x_j; p_j)} \\
+&= \sum_{j=1}^D \left[ x_j \log p_j + (1-x_j) \log(1-p_j) \right]
+\end{aligned}
+$$
+where $\forall p_j \in \bm{p}; 0 \leq p_j \leq 1$ (e.g. implemented through a sigmoid nonlinearity 
+as the last layer of the $\operatorname{DecoderNeuralNet}_\theta(\cdot)$), where $D$ is the dimensionality 
+of $\bm{x}$, and $\operatorname{Bernoulli}(\cdot; p)$ is the probability mass function of the Bernoulli 
+distribution.
+:::
+
+![](assets/images/kingma_vae_geometry.png){.lightbox width=80% fig-align="center"}
+
+
+::: {.callout-note}
+### Summary
+Since we the log-likelihood is intractable to compute, we cannot perform the
+optimization in @eq-loglikelihood.  Instead, we will maximize the ELBO
+$\mc{L}_{\theta, \phi}(x)$ with respect to both the decoder and encoder
+$(\bm{\theta}, \bm{\phi})$ as a proxy.
+:::
+
+::: {.left-caption}
+![
+  Variational autoencoder. The encoder $g(\bm{x}; \bm{\theta})$ takes a training 
+  example $\bm{x}$ and predicts the parameters $\bm{\mu}, \bm{\Sigma}$ of the 
+  variational distribution $q_\theta(\bm{z} \mid \bm{x})$. We sample from this 
+  distribution and then use the decoder $f(\bm{z}; \bm{\phi})$ to predict the 
+  data $\bm{x}$. The loss function is the negative ELBO, which depends on how accurate 
+  this prediction is and how similar the variational distribution $q_\phi(\bm{z} \mid \bm{x})$
+  is to the prior $p(\bm{z})$.
+](assets/images/VAEArch_swap.svg){.lightbox width=80% fig-align="center"}
+:::
+
+### How to maximize ELBO?
+
+* Unbiased gradients of the ELBO with respect to the generative model parameters $\bm{\theta}$ 
+are simple to obtain:
+$$
+\begin{aligned}
+\nabla_\theta \mc{L}_{\theta, \phi}(x) &= \nabla_\theta \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right] \\
+&= \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\nabla_\theta\left( \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right) \right] \\
+&\simeq \nabla_\theta\left( \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right) \\
+&= \nabla_\theta \log p_\theta(\bm{x}, \bm{z}).
+\end{aligned}
+$$
+The last line is a simple Monte Carlo estimator of the second line, where $\bm{z}$ in the last two lines is a 
+random sample from $q_\phi(\bm{z} \mid \bm{x})$.
+
+* Unbiased gradients with respect to the _variational_ parmaeters $\bm{\phi}$ are more 
+difficult to obtain.
+  - ELBO's expectation is taken with respect to the distribution $q_\phi(\bm{z} \mid \bm{x})$.
+  - This is a function of $\bm{\phi}$!
+
+$$
+\begin{aligned}
+\nabla_\phi \mc{L}_{\theta, \phi}(\bm{x}) &= \nabla_\phi \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right] \\
+&\neq \E_{q_\phi(\bm{z} \mid \bm{x})} \left[\nabla_\phi \left( \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right) \right]
+\end{aligned}
+$$
+
+
+::: {.callout-important}
+### The reparametrization trick (law of the unconscious statistician: lotus)
+For continuous latent variables and a differentiable encoder and 
+generative model, the ELBO can be straightforwardly differentiated with respect to 
+both $\bm{\phi}$ and $\bm{\theta}$ through a change of variables, also called the 
+_reparametrization trick_.
+
+* Express the random variable $\bm{z} \sim q_\phi(\bm{z} \mid \bm{x})$ as some 
+differentiable (and invertible) transformation.
+  - This is a function of another random variable $\bm{\varepsilon}$, given $\bm{z}$ and $\bm{\phi}$:
+  $$ \bm{z} = \bm{h}(\bm{\varepsilon}, \bm{\phi}, \bm{x}) $$
+  - The random variable $\bm{\varepsilon}$ is independent of $\bm{x}$ or $\bm{\phi}$.
+* Now, the expectations can be rewritten in terms of $\bm{\varepsilon}$:
+$$ \E_{q_\phi(\bm{z} \mid \bm{x})}[f(\bm{z})] = \E_{p(\bm{\varepsilon})}[f(\bm{z})]. $$
+* This makes the expectation and gradient operators commutative, and we can form a simple 
+Monte Carlo estimator:
+$$
+\begin{aligned}
+\nabla_\phi \E_{q_\phi(\bm{z} \mid \bm{x})}[f(\bm{z})] &= \nabla_\phi \E_{p(\bm{\varepsilon})}[f(\bm{z})] \\
+&= \E_{p(\bm{\varepsilon})}[\nabla_\phi f(\bm{z})] \\
+&\simeq \nabla_\phi f(\bm{z})
+\end{aligned}
+$$
+where in the last line, $\bm{z} = h(\bm{\varepsilon}, \bm{\phi}, \bm{x})$ with random noise sample $\bm{\varepsilon} \sim p(\bm{\varepsilon})$.
+:::
+
+::: {.left-caption}
+![
+  Reparametrization trick. The variational parameters $\bm{\phi}$ affect the objective $f$ through the 
+  random variable $\bm{z} \sim q_\phi(\bm{z} \mid \bm{x})$. We wish to compute gradients $\nabla_\phi f$ 
+  to optimize the objective with SGD. In the original form (left), we cannot differentiate $f$ w.r.t. 
+  $\bm{\phi}$, because we cannot directly backpropagate gradients through the random variable $\bm{z}$. 
+  We can "externalize" the randomness in $\bm{z}$ by re-parametrizing the variable as a deterministic and 
+  differentiable function of $\bm{\phi}$, $bm{x}$, and a newly introduced random variable $\bm{\varepsilon}$ 
+  (right). This allows us to "backprop through $\bm{z}$," and compute gradients $\nabla_\phi f$.
+](assets/images/trick.png){.lightbox width=80% fig-align="center"}
+:::
+
+
+::: {.callout-note}
+### Gradient of ELBO
+* Under the reparametrization, we can replace an expectation with respect to $q_\phi(\bm{z} \mid \bm{x})$ with 
+one with respect to $p(\bm{\varepsilon})$.
+  - Now, the ELBO can be written as
+$$
+\begin{aligned}
+\mc{L}_{\theta, \phi}(\bm{x}) &= \E_{q_\phi(\bm{z} \mid \bm{x})} \left[ \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right] \\
+&= \E_{p(\bm{\varepsilon})} \left[ \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x}) \right],
+\end{aligned}
+$$
+where $\bm{z} = \bm{h}(\bm{\varepsilon}, \bm{\phi}, \bm{x})$.
+
+* As a result, we can form a simple Monte Carlo estimator $\tilde{\mc{L}}_{\theta, \phi}(\bm{x})$:
+$$
+\begin{aligned}
+\bm{\varepsilon} &\sim p(\bm{\varepsilon}) \\
+\bm{z} &= \bm{h}(\bm{\varepsilon}, \bm{\phi}, \bm{x}) \\
+\tilde{\mc{L}}_{\theta, \phi}(\bm{x}) &= \log p_\theta(\bm{x}, \bm{z}) - \log q_\phi(\bm{z} \mid \bm{x})
+\end{aligned}
+$$
+
+* The resulting gradient $\nabla_\phi \tilde{\mc{L}}_{\theta, \phi}(\bm{x})$ is used to optimize the ELBO using minibatch SGD.
+:::
+
+::: {.left-caption}
+![
+  Reparametrization trick. With the original architecture, we cannot easily backpropagate through the 
+  sampling step. The reparametrization trick removes the sampling step from the main pipeline; we 
+  draw from a standard normal and combine this with the predicted mean and covariance to get a sample 
+  from the variational distribution.
+](assets/images/VAEReparam_swap.svg){.lightbox width=80% fig-align="center"}
+:::
+
+
+![
+  The VAE updates both factors that determine the lower bound at each iteration.
+  Both parameters $\bm{\theta}$ of the decoder and the parameters $\bm{\theta}$
+  of the encoder are manipulated to increase this lower bound.
+](assets/images/VAEOpt_th.svg){.lightbox width=80% fig-align="center"}
+
+
+## Application to MNIST
 
 ::: {.column-margin}
 Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
 :::
-
-Transformers use **dot-product self-attention** to achieve two critical properties:
-
-1. **Parameter sharing**: Handling long inputs of varying lengths.
-2. **Context-dependent connections**: Linking word representations based on the words themselves.
-
-### Mechanics of Self-Attention
-
-A self-attention block $\text{sa}[\bullet]$ processes $N$ inputs $\mathbf{x}_1, \dots, \mathbf{x}_N$ (each $D \times 1$) and returns $N$ outputs of the same dimension.
-
-- **Step 1: Compute Values**
-  For each input $\mathbf{x}_m$, compute a **value** vector $\mathbf{v}_m$:
-  $$\mathbf{v}_m = \mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m$$
-  where $\mathbf{\beta}_v$ and $\mathbf{\Omega}_v$ are learnable biases and weights.
-
-- **Step 2: Weighted Summation (Routing)**
-  The $n^{th}$ output is a weighted sum of all values:
-  $$\text{sa}_n[\mathbf{x}_1, \dots, \mathbf{x}_N] = \sum_{m=1}^N a[\mathbf{x}_m, \mathbf{x}_n] \mathbf{v}_m$$
-  - The scalar weight **$a[\mathbf{x}_m, \mathbf{x}_n]$** represents the **attention** the $n^{th}$ output pays to input $\mathbf{x}_m$.
-  - These weights are non-negative and sum to one ($\sum_m a[\mathbf{x}_m, \mathbf{x}_n] = 1$).
-  - This effectively **routes** the values $\mathbf{v}_m$ in different proportions to create each output (as seen in @fig-transformer-routing).
-
-::: {.left-caption}
-![
-  Self-attention as routing. The self-attention mechanism takes $N$ inputs $\mathbf{x}_1, \dots, \mathbf{x}_N \in \mathbb{R}^D$ (here $N=3$ and $D=4$) and processes each separately to compute $N$ value vectors. The $n^{th}$ output $\text{sa}_n[\mathbf{x}_1, \dots, \mathbf{x}_N]$ (written as $\text{sa}_n[\mathbf{x}_\bullet]$ for short) is then computed as a weighted sum of the $N$ value vectors, where the weights are positive and sum to one. a) Output $\text{sa}_1[\mathbf{x}_\bullet]$ is computed as $a[\mathbf{x}_1, \mathbf{x}_1] = 0.1$ times the first value vector, $a[\mathbf{x}_2, \mathbf{x}_1] = 0.3$ times the second value vector, and $a[\mathbf{x}_3, \mathbf{x}_1] = 0.6$ times the third value vector. b) Output $\text{sa}_2[\mathbf{x}_\bullet]$ is computed in the same way, but this time with weights of 0.5, 0.2, and 0.3. c) The weighting for output $\text{sa}_3[\mathbf{x}_\bullet]$ is different again. Each output can hence be thought of as a different routing of the $N$ values.
-](assets/images/TransformerRouting.svg){#fig-transformer-routing .lightbox width="80%" fig-align="center"}
-:::
-
-### Computing and weighting values
-
-The self-attention mechanism is efficient and scalable:
-
-- **Computing Values (Linear Scaling)**:
-  - The same weights $\mathbf{\Omega}_v \in \mathbb{R}^{D \times D}$ and biases $\mathbf{\beta}_v \in \mathbb{R}^D$ are applied to each input $\mathbf{x}_m$.
-  - **Scalability**: This computation scales **linearly** with the sequence length $N$.
-  - Compared to a fully connected network (which would relate all $DN$ inputs to all $DN$ values), this uses far fewer parameters.
-  - This can be viewed as a **sparse matrix operation** with shared parameters.
-
-- **Attention Weights (Quadratic Scaling)**:
-  - Attention weights $\mathbf{a}[\mathbf{x}_m, \mathbf{x}_n]$ combine values from across the sequence.
-  - **Sparsity**: There is only one weight for each ordered pair $(\mathbf{x}_m, \mathbf{x}_n)$, regardless of the vector dimension $D$.
-  - **Scalability**: The number of attention weights depends **quadratically** on sequence length $N$, but is independent of input dimension $D$.
-
-
-::: {.left-caption}
-![
-  Self-attention for $N=3$ inputs $\mathbf{x}_n$, each with dimension $D=4$. a) Each input $\mathbf{x}_m$ is operated on independently by the same weights $\mathbf{\Omega}_v$ (same color equals same weight) and biases $\mathbf{\beta}_v$ (not shown) to form the values $\mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m$. Each output is a linear combination of the values, with the attention weight $a[\mathbf{x}_m, \mathbf{x}_n]$ defining the contribution of the $m^{th}$ value to the $n^{th}$ output. b) Matrix showing block sparsity of linear transformation $\mathbf{\Omega}_v$ between inputs and values. c) Matrix showing sparsity of attention weights relating values and outputs.
-](assets/images/TransformerSA1.svg){#fig-self-attention-linear .lightbox width="80%" fig-align="center"}
-:::
-
-### Computing attention weights
-
-Self-attention is an example of a **hypernetwork**, where one part of the network computes the weights used by another.
-
-- **Nonlinearity**: Although values are combined linearly, the overall mechanism is **nonlinear** because the attention weights are nonlinear functions of the input.
-- **Queries and Keys**: We apply two additional linear transformations to the inputs:
-  - **Queries**: $\mathbf{q}_n = \mathbf{\beta}_q + \mathbf{\Omega}_q \mathbf{x}_n$
-  - **Keys**: $\mathbf{k}_m = \mathbf{\beta}_k + \mathbf{\Omega}_k \mathbf{x}_m$
-- **Dot-Product Attention**:
-  - We compute the similarity between queries and keys using dot products.
-  - The weights are normalized via the **softmax** function so they are positive and sum to one:
-    $$a[\mathbf{x}_m, \mathbf{x}_n] = \frac{\exp[\mathbf{k}_m^T \mathbf{q}_n]}{\sum_{m'=1}^N \exp[\mathbf{k}_{m'}^T \mathbf{q}_n]}$$
-- **Interpretation**:
-  - The weights depend on the relative entry-wise similarity between the $n^{th}$ query and all keys.
-  - The softmax causes the keys to **compete** to contribute to the final result.
-- **Dimensions**:
-  - Queries and keys must share the same dimension.
-  - This dimension can differ from the value vectors (which usually match the input dimension $D$).
-
-::: {.left-caption}
-![
-  Computing attention weights. a) Query vectors $\mathbf{q}_n = \mathbf{\beta}_q + \mathbf{\Omega}_q \mathbf{x}_n$ and key vectors $\mathbf{k}_n = \mathbf{\beta}_k + \mathbf{\Omega}_k \mathbf{x}_n$ are computed for each input $\mathbf{x}_n$. b) The dot products between each query and the three keys are passed through a softmax function to form non-negative attentions that sum to one. c) These route the value vectors (see @fig-transformer-routing) via the sparse matrix from @fig-self-attention-linear.
-](assets/images/TransformerSA2.svg){#fig-attention-weights .lightbox width="80%" fig-align="center"}
-:::
-
-### Self-attention summary
-
-The self-attention mechanism provides a flexible way to process sequences:
-
-- **Output Computation**:
-  - Each output is a weighted sum of linear transformations of all inputs: $\mathbf{v}_m = \mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m$.
-  - The weights are positive, sum to one, and represent the similarity between the $n^{th}$ input and all others.
-- **Nonlinearity**:
-  - There is no explicit activation function.
-  - Nonlinearity arises from the **dot-product** and **softmax** operations used to determine the weights.
-- **Key Advantages**:
-  - **Shared Parameters**: The mechanism uses a single set of learnable parameters $\phi = \{\mathbf{\beta}_v, \mathbf{\Omega}_v, \mathbf{\beta}_q, \mathbf{\Omega}_q, \mathbf{\beta}_k, \mathbf{\Omega}_k\}$, making it **independent of sequence length $N$**.
-  - **Dynamic Connections**: Connections between inputs (e.g., words) are determined dynamically based on the inputs themselves via the attention weights.
-
-
-### Matrix form
-
-The self-attention computation can be expressed compactly using matrix operations:
-
-- **Matrix Definition**:
-  - Store $N$ input vectors $\mathbf{x}_n$ as columns of a $D \times N$ matrix $\mathbf{X}$.
-- **Computing Values, Queries, and Keys**:
-  - The matrices $\mathbf{V}$, $\mathbf{Q}$, and $\mathbf{K}$ are computed as:
-    $$\mathbf{V}[\mathbf{X}] = \mathbf{\beta}_v \mathbf{1}^T + \mathbf{\Omega}_v \mathbf{X}$$
-    $$\mathbf{Q}[\mathbf{X}] = \mathbf{\beta}_q \mathbf{1}^T + \mathbf{\Omega}_q \mathbf{X}$$
-    $$\mathbf{K}[\mathbf{X}] = \mathbf{\beta}_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{X}$$
-    where $\mathbf{1}$ is an $N \times 1$ vector of ones.
-- **Self-Attention Computation**:
-  - The final output matrix $\mathbf{Sa}[\mathbf{X}]$ is:
-    $$\mathbf{Sa}[\mathbf{X}] = \mathbf{V}[\mathbf{X}] \cdot \text{Softmax}\left[\mathbf{K}[\mathbf{X}]^T \mathbf{Q}[\mathbf{X}]\right]$$
-  - The **Softmax** function is applied independently to each column of the product matrix.
-- **Simplified Notation**:
-  - To emphasize that the output is a "triple product" of the inputs, we often drop the explicit dependence on $\mathbf{X}$ and write:
-    $$\mathbf{Sa}[\mathbf{X}] = \mathbf{V} \cdot \text{Softmax}\left[\mathbf{K}^T \mathbf{Q}\right]$$
-
-::: {.left-caption}
-![
-  Self-attention in matrix form. Self-attention can be implemented efficiently if we store the $N$ 
-  input vectors $\bm{x}_n$ in the columns of the $D \times N$ matrix $\bm{X}$. The input $\bm{X}$ 
-  is operated on separately by the query matrix $\bm{Q}$, key matrix $\bm{K}$, and value matrix 
-  $\bm{V}$. The dot products are then computed using matrix multiplication, and a softmax operation 
-  is applied independently to each column of the resulting matrix to calculate the attentions. Finally,
-  the values are post-multiplied by the attentions to create an output of the same size as the input (see @fig-matrix-form).
-](assets/images/TransformerBlockSA.svg){#fig-matrix-form .lightbox width="80%" fig-align="center"}
-:::
-
-
-## Extensions to Self-Attention
-
-
-### Positional encoding
-
-The self-attention mechanism is **equivariant to input permutations**, meaning it does not naturally account for the order of inputs $\mathbf{x}_n$. However, in language, sequence order is essential (e.g., "The woman ate the raccoon" vs "The raccoon ate the woman"). To address this, we use positional encodings:
-
-- **Absolute Positional Encodings**:
-  - A unique positional matrix $\mathbf{\Pi}$ is added to the input matrix $\mathbf{X}$ (as illustrated in @fig-positional-encoding).
-  - Each column of $\mathbf{\Pi}$ is unique and encodes the absolute position within the sequence.
-  - These can be **predefined (hand-crafted)** or **learned** parameters.
-  - They are typically added at the input or integrated into the computation of queries and keys.
-- **Relative Positional Encodings**:
-  - For many tasks, the relative position between words is more important than their absolute location.
-  - This information is encoded directly into the **attention matrix** based on the offset between key position $a$ and query position $b$.
-  - The model learns a parameter $\pi_{a,b}$ for each offset to adjust the attention weights accordingly.
-
-::: {.left-caption}
-![
-  Positional encodings. The self-attention architecture is equivariant to permutations of the inputs. 
-  To ensure that inputs at different positions are treated differently, a positional encoding matrix 
-  $\bm{\Pi}$ can be added to the data matrix. Each column is different, so the positions can be 
-  distinguished. Here, the position encodings use a predefined procedural sinusoidal pattern (which 
-  can be extended to larger values of $N$ if necessary). However, in other cases, they are learned.
-](assets/images/TransformerPE.svg){#fig-positional-encoding .lightbox width="80%" fig-align="center"}
-:::
-
-### Scaled dot-product self-attention
-
-- **The Problem**: Dot products in the attention computation can have large magnitudes, pushing the softmax function into regions with near-zero gradients.
-- **The Solution**: Scale the dot products by the square root of the query/key dimension $D_q$ to maintain stable gradients during training.
-- **Formula**:
-  $$\mathbf{Sa}[\mathbf{X}] = \mathbf{V} \cdot \text{Softmax}\left[\frac{\mathbf{K}^T \mathbf{Q}}{\sqrt{D_q}}\right]$$
-- This is known as **scaled dot-product self-attention**.
-
-### Multiple heads
-
-- **Parallel Mechanisms**: Multiple self-attention units (heads) are applied in parallel to capture different types of sequence relationships.
-- **Unique Parameters**: Each head $h$ has its own learnable weights and biases:
-  - $\mathbf{V}_h = \mathbf{\beta}_{vh} \mathbf{1}^T + \mathbf{\Omega}_{vh} \mathbf{X}$
-  - $\mathbf{Q}_h = \mathbf{\beta}_{qh} \mathbf{1}^T + \mathbf{\Omega}_{qh} \mathbf{X}$
-  - $\mathbf{K}_h = \mathbf{\beta}_{kh} \mathbf{1}^T + \mathbf{\Omega}_{kh} \mathbf{X}$
-- **Efficiency**: For $H$ heads, each typically operates on a subspace of dimension $D/H$.
-- **Aggregation**: The resulting head outputs $\mathbf{Sa}_h[\mathbf{X}]$ are vertically concatenated and combined via a final linear transform $\mathbf{\Omega}_c$ (see @fig-multi-head-attention):
-  $$\mathbf{MhSa}[\mathbf{X}] = \mathbf{\Omega}_c \left[ \mathbf{Sa}_1[\mathbf{X}]^T, \mathbf{Sa}_2[\mathbf{X}]^T, \dots, \mathbf{Sa}_H[\mathbf{X}]^T \right]^T$$
-- **Benefits**: Multi-head attention is crucial for performance and increases robustness to initialization.
-
-::: {.left-caption}
-![
-  Multi-head self-attention. Self-attention occurs in parallel across multiple "heads." Each has its 
-  own queries, keys, and values. Here two heads are depicted, in the cyan and orange boxes, respectively. 
-  The outputs are vertically concatenated, and another linear transformation $\bm{\Omega}_c$ is used to 
-  recombine them.
-](assets/images/TransformerBlockSAMultiHead.svg){#fig-multi-head-attention .lightbox width="80%" fig-align="center"}
-:::
-
-
-
-
-## Transformer Layer
-
-::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
-:::
-
-Self-attention is just one part of a larger **transformer layer**. This block combines sequence-wide context with point-wise processing:
-
-- **Multi-Head Self-Attention**: Allows word representations to interact and exchange information across the entire sequence.
-- **MLP Network**: A fully connected network **mlp$[\mathbf{x}_n]$** that operates independently on each position.
-- **Residual Connections**: Both units use skip connections, adding the output back to the original input to improve gradient flow.
-- **Layer Normalization**:
-  - A **LayerNorm** operation is applied after both the self-attention and MLP units.
-  - Unlike BatchNorm, it normalizes each embedding using statistics calculated across its own $D$ dimensions.
-
-The complete layer follows this sequence of operations (see @fig-transformer-layer):
-
-$$\mathbf{X} \leftarrow \mathbf{X} + \mathbf{MhSa}[\mathbf{X}]$$
-$$\mathbf{X} \leftarrow \text{LayerNorm}[\mathbf{X}]$$
-$$\mathbf{x}_n \leftarrow \mathbf{x}_n + \text{mlp}[\mathbf{x}_n], \quad \forall n \in \{1,\dots,N\}$$
-$$\mathbf{X} \leftarrow \text{LayerNorm}[\mathbf{X}],$$
-
-where $\mathbf{x}_n$ are the column vectors of the data matrix $\mathbf{X}$.
-
-::: {.left-caption}
-![
-  Transformer layer. The input consists of a $D\times N$ matrix containing the $D$-dimensional word 
-  embeddings for each of the $N$ input tokens. The output is a matrix of the same size. The transformer 
-  layer consists of a series of operations. First, there is a mlti-head attention block, allowing the 
-  word embeddings to interact with one another. This forms the processing of a residual block, so the 
-  inputs are added back to the output. Second, a LayerNorm operation isa pplied separately to each 
-  embedding. Third, there is a second residual layer where the same fully connected neural network 
-  is applied separately to each of teh $N$ word representations (columns). Finally, LayerNorm is 
-  applied again.
-](assets/images/TransformerBlock.svg){#fig-transformer-layer .lightbox width="80%" fig-align="center"}
-:::
-
-
-## Transformers for NLP
-
-::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
-:::
-
-The previous section described the transformer layer. Now we consider its application to **Natural Language Processing (NLP)** tasks:
-
-- **Pipeline**: A typical NLP pipeline starts with a *tokenizer* to split text into manageable units.
-- **Embeddings**: Each token is mapped to a learned embedding vector.
-- **Processing**: These embeddings pass through a series of transformer layers to capture context.
-
-### Tokenization
-
-A text processing pipeline begins with a **tokenizer**. This unit splits text into constituent units called *tokens* from a predefined *vocabulary*.
-
-- **Challenges with Word-Level Tokens**:
-  - **Out-of-Vocabulary (OOV)**: Names or rare words may not be in the vocabulary.
-  - **Punctuation**: Handling punctuation is critical for meaning but difficult with simple word splits.
-  - **Morphological Variations**: Suffixes (e.g., *walk*, *walks*, *walking*) are treated as unrelated tokens, losing morphological links.
-- **The Compromise: Sub-word Tokenization**:
-  - Modern models use **sub-word tokenizers** (e.g., *byte pair encoding*).
-  - This approach includes both common words and frequent word fragments (see @fig-transformer-bpe).
-  - It merges commonly occurring sub-strings based on frequency, allowing the model to handle rare words as combinations of known sub-words.
-
-
-::: {.left-caption}
-![
-  Sub-word tokenization. a) A passage of text from a nursery rhyme. The tokens are initially just the 
-  characters and whitespace (represented by an underscore), and their frequencies are displayed in the 
-  table. b) At each iteration, the sub-word tokenizer looks for the most commonly occurring adjacent 
-  pair of tokens (in this case, [se]{style="color:dodgerblue"}) and merges them. This creates a new token and decreases 
-  the counts for the original tokens [s]{style="color:dodgerblue"} and [e]{style="color:dodgerblue"}. Note that the last character of the first 
-  token to be merged cannot be whitespace, which prevents merging across words. c) At the second 
-  iteration, the algorithm merges [e]{style="color:dodgerblue"} and the whitespace character [_]{style="color:dodgerblue"}. d) After 22 
-  iterations, the tokens consist of a mix of letters, word fragments, and commonly occurring words. 
-  e) If we continue this process indefinitely, the tokens eventually represent the full words. 
-  f) Over time, the number of tokens increases as we add word fragments to the letters and then 
-  decreases again as we merge these fragments. In a real situation, there would be a very large 
-  number of words, and the algorithm would terminate when the vocabulary size (number of tokens) 
-  reached a predetermined value. Punctuation and capital letters would also be treated as separate 
-  input characters.
-](assets/images/TransformerBPE.svg){#fig-transformer-bpe .lightbox width="80%" fig-align="center"}
-:::
-
-### Learned embeddings
-
-Once the sequence of $N$ tokens is identified, each token is mapped to a unique **learned embedding**:
-
-- **Vocabulary Matrix**: The embeddings for the whole vocabulary $\mathcal{V}$ are stored in a matrix $\mathbf{\Omega}_e \in \mathbb{R}^{D \times |\mathcal{V}|}$.
-- **One-Hot Encoding**: The $N$ input tokens are first encoded as a matrix $\mathbf{T} \in \mathbb{R}^{|\mathcal{V}| \times N}$ of one-hot vectors.
-- **Matrix Multiplication**: The input embeddings are computed as the product $\mathbf{X} = \mathbf{\Omega}_e \mathbf{T}$ (see @fig-transformer-vocabulary).
-- **Network Parameters**: A typical configuration (e.g., $D=1024$ and $|\mathcal{V}|=30,000$) contains millions of parameters in $\mathbf{\Omega}_e$ to learn.
-- Note that the same token (e.g., "an") always starts with the same initial embedding, regardless of position; context is only added by the transformer layers.
-
-::: {.left-caption}
-![
-  The input embedding matrix $\bm{X} \in \R^{D \times N}$ contains $N$ embeddings of length $D$ and is created by 
-  multiplying a matrix $\Omega_e$ containing the embeddings for the entire vocabulary with a matrix $\mathbf{T}$ containing 
-  one-hot vectors in its columns that correspond to the word or sub-word indices. The vocabulary matrix $\bm{\Omega}_e$
-  is considered a parameter of the model and is learned along with the other parameters. Note that the two 
-  embeddings for the word [an]{style="color:dodgerblue"} are the same.
-](assets/images/TransformerVocabulary.svg){#fig-transformer-vocabulary .lightbox width="80%" fig-align="center"}
-:::
-
-### Transformer models
-
-Finally, the embedding matrix $\mathbf{X}$ is passed through a sequence of $K$ transformer layers, comprising a **transformer model**. There are three primary types of architectures:
-
-- **Encoder**: Transforms the input embeddings into a rich representation for diverse tasks.
-- **Decoder**: Used to predict the subsequent tokens to extend the input text sequence.
-- **Encoder-Decoder**: Specialized for **sequence-to-sequence** tasks (e.g., machine translation), where one string is converted into another.
-
-
-:::
-
-
-::: {.panel-tabset}
-
-## Encoder model: BERT
-
-::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
-:::
-
-BERT is a prototypical **encoder** model designed to learn rich, bi-directional representations of language.
-
-- **Architecture Details**:
-  - **Vocabulary**: 30,000 tokens.
-  - **Embeddings**: 1024-dimensional word embeddings.
-  - **Layers**: 24 transformer layers.
-  - **Attention**: 16 heads per layer (query, key, and value dimension = 64).
-  - **Parameters**: $\sim 340$ million.
-- **Learning Strategy: Transfer Learning**:
-  - **Pre-training**: Captures general language statistics from a large, unlabeled corpus (3.3 billion words).
-  - **Fine-tuning**: Adapts the pre-trained model to specific tasks using smaller labeled datasets.
-
-
-### Pre-training
-
-In the pre-training stage, the model is trained using **self-supervision**, allowing it to learn from massive amounts of data without manual labels.
-
-- **Task: Masked Language Modeling (MLM)**:
-  - A small fraction of input tokens are randomly replaced with a special ``<maskStatus>`` token.
-  - The goal is to predict these missing words based on their surrounding context (@fig-transformer-encoder).
-- **Learning Outcomes**:
-  - **Syntax**: Learning that adjectives (e.g., [red]{style="color:dodgerblue"}) typically precede nouns ([house]{style="color:dodgerblue"}).
-  - **Superficial Common Sense**: Assigning a higher probability to "[train]{style="color:dodgerblue"}" than "[peanut]{style="color:dodgerblue"}" in the context of "[The `<maskStatus>` pulled into the station]{style="color:dodgerblue"}".
-- **Bi-directional Context**: Unlike autoregressive models, BERT uses both left and right context to predict missing words.
-- **Secondary Task**: Next-sentence prediction (NSP) aims to determine if two sentence segments were originally adjacent.
-
-::: {.left-caption}
-![
-  Pre-training for BERT-like encoder. The input tokens (and a special ``<cls>`` token denoting 
-  the start of the sequence) are converted to word embeddings. Here, these are represented 
-  as rows rather than columns, so the box labeled "word embeddings" is $\mathbf{X}^T$. 
-  These embeddings are passed through a series of transformer layers (orange connections 
-  indicate that every token attends to every other token in these layers) to create a 
-  set of output embeddings. A small fraction of the input tokens are randomly replaced 
-  with a generic `<mask>` token. In pre-training, the goal is to predict the missing 
-  word from the associated output embedding. To this end, the outputs corresponding to 
-  the masked tokens are passed through softmax functions, and a multiclass classification 
-  loss (see section 5.24) is applied to each. This task has the advantage that it uses 
-  both the left and right context to predict the missing word but has the disadvantage 
-  that it does not make efficient use of data; here, seven tokens need to be processed 
-  to add two terms to the loss function.
-](assets/images/TransformerEncoder.svg){#fig-transformer-encoder .lightbox width="80%" fig-align="center"}
-:::
-
-### Fine-tuning
-
-During fine-tuning, BERT's parameters are specialized for a particular task by appending a task-specific output layer.
-
-- **Text Classification**:
-  - The embedding of the special ``<cls>`` token (placed at the start of every sequence) is mapped to a single value.
-  - Example: **Sentiment Analysis** (@fig-transformer-encoder-finetune a), where the output is passed through a sigmoid to predict if a review is positive or negative.
-- **Word Classification**:
-  - Each input embedding $\mathbf{x}_n$ is mapped to a vector representing $E$ entity types.
-  - Example: **Named Entity Recognition (NER)** (@fig-transformer-encoder-finetune b), classifying words as persons, places, or organizations.
-- **Text Span Prediction**:
-  - Used for **Question Answering** (e.g., SQuAD).
-  - The model predicts two numbers per token, indicating the probability that the token is the start or end of the answer span.
-
-::: {.left-caption}
-![
-  After pre-training, the encoder is fine-tuned using manually labeled data to solve 
-  a particular task. Usually, a linear transformation or a multi-layer perceptron 
-  (MLP) is appended to the encoder to produce whatever output is required. 
-  a) Example text classification task. In this sentiment classification task, the 
-  ``<cls>`` token embedding is used to predict the probability that the review is positive. 
-  b) Example word classification task. In this named entity recognition problem, 
-  the embedding for each word is used to predict whether the word corresponds to 
-  a person, place, or organization, or is not an entity.
-](assets/images/TransformerEncoderFineTune.svg){#fig-transformer-encoder-finetune .lightbox width="80%" fig-align="center"}
-:::
-
-
-
-## Decoder model: GPT-3
-
-::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
-:::
-
-- **Architecture**: GPT-3 is a prototypical **decoder** model. It consists of a series of transformer layers which, like their encoder counterparts, operate on learned word embeddings.
-- **Objective**: While an **encoder** builds a rich representation to be fine-tuned for diverse tasks, the **decoder** has one primary goal: **next-token generation**.
-- **Inference**: A decoder generates coherent text passages by iteratively feeding each predicted token back into the model as input for the subsequent step.
-
-### Language modeling
-
-GPT-3 is an **autoregressive** language model. Its behavior is best understood by factoring the joint probability $\P(t_1, t_2, \dots, t_N)$ of a sequence of tokens.
-
-- **Example**: Consider the sentence: "[It takes great courage to let yourself appear weak]{style="color:dodgerblue"}". The joint probability can be factored into a chain of conditional probabilities:
-  $$
-  \begin{aligned} 
-    \P(\text{sentence}) &= \P(\text{It}) \times \P(\text{takes} | \text{It}) \\ 
-    &\quad \times \P(\text{great} | \text{It takes}) \\ 
-    &\quad \times \cdots \\ 
-    &\quad \times \P(\text{weak} | \text{It takes great courage to let yourself appear}).
-  \end{aligned}
-  $$
-- **General Formulation**: An autoregressive model directly computes the conditional distribution of each token given all its predecessors, effectively finding:
-  $$\P(t_1, t_2, \dots, t_N) = \P(t_1) \prod_{n=2}^{N} \P(t_n | t_1, \dots, t_{n-1}) .$$
-- **Connection**: Maximizing the joint probability of a text corpus is equivalent to optimizing the model for the next-token prediction task.
-
-### Masked self-attention
-
-To train a decoder efficiently, we want to maximize the sum of log conditional probabilities for a full sentence in a single forward pass.
-
-- **The Problem: Future Information Check**:
-  - In a standard self-attention layer, every token can interact with every other token.
-  - When calculating the probability of a token (e.g., $\P(\text{great} | \text{It takes})$), the model could "cheat" by looking at the upcoming tokens in the ground-truth sentence (like "courage," "to," etc.) instead of learning to predict the next word.
-- **The Solution: Causal Masking**:
-  - We ensure tokens only attend to positions at or before their own index.
-  - **Implementation**: Set the dot products for future positions to $-\infty$ before the **softmax[·]** operation. This results in zero attention weight for all "future" tokens.
-- **The Decoder Pipeline**:
-  - Tokens are converted to embeddings and passed through series of transformer layers which use **masked self-attention**.
-  - Each output embedding represents a **partial sentence**.
-  - A final linear layer maps each embedding to the vocabulary size, followed by a **softmax[·]** to get probabilities.
-  - **Training**: Maximize the sum of log probabilities of the ground-truth next tokens at every position (@fig-transformer-decoder).
-
-### Generating text from a decoder
-
-The autoregressive nature of the decoder makes it a **generative model** that can produce plausible text by sampling from its own output distributions.
-
-- **Mechanism**: 
-  1. Start with an input sequence (usually beginning with a special `<start>` token).
-  2. The model outputs a probability distribution over the vocabulary.
-  3. **Sample** a token from this distribution or pick the most likely candidate (greedy approach). 
-  4. Append the new token and feed the extended sequence back into the model to predict the next word.
-- **Efficiency**: Because of masking, prior embeddings are independent of future tokens and do not change, allowing for efficient recycling of earlier computation.
-- **Common Search Strategies**:
-  - **Beam Search**: Maintains multiple candidate completions and tracks their combined probabilities to find the most likely overall sequence.
-  - **Top-k Sampling**: Randomly draws the next word only from the $K$ most likely candidates to ensure coherence and avoid low-probability "linguistic dead ends."
-
-::: {.left-caption}
-![
-  Training GPT3-type decoder network. The tokens are mapped to word embeddings with a special `<start>` 
-  token at the beginning of the sequence. The embeddings are passed through a series of transformer 
-  layers that use masked self-attention. Here, each position in the sentence can only attend to its 
-  own embedding and those of tokens earlier in the sequence (orange connections). The goal at each 
-  position is to maximize the probability of the following ground truth token in the sequence. 
-  In other words, at position one, we want to maximize the probability of the token 
-  [It]{style="color:dodgerblue"}; at position two, we want to maximize the probability of the token 
-  [takes]{style="color:dodgerblue"}; and so on. Masked self-attention ensures the system cannot cheat by 
-  looking at subsequent inputs. The autoregressive task has the advantage of making efficient use 
-  of the data since every word contributes a term to the loss function. However, it only exploits 
-  the left context of each word.
-](assets/images/TransformerDecoder.svg){#fig-transformer-decoder .lightbox width="80%" fig-align="center"}
-:::
-
-### GPT3 and few-shot learning
-
-*Large language models* (LLMs) like GPT3 apply these concepts on an unprecedented scale to achieve remarkable text generation and task-solving capabilities.
-
-#### Large-scale transformers
-- **GPT3 Scale**:
-  - **Layers**: 96 transformer layers.
-  - **Embeddings**: Vocabulary entries mapped to vectors of size 12,288.
-  - **Heads**: 96 self-attention heads (query, key, value dimension = 128).
-  - **Parameters**: 175 billion.
-  - **Training Data**: 300 billion tokens.
-  - **Context Window**: 2,048 tokens processed simultaneously.
-- **Example: Coherent Generation**:
-  - Context: "[Understanding Deep Learning is a new textbook from MIT Press by Simon Prince that]{style="color:orange"}"
-  - Generation: "[s designed to offer an accessible, broad introduction to the field. ...]{style="color:darkcyan"}"
-  - The model can generate large, plausible (though sometimes factually inaccurate) bodies of text.
-
-#### Zero-shot and few-shot learning
-
-One surprising emergent property of models at this scale is their ability to perform diverse tasks **without fine-tuning**.
-
-- **Few-Shot Learners**:
-  - By providing a few examples of correct question/answer pairs in the prompt, the model "learns" the pattern and completes subsequent tasks correctly.
-  - **Mechanism: Pattern Completion**:
-    - [**Poor English input:** I eated the purple berries.]{style="color:orange"}
-    - [**Good English output:** I ate the purple berries.]{style="color:darkcyan"}
-    - [**Poor English input:** Thank you for picking me as your designer. I'd appreciate it.]{style="color:orange"}
-    - [**Good English output:** Thank you for choosing me as your designer. I appreciate it.]{style="color:darkcyan"}
-- **Versatility**: This phenomenon extends to code generation, arithmetic, translation, and general question answering.
-- **Current Limitations**: 
-  - Performance is often erratic in practice.
-  - It remains unclear to what extent these models and their successors are truly extrapolating original solutions rather than interpolating or copying verbatim from their massive training corpora.
-
-
-## Encoder-decoder model: translation
-
-::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
-:::
-
-Translation between languages is an example of a **sequence-to-sequence** task. One common approach uses both an encoder (to compute a good representation of the source sentence) and a decoder (to generate the sentence in the target language). This is aptly called an **encoder-decoder** model.
-
-- **Workflow Example: English to French Translation**:
-  - **Encoder Path**: Receives the English sentence and processes it through a series of transformer layers to create an output representation for each token.
-  - **Decoder Path**: During training, the decoder receives the ground truth translation in French. It passes this through masked self-attention to predict the following word at each position.
-  - **Conditioning**: Crucially, the decoder layers also attend to the output of the encoder. Consequently, each French output word is conditioned on both the previous output words *and* the source English sentence (@fig-transformer-decoder).
-- **Cross-Attention Mechanism**:
-  - This is achieved by modifying the transformer layers in the decoder.
-  - Originally, these consisted of a masked self-attention layer followed by a neural network applied individually to each embedding (@fig-transformer-decoder).
-  - A new self-attention layer is added between these two components, in which the decoder embeddings attend to the encoder embeddings. This uses a version of self-attention known as **encoder-decoder attention** or **cross-attention**.
-- **Cross-Attention Logic**: The queries are computed from the decoder embeddings, and the keys and values from the encoder embeddings (@fig-transformer-block-sa-cross).
-
-::: {.left-caption}
-![
-  Cross-attention. The flow of computation is the same as in standard self-attention, but 
-  the queries are calculated from the decoder embeddings $\mathbf{X}_{dec}$, and the keys 
-  and values from the encoder embeddings $\mathbf{X}_{enc}$. For translation tasks, the 
-  encoder contains information about the source language statistics, and the decoder 
-  contains information about the target language statistics.
-](assets/images/TransformerBlockSACross.svg){#fig-transformer-block-sa-cross .lightbox width="80%" fig-align="center"}
-:::
-
-
-
-## Vision Transformer (ViT)
-
-::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
-:::
-
-Transformers can be adapted to computer vision by treating an image as a sequence of patches.
-
-- **Mechanism**:
-  - **Patching**: Divide the image into $16 \times 16$ patches (@fig-vision-transformer).
-  - **Embedding**: Each patch is mapped to an input embedding via a learned linear transformation.
-  - **Positional Encoding**: Standard 1D positional encodings are added to retain spatial relationships.
-- **Architecture**:
-  - An **encoder-only** model that utilizes a special `<cls>` token (similar to BERT).
-  - The `<cls>` token embedding is used for the final classification task.
-- **Training Strategy**:
-  - Uses **supervised pre-training** on massive datasets (e.g., 303 million labeled images from 18,000 classes).
-  - After pre-training, the final classification layer is replaced and fine-tuned for specific tasks.
-- **Performance & Inductive Bias**:
-  - Achieved competitive results (11.45% top-1 error on ImageNet).
-  - **Conclusion**: The strong inductive bias of CNNs (locality, translation invariance) can only be superseded by transformers when they are trained on extremely large-scale data.
-
-::: {.left-caption}
-![
-  Vision transformer. The VisionTransformer (ViT) breaks the image into a grid of patches 
-  ($16 \times 16$ in the original implementation). Each of these is projected via a learned 
-  transformation to become a patch embedding. These patch embeddings are fed into a 
-  transformer encoder network, and the `<cls>` token is used to predict the class probabilities.
-](assets/images/TransformerVisionTransformer.svg){#fig-vision-transformer .lightbox width="80%" fig-align="center"}
-:::
-
 
 :::

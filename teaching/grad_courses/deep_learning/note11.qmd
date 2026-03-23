@@ -1,5 +1,5 @@
 ---
-title: "Diffusion Models"
+title: "Unsupervised Learning"
 format: 
   html: 
     grid:
@@ -11,17 +11,105 @@ filters:
 ---
 
 
+::: {.callout-note}
+## Unsupervised Learning Models
+* They are learned from a set of observed data $\{\bm{x}_i\}_{i=1}^N$ in the absence of labels.
+* All unsupervised models share this property, but they have diverse goals.
+  - Density estimation
+  - Feature learning
+  - Dimensionality reduction
+  - Clustering
+  - Generation
+:::
+
 
 ::: {.panel-tabset}
 
-## Diffusion Models
+## Taxonomy and Basics
 
 ::: {.column-margin}
 Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
 :::
 
+* A common strategy in unsupervised learning is to define a mapping between the data examples $\bm{x}$ 
+and a set of unseen _latent_ variables $\bm{z}$.
+  - These latents capture underlying structure in the dataset and usually have a lower dimension than the original data.
+  - A latent variable $\bm{z}$ can be considered a compressed version of the data example $\bm{x}$ that captures its 
+  essential qualities.
 
-## Flow Matching
+::: {.left-caption}
+![
+  Taxonomy of unsupervised learning models. Unsupervised learning refers to any model trained on datasets without 
+  labels. Generative models can synthesize (generate) new examples with similar statistics to the training data. 
+  A subset of these are probabilistic and define a distribution over the data. We draw samples from this distribution 
+  to generate new examples. Latent variable models define a mapping between an underlying explanatory (latent) 
+  variable and the data and may fall into any of the above categories.
+](assets/images/UnsupOverview.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+* _Normalizing flows_, _variational autoencoders_, and _diffusion models_ are _probabilistic generative models_
+* In addition to generating new examples, they 
+  - assign a probability $p(\bm{x} \mid \bm{\theta})$ to each data point $\bm{x}$.
+  - The dependence on model parameters $\bm{\theta}$ implies that we can try to maximize the log-likelihood of
+  observed data $\{\bm{x}_i\}_{i=1}^N$:
+  $$
+    \bm{\theta}^* = \argmax_{\bm{\theta}} \sum_{i=1}^N \log p(\bm{x}_i \mid \bm{\theta}).
+  $$
+* Since probability distributions must sum to one, this implicitly reduces the probability of examples that lie 
+far from the observed data.
+* As well as providing a training criterion, assigning probabilities is useful in its own right:
+  - the probability on a test set can be used to compare two models quantitatively.
+  - the probability of an example can be thresholded to determine if it belongs to the same dataset or is an _outlier_.
+
+* _Generative adversarial networks_ (GANs) are also generative models, but they do not assign probabilities to data examples.
+  - We will not talk about these in this course.
+
+
+::: {.left-caption}
+![
+  Fitting generative models. a) Generative adversarial models provide a
+  mechanism for generating samples (orange points). As training proceeds (left
+  to right), the loss function encourages these samples to become progressively
+  less distinguishable from real examples (cyan points). b) Probabilistic models
+  learn a probability distribution over the training data. As the training
+  proceeds (left to right), the likelihood of the real examples increases under
+  this distribution, which can be used to draw new samples and assess the
+  rpobability of new data points.
+](assets/images/UnsupLearning.svg){.lightbox width="80%" fig-align="center"}
+:::
+
+
+::: {.callout-tip}
+## What makes a good generative model?
+* __Efficient sampling:__ Generative samples from the model should be computationally inexpensive 
+and take advantage of the parallelism of modern hardware.
+* __High-quality sampling:__ The samples should be indistinguishable from the real data with which 
+the model was trained.
+* __Coverage:__ Samples should represent the entire training distribution. It is insufficient to 
+generate samples that all look like a subset of the training examples.
+* __Well-behaved latent space:__ Every latent variable $\bm{z}$ corresponds to a plausible data 
+example $\bm{x}$. Smooth changes in $\bm{z}$ correspond to smooth changes in $\bm{x}$.
+* __Disentangled latent space:__ Manipulating each dimension of $\bm{z}$ should correspond to 
+changing an interpretable property of the data. For example, in a model of language, it might 
+change the topic, tense, or verbosity.
+* __Efficient likelihood computation:__ If the model is probabilistic, we would like to be able to 
+calculate the probability of new examples efficiently and accurately.
+:::
+
+::: {#tbl-generative-models}
+
+| Model | Efficient | Sample quality | Coverage | Well-behaved latent space | Disentangled latent space | Efficient likelihood |
+|:---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **GANs** | $\checkmark$ | $\checkmark$ | **&#10007;** | $\checkmark$ | ? | n/a |
+| **VAEs** | $\checkmark$ | **&#10007;** | ? | $\checkmark$ | ? | **&#10007;** |
+| **Flows** | $\checkmark$ | **&#10007;** | ? | $\checkmark$ | ? | $\checkmark$ |
+| **Diffusion** | **&#10007;** | $\checkmark$ | ? | **&#10007;** | **&#10007;** | **&#10007;** |
+
+Properties of four generative models. Neither generative adversarial networks (GANs), variational autoencoders (VAEs), normalizing flows (Flows), nor diffusion models (diffusion) have the full complement of desirable properties.
+:::
+
+
+## Normalizing Flows
 
 ::: {.column-margin}
 Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
