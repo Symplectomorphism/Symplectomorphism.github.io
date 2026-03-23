@@ -44,6 +44,9 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../../site_libs/bootstrap/bootstrap-8402731c99c2101ab41aada8a5804e10.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -82,10 +85,40 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../../styles.css">
 <meta property="og:title" content="Transformers – Satici Lab">
 <meta property="og:description" content="Research website for the Satici Lab">
+<meta property="og:image" content="assets/images/TransformerRouting.svg">
 <meta property="og:site_name" content="Satici Lab">
 </head>
 
@@ -343,8 +376,14 @@ window.MathJax = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#processing-text-data" id="toc-processing-text-data" class="nav-link active" data-scroll-target="#processing-text-data">Processing text data</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content page-columns page-full" id="quarto-document-content">
@@ -391,23 +430,675 @@ $$
 </header>
 
 
+<ul>
+<li>This chapter introduces <strong>transformers</strong>, initially targeted at natural language processing (NLP) problems.</li>
+<li>The <strong>network input</strong> is a series of high-dimensional embeddings representing words or word fragments.</li>
+<li><strong>Language datasets</strong> share some characteristics of image data:
+<ul>
+<li>The number of input variables can be very large.</li>
+<li>Statistics are similar at every position; it’s not sensible to re-learn the meaning of the word <em>dog</em> at every possible position.</li>
+</ul></li>
+<li>However, text sequences <strong>vary in length</strong>, and unlike images, there is <strong>no easy way to resize</strong> them.</li>
+</ul>
+<section id="processing-text-data" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="processing-text-data">Processing text data</h3>
+<p>To motivate the transformer, consider the following passage:</p>
+<blockquote class="blockquote">
+<p>The restaurant refused to serve me a ham sandwich because it only cooks vegetarian food. In the end, they just gave me two slices of bread. Their ambiance was just as good as the food and service.</p>
+</blockquote>
+<p>The goal is to design a network to process this text into a representation suitable for downstream tasks, such as:</p>
+<ul>
+<li><strong>Sentiment analysis</strong>: Classifying the review as positive or negative.</li>
+<li><strong>Question answering</strong>: e.g., “Does the restaurant serve steak?”.</li>
+</ul>
+<p>We can make three immediate observations:</p>
+<ol type="1">
+<li><strong>Large Encoded Input</strong>:
+<ul>
+<li>Even a small 37-word passage with embedding vectors of length 1024 results in <span class="math inline">\(37 \times 1024 = 37,888\)</span> units.</li>
+<li>For realistic datasets with thousands of words, fully connected layers become impractical.</li>
+</ul></li>
+<li><strong>Variable Input Lengths</strong>:
+<ul>
+<li>Sentences vary in length, making it difficult to apply a standard fully connected network.</li>
+<li><strong>Solution</strong>: The network should share parameters across different input positions, analogous to how CNNs share parameters across image regions.</li>
+</ul></li>
+<li><strong>Ambiguity and Attention</strong>:
+<ul>
+<li>Language is inherently ambiguous. For instance, the pronoun <strong><em>it</em></strong> in the first sentence refers to the <em>restaurant</em>, not the <em>ham sandwich</em>.</li>
+<li>To resolve this, the word <strong><em>it</em></strong> must be connected to <strong><em>restaurant</em></strong>.</li>
+<li><strong>Attention</strong>: In transformer parlance, the word pays “attention” to related words. These connections must extend across large text spans (e.g., <strong><em>their</em></strong> also refers back to the <em>restaurant</em>).</li>
+</ul></li>
+</ol>
 <div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
-</div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
+</div><div class="tabset-margin-content tabset-1-3-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-1-4-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Embeddings</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Self-Attention</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Self-Attention</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Extensions to Self-Attention</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">Transformer Layer</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false" href="">Transformers for NLP</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
+<p>Transformers use <strong>dot-product self-attention</strong> to achieve two critical properties:</p>
+<ol type="1">
+<li><strong>Parameter sharing</strong>: Handling long inputs of varying lengths.</li>
+<li><strong>Context-dependent connections</strong>: Linking word representations based on the words themselves.</li>
+</ol>
+<section id="mechanics-of-self-attention" class="level3">
+<h3 class="anchored" data-anchor-id="mechanics-of-self-attention">Mechanics of Self-Attention</h3>
+<p>A self-attention block <span class="math inline">\(\text{sa}[\bullet]\)</span> processes <span class="math inline">\(N\)</span> inputs <span class="math inline">\(\mathbf{x}_1, \dots, \mathbf{x}_N\)</span> (each <span class="math inline">\(D \times 1\)</span>) and returns <span class="math inline">\(N\)</span> outputs of the same dimension.</p>
+<ul>
+<li><p><strong>Step 1: Compute Values</strong> For each input <span class="math inline">\(\mathbf{x}_m\)</span>, compute a <strong>value</strong> vector <span class="math inline">\(\mathbf{v}_m\)</span>: <span class="math display">\[\mathbf{v}_m = \mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m\]</span> where <span class="math inline">\(\mathbf{\beta}_v\)</span> and <span class="math inline">\(\mathbf{\Omega}_v\)</span> are learnable biases and weights.</p></li>
+<li><p><strong>Step 2: Weighted Summation (Routing)</strong> The <span class="math inline">\(n^{th}\)</span> output is a weighted sum of all values: <span class="math display">\[\text{sa}_n[\mathbf{x}_1, \dots, \mathbf{x}_N] = \sum_{m=1}^N a[\mathbf{x}_m, \mathbf{x}_n] \mathbf{v}_m\]</span></p>
+<ul>
+<li>The scalar weight <strong><span class="math inline">\(a[\mathbf{x}_m, \mathbf{x}_n]\)</span></strong> represents the <strong>attention</strong> the <span class="math inline">\(n^{th}\)</span> output pays to input <span class="math inline">\(\mathbf{x}_m\)</span>.</li>
+<li>These weights are non-negative and sum to one (<span class="math inline">\(\sum_m a[\mathbf{x}_m, \mathbf{x}_n] = 1\)</span>).</li>
+<li>This effectively <strong>routes</strong> the values <span class="math inline">\(\mathbf{v}_m\)</span> in different proportions to create each output (as seen in <a href="#fig-transformer-routing" class="quarto-xref">Figure&nbsp;1</a>).</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-routing" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-routing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerRouting.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1: Self-attention as routing. The self-attention mechanism takes N inputs \mathbf{x}_1, \dots, \mathbf{x}_N \in \mathbb{R}^D (here N=3 and D=4) and processes each separately to compute N value vectors. The n^{th} output \text{sa}_n[\mathbf{x}_1, \dots, \mathbf{x}_N] (written as \text{sa}_n[\mathbf{x}_\bullet] for short) is then computed as a weighted sum of the N value vectors, where the weights are positive and sum to one. a) Output \text{sa}_1[\mathbf{x}_\bullet] is computed as a[\mathbf{x}_1, \mathbf{x}_1] = 0.1 times the first value vector, a[\mathbf{x}_2, \mathbf{x}_1] = 0.3 times the second value vector, and a[\mathbf{x}_3, \mathbf{x}_1] = 0.6 times the third value vector. b) Output \text{sa}_2[\mathbf{x}_\bullet] is computed in the same way, but this time with weights of 0.5, 0.2, and 0.3. c) The weighting for output \text{sa}_3[\mathbf{x}_\bullet] is different again. Each output can hence be thought of as a different routing of the N values."><img src="assets/images/TransformerRouting.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-routing-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Self-attention as routing. The self-attention mechanism takes <span class="math inline">\(N\)</span> inputs <span class="math inline">\(\mathbf{x}_1, \dots, \mathbf{x}_N \in \mathbb{R}^D\)</span> (here <span class="math inline">\(N=3\)</span> and <span class="math inline">\(D=4\)</span>) and processes each separately to compute <span class="math inline">\(N\)</span> value vectors. The <span class="math inline">\(n^{th}\)</span> output <span class="math inline">\(\text{sa}_n[\mathbf{x}_1, \dots, \mathbf{x}_N]\)</span> (written as <span class="math inline">\(\text{sa}_n[\mathbf{x}_\bullet]\)</span> for short) is then computed as a weighted sum of the <span class="math inline">\(N\)</span> value vectors, where the weights are positive and sum to one. a) Output <span class="math inline">\(\text{sa}_1[\mathbf{x}_\bullet]\)</span> is computed as <span class="math inline">\(a[\mathbf{x}_1, \mathbf{x}_1] = 0.1\)</span> times the first value vector, <span class="math inline">\(a[\mathbf{x}_2, \mathbf{x}_1] = 0.3\)</span> times the second value vector, and <span class="math inline">\(a[\mathbf{x}_3, \mathbf{x}_1] = 0.6\)</span> times the third value vector. b) Output <span class="math inline">\(\text{sa}_2[\mathbf{x}_\bullet]\)</span> is computed in the same way, but this time with weights of 0.5, 0.2, and 0.3. c) The weighting for output <span class="math inline">\(\text{sa}_3[\mathbf{x}_\bullet]\)</span> is different again. Each output can hence be thought of as a different routing of the <span class="math inline">\(N\)</span> values.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="computing-and-weighting-values" class="level3">
+<h3 class="anchored" data-anchor-id="computing-and-weighting-values">Computing and weighting values</h3>
+<p>The self-attention mechanism is efficient and scalable:</p>
+<ul>
+<li><strong>Computing Values (Linear Scaling)</strong>:
+<ul>
+<li>The same weights <span class="math inline">\(\mathbf{\Omega}_v \in \mathbb{R}^{D \times D}\)</span> and biases <span class="math inline">\(\mathbf{\beta}_v \in \mathbb{R}^D\)</span> are applied to each input <span class="math inline">\(\mathbf{x}_m\)</span>.</li>
+<li><strong>Scalability</strong>: This computation scales <strong>linearly</strong> with the sequence length <span class="math inline">\(N\)</span>.</li>
+<li>Compared to a fully connected network (which would relate all <span class="math inline">\(DN\)</span> inputs to all <span class="math inline">\(DN\)</span> values), this uses far fewer parameters.</li>
+<li>This can be viewed as a <strong>sparse matrix operation</strong> with shared parameters.</li>
+</ul></li>
+<li><strong>Attention Weights (Quadratic Scaling)</strong>:
+<ul>
+<li>Attention weights <span class="math inline">\(\mathbf{a}[\mathbf{x}_m, \mathbf{x}_n]\)</span> combine values from across the sequence.</li>
+<li><strong>Sparsity</strong>: There is only one weight for each ordered pair <span class="math inline">\((\mathbf{x}_m, \mathbf{x}_n)\)</span>, regardless of the vector dimension <span class="math inline">\(D\)</span>.</li>
+<li><strong>Scalability</strong>: The number of attention weights depends <strong>quadratically</strong> on sequence length <span class="math inline">\(N\)</span>, but is independent of input dimension <span class="math inline">\(D\)</span>.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-self-attention-linear" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-self-attention-linear-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerSA1.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;2: Self-attention for N=3 inputs \mathbf{x}_n, each with dimension D=4. a) Each input \mathbf{x}_m is operated on independently by the same weights \mathbf{\Omega}_v (same color equals same weight) and biases \mathbf{\beta}_v (not shown) to form the values \mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m. Each output is a linear combination of the values, with the attention weight a[\mathbf{x}_m, \mathbf{x}_n] defining the contribution of the m^{th} value to the n^{th} output. b) Matrix showing block sparsity of linear transformation \mathbf{\Omega}_v between inputs and values. c) Matrix showing sparsity of attention weights relating values and outputs."><img src="assets/images/TransformerSA1.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-self-attention-linear-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Self-attention for <span class="math inline">\(N=3\)</span> inputs <span class="math inline">\(\mathbf{x}_n\)</span>, each with dimension <span class="math inline">\(D=4\)</span>. a) Each input <span class="math inline">\(\mathbf{x}_m\)</span> is operated on independently by the same weights <span class="math inline">\(\mathbf{\Omega}_v\)</span> (same color equals same weight) and biases <span class="math inline">\(\mathbf{\beta}_v\)</span> (not shown) to form the values <span class="math inline">\(\mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m\)</span>. Each output is a linear combination of the values, with the attention weight <span class="math inline">\(a[\mathbf{x}_m, \mathbf{x}_n]\)</span> defining the contribution of the <span class="math inline">\(m^{th}\)</span> value to the <span class="math inline">\(n^{th}\)</span> output. b) Matrix showing block sparsity of linear transformation <span class="math inline">\(\mathbf{\Omega}_v\)</span> between inputs and values. c) Matrix showing sparsity of attention weights relating values and outputs.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="computing-attention-weights" class="level3">
+<h3 class="anchored" data-anchor-id="computing-attention-weights">Computing attention weights</h3>
+<p>Self-attention is an example of a <strong>hypernetwork</strong>, where one part of the network computes the weights used by another.</p>
+<ul>
+<li><strong>Nonlinearity</strong>: Although values are combined linearly, the overall mechanism is <strong>nonlinear</strong> because the attention weights are nonlinear functions of the input.</li>
+<li><strong>Queries and Keys</strong>: We apply two additional linear transformations to the inputs:
+<ul>
+<li><strong>Queries</strong>: <span class="math inline">\(\mathbf{q}_n = \mathbf{\beta}_q + \mathbf{\Omega}_q \mathbf{x}_n\)</span></li>
+<li><strong>Keys</strong>: <span class="math inline">\(\mathbf{k}_m = \mathbf{\beta}_k + \mathbf{\Omega}_k \mathbf{x}_m\)</span></li>
+</ul></li>
+<li><strong>Dot-Product Attention</strong>:
+<ul>
+<li>We compute the similarity between queries and keys using dot products.</li>
+<li>The weights are normalized via the <strong>softmax</strong> function so they are positive and sum to one: <span class="math display">\[a[\mathbf{x}_m, \mathbf{x}_n] = \frac{\exp[\mathbf{k}_m^T \mathbf{q}_n]}{\sum_{m'=1}^N \exp[\mathbf{k}_{m'}^T \mathbf{q}_n]}\]</span></li>
+</ul></li>
+<li><strong>Interpretation</strong>:
+<ul>
+<li>The weights depend on the relative entry-wise similarity between the <span class="math inline">\(n^{th}\)</span> query and all keys.</li>
+<li>The softmax causes the keys to <strong>compete</strong> to contribute to the final result.</li>
+</ul></li>
+<li><strong>Dimensions</strong>:
+<ul>
+<li>Queries and keys must share the same dimension.</li>
+<li>This dimension can differ from the value vectors (which usually match the input dimension <span class="math inline">\(D\)</span>).</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-attention-weights" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-attention-weights-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerSA2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;3: Computing attention weights. a) Query vectors \mathbf{q}_n = \mathbf{\beta}_q + \mathbf{\Omega}_q \mathbf{x}_n and key vectors \mathbf{k}_n = \mathbf{\beta}_k + \mathbf{\Omega}_k \mathbf{x}_n are computed for each input \mathbf{x}_n. b) The dot products between each query and the three keys are passed through a softmax function to form non-negative attentions that sum to one. c) These route the value vectors (see Figure&nbsp;1) via the sparse matrix from Figure&nbsp;2."><img src="assets/images/TransformerSA2.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-attention-weights-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Computing attention weights. a) Query vectors <span class="math inline">\(\mathbf{q}_n = \mathbf{\beta}_q + \mathbf{\Omega}_q \mathbf{x}_n\)</span> and key vectors <span class="math inline">\(\mathbf{k}_n = \mathbf{\beta}_k + \mathbf{\Omega}_k \mathbf{x}_n\)</span> are computed for each input <span class="math inline">\(\mathbf{x}_n\)</span>. b) The dot products between each query and the three keys are passed through a softmax function to form non-negative attentions that sum to one. c) These route the value vectors (see <a href="#fig-transformer-routing" class="quarto-xref">Figure&nbsp;1</a>) via the sparse matrix from <a href="#fig-self-attention-linear" class="quarto-xref">Figure&nbsp;2</a>.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="self-attention-summary" class="level3">
+<h3 class="anchored" data-anchor-id="self-attention-summary">Self-attention summary</h3>
+<p>The self-attention mechanism provides a flexible way to process sequences:</p>
+<ul>
+<li><strong>Output Computation</strong>:
+<ul>
+<li>Each output is a weighted sum of linear transformations of all inputs: <span class="math inline">\(\mathbf{v}_m = \mathbf{\beta}_v + \mathbf{\Omega}_v \mathbf{x}_m\)</span>.</li>
+<li>The weights are positive, sum to one, and represent the similarity between the <span class="math inline">\(n^{th}\)</span> input and all others.</li>
+</ul></li>
+<li><strong>Nonlinearity</strong>:
+<ul>
+<li>There is no explicit activation function.</li>
+<li>Nonlinearity arises from the <strong>dot-product</strong> and <strong>softmax</strong> operations used to determine the weights.</li>
+</ul></li>
+<li><strong>Key Advantages</strong>:
+<ul>
+<li><strong>Shared Parameters</strong>: The mechanism uses a single set of learnable parameters <span class="math inline">\(\phi = \{\mathbf{\beta}_v, \mathbf{\Omega}_v, \mathbf{\beta}_q, \mathbf{\Omega}_q, \mathbf{\beta}_k, \mathbf{\Omega}_k\}\)</span>, making it <strong>independent of sequence length <span class="math inline">\(N\)</span></strong>.</li>
+<li><strong>Dynamic Connections</strong>: Connections between inputs (e.g., words) are determined dynamically based on the inputs themselves via the attention weights.</li>
+</ul></li>
+</ul>
+</section>
+<section id="matrix-form" class="level3">
+<h3 class="anchored" data-anchor-id="matrix-form">Matrix form</h3>
+<p>The self-attention computation can be expressed compactly using matrix operations:</p>
+<ul>
+<li><strong>Matrix Definition</strong>:
+<ul>
+<li>Store <span class="math inline">\(N\)</span> input vectors <span class="math inline">\(\mathbf{x}_n\)</span> as columns of a <span class="math inline">\(D \times N\)</span> matrix <span class="math inline">\(\mathbf{X}\)</span>.</li>
+</ul></li>
+<li><strong>Computing Values, Queries, and Keys</strong>:
+<ul>
+<li>The matrices <span class="math inline">\(\mathbf{V}\)</span>, <span class="math inline">\(\mathbf{Q}\)</span>, and <span class="math inline">\(\mathbf{K}\)</span> are computed as: <span class="math display">\[\mathbf{V}[\mathbf{X}] = \mathbf{\beta}_v \mathbf{1}^T + \mathbf{\Omega}_v \mathbf{X}\]</span> <span class="math display">\[\mathbf{Q}[\mathbf{X}] = \mathbf{\beta}_q \mathbf{1}^T + \mathbf{\Omega}_q \mathbf{X}\]</span> <span class="math display">\[\mathbf{K}[\mathbf{X}] = \mathbf{\beta}_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{X}\]</span> where <span class="math inline">\(\mathbf{1}\)</span> is an <span class="math inline">\(N \times 1\)</span> vector of ones.</li>
+</ul></li>
+<li><strong>Self-Attention Computation</strong>:
+<ul>
+<li>The final output matrix <span class="math inline">\(\mathbf{Sa}[\mathbf{X}]\)</span> is: <span class="math display">\[\mathbf{Sa}[\mathbf{X}] = \mathbf{V}[\mathbf{X}] \cdot \text{Softmax}\left[\mathbf{K}[\mathbf{X}]^T \mathbf{Q}[\mathbf{X}]\right]\]</span></li>
+<li>The <strong>Softmax</strong> function is applied independently to each column of the product matrix.</li>
+</ul></li>
+<li><strong>Simplified Notation</strong>:
+<ul>
+<li>To emphasize that the output is a “triple product” of the inputs, we often drop the explicit dependence on <span class="math inline">\(\mathbf{X}\)</span> and write: <span class="math display">\[\mathbf{Sa}[\mathbf{X}] = \mathbf{V} \cdot \text{Softmax}\left[\mathbf{K}^T \mathbf{Q}\right]\]</span></li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-matrix-form" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-matrix-form-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerBlockSA.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Figure&nbsp;4: Self-attention in matrix form. Self-attention can be implemented efficiently if we store the N input vectors \bm{x}_n in the columns of the D \times N matrix \bm{X}. The input \bm{X} is operated on separately by the query matrix \bm{Q}, key matrix \bm{K}, and value matrix \bm{V}. The dot products are then computed using matrix multiplication, and a softmax operation is applied independently to each column of the resulting matrix to calculate the attentions. Finally, the values are post-multiplied by the attentions to create an output of the same size as the input (see Figure&nbsp;4)."><img src="assets/images/TransformerBlockSA.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-matrix-form-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Self-attention in matrix form. Self-attention can be implemented efficiently if we store the <span class="math inline">\(N\)</span> input vectors <span class="math inline">\(\bm{x}_n\)</span> in the columns of the <span class="math inline">\(D \times N\)</span> matrix <span class="math inline">\(\bm{X}\)</span>. The input <span class="math inline">\(\bm{X}\)</span> is operated on separately by the query matrix <span class="math inline">\(\bm{Q}\)</span>, key matrix <span class="math inline">\(\bm{K}\)</span>, and value matrix <span class="math inline">\(\bm{V}\)</span>. The dot products are then computed using matrix multiplication, and a softmax operation is applied independently to each column of the resulting matrix to calculate the attentions. Finally, the values are post-multiplied by the attentions to create an output of the same size as the input (see <a href="#fig-matrix-form" class="quarto-xref">Figure&nbsp;4</a>).
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<section id="positional-encoding" class="level3">
+<h3 class="anchored" data-anchor-id="positional-encoding">Positional encoding</h3>
+<p>The self-attention mechanism is <strong>equivariant to input permutations</strong>, meaning it does not naturally account for the order of inputs <span class="math inline">\(\mathbf{x}_n\)</span>. However, in language, sequence order is essential (e.g., “The woman ate the raccoon” vs “The raccoon ate the woman”). To address this, we use positional encodings:</p>
+<ul>
+<li><strong>Absolute Positional Encodings</strong>:
+<ul>
+<li>A unique positional matrix <span class="math inline">\(\mathbf{\Pi}\)</span> is added to the input matrix <span class="math inline">\(\mathbf{X}\)</span> (as illustrated in <a href="#fig-positional-encoding" class="quarto-xref">Figure&nbsp;5</a>).</li>
+<li>Each column of <span class="math inline">\(\mathbf{\Pi}\)</span> is unique and encodes the absolute position within the sequence.</li>
+<li>These can be <strong>predefined (hand-crafted)</strong> or <strong>learned</strong> parameters.</li>
+<li>They are typically added at the input or integrated into the computation of queries and keys.</li>
+</ul></li>
+<li><strong>Relative Positional Encodings</strong>:
+<ul>
+<li>For many tasks, the relative position between words is more important than their absolute location.</li>
+<li>This information is encoded directly into the <strong>attention matrix</strong> based on the offset between key position <span class="math inline">\(a\)</span> and query position <span class="math inline">\(b\)</span>.</li>
+<li>The model learns a parameter <span class="math inline">\(\pi_{a,b}\)</span> for each offset to adjust the attention weights accordingly.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-positional-encoding" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-positional-encoding-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerPE.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Figure&nbsp;5: Positional encodings. The self-attention architecture is equivariant to permutations of the inputs. To ensure that inputs at different positions are treated differently, a positional encoding matrix \bm{\Pi} can be added to the data matrix. Each column is different, so the positions can be distinguished. Here, the position encodings use a predefined procedural sinusoidal pattern (which can be extended to larger values of N if necessary). However, in other cases, they are learned."><img src="assets/images/TransformerPE.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-positional-encoding-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Positional encodings. The self-attention architecture is equivariant to permutations of the inputs. To ensure that inputs at different positions are treated differently, a positional encoding matrix <span class="math inline">\(\bm{\Pi}\)</span> can be added to the data matrix. Each column is different, so the positions can be distinguished. Here, the position encodings use a predefined procedural sinusoidal pattern (which can be extended to larger values of <span class="math inline">\(N\)</span> if necessary). However, in other cases, they are learned.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="scaled-dot-product-self-attention" class="level3">
+<h3 class="anchored" data-anchor-id="scaled-dot-product-self-attention">Scaled dot-product self-attention</h3>
+<ul>
+<li><strong>The Problem</strong>: Dot products in the attention computation can have large magnitudes, pushing the softmax function into regions with near-zero gradients.</li>
+<li><strong>The Solution</strong>: Scale the dot products by the square root of the query/key dimension <span class="math inline">\(D_q\)</span> to maintain stable gradients during training.</li>
+<li><strong>Formula</strong>: <span class="math display">\[\mathbf{Sa}[\mathbf{X}] = \mathbf{V} \cdot \text{Softmax}\left[\frac{\mathbf{K}^T \mathbf{Q}}{\sqrt{D_q}}\right]\]</span></li>
+<li>This is known as <strong>scaled dot-product self-attention</strong>.</li>
+</ul>
+</section>
+<section id="multiple-heads" class="level3">
+<h3 class="anchored" data-anchor-id="multiple-heads">Multiple heads</h3>
+<ul>
+<li><strong>Parallel Mechanisms</strong>: Multiple self-attention units (heads) are applied in parallel to capture different types of sequence relationships.</li>
+<li><strong>Unique Parameters</strong>: Each head <span class="math inline">\(h\)</span> has its own learnable weights and biases:
+<ul>
+<li><span class="math inline">\(\mathbf{V}_h = \mathbf{\beta}_{vh} \mathbf{1}^T + \mathbf{\Omega}_{vh} \mathbf{X}\)</span></li>
+<li><span class="math inline">\(\mathbf{Q}_h = \mathbf{\beta}_{qh} \mathbf{1}^T + \mathbf{\Omega}_{qh} \mathbf{X}\)</span></li>
+<li><span class="math inline">\(\mathbf{K}_h = \mathbf{\beta}_{kh} \mathbf{1}^T + \mathbf{\Omega}_{kh} \mathbf{X}\)</span></li>
+</ul></li>
+<li><strong>Efficiency</strong>: For <span class="math inline">\(H\)</span> heads, each typically operates on a subspace of dimension <span class="math inline">\(D/H\)</span>.</li>
+<li><strong>Aggregation</strong>: The resulting head outputs <span class="math inline">\(\mathbf{Sa}_h[\mathbf{X}]\)</span> are vertically concatenated and combined via a final linear transform <span class="math inline">\(\mathbf{\Omega}_c\)</span> (see <a href="#fig-multi-head-attention" class="quarto-xref">Figure&nbsp;6</a>): <span class="math display">\[\mathbf{MhSa}[\mathbf{X}] = \mathbf{\Omega}_c \left[ \mathbf{Sa}_1[\mathbf{X}]^T, \mathbf{Sa}_2[\mathbf{X}]^T, \dots, \mathbf{Sa}_H[\mathbf{X}]^T \right]^T\]</span></li>
+<li><strong>Benefits</strong>: Multi-head attention is crucial for performance and increases robustness to initialization.</li>
+</ul>
+<div class="left-caption">
+<div id="fig-multi-head-attention" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-multi-head-attention-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerBlockSAMultiHead.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Figure&nbsp;6: Multi-head self-attention. Self-attention occurs in parallel across multiple “heads.” Each has its own queries, keys, and values. Here two heads are depicted, in the cyan and orange boxes, respectively. The outputs are vertically concatenated, and another linear transformation \bm{\Omega}_c is used to recombine them."><img src="assets/images/TransformerBlockSAMultiHead.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-multi-head-attention-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Multi-head self-attention. Self-attention occurs in parallel across multiple “heads.” Each has its own queries, keys, and values. Here two heads are depicted, in the cyan and orange boxes, respectively. The outputs are vertically concatenated, and another linear transformation <span class="math inline">\(\bm{\Omega}_c\)</span> is used to recombine them.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
 
+<p>Self-attention is just one part of a larger <strong>transformer layer</strong>. This block combines sequence-wide context with point-wise processing:</p>
+<ul>
+<li><strong>Multi-Head Self-Attention</strong>: Allows word representations to interact and exchange information across the entire sequence.</li>
+<li><strong>MLP Network</strong>: A fully connected network <strong>mlp<span class="math inline">\([\mathbf{x}_n]\)</span></strong> that operates independently on each position.</li>
+<li><strong>Residual Connections</strong>: Both units use skip connections, adding the output back to the original input to improve gradient flow.</li>
+<li><strong>Layer Normalization</strong>:
+<ul>
+<li>A <strong>LayerNorm</strong> operation is applied after both the self-attention and MLP units.</li>
+<li>Unlike BatchNorm, it normalizes each embedding using statistics calculated across its own <span class="math inline">\(D\)</span> dimensions.</li>
+</ul></li>
+</ul>
+<p>The complete layer follows this sequence of operations (see <a href="#fig-transformer-layer" class="quarto-xref">Figure&nbsp;7</a>):</p>
+<p><span class="math display">\[\mathbf{X} \leftarrow \mathbf{X} + \mathbf{MhSa}[\mathbf{X}]\]</span> <span class="math display">\[\mathbf{X} \leftarrow \text{LayerNorm}[\mathbf{X}]\]</span> <span class="math display">\[\mathbf{x}_n \leftarrow \mathbf{x}_n + \text{mlp}[\mathbf{x}_n], \quad \forall n \in \{1,\dots,N\}\]</span> <span class="math display">\[\mathbf{X} \leftarrow \text{LayerNorm}[\mathbf{X}],\]</span></p>
+<p>where <span class="math inline">\(\mathbf{x}_n\)</span> are the column vectors of the data matrix <span class="math inline">\(\mathbf{X}\)</span>.</p>
+<div class="left-caption">
+<div id="fig-transformer-layer" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-layer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerBlock.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure&nbsp;7: Transformer layer. The input consists of a D\times N matrix containing the D-dimensional word embeddings for each of the N input tokens. The output is a matrix of the same size. The transformer layer consists of a series of operations. First, there is a mlti-head attention block, allowing the word embeddings to interact with one another. This forms the processing of a residual block, so the inputs are added back to the output. Second, a LayerNorm operation isa pplied separately to each embedding. Third, there is a second residual layer where the same fully connected neural network is applied separately to each of teh N word representations (columns). Finally, LayerNorm is applied again."><img src="assets/images/TransformerBlock.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-layer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: Transformer layer. The input consists of a <span class="math inline">\(D\times N\)</span> matrix containing the <span class="math inline">\(D\)</span>-dimensional word embeddings for each of the <span class="math inline">\(N\)</span> input tokens. The output is a matrix of the same size. The transformer layer consists of a series of operations. First, there is a mlti-head attention block, allowing the word embeddings to interact with one another. This forms the processing of a residual block, so the inputs are added back to the output. Second, a LayerNorm operation isa pplied separately to each embedding. Third, there is a second residual layer where the same fully connected neural network is applied separately to each of teh <span class="math inline">\(N\)</span> word representations (columns). Finally, LayerNorm is applied again.
+</figcaption>
+</figure>
 </div>
 </div>
 </div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+
+<p>The previous section described the transformer layer. Now we consider its application to <strong>Natural Language Processing (NLP)</strong> tasks:</p>
+<ul>
+<li><strong>Pipeline</strong>: A typical NLP pipeline starts with a <em>tokenizer</em> to split text into manageable units.</li>
+<li><strong>Embeddings</strong>: Each token is mapped to a learned embedding vector.</li>
+<li><strong>Processing</strong>: These embeddings pass through a series of transformer layers to capture context.</li>
+</ul>
+<section id="tokenization" class="level3">
+<h3 class="anchored" data-anchor-id="tokenization">Tokenization</h3>
+<p>A text processing pipeline begins with a <strong>tokenizer</strong>. This unit splits text into constituent units called <em>tokens</em> from a predefined <em>vocabulary</em>.</p>
+<ul>
+<li><strong>Challenges with Word-Level Tokens</strong>:
+<ul>
+<li><strong>Out-of-Vocabulary (OOV)</strong>: Names or rare words may not be in the vocabulary.</li>
+<li><strong>Punctuation</strong>: Handling punctuation is critical for meaning but difficult with simple word splits.</li>
+<li><strong>Morphological Variations</strong>: Suffixes (e.g., <em>walk</em>, <em>walks</em>, <em>walking</em>) are treated as unrelated tokens, losing morphological links.</li>
+</ul></li>
+<li><strong>The Compromise: Sub-word Tokenization</strong>:
+<ul>
+<li>Modern models use <strong>sub-word tokenizers</strong> (e.g., <em>byte pair encoding</em>).</li>
+<li>This approach includes both common words and frequent word fragments (see <a href="#fig-transformer-bpe" class="quarto-xref">Figure&nbsp;8</a>).</li>
+<li>It merges commonly occurring sub-strings based on frequency, allowing the model to handle rare words as combinations of known sub-words.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-bpe" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-bpe-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerBPE.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Figure&nbsp;8: Sub-word tokenization. a) A passage of text from a nursery rhyme. The tokens are initially just the characters and whitespace (represented by an underscore), and their frequencies are displayed in the table. b) At each iteration, the sub-word tokenizer looks for the most commonly occurring adjacent pair of tokens (in this case, se) and merges them. This creates a new token and decreases the counts for the original tokens s and e. Note that the last character of the first token to be merged cannot be whitespace, which prevents merging across words. c) At the second iteration, the algorithm merges e and the whitespace character _. d) After 22 iterations, the tokens consist of a mix of letters, word fragments, and commonly occurring words. e) If we continue this process indefinitely, the tokens eventually represent the full words. f) Over time, the number of tokens increases as we add word fragments to the letters and then decreases again as we merge these fragments. In a real situation, there would be a very large number of words, and the algorithm would terminate when the vocabulary size (number of tokens) reached a predetermined value. Punctuation and capital letters would also be treated as separate input characters."><img src="assets/images/TransformerBPE.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-bpe-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Sub-word tokenization. a) A passage of text from a nursery rhyme. The tokens are initially just the characters and whitespace (represented by an underscore), and their frequencies are displayed in the table. b) At each iteration, the sub-word tokenizer looks for the most commonly occurring adjacent pair of tokens (in this case, <span style="color:dodgerblue">se</span>) and merges them. This creates a new token and decreases the counts for the original tokens <span style="color:dodgerblue">s</span> and <span style="color:dodgerblue">e</span>. Note that the last character of the first token to be merged cannot be whitespace, which prevents merging across words. c) At the second iteration, the algorithm merges <span style="color:dodgerblue">e</span> and the whitespace character <span style="color:dodgerblue">_</span>. d) After 22 iterations, the tokens consist of a mix of letters, word fragments, and commonly occurring words. e) If we continue this process indefinitely, the tokens eventually represent the full words. f) Over time, the number of tokens increases as we add word fragments to the letters and then decreases again as we merge these fragments. In a real situation, there would be a very large number of words, and the algorithm would terminate when the vocabulary size (number of tokens) reached a predetermined value. Punctuation and capital letters would also be treated as separate input characters.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="learned-embeddings" class="level3">
+<h3 class="anchored" data-anchor-id="learned-embeddings">Learned embeddings</h3>
+<p>Once the sequence of <span class="math inline">\(N\)</span> tokens is identified, each token is mapped to a unique <strong>learned embedding</strong>:</p>
+<ul>
+<li><strong>Vocabulary Matrix</strong>: The embeddings for the whole vocabulary <span class="math inline">\(\mathcal{V}\)</span> are stored in a matrix <span class="math inline">\(\mathbf{\Omega}_e \in \mathbb{R}^{D \times |\mathcal{V}|}\)</span>.</li>
+<li><strong>One-Hot Encoding</strong>: The <span class="math inline">\(N\)</span> input tokens are first encoded as a matrix <span class="math inline">\(\mathbf{T} \in \mathbb{R}^{|\mathcal{V}| \times N}\)</span> of one-hot vectors.</li>
+<li><strong>Matrix Multiplication</strong>: The input embeddings are computed as the product <span class="math inline">\(\mathbf{X} = \mathbf{\Omega}_e \mathbf{T}\)</span> (see <a href="#fig-transformer-vocabulary" class="quarto-xref">Figure&nbsp;9</a>).</li>
+<li><strong>Network Parameters</strong>: A typical configuration (e.g., <span class="math inline">\(D=1024\)</span> and <span class="math inline">\(|\mathcal{V}|=30,000\)</span>) contains millions of parameters in <span class="math inline">\(\mathbf{\Omega}_e\)</span> to learn.</li>
+<li>Note that the same token (e.g., “an”) always starts with the same initial embedding, regardless of position; context is only added by the transformer layers.</li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-vocabulary" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-vocabulary-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerVocabulary.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Figure&nbsp;9: The input embedding matrix \bm{X} \in \R^{D \times N} contains N embeddings of length D and is created by multiplying a matrix \Omega_e containing the embeddings for the entire vocabulary with a matrix \mathbf{T} containing one-hot vectors in its columns that correspond to the word or sub-word indices. The vocabulary matrix \bm{\Omega}_e is considered a parameter of the model and is learned along with the other parameters. Note that the two embeddings for the word an are the same."><img src="assets/images/TransformerVocabulary.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-vocabulary-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: The input embedding matrix <span class="math inline">\(\bm{X} \in \R^{D \times N}\)</span> contains <span class="math inline">\(N\)</span> embeddings of length <span class="math inline">\(D\)</span> and is created by multiplying a matrix <span class="math inline">\(\Omega_e\)</span> containing the embeddings for the entire vocabulary with a matrix <span class="math inline">\(\mathbf{T}\)</span> containing one-hot vectors in its columns that correspond to the word or sub-word indices. The vocabulary matrix <span class="math inline">\(\bm{\Omega}_e\)</span> is considered a parameter of the model and is learned along with the other parameters. Note that the two embeddings for the word <span style="color:dodgerblue">an</span> are the same.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="transformer-models" class="level3">
+<h3 class="anchored" data-anchor-id="transformer-models">Transformer models</h3>
+<p>Finally, the embedding matrix <span class="math inline">\(\mathbf{X}\)</span> is passed through a sequence of <span class="math inline">\(K\)</span> transformer layers, comprising a <strong>transformer model</strong>. There are three primary types of architectures:</p>
+<ul>
+<li><strong>Encoder</strong>: Transforms the input embeddings into a rich representation for diverse tasks.</li>
+<li><strong>Decoder</strong>: Used to predict the subsequent tokens to extend the input text sequence.</li>
+<li><strong>Encoder-Decoder</strong>: Specialized for <strong>sequence-to-sequence</strong> tasks (e.g., machine translation), where one string is converted into another.</li>
+</ul>
+</section>
+</div>
+</div>
+</div>
+<div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-2-1-tab-margin-content">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-2-2-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-2-3-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-2-4-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div></div></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Encoder model: BERT</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">Decoder model: GPT-3</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false" href="">Encoder-decoder model: translation</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-4" role="tab" aria-controls="tabset-2-4" aria-selected="false" href="">Vision Transformer (ViT)</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+
+<p>BERT is a prototypical <strong>encoder</strong> model designed to learn rich, bi-directional representations of language.</p>
+<ul>
+<li><strong>Architecture Details</strong>:
+<ul>
+<li><strong>Vocabulary</strong>: 30,000 tokens.</li>
+<li><strong>Embeddings</strong>: 1024-dimensional word embeddings.</li>
+<li><strong>Layers</strong>: 24 transformer layers.</li>
+<li><strong>Attention</strong>: 16 heads per layer (query, key, and value dimension = 64).</li>
+<li><strong>Parameters</strong>: <span class="math inline">\(\sim 340\)</span> million.</li>
+</ul></li>
+<li><strong>Learning Strategy: Transfer Learning</strong>:
+<ul>
+<li><strong>Pre-training</strong>: Captures general language statistics from a large, unlabeled corpus (3.3 billion words).</li>
+<li><strong>Fine-tuning</strong>: Adapts the pre-trained model to specific tasks using smaller labeled datasets.</li>
+</ul></li>
+</ul>
+<section id="pre-training" class="level3">
+<h3 class="anchored" data-anchor-id="pre-training">Pre-training</h3>
+<p>In the pre-training stage, the model is trained using <strong>self-supervision</strong>, allowing it to learn from massive amounts of data without manual labels.</p>
+<ul>
+<li><strong>Task: Masked Language Modeling (MLM)</strong>:
+<ul>
+<li>A small fraction of input tokens are randomly replaced with a special <code>&lt;maskStatus&gt;</code> token.</li>
+<li>The goal is to predict these missing words based on their surrounding context (<a href="#fig-transformer-encoder" class="quarto-xref">Figure&nbsp;10</a>).</li>
+</ul></li>
+<li><strong>Learning Outcomes</strong>:
+<ul>
+<li><strong>Syntax</strong>: Learning that adjectives (e.g., <span style="color:dodgerblue">red</span>) typically precede nouns (<span style="color:dodgerblue">house</span>).</li>
+<li><strong>Superficial Common Sense</strong>: Assigning a higher probability to “<span style="color:dodgerblue">train</span>” than “<span style="color:dodgerblue">peanut</span>” in the context of “<span style="color:dodgerblue">The <code>&lt;maskStatus&gt;</code> pulled into the station</span>”.</li>
+</ul></li>
+<li><strong>Bi-directional Context</strong>: Unlike autoregressive models, BERT uses both left and right context to predict missing words.</li>
+<li><strong>Secondary Task</strong>: Next-sentence prediction (NSP) aims to determine if two sentence segments were originally adjacent.</li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-encoder" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-encoder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerEncoder.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Figure&nbsp;10: Pre-training for BERT-like encoder. The input tokens (and a special <cls> token denoting the start of the sequence) are converted to word embeddings. Here, these are represented as rows rather than columns, so the box labeled “word embeddings” is \mathbf{X}^T. These embeddings are passed through a series of transformer layers (orange connections indicate that every token attends to every other token in these layers) to create a set of output embeddings. A small fraction of the input tokens are randomly replaced with a generic <mask> token. In pre-training, the goal is to predict the missing word from the associated output embedding. To this end, the outputs corresponding to the masked tokens are passed through softmax functions, and a multiclass classification loss (see section 5.24) is applied to each. This task has the advantage that it uses both the left and right context to predict the missing word but has the disadvantage that it does not make efficient use of data; here, seven tokens need to be processed to add two terms to the loss function."><img src="assets/images/TransformerEncoder.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-encoder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: Pre-training for BERT-like encoder. The input tokens (and a special <code>&lt;cls&gt;</code> token denoting the start of the sequence) are converted to word embeddings. Here, these are represented as rows rather than columns, so the box labeled “word embeddings” is <span class="math inline">\(\mathbf{X}^T\)</span>. These embeddings are passed through a series of transformer layers (orange connections indicate that every token attends to every other token in these layers) to create a set of output embeddings. A small fraction of the input tokens are randomly replaced with a generic <code>&lt;mask&gt;</code> token. In pre-training, the goal is to predict the missing word from the associated output embedding. To this end, the outputs corresponding to the masked tokens are passed through softmax functions, and a multiclass classification loss (see section 5.24) is applied to each. This task has the advantage that it uses both the left and right context to predict the missing word but has the disadvantage that it does not make efficient use of data; here, seven tokens need to be processed to add two terms to the loss function.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="fine-tuning" class="level3">
+<h3 class="anchored" data-anchor-id="fine-tuning">Fine-tuning</h3>
+<p>During fine-tuning, BERT’s parameters are specialized for a particular task by appending a task-specific output layer.</p>
+<ul>
+<li><strong>Text Classification</strong>:
+<ul>
+<li>The embedding of the special <code>&lt;cls&gt;</code> token (placed at the start of every sequence) is mapped to a single value.</li>
+<li>Example: <strong>Sentiment Analysis</strong> (<a href="#fig-transformer-encoder-finetune" class="quarto-xref">Figure&nbsp;11</a> a), where the output is passed through a sigmoid to predict if a review is positive or negative.</li>
+</ul></li>
+<li><strong>Word Classification</strong>:
+<ul>
+<li>Each input embedding <span class="math inline">\(\mathbf{x}_n\)</span> is mapped to a vector representing <span class="math inline">\(E\)</span> entity types.</li>
+<li>Example: <strong>Named Entity Recognition (NER)</strong> (<a href="#fig-transformer-encoder-finetune" class="quarto-xref">Figure&nbsp;11</a> b), classifying words as persons, places, or organizations.</li>
+</ul></li>
+<li><strong>Text Span Prediction</strong>:
+<ul>
+<li>Used for <strong>Question Answering</strong> (e.g., SQuAD).</li>
+<li>The model predicts two numbers per token, indicating the probability that the token is the start or end of the answer span.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-encoder-finetune" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-encoder-finetune-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerEncoderFineTune.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="Figure&nbsp;11: After pre-training, the encoder is fine-tuned using manually labeled data to solve a particular task. Usually, a linear transformation or a multi-layer perceptron (MLP) is appended to the encoder to produce whatever output is required. a) Example text classification task. In this sentiment classification task, the <cls> token embedding is used to predict the probability that the review is positive. b) Example word classification task. In this named entity recognition problem, the embedding for each word is used to predict whether the word corresponds to a person, place, or organization, or is not an entity."><img src="assets/images/TransformerEncoderFineTune.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-encoder-finetune-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11: After pre-training, the encoder is fine-tuned using manually labeled data to solve a particular task. Usually, a linear transformation or a multi-layer perceptron (MLP) is appended to the encoder to produce whatever output is required. a) Example text classification task. In this sentiment classification task, the <code>&lt;cls&gt;</code> token embedding is used to predict the probability that the review is positive. b) Example word classification task. In this named entity recognition problem, the embedding for each word is used to predict whether the word corresponds to a person, place, or organization, or is not an entity.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+
+<ul>
+<li><strong>Architecture</strong>: GPT-3 is a prototypical <strong>decoder</strong> model. It consists of a series of transformer layers which, like their encoder counterparts, operate on learned word embeddings.</li>
+<li><strong>Objective</strong>: While an <strong>encoder</strong> builds a rich representation to be fine-tuned for diverse tasks, the <strong>decoder</strong> has one primary goal: <strong>next-token generation</strong>.</li>
+<li><strong>Inference</strong>: A decoder generates coherent text passages by iteratively feeding each predicted token back into the model as input for the subsequent step.</li>
+</ul>
+<section id="language-modeling" class="level3">
+<h3 class="anchored" data-anchor-id="language-modeling">Language modeling</h3>
+<p>GPT-3 is an <strong>autoregressive</strong> language model. Its behavior is best understood by factoring the joint probability <span class="math inline">\(\P(t_1, t_2, \dots, t_N)\)</span> of a sequence of tokens.</p>
+<ul>
+<li><strong>Example</strong>: Consider the sentence: “<span style="color:dodgerblue">It takes great courage to let yourself appear weak</span>”. The joint probability can be factored into a chain of conditional probabilities: <span class="math display">\[
+\begin{aligned}
+  \P(\text{sentence}) &amp;= \P(\text{It}) \times \P(\text{takes} | \text{It}) \\
+  &amp;\quad \times \P(\text{great} | \text{It takes}) \\
+  &amp;\quad \times \cdots \\
+  &amp;\quad \times \P(\text{weak} | \text{It takes great courage to let yourself appear}).
+\end{aligned}
+\]</span></li>
+<li><strong>General Formulation</strong>: An autoregressive model directly computes the conditional distribution of each token given all its predecessors, effectively finding: <span class="math display">\[\P(t_1, t_2, \dots, t_N) = \P(t_1) \prod_{n=2}^{N} \P(t_n | t_1, \dots, t_{n-1}) .\]</span></li>
+<li><strong>Connection</strong>: Maximizing the joint probability of a text corpus is equivalent to optimizing the model for the next-token prediction task. ### Masked self-attention</li>
+</ul>
+<p>To train a decoder efficiently, we want to maximize the sum of log conditional probabilities for a full sentence in a single forward pass.</p>
+<ul>
+<li><strong>The Problem: Future Information Check</strong>:
+<ul>
+<li>In a standard self-attention layer, every token can interact with every other token.</li>
+<li>When calculating the probability of a token (e.g., <span class="math inline">\(\P(\text{great} | \text{It takes})\)</span>), the model could “cheat” by looking at the upcoming tokens in the ground-truth sentence (like “courage,” “to,” etc.) instead of learning to predict the next word.</li>
+</ul></li>
+<li><strong>The Solution: Causal Masking</strong>:
+<ul>
+<li>We ensure tokens only attend to positions at or before their own index.</li>
+<li><strong>Implementation</strong>: Set the dot products for future positions to <span class="math inline">\(-\infty\)</span> before the <strong>softmax[·]</strong> operation. This results in zero attention weight for all “future” tokens.</li>
+</ul></li>
+<li><strong>The Decoder Pipeline</strong>:
+<ul>
+<li>Tokens are converted to embeddings and passed through series of transformer layers which use <strong>masked self-attention</strong>.</li>
+<li>Each output embedding represents a <strong>partial sentence</strong>.</li>
+<li>A final linear layer maps each embedding to the vocabulary size, followed by a <strong>softmax[·]</strong> to get probabilities.</li>
+<li><strong>Training</strong>: Maximize the sum of log probabilities of the ground-truth next tokens at every position (<a href="#fig-transformer-decoder" class="quarto-xref">Figure&nbsp;12</a>).</li>
+</ul></li>
+</ul>
+</section>
+<section id="generating-text-from-a-decoder" class="level3">
+<h3 class="anchored" data-anchor-id="generating-text-from-a-decoder">Generating text from a decoder</h3>
+<p>The autoregressive nature of the decoder makes it a <strong>generative model</strong> that can produce plausible text by sampling from its own output distributions.</p>
+<ul>
+<li><strong>Mechanism</strong>:
+<ol type="1">
+<li>Start with an input sequence (usually beginning with a special <code>&lt;start&gt;</code> token).</li>
+<li>The model outputs a probability distribution over the vocabulary.</li>
+<li><strong>Sample</strong> a token from this distribution or pick the most likely candidate (greedy approach).</li>
+<li>Append the new token and feed the extended sequence back into the model to predict the next word.</li>
+</ol></li>
+<li><strong>Efficiency</strong>: Because of masking, prior embeddings are independent of future tokens and do not change, allowing for efficient recycling of earlier computation.</li>
+<li><strong>Common Search Strategies</strong>:
+<ul>
+<li><strong>Beam Search</strong>: Maintains multiple candidate completions and tracks their combined probabilities to find the most likely overall sequence.</li>
+<li><strong>Top-k Sampling</strong>: Randomly draws the next word only from the <span class="math inline">\(K\)</span> most likely candidates to ensure coherence and avoid low-probability “linguistic dead ends.”</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-decoder" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-decoder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerDecoder.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="Figure&nbsp;12: Training GPT3-type decoder network. The tokens are mapped to word embeddings with a special <start> token at the beginning of the sequence. The embeddings are passed through a series of transformer layers that use masked self-attention. Here, each position in the sentence can only attend to its own embedding and those of tokens earlier in the sequence (orange connections). The goal at each position is to maximize the probability of the following ground truth token in the sequence. In other words, at position one, we want to maximize the probability of the token It; at position two, we want to maximize the probability of the token takes; and so on. Masked self-attention ensures the system cannot cheat by looking at subsequent inputs. The autoregressive task has the advantage of making efficient use of the data since every word contributes a term to the loss function. However, it only exploits the left context of each word."><img src="assets/images/TransformerDecoder.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-decoder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;12: Training GPT3-type decoder network. The tokens are mapped to word embeddings with a special <code>&lt;start&gt;</code> token at the beginning of the sequence. The embeddings are passed through a series of transformer layers that use masked self-attention. Here, each position in the sentence can only attend to its own embedding and those of tokens earlier in the sequence (orange connections). The goal at each position is to maximize the probability of the following ground truth token in the sequence. In other words, at position one, we want to maximize the probability of the token <span style="color:dodgerblue">It</span>; at position two, we want to maximize the probability of the token <span style="color:dodgerblue">takes</span>; and so on. Masked self-attention ensures the system cannot cheat by looking at subsequent inputs. The autoregressive task has the advantage of making efficient use of the data since every word contributes a term to the loss function. However, it only exploits the left context of each word.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="gpt3-and-few-shot-learning" class="level3">
+<h3 class="anchored" data-anchor-id="gpt3-and-few-shot-learning">GPT3 and few-shot learning</h3>
+<p><em>Large language models</em> (LLMs) like GPT3 apply these concepts on an unprecedented scale to achieve remarkable text generation and task-solving capabilities.</p>
+<section id="large-scale-transformers" class="level4">
+<h4 class="anchored" data-anchor-id="large-scale-transformers">Large-scale transformers</h4>
+<ul>
+<li><strong>GPT3 Scale</strong>:
+<ul>
+<li><strong>Layers</strong>: 96 transformer layers.</li>
+<li><strong>Embeddings</strong>: Vocabulary entries mapped to vectors of size 12,288.</li>
+<li><strong>Heads</strong>: 96 self-attention heads (query, key, value dimension = 128).</li>
+<li><strong>Parameters</strong>: 175 billion.</li>
+<li><strong>Training Data</strong>: 300 billion tokens.</li>
+<li><strong>Context Window</strong>: 2,048 tokens processed simultaneously.</li>
+</ul></li>
+<li><strong>Example: Coherent Generation</strong>:
+<ul>
+<li>Context: “<span style="color:orange">Understanding Deep Learning is a new textbook from MIT Press by Simon Prince that</span>”</li>
+<li>Generation: “<span style="color:darkcyan">s designed to offer an accessible, broad introduction to the field. …</span>”</li>
+<li>The model can generate large, plausible (though sometimes factually inaccurate) bodies of text.</li>
+</ul></li>
+</ul>
+</section>
+<section id="zero-shot-and-few-shot-learning" class="level4">
+<h4 class="anchored" data-anchor-id="zero-shot-and-few-shot-learning">Zero-shot and few-shot learning</h4>
+<p>One surprising emergent property of models at this scale is their ability to perform diverse tasks <strong>without fine-tuning</strong>.</p>
+<ul>
+<li><strong>Few-Shot Learners</strong>:
+<ul>
+<li>By providing a few examples of correct question/answer pairs in the prompt, the model “learns” the pattern and completes subsequent tasks correctly.</li>
+<li><strong>Mechanism: Pattern Completion</strong>:
+<ul>
+<li><span style="color:orange"><strong>Poor English input:</strong> I eated the purple berries.</span></li>
+<li><span style="color:darkcyan"><strong>Good English output:</strong> I ate the purple berries.</span></li>
+<li><span style="color:orange"><strong>Poor English input:</strong> Thank you for picking me as your designer. I’d appreciate it.</span></li>
+<li><span style="color:darkcyan"><strong>Good English output:</strong> Thank you for choosing me as your designer. I appreciate it.</span></li>
+</ul></li>
+</ul></li>
+<li><strong>Versatility</strong>: This phenomenon extends to code generation, arithmetic, translation, and general question answering.</li>
+<li><strong>Current Limitations</strong>:
+<ul>
+<li>Performance is often erratic in practice.</li>
+<li>It remains unclear to what extent these models and their successors are truly extrapolating original solutions rather than interpolating or copying verbatim from their massive training corpora.</li>
+</ul></li>
+</ul>
+</section>
+</section>
+</div>
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+
+<p>Translation between languages is an example of a <strong>sequence-to-sequence</strong> task. One common approach uses both an encoder (to compute a good representation of the source sentence) and a decoder (to generate the sentence in the target language). This is aptly called an <strong>encoder-decoder</strong> model.</p>
+<ul>
+<li><strong>Workflow Example: English to French Translation</strong>:
+<ul>
+<li><strong>Encoder Path</strong>: Receives the English sentence and processes it through a series of transformer layers to create an output representation for each token.</li>
+<li><strong>Decoder Path</strong>: During training, the decoder receives the ground truth translation in French. It passes this through masked self-attention to predict the following word at each position.</li>
+<li><strong>Conditioning</strong>: Crucially, the decoder layers also attend to the output of the encoder. Consequently, each French output word is conditioned on both the previous output words <em>and</em> the source English sentence (<a href="#fig-transformer-decoder" class="quarto-xref">Figure&nbsp;12</a>).</li>
+</ul></li>
+<li><strong>Cross-Attention Mechanism</strong>:
+<ul>
+<li>This is achieved by modifying the transformer layers in the decoder.</li>
+<li>Originally, these consisted of a masked self-attention layer followed by a neural network applied individually to each embedding (<a href="#fig-transformer-decoder" class="quarto-xref">Figure&nbsp;12</a>).</li>
+<li>A new self-attention layer is added between these two components, in which the decoder embeddings attend to the encoder embeddings. This uses a version of self-attention known as <strong>encoder-decoder attention</strong> or <strong>cross-attention</strong>.</li>
+</ul></li>
+<li><strong>Cross-Attention Logic</strong>: The queries are computed from the decoder embeddings, and the keys and values from the encoder embeddings (<a href="#fig-transformer-block-sa-cross" class="quarto-xref">Figure&nbsp;13</a>).</li>
+</ul>
+<div class="left-caption">
+<div id="fig-transformer-block-sa-cross" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-transformer-block-sa-cross-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerBlockSACross.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-13" title="Figure&nbsp;13: Cross-attention. The flow of computation is the same as in standard self-attention, but the queries are calculated from the decoder embeddings \mathbf{X}_{dec}, and the keys and values from the encoder embeddings \mathbf{X}_{enc}. For translation tasks, the encoder contains information about the source language statistics, and the decoder contains information about the target language statistics."><img src="assets/images/TransformerBlockSACross.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-transformer-block-sa-cross-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;13: Cross-attention. The flow of computation is the same as in standard self-attention, but the queries are calculated from the decoder embeddings <span class="math inline">\(\mathbf{X}_{dec}\)</span>, and the keys and values from the encoder embeddings <span class="math inline">\(\mathbf{X}_{enc}\)</span>. For translation tasks, the encoder contains information about the source language statistics, and the decoder contains information about the target language statistics.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div id="tabset-2-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-4-tab">
+
+<p>Transformers can be adapted to computer vision by treating an image as a sequence of patches.</p>
+<ul>
+<li><strong>Mechanism</strong>:
+<ul>
+<li><strong>Patching</strong>: Divide the image into <span class="math inline">\(16 \times 16\)</span> patches (<a href="#fig-vision-transformer" class="quarto-xref">Figure&nbsp;14</a>).</li>
+<li><strong>Embedding</strong>: Each patch is mapped to an input embedding via a learned linear transformation.</li>
+<li><strong>Positional Encoding</strong>: Standard 1D positional encodings are added to retain spatial relationships.</li>
+</ul></li>
+<li><strong>Architecture</strong>:
+<ul>
+<li>An <strong>encoder-only</strong> model that utilizes a special <code>&lt;cls&gt;</code> token (similar to BERT).</li>
+<li>The <code>&lt;cls&gt;</code> token embedding is used for the final classification task.</li>
+</ul></li>
+<li><strong>Training Strategy</strong>:
+<ul>
+<li>Uses <strong>supervised pre-training</strong> on massive datasets (e.g., 303 million labeled images from 18,000 classes).</li>
+<li>After pre-training, the final classification layer is replaced and fine-tuned for specific tasks.</li>
+</ul></li>
+<li><strong>Performance &amp; Inductive Bias</strong>:
+<ul>
+<li>Achieved competitive results (11.45% top-1 error on ImageNet).</li>
+<li><strong>Conclusion</strong>: The strong inductive bias of CNNs (locality, translation invariance) can only be superseded by transformers when they are trained on extremely large-scale data.</li>
+</ul></li>
+</ul>
+<div class="left-caption">
+<div id="fig-vision-transformer" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-vision-transformer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/TransformerVisionTransformer.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-14" title="Figure&nbsp;14: Vision transformer. The VisionTransformer (ViT) breaks the image into a grid of patches (16 \times 16 in the original implementation). Each of these is projected via a learned transformation to become a patch embedding. These patch embeddings are fed into a transformer encoder network, and the <cls> token is used to predict the class probabilities."><img src="assets/images/TransformerVisionTransformer.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-vision-transformer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;14: Vision transformer. The VisionTransformer (ViT) breaks the image into a grid of patches (<span class="math inline">\(16 \times 16\)</span> in the original implementation). Each of these is projected via a learned transformation to become a patch embedding. These patch embeddings are fed into a transformer encoder network, and the <code>&lt;cls&gt;</code> token is used to predict the class probabilities.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -483,7 +1174,7 @@ $$
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
+        var filterRegex = new RegExp('/' + window.location.host + '/');
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
@@ -823,6 +1514,38 @@ $$
   </div>
 </nav>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
