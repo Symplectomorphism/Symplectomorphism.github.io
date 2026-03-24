@@ -44,6 +44,9 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="../../../site_libs/bootstrap/bootstrap-8402731c99c2101ab41aada8a5804e10.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -82,10 +85,40 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../../styles.css">
 <meta property="og:title" content="Graph Neural Networks – Satici Lab">
 <meta property="og:description" content="Research website for the Satici Lab">
+<meta property="og:image" content="https://Symplectomorphism.github.io/teaching/grad_courses/deep_learning/assets/images/GraphRealWorld.svg">
 <meta property="og:site_name" content="Satici Lab">
 </head>
 
@@ -397,6 +430,12 @@ $$
 </header>
 
 
+<p>Graphs present three primary challenges for deep learning:</p>
+<ul>
+<li><strong>Structural Variability</strong>: Unlike fixed-grid data (like images), graphs have irregular and variable topologies, making it difficult to design expressive architectures that generalize across different structures.</li>
+<li><strong>Extreme Scalability</strong>: Many real-world graphs, such as social networks, contain billions of nodes and edges, requiring scalable and efficient processing.</li>
+<li><strong>Non-Standard Learning Paradigms</strong>: Often, we only have access to a single monolithic graph. This departs from the traditional setup of many independent training and testing examples.</li>
+</ul>
 <div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
@@ -408,22 +447,370 @@ $$
 </div><div class="tabset-margin-content tabset-1-5-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Graphs</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Graph representation</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">GNNs, tasks, losses</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false" href="">GCNs</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-5" role="tab" aria-controls="tabset-1-5" aria-selected="false" href="">Layers for GCNs</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Graphs</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Graph representation</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">GNNs, tasks, losses</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false" href="">Graph Convolutional Networks</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-5" role="tab" aria-controls="tabset-1-5" aria-selected="false" href="">Layers for GCNs</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
+<section id="what-is-a-graph" class="level3">
+<h3 class="anchored" data-anchor-id="what-is-a-graph">What is a Graph?</h3>
+<p>A graph is a versatile mathematical structure consisting of <strong>nodes</strong> (vertices) and <strong>edges</strong> (links). While a graph theoretically permits connections between any pair of nodes, real-world graphs are typically <strong>sparse</strong>, meaning only a small fraction of possible edges are present.</p>
+<section id="naturally-occurring-graphs" class="level4">
+<h4 class="anchored" data-anchor-id="naturally-occurring-graphs">Naturally Occurring Graphs</h4>
+<p>Many systems are inherently graphical in nature:</p>
+<ul>
+<li><strong>Road Networks</strong>: Nodes represent physical intersections or locations, while edges denote the roads connecting them (see <a href="#fig-graph-realworld" class="quarto-xref">Figure&nbsp;1</a> a).</li>
+<li><strong>Molecules</strong>: Atoms act as nodes, and chemical bonds form the edges (see <a href="#fig-graph-realworld" class="quarto-xref">Figure&nbsp;1</a> b).</li>
+<li><strong>Circuits</strong>: Components and junctions are represented as nodes, with electrical connections serving as edges (see <a href="#fig-graph-realworld" class="quarto-xref">Figure&nbsp;1</a> c).</li>
+</ul>
+<div class="left-caption">
+<div id="fig-graph-realworld" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-realworld-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphRealWorld.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1: Real-world graphs. Some objects, such as a) road networks, b) molecules, and c) electrical circuits, are naturally structured as graphs."><img src="assets/images/GraphRealWorld.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-realworld-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Real-world graphs. Some objects, such as a) road networks, b) molecules, and c) electrical circuits, are naturally structured as graphs.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="data-represented-as-graphs" class="level4">
+<h4 class="anchored" data-anchor-id="data-represented-as-graphs">Data Represented as Graphs</h4>
+<p>Graphs are also powerful abstractions for diverse datasets:</p>
+<ul>
+<li><strong>Social Networks</strong>: People (nodes) connected by friendships or interactions (edges).</li>
+<li><strong>Scientific Literature</strong>: Papers (nodes) linked by citations (edges).</li>
+<li><strong>Knowledge Bases</strong>: Articles or concepts (nodes) connected by hyperlinks or semantic relationships (edges).</li>
+<li><strong>Software Systems</strong>: Syntax tokens or functions (nodes) linked by control flow or data dependencies (edges).</li>
+<li><strong>Point Clouds</strong>: 3D points (nodes) connected based on spatial proximity (edges).</li>
+<li><strong>Biological Interactions</strong>: Proteins (nodes) and their biochemical interactions (edges).</li>
+</ul>
+<p>Furthermore, even simple structures can be viewed through a graph-theoretic lens. A <strong>set</strong> (unordered list) can be treated as a graph where every member connects to every other. Similarly, an <strong>image</strong> can be viewed as a graph with a regular topology, where pixels are nodes connected to their adjacent neighbors.</p>
+</section>
+</section>
+<section id="types-of-graphs" class="level3">
+<h3 class="anchored" data-anchor-id="types-of-graphs">Types of Graphs</h3>
+<p>Graphs can be categorized in several ways based on the nature of their nodes and edges:</p>
+<ul>
+<li><strong>Undirected Graphs</strong>: Connections are symmetric; each pair of connected individuals or objects has a mutual relationship with no inherent directionality (see <a href="#fig-graph-types" class="quarto-xref">Figure&nbsp;2</a> a).</li>
+<li><strong>Directed Graphs</strong>: Relationships are one-way; for example, in a citation network, one publication cites another, making the link asymmetric (see <a href="#fig-graph-types" class="quarto-xref">Figure&nbsp;2</a> b).</li>
+<li><strong>Knowledge Graphs</strong>: These are often <strong>directed heterogeneous multigraphs</strong> (see <a href="#fig-graph-types" class="quarto-xref">Figure&nbsp;2</a> c).
+<ul>
+<li><strong>Heterogeneous</strong>: Nodes can represent different types of entities (e.g., people, countries, companies).</li>
+<li><strong>Multigraph</strong>: Multiple edges representing different relation types can exist between the same two nodes.</li>
+</ul></li>
+<li><strong>Geometric Graphs</strong>: These are formed by connecting points in space based on proximity (e.g., a 3D point cloud of an airplane where each point is connected to its <span class="math inline">\(K\)</span>-nearest neighbors, as seen in <a href="#fig-graph-types" class="quarto-xref">Figure&nbsp;2</a> d).</li>
+<li><strong>Hierarchical Graphs</strong>: These represent nested topologies where nodes themselves represent sub-graphs (e.g., representing a scene where a room, table, and light are each graphs that form nodes in a larger adjacency model, see <a href="#fig-graph-types" class="quarto-xref">Figure&nbsp;2</a> e).</li>
+</ul>
+<p>While deep learning can be applied to all these structures, this chapter focuses primarily on <strong>undirected graphs</strong>.</p>
+<div class="left-caption">
+<div id="fig-graph-types" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-types-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphTypes.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;2: Types of graph representations: (a) Undirected graphs: symmetric relationships (e.g., social networks). (b) Directed graphs: asymmetric relationships (e.g., citation networks). (c) Heterogeneous multigraphs: nodes with diverse types and multiple edge types (e.g., knowledge graphs). (d) Geometric graphs: graphs derived from point sets with spatial coordinates (adapted from Hu et al., 2022). (e) Hierarchical graphs: Graphs where nodes can represent sub-graphs (e.g., scene representations, adapted from Fernández-Madrigal &amp; González, 2002)."><img src="assets/images/GraphTypes.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-types-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: Types of graph representations: (a) Undirected graphs: symmetric relationships (e.g., social networks). (b) Directed graphs: asymmetric relationships (e.g., citation networks). (c) Heterogeneous multigraphs: nodes with diverse types and multiple edge types (e.g., knowledge graphs). (d) Geometric graphs: graphs derived from point sets with spatial coordinates (adapted from Hu et al., 2022). (e) Hierarchical graphs: Graphs where nodes can represent sub-graphs (e.g., scene representations, adapted from Fernández-Madrigal &amp; González, 2002).
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 
+<p>In addition to the graph structure itself, information is typically associated with each node and edge:</p>
+<ul>
+<li><strong>Node Embeddings</strong>: In a social network, each person (node) might be represented by a fixed-length vector representing their interests.</li>
+<li><strong>Edge Embeddings</strong>: In a road network, each connection (edge) might be characterized by its length, speed limit, and historical accident frequency.</li>
+</ul>
+<p>Formally, a graph consists of a set of <span class="math inline">\(N\)</span> nodes connected by a set of <span class="math inline">\(E\)</span> edges. This can be encoded by three matrices: <span class="math inline">\(\mathbf{A}\)</span> (structure/adjacency), <span class="math inline">\(\mathbf{X}\)</span> (concatenated node embeddings), and <span class="math inline">\(\mathbf{E}\)</span> (edge embeddings) (see <a href="#fig-graph-node-edge-adjacency" class="quarto-xref">Figure&nbsp;3</a>).</p>
+<section id="graph-matrices" class="level3">
+<h3 class="anchored" data-anchor-id="graph-matrices">Graph Matrices</h3>
+<p>The graph structure is defined by the <strong>adjacency matrix</strong> <span class="math inline">\(\mathbf{A}\)</span>, an <span class="math inline">\(N \times N\)</span> binary matrix where entry <span class="math inline">\((m,n)\)</span> is set to one if an edge exists between nodes <span class="math inline">\(m\)</span> and <span class="math inline">\(n\)</span>, and zero otherwise. For undirected graphs, this matrix is symmetric. For large, sparse graphs, it is often more memory-efficient to store <span class="math inline">\(\mathbf{A}\)</span> as a list of connections <span class="math inline">\((m, n)\)</span>.</p>
+<p>Each node has an associated <span class="math inline">\(D\)</span>-dimensional node data matrix <span class="math inline">\(\mathbf{X}\)</span> which stores embeddings <span class="math inline">\(\mathbf{x}^{(n)}\)</span> of length <span class="math inline">\(D\)</span>. Similarly, edge embeddings <span class="math inline">\(\mathbf{e}^{(e)}\)</span> of length <span class="math inline">\(D_E\)</span> are collected into the <span class="math inline">\(D_E \times E\)</span> matrix <span class="math inline">\(\mathbf{E}\)</span>. Initially, we focus on node embeddings and will return to edge embeddings later in sectoin 13.9.</p>
+<div class="left-caption">
+<div id="fig-graph-node-edge-adjacency" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-node-edge-adjacency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphNodeEdgeAdjacency.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;3: Matrix-based graph representation: (a) An example graph with nodes and edges accompanied by their respective embeddings (feature vectors). (b) The adjacency matrix \mathbf{A}, a binary matrix where A_{mn}=1 indicates a connection between nodes m and n. (c) The node data matrix \mathbf{X} containing concatenated node embeddings. (d) The edge data matrix \mathbf{E} containing edge embeddings."><img src="assets/images/GraphNodeEdgeAdjacency.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-node-edge-adjacency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: Matrix-based graph representation: (a) An example graph with nodes and edges accompanied by their respective embeddings (feature vectors). (b) The <strong>adjacency matrix</strong> <span class="math inline">\(\mathbf{A}\)</span>, a binary matrix where <span class="math inline">\(A_{mn}=1\)</span> indicates a connection between nodes <span class="math inline">\(m\)</span> and <span class="math inline">\(n\)</span>. (c) The <strong>node data matrix</strong> <span class="math inline">\(\mathbf{X}\)</span> containing concatenated node embeddings. (d) The <strong>edge data matrix</strong> <span class="math inline">\(\mathbf{E}\)</span> containing edge embeddings.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="properties-of-the-adjacency-matrix" class="level3">
+<h3 class="anchored" data-anchor-id="properties-of-the-adjacency-matrix">Properties of the Adjacency Matrix</h3>
+<p>The adjacency matrix can be used to analyze graph neighbors using linear algebra. Consider encoding the <span class="math inline">\(n^{th}\)</span> node’s position as a one-hot column vector (where all entries are zero except at position <span class="math inline">\(n\)</span>). Pre-multiplying this vector by the adjacency matrix <span class="math inline">\(\mathbf{A}\)</span> extracts its <span class="math inline">\(n^{th}\)</span> column, resulting in a vector with ones at the neighbor positions—corresponding to a walk of length one from the starting node.</p>
+<p>Repeating this operation (i.e., pre-multiplying by <span class="math inline">\(\mathbf{A}\)</span> again) results in a vector containing the number of walks of length two from node <span class="math inline">\(n\)</span> to every other node (see <a href="#fig-graph-adjacency" class="quarto-xref">Figure&nbsp;4</a> d-f).</p>
+<p>In general, raising the adjacency matrix to the power of <span class="math inline">\(L\)</span> yields the number of unique <strong>walks</strong> of length <span class="math inline">\(L\)</span> from node <span class="math inline">\(m\)</span> to node <span class="math inline">\(n\)</span>, stored in the <span class="math inline">\((m, n)\)</span> entry of <span class="math inline">\(\mathbf{A}^L\)</span> (see <a href="#fig-graph-adjacency" class="quarto-xref">Figure&nbsp;4</a> a-c). Unlike paths, walks can revisit nodes. However, <span class="math inline">\(\mathbf{A}^L\)</span> still provides critical connectivity data: a non-zero entry at <span class="math inline">\((m, n)\)</span> indicates that the distance from <span class="math inline">\(m\)</span> to <span class="math inline">\(n\)</span> is at most <span class="math inline">\(L\)</span>.</p>
+<div class="left-caption">
+<div id="fig-graph-adjacency" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-adjacency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphAdjacencyMultiply.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Figure&nbsp;4: Properties of the adjacency matrix: (a) Example graph. (b-c) The adjacency matrix \mathbf{A} and its square \mathbf{A}^2 encode the number of walks of length one and two, respectively, between nodes m and n. (d-f) Pre-multiplying a one-hot vector (representing node 6) by \mathbf{A} or \mathbf{A}^2 yields a vector showing reachable nodes in 1 or 2 steps. For instance, pre-multiplying by \mathbf{A} highlights nodes 5, 7, and 8, while pre-multiplying by \mathbf{A}^2 reveals paths to nodes 2, 3, 4, 5, and 8, including return paths to the starting node."><img src="assets/images/GraphAdjacencyMultiply.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-adjacency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Properties of the adjacency matrix: (a) Example graph. (b-c) The <strong>adjacency matrix</strong> <span class="math inline">\(\mathbf{A}\)</span> and its square <span class="math inline">\(\mathbf{A}^2\)</span> encode the number of walks of length one and two, respectively, between nodes <span class="math inline">\(m\)</span> and <span class="math inline">\(n\)</span>. (d-f) Pre-multiplying a one-hot vector (representing node 6) by <span class="math inline">\(\mathbf{A}\)</span> or <span class="math inline">\(\mathbf{A}^2\)</span> yields a vector showing reachable nodes in 1 or 2 steps. For instance, pre-multiplying by <span class="math inline">\(\mathbf{A}\)</span> highlights nodes 5, 7, and 8, while pre-multiplying by <span class="math inline">\(\mathbf{A}^2\)</span> reveals paths to nodes 2, 3, 4, 5, and 8, including return paths to the starting node.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="permutation-of-node-indices" class="level3">
+<h3 class="anchored" data-anchor-id="permutation-of-node-indices">Permutation of node indices</h3>
+<p>Node indexing in graphs is arbitrary; permuting the node indices results in a permutation of the columns of the node data matrix <span class="math inline">\(\mathbf{X}\)</span> and a permutation of both the rows and columns of the adjacency matrix <span class="math inline">\(\mathbf{A}\)</span>. However, notice that the underlying graph topology remains unchanged (see <a href="#fig-graph-node-equiv" class="quarto-xref">Figure&nbsp;5</a>). This is in distinct contrast to images, where permuting pixels results in a completely different image, or text, where permuting words alters the sentence’s meaning.</p>
+<p>The operation of exchanging node indices can be expressed mathematically via a <strong>permutation matrix</strong> <span class="math inline">\(\mathbf{P}\)</span>. This is a matrix where exactly one entry in each row and column is one, and all others are zero. If <span class="math inline">\(P_{mn}=1\)</span>, node <span class="math inline">\(m\)</span> maps to node <span class="math inline">\(n\)</span> after permutation. We can express the transformation between different indexings as:</p>
+<p><span id="eq-permutation"><span class="math display">\[
+\begin{aligned}
+\mathbf{X}' &amp;= \mathbf{X}\mathbf{P} \\
+\mathbf{A}' &amp;= \mathbf{P}^T\mathbf{A}\mathbf{P}
+\end{aligned}
+\tag{1}\]</span></span></p>
+<p>Crucially, any processing or neural architecture applied to a graph must be indifferent to these choice-of-index permutations. Otherwise, the model’s output would depend on the arbitrary ordering of nodes.</p>
+<div class="left-caption">
+<div id="fig-graph-node-equiv" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-node-equiv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphNodeEquiv.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Figure&nbsp;5: Permutation of node indices: (a-c) An example graph with its corresponding adjacency matrix and node embeddings. (d-f) The same graph with a different (arbitrary) ordering of node indices, resulting in different adjacency and node matrices. This illustrates that any network layer operating on a graph must be indifferent to the specific ordering of nodes—a property known as permutation invariance or equivariance."><img src="assets/images/GraphNodeEquiv.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-node-equiv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Permutation of node indices: (a-c) An example graph with its corresponding adjacency matrix and node embeddings. (d-f) The same graph with a different (arbitrary) ordering of node indices, resulting in different adjacency and node matrices. This illustrates that any network layer operating on a graph must be indifferent to the specific ordering of nodes—a property known as permutation invariance or equivariance.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
 
+<p>Supervised graph problems generally fall into one of three primary categories based on the scale of the prediction (see <a href="#fig-graph-problems" class="quarto-xref">Figure&nbsp;6</a>).</p>
+<section id="graph-level-tasks" class="level3">
+<h3 class="anchored" data-anchor-id="graph-level-tasks">Graph-level tasks</h3>
+<p>In graph-level tasks, the network assigns a label or estimates a continuous value from the entire graph, leveraging both its structure and node attributes. Examples include predicting the boiling point of a molecule (regression) or determining its toxicity to humans (classification).</p>
+<p>For these tasks, the output node embeddings are combined—most commonly via <strong>mean pooling</strong>—where all node embeddings <span class="math inline">\(\mathbf{h}_K^{(n)}\)</span> are averaged. This resulting vector is then mapped through a linear layer or a small neural network to a fixed-size representation. For binary classification, the probability that a graph belongs to a certain class might be given by:</p>
+<p><span id="eq-graph-level"><span class="math display">\[
+Pr(y = 1|\mathbf{X}, \mathbf{A}) = \text{sig}\left[\beta_K + \boldsymbol{\omega}_K \mathbf{H}_K \mathbf{1}/N\right]
+\tag{2}\]</span></span></p>
+<p>Here, <span class="math inline">\(\mathbf{H}_K\)</span> is the matrix of output embeddings, and post-multiplying by the column vector <span class="math inline">\(\mathbf{1}\)</span> (containing ones) and dividing by <span class="math inline">\(N\)</span> (number of nodes) computes the average.</p>
+</section>
+<section id="node-level-tasks" class="level3">
+<h3 class="anchored" data-anchor-id="node-level-tasks">Node-level tasks</h3>
+<p>In node-level tasks, the network assigns a label or value to each individual node. For instance, in a 3D point cloud of an airplane, the goal might be to classify each point as belonging to the “wings” or the “fuselage”. Predictions are made independently for each node <span class="math inline">\(n\)</span> based on its final-layer embedding:</p>
+<p><span id="eq-node-level"><span class="math display">\[
+Pr(y^{(n)} = 1|\mathbf{X}, \mathbf{A}) = \text{sig}\left[\beta_K + \boldsymbol{\omega}_K \mathbf{h}_K^{(n)}\right]
+\tag{3}\]</span></span></p>
+</section>
+<section id="edge-prediction-tasks" class="level3">
+<h3 class="anchored" data-anchor-id="edge-prediction-tasks">Edge prediction tasks</h3>
+<p>Edge prediction involves estimating the likelihood of a connection between any two nodes <span class="math inline">\(n\)</span> and <span class="math inline">\(m\)</span>. In a social network context, this might be used to suggest new friendships. This is essentially a binary classification problem where a pair of node embeddings is mapped to a single probability. One common approach is to take the dot product of the embeddings:</p>
+<p><span id="eq-edge-level"><span class="math display">\[
+Pr(y^{(mn)} = 1|\mathbf{X}, \mathbf{A}) = \text{sig}\left[\mathbf{h}^{(m)T} \mathbf{h}^{(n)}\right]
+\tag{4}\]</span></span></p>
+<div class="left-caption">
+<div id="fig-graph-problems" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-problems-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphProblems.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Figure&nbsp;6: Common tasks for graphs: The input consists of a graph represented by its adjacency matrix \mathbf{A} and node data matrix \mathbf{X}. A Graph Neural Network (GNN) processes these node embeddings by passing them through a series of layers, ensuring that the final-layer embeddings encode both individual node features and their structural context within the graph. (a) Graph classification: Node embeddings are combined (e.g., by averaging) into a single, fixed-size vector or ‘global embedding’, which is then passed to a softmax function to produce probabilities for graph-level classes. (b) Node classification: Each final node embedding is classified individually (e.g., represented by cyan and orange node colors). (c) Edge prediction: Node embeddings adjacent to a potential edge are combined (e.g., via dot product) and passed through a sigmoid function to estimate the probability that a missing edge should be present."><img src="assets/images/GraphProblems.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-problems-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Common tasks for graphs: The input consists of a graph represented by its <strong>adjacency matrix</strong> <span class="math inline">\(\mathbf{A}\)</span> and <strong>node data matrix</strong> <span class="math inline">\(\mathbf{X}\)</span>. A Graph Neural Network (GNN) processes these node embeddings by passing them through a series of layers, ensuring that the final-layer embeddings encode both individual node features and their structural context within the graph. (a) <strong>Graph classification</strong>: Node embeddings are combined (e.g., by averaging) into a single, fixed-size vector or ‘global embedding’, which is then passed to a softmax function to produce probabilities for graph-level classes. (b) <strong>Node classification</strong>: Each final node embedding is classified individually (e.g., represented by cyan and orange node colors). (c) <strong>Edge prediction</strong>: Node embeddings adjacent to a potential edge are combined (e.g., via dot product) and passed through a sigmoid function to estimate the probability that a missing edge should be present.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 <div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
 
+<p>While there are many GNN variants, we focus on <strong>spatial-based convolutional graph neural networks</strong>, or <strong>GCNs</strong>. These are “convolutional” in the sense that they update each node by aggregating information from its spatial neighbors, inducing a <strong>relational inductive bias</strong> that prioritizes local structure. This contrasts with spectral-based methods, which operate in the graph’s Fourier domain.</p>
+<p>A GCN layer is modeled as a function <span class="math inline">\(\mathbf{F}[\bullet]\)</span> with parameters <span class="math inline">\(\phi\)</span> that maps node embeddings from one stage to the next:</p>
+<p><span id="eq-gcn-stack"><span class="math display">\[
+\begin{aligned}
+\mathbf{H}_1 &amp;= \mathbf{F}[\mathbf{X}, \mathbf{A}, \phi_0] \\
+\mathbf{H}_2 &amp;= \mathbf{F}[\mathbf{H}_1, \mathbf{A}, \phi_1] \\
+&amp;\vdots \\
+\mathbf{H}_K &amp;= \mathbf{F}[\mathbf{H}_{K-1}, \mathbf{A}, \phi_{K-1}]
+\end{aligned}
+\tag{5}\]</span></span></p>
+<p>where <span class="math inline">\(\mathbf{X}\)</span> is the original input and <span class="math inline">\(\mathbf{H}_k\)</span> represents the embeddings at layer <span class="math inline">\(k\)</span>.</p>
+<section id="equivariance-and-invariance" class="level3">
+<h3 class="anchored" data-anchor-id="equivariance-and-invariance">Equivariance and invariance</h3>
+<p>Because node indexing is arbitrary, it is imperative that each GCN layer be <strong>equivariant</strong> to permutations. If a permutation matrix <span class="math inline">\(\mathbf{P}\)</span> is applied to the nodes, the output embeddings must be permuted in the exact same way:</p>
+<p><span id="eq-gcn-equivariance"><span class="math display">\[
+\mathbf{H}_{k+1}\mathbf{P} = \mathbf{F}[\mathbf{H}_k \mathbf{P}, \mathbf{P}^T \mathbf{A} \mathbf{P}, \phi_k]
+\tag{6}\]</span></span></p>
+<p>Individual node and edge predictions inherit this equivariance. However, for <strong>graph-level tasks</strong>, the final output must be <strong>invariant</strong> to node order, as the global property of the graph does not depend on how nodes are numbered.</p>
+</section>
+<section id="parameter-sharing" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-sharing">Parameter sharing</h3>
+<p>To handle variable graph topologies and save memory, GCNs employ <strong>parameter sharing</strong>. Instead of learning separate weights for every node position (which would require fixed graph sizes), the same shared parameters are used across all nodes. This forces the model to treat every part of the graph identically, drawing a direct parallel to how standard CNNs share filters across image pixels.</p>
+<p>In a GCN, neighbors send “messages” that are aggregated at each node. While images have a fixed number of neighbors (e.g., a <span class="math inline">\(3 \times 3\)</span> grid), graph nodes have variable degrees, meaning the aggregation operation must be able to handle any number of inputs.</p>
+</section>
+<section id="example-gcn-layer" class="level3">
+<h3 class="anchored" data-anchor-id="example-gcn-layer">Example GCN layer</h3>
+<p>A simple GCN layer (see <a href="#fig-graph-gcn" class="quarto-xref">Figure&nbsp;7</a>) aggregates information from neighboring nodes by summing their embeddings:</p>
+<p><span id="eq-gcn-agg"><span class="math display">\[
+\text{agg}[n, k] = \sum_{m \in \text{ne}[n]} \mathbf{h}_k^{(m)}
+\tag{7}\]</span></span></p>
+<p>where <span class="math inline">\(\text{ne}[n]\)</span> is the set of neighbors for node <span class="math inline">\(n\)</span>. We then apply a linear transformation <span class="math inline">\(\mathbf{\Omega}_k\)</span> to both the self-node and the aggregate, add a bias <span class="math inline">\(\beta_k\)</span>, and pass the result through a non-linearity <span class="math inline">\(\mathbf{a}[\cdot]\)</span> (like ReLU):</p>
+<p><span id="eq-gcn-update"><span class="math display">\[
+\mathbf{h}_{k+1}^{(n)} = \mathbf{a}\left[\beta_k + \mathbf{\Omega}_k \mathbf{h}_k^{(n)} + \mathbf{\Omega}_k \text{agg}[n, k]\right]
+\tag{8}\]</span></span></p>
+<p>We can express this more succinctly in matrix form by noting that <span class="math inline">\(\mathbf{H}_k \mathbf{A}\)</span> returns the sum of neighbor embeddings for all nodes. The complete layer update becomes:</p>
+<p><span id="eq-gcn-matrix"><span class="math display">\[
+\begin{aligned}
+\mathbf{H}_{k+1} &amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k + \mathbf{\Omega}_k \mathbf{H}_k \mathbf{A} \right] \\
+&amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{A} + \mathbf{I})\right]
+\end{aligned}
+\tag{9}\]</span></span></p>
+<p>where <span class="math inline">\(\mathbf{1}\)</span> is a vector of ones and <span class="math inline">\(\mathbf{I}\)</span> is the identity matrix. This simple architecture satisfies all design requirements: it is equivariant, handles variable neighbors, exploits graph structure, and shares parameters.</p>
+<div class="left-caption">
+<div id="fig-graph-gcn" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-gcn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphGCN.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure&nbsp;7: A simple Graph Convolutional Network (GCN) layer: (a) The input is a graph defined by its adjacency matrix \mathbf{A} and node embeddings in \mathbf{X}. (b) Each hidden layer update follows five steps: (i) aggregating neighboring node embeddings, (ii) applying a linear transformation \mathbf{\Omega} to the aggregate, (iii) applying the same \mathbf{\Omega} to the self-node, (iv) summing these results with a bias \mathbf{\beta}, and (v) passing the sum through a non-linear activation (e.g., ReLU). (c) This sequence repeats across layers—using unique parameters for each—to generate final contextualized embeddings at the end of the network."><img src="assets/images/GraphGCN.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-gcn-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: A simple Graph Convolutional Network (GCN) layer: (a) The input is a graph defined by its adjacency matrix <span class="math inline">\(\mathbf{A}\)</span> and node embeddings in <span class="math inline">\(\mathbf{X}\)</span>. (b) Each hidden layer update follows five steps: (i) aggregating neighboring node embeddings, (ii) applying a linear transformation <span class="math inline">\(\mathbf{\Omega}\)</span> to the aggregate, (iii) applying the same <span class="math inline">\(\mathbf{\Omega}\)</span> to the self-node, (iv) summing these results with a bias <span class="math inline">\(\mathbf{\beta}\)</span>, and (v) passing the sum through a non-linear activation (e.g., ReLU). (c) This sequence repeats across layers—using unique parameters for each—to generate final contextualized embeddings at the end of the network.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="example-graph-classification" class="level3">
+<h3 class="anchored" data-anchor-id="example-graph-classification">Example: graph classification</h3>
+<p>We now combine these ideas into a network that classifies molecules as toxic or harmless. The network inputs are the molecular adjacency matrix <span class="math inline">\(\mathbf{A}\)</span> and a node embedding matrix <span class="math inline">\(\mathbf{X}\)</span> consisting of one-hot vectors representing the 118 elements of the periodic table. These initial embeddings are transformed into a hidden dimension <span class="math inline">\(D\)</span> by a learnable weight matrix <span class="math inline">\(\mathbf{\Omega}_0\)</span>.</p>
+<p>The network architecture consists of a stack of GCN layers followed by mean pooling and a sigmoid output:</p>
+<p><span id="eq-mol-classification"><span class="math display">\[
+\begin{aligned}
+\mathbf{H}_1 &amp;= \mathbf{a}\left[\beta_0 \mathbf{1}^T + \mathbf{\Omega}_0 \mathbf{X}(\mathbf{A} + \mathbf{I})\right] \\
+\mathbf{H}_2 &amp;= \mathbf{a}\left[\beta_1 \mathbf{1}^T + \mathbf{\Omega}_1 \mathbf{H}_1(\mathbf{A} + \mathbf{I})\right] \\
+&amp;\vdots \\
+\mathbf{H}_K &amp;= \mathbf{a}\left[\beta_{K-1} \mathbf{1}^T + \mathbf{\Omega}_{K-1} \mathbf{H}_{K-1}(\mathbf{A} + \mathbf{I})\right] \\
+f[\mathbf{X}, \mathbf{A}, \mathbf{\Phi}] &amp;= \text{sig}\left[\beta_K + \mathbf{\omega}_K \mathbf{H}_K \mathbf{1}/N\right]
+\end{aligned}
+\tag{10}\]</span></span></p>
+<p>The final output <span class="math inline">\(f[\mathbf{X}, \mathbf{A}, \mathbf{\Phi}]\)</span> expresses the probability that the molecule is toxic.</p>
+</section>
+<section id="training-with-batches" class="level3">
+<h3 class="anchored" data-anchor-id="training-with-batches">Training with batches</h3>
+<p>Deep learning models typically leverage the parallelism of modern hardware by processing batches of training examples <span class="math inline">\(\{ \mathbf{X}_i, \mathbf{A}_i \}\)</span> concurrently. However, since each graph may have a different number of nodes, their adjacency and node matrices differ in size, preventing standard concatenation into fixed-size 3D tensors.</p>
+<p>A common “trick” to enable batching is to treat all <span class="math inline">\(I\)</span> graphs in a batch as a single, large, disjoint graph. The resulting block-diagonal adjacency matrix encodes the full structure, allowing the network equations to be run as a single instance. Mean pooling is then performed independently over each graph component to generate individual representations for the loss function.</p>
+</section>
+<section id="inductive-vs.-transductive-models" class="level3">
+<h3 class="anchored" data-anchor-id="inductive-vs.-transductive-models">Inductive vs.&nbsp;transductive models</h3>
+<p>Until this point, all of the models in this book have been <em>inductive</em>: we exploit a training set of labeled data to learn the relation between the inputs and outputs. Then we apply this to new test data. One way to think of this is that we are learning the rule that maps inputs to outputs and then applying it elsewhere.</p>
+<p>By contrast, a <em>transductive</em> model considers both the labeled and unlabeled data at the same time. It does not produce a rule but merely a labeling for the unknown outputs. This is sometimes termed <em>semi-supervised learning</em>. It has the advantage that it can use patterns in the unlabeled data to help make its decisions. However, it has the disadvantage that the model needs to be retrained when extra unlabeled data are added.</p>
+<p>Both problem types are commonly encountered for graphs (see <a href="#fig-inductive-transductive" class="quarto-xref">Figure&nbsp;8</a>). Sometimes, we have many labeled graphs and learn a mapping between the graph and the labels. For example, we might have many molecules, each labeled according to whether it is toxic to humans. We learn the rule that maps the graph to the toxic/non-toxic label and then apply this rule to new molecules. However, sometimes there is a single monolithic graph. In the graph of scientific paper citations, we might have labels indicating the field (physics, biology, etc.) for some nodes and wish to label the remaining nodes. Here, the training and test data are irrevocably connected.</p>
+<p>Graph-level tasks only occur in the inductive setting where there are training and test graphs. However, node-level tasks and edge prediction tasks can occur in either setting. In the transductive case, the loss function minimizes the mismatch between the model output and the ground truth where this is known. New predictions are computed by running the forward pass and retrieving the results where the ground truth is unknown.</p>
+<div class="left-caption">
+<div id="fig-inductive-transductive" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-inductive-transductive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphInductiveTransductive.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification task in the inductive setting. We are given a set of I training graphs, where the node labels (orange and cyan colors) are known. After training, we are given a test graph and must assign labels to each node. (b) Node classification in the transductive setting. There is one large graph in which some nodes have labels (orange and cyan colors), and others are unknown. We train the model to predict the known labels correctly and then examine the predictions at the unknown nodes."><img src="assets/images/GraphInductiveTransductive.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-inductive-transductive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification task in the inductive setting. We are given a set of <span class="math inline">\(I\)</span> training graphs, where the node labels (orange and cyan colors) are known. After training, we are given a test graph and must assign labels to each node. (b) Node classification in the transductive setting. There is one large graph in which some nodes have labels (orange and cyan colors), and others are unknown. We train the model to predict the known labels correctly and then examine the predictions at the unknown nodes.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 <div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
 
+<p>In the previous examples, we combined messages from adjacent nodes by summing them together with the transformed current node. This was accomplished by post-multiplying the node embedding matrix <span class="math inline">\(\mathbf{H}\)</span> by the adjacency matrix plus the identity <span class="math inline">\(\mathbf{A} + \mathbf{I}\)</span>. We now consider different approaches to both (i) the combination of the current embedding with the aggregated neighbors and (ii) the aggregation process itself.</p>
+<section id="combining-current-node-and-aggregated-neighbors" class="level3">
+<h3 class="anchored" data-anchor-id="combining-current-node-and-aggregated-neighbors">Combining current node and aggregated neighbors</h3>
+<p>In the example GCN layer above, we combined the aggregated neighbors <span class="math inline">\(\mathbf{HA}\)</span> with the current nodes <span class="math inline">\(\mathbf{H}\)</span> by just summing them:</p>
+<p><span id="eq-gcn-sum"><span class="math display">\[
+\mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{A} + \mathbf{I})\right]
+\tag{11}\]</span></span></p>
+<p>In another variation, the current node is multiplied by a factor of <span class="math inline">\((1 + \epsilon_k)\)</span> before contributing to the sum, where <span class="math inline">\(\epsilon_k\)</span> is a learned scalar that is different for each layer:</p>
+<p><span id="eq-diagonal-enhancement"><span class="math display">\[
+\mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{A} + (1 + \epsilon_k)\mathbf{I})\right]
+\tag{12}\]</span></span></p>
+<p>This is known as <em>diagonal enhancement</em>. A related variation applies a different linear transform <span class="math inline">\(\mathbf{\Psi}_k\)</span> to the current node:</p>
+<p><span id="eq-separate-transform"><span class="math display">\[
+\begin{aligned}
+\mathbf{H}_{k+1} &amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k \mathbf{A} + \mathbf{\Psi}_k \mathbf{H}_k\right] \\
+&amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + [\mathbf{\Omega}_k \,\, \mathbf{\Psi}_k] \begin{bmatrix} \mathbf{H}_k \mathbf{A} \\ \mathbf{H}_k \end{bmatrix}\right] \\
+&amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}'_k \begin{bmatrix} \mathbf{H}_k \mathbf{A} \\ \mathbf{H}_k \end{bmatrix}\right]
+\end{aligned}
+\tag{13}\]</span></span></p>
+<p>where we have defined <span class="math inline">\(\mathbf{\Omega}'_k = [\mathbf{\Omega}_k \,\, \mathbf{\Psi}_k]\)</span> in the third line.</p>
+</section>
+<section id="residual-connections" class="level3">
+<h3 class="anchored" data-anchor-id="residual-connections">Residual connections</h3>
+<p>With residual connections, the aggregated representation from the neighbors is transformed and passed through the activation function before summation or concatenation with the current node. For the latter case, the associated network equations are:</p>
+<p><span id="eq-residual-concat"><span class="math display">\[
+\mathbf{H}_{k+1} = \begin{bmatrix} \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k \mathbf{A}\right] \\ \mathbf{H}_k \end{bmatrix}
+\tag{14}\]</span></span></p>
+</section>
+<section id="mean-aggregation" class="level3">
+<h3 class="anchored" data-anchor-id="mean-aggregation">Mean aggregation</h3>
+<p>The above methods aggregate the neighbors by summing the node embeddings. However, it’s possible to combine the embeddings in different ways. Sometimes it’s better to take the average of the neighbors rather than the sum; this can be superior if the embedding information is more important and the structural information less so since the magnitude of the neighborhood contributions will not depend on the number of neighbors:</p>
+<p><span id="eq-mean-agg"><span class="math display">\[
+\mathbf{agg}[n] = \frac{1}{|\text{ne}[n]|} \sum_{m \in \text{ne}[n]} \mathbf{h}_m
+\tag{15}\]</span></span></p>
+<p>where as before, <span class="math inline">\(\text{ne}[n]\)</span> denotes a set containing the indices of the neighbors of the <span class="math inline">\(n^{th}\)</span> node. Equation <a href="#eq-mean-agg" class="quarto-xref">Equation&nbsp;15</a> can be computed neatly in matrix form by introducing the diagonal <span class="math inline">\(N \times N\)</span> degree matrix <span class="math inline">\(\mathbf{D}\)</span>. Each non-zero element of this matrix contains the number for the associated node. It follows that each diagonal element in the inverse matrix <span class="math inline">\(\mathbf{D}^{-1}\)</span> contains the denominator that we need to compute the average. The new GCN layer can be written as:</p>
+<p><span id="eq-gcn-mean"><span class="math display">\[
+\mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{AD}^{-1} + \mathbf{I})\right]
+\tag{16}\]</span></span></p>
+</section>
+<section id="kipf-normalization" class="level3">
+<h3 class="anchored" data-anchor-id="kipf-normalization">Kipf normalization</h3>
+<p>There are many variations of graph neural networks based on mean aggregation. Sometimes the current node is included with its neighbors in the mean computation rather than treated separately. In Kipf normalization, the sum of the node representations is normalized as:</p>
+<p><span id="eq-kipf-normalized"><span class="math display">\[
+\mathbf{agg}[n] = \sum_{m \in \text{ne}[n]} \frac{\mathbf{h}_m}{\sqrt{|\text{ne}[n]| |\text{ne}[m]|}}
+\tag{17}\]</span></span></p>
+<p>with the logic that information coming from nodes with a very large number of neighbors should be down-weighted since there are many connections and they provide less unique information. This can also be expressed in matrix form using the degree matrix:</p>
+<p><span id="eq-gcn-kipf"><span class="math display">\[
+\mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{D}^{-1/2} \mathbf{A} \mathbf{D}^{-1/2} + \mathbf{I})\right]
+\tag{18}\]</span></span></p>
+</section>
+<section id="max-pooling-aggregation" class="level3">
+<h3 class="anchored" data-anchor-id="max-pooling-aggregation">Max pooling aggregation</h3>
+<p>An alternative operation that is also invariant to permutation is computing the maximum of a set of objects. The <em>max pooling</em> aggregation operator is:</p>
+<p><span id="eq-max-agg"><span class="math display">\[
+\mathbf{agg}[n] = \max_{m \in \text{ne}[n]} [\mathbf{h}_m]
+\tag{19}\]</span></span></p>
+<p>where the operator <span class="math inline">\(\max\)</span> returns the element-wise maximum of the vectors <span class="math inline">\(\mathbf{h}_m\)</span> that are neighbors to the current node <span class="math inline">\(n\)</span>.</p>
+</section>
+<section id="aggregation-by-attention" class="level3">
+<h3 class="anchored" data-anchor-id="aggregation-by-attention">Aggregation by attention</h3>
+<p>The aggregation methods discussed so far either weight the contribution of the neighbors equally or in a way that depends on the graph topology. Conversely, in <em>graph attention layers</em>, the weights depend on the data at the nodes. A linear transform is applied to the current node embeddings so that:</p>
+<p><span id="eq-attention-linear"><span class="math display">\[
+\mathbf{H}'_k = \beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k
+\tag{20}\]</span></span></p>
+<p>Then the similarity <span class="math inline">\(s_{mn}\)</span> of each transformed node embedding <span class="math inline">\(\mathbf{h}'_m\)</span> to the transformed node embedding <span class="math inline">\(\mathbf{h}'_n\)</span> is computed by concatenating the pairs, taking a dot product with a column vector <span class="math inline">\(\mathbf{\phi}_k\)</span> of learned parameters, and applying an activation function:</p>
+<p><span id="eq-attention-similarity"><span class="math display">\[
+s_{mn} = \mathbf{a} \left[ \mathbf{\phi}_k^T \begin{bmatrix} \mathbf{h}'_m \\ \mathbf{h}'_n \end{bmatrix} \right]
+\tag{21}\]</span></span></p>
+<p>These variables are stored in an <span class="math inline">\(N \times N\)</span> matrix <span class="math inline">\(\mathbf{S}\)</span>, where each element represents the similarity of every node to every other. As in dot-product self-attention, the attention weights contributing to each output embedding are normalized to be positive and sum to one using the softmax operation. However, only those values corresponding to the current node and its neighbors should contribute. The attention weights are applied to the transformed embeddings:</p>
+<p><span id="eq-attention-gather"><span class="math display">\[
+\mathbf{H}_{k+1} = \mathbf{a} \left[ \mathbf{H}'_k \cdot \text{Softmask}[\mathbf{S}, \mathbf{A} + \mathbf{I}] \right]
+\tag{22}\]</span></span></p>
+<p>where <span class="math inline">\(\mathbf{a}[\bullet]\)</span> is a second activation function. The function <span class="math inline">\(\text{Softmask}[\bullet, \bullet]\)</span> computes the attention values by applying softmax operation separately to each column of its first argument <span class="math inline">\(\mathbf{S}\)</span>, but only after setting values where the second argument <span class="math inline">\(\mathbf{A} + \mathbf{I}\)</span> is zero to negative infinity, so they do not contribute. This ensures that the attention to non-neighboring nodes is zero.</p>
+<p>This is very similar to the dot-product self-attention computation in transformers (see <a href="#fig-graph-transformer" class="quarto-xref">Figure&nbsp;9</a>), except that (i) the keys, queries, and values are all the same, (ii) the measure of similarity is different, and (iii) the attentions are masked so that each node only attends to itself and its neighbors. As in transformers, this system can be extended to use multiple heads that are run in parallel and recombined.</p>
+<div class="left-caption">
+<div id="fig-graph-transformer" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-graph-transformer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphTransformer.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Figure&nbsp;9: Comparison of graph convolutional network, dot product attention, and graph attention network. In each case, the mechanism maps N embeddings of size D stored in a D \times N matrix \bm{X} to an output of the same size. a) The graph convolutional network applies a linear transformation \bm{X}^\prime = \bm{\Omega}\bm{X} to the data matrix. It then computes a weighted sum of the transformed data, where the weighting is based on the adjacency matrix. A bias \bm{\beta} is added, and the result is passed through an activation function. b) The outputs of the dot-product self-attention mechanism in the transformer are also weighted sums of the transformed inputs, but this time the weights depend on the data itself via the attention matrix. c) The graph attention network combines both of these mechanisms; the weights are both computed from the data and based on the adjacency matrix."><img src="assets/images/GraphTransformer.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-transformer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Comparison of graph convolutional network, dot product attention, and graph attention network. In each case, the mechanism maps <span class="math inline">\(N\)</span> embeddings of size <span class="math inline">\(D\)</span> stored in a <span class="math inline">\(D \times N\)</span> matrix <span class="math inline">\(\bm{X}\)</span> to an output of the same size. a) The graph convolutional network applies a linear transformation <span class="math inline">\(\bm{X}^\prime = \bm{\Omega}\bm{X}\)</span> to the data matrix. It then computes a weighted sum of the transformed data, where the weighting is based on the adjacency matrix. A bias <span class="math inline">\(\bm{\beta}\)</span> is added, and the result is passed through an activation function. b) The outputs of the dot-product self-attention mechanism in the transformer are also weighted sums of the transformed inputs, but this time the weights depend on the data itself via the attention matrix. c) The graph attention network combines both of these mechanisms; the weights are both computed from the data and based on the adjacency matrix.
+</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 </div>
 </div>
@@ -844,6 +1231,38 @@ $$
   </div>
 </nav>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
