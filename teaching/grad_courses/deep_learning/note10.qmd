@@ -304,6 +304,48 @@ Graph-level tasks only occur in the inductive setting where there are training a
 ](assets/images/GraphInductiveTransductive.svg){#fig-inductive-transductive .lightbox width="80%" fig-align="center"}
 :::
 
+### Example: node classification
+
+As a second example, consider a binary node classification task in a transductive setting. We start with a commercial-sized graph with millions of nodes. Some nodes have ground truth binary labels, and the goal is to label the remaining unlabeled nodes. The body of the network will be the same as in the previous example (equation @eq-gcn-matrix) but with a different final layer that produces an output vector of size $1 \times N$:
+
+$$
+\mathbf{f}[\mathbf{X}, \mathbf{A}, \mathbf{\Phi}] = \text{sig} \left[ \beta_K \mathbf{1}^T + \mathbf{\omega}_K \mathbf{H}_K \right]
+$$ {#eq-node-class-transductive}
+
+where the function $\text{sig}[\bullet]$ applies the sigmoid function independently to every element of the row vector input. As usual, we use the binary cross-entropy loss, but now only at nodes where we know the ground truth label $y$. Note that equation @eq-node-class-transductive is just a vectorized version of the node classification loss from equation 13.3.
+
+Training this network raises two problems. First, it is logistically difficult to train a graph neural network of this size. Consider that we must store the node embeddings at every network layer in the forward pass. This will involve both storing and processing a structure several times the size of the entire graph, and this may not be practical. Second, we have only a single graph, so it's not obvious how to perform stochastic gradient descent. How can we form a batch if there is only a single object?
+
+#### Choosing batches
+
+One way to form a batch is to choose a random subset of labeled nodes at each training step. Each node depends on its neighbors in the previous layer. These, in turn, depend on their neighbors in the layer before, so (similarly to convolutional networks) each node has a **receptive field** (see @fig-receptive-field). The receptive field region is termed the **k-hop neighborhood**. We can hence perform a gradient descent step using the graph that forms the union of the k-hop neighborhoods of the batch nodes; the remaining inputs do not contribute.
+
+::: {.left-caption}
+![
+  Receptive fields in graph neural networks. Consider the orange node in hidden layer two (right). This receives input from the nodes in the 1-hop neighborhood in hidden layer one (shaded region in center). These nodes in hidden layer one receive inputs from their neighbors in turn, and the orange node in layer two receives inputs from all the input nodes in the 2-hop neighborhood (shaded area on left). The region of the graph that contributes to a given node is equivalent to the notion of a receptive field in convolutional neural networks.
+](assets/images/GraphReceptiveField.svg){#fig-receptive-field .lightbox width="80%" fig-align="center"}
+:::
+
+Unfortunately, if there are many layers and the graph is densely connected, every input node may be in the receptive field of every output, and this may not reduce the graph size at all. This is known as the **graph expansion problem**. Two approaches that tackle this problem are **neighborhood sampling** and **graph partitioning**.
+
+**Neighborhood sampling**: The full graph that feeds into the batch of nodes is sampled, thereby reducing the connections at each network layer (see @fig-sampling). For example, we might start with the batch nodes and randomly sample a fixed number of their neighbors in the previous layer. Then, we randomly sample a fixed number of *their* neighbors in the layer before, and so on. The graph still increases in size with each layer but in a much more controlled way. This is done anew for each batch, so the contributing neighbors differ even if the same batch is drawn twice. This is also reminiscent of dropout (section 9.3.3) and adds some regularization.
+
+::: {.left-caption}
+![
+  Neighborhood sampling. (a) One way of forming batches on large graphs is to choose a subset of labeled nodes in the output layer (here, just one node in layer two, right) and then working back to find all of the nodes in the $K$-hop neighborhood (receptive field). Only this sub-graph is needed to train this batch. Unfortunately, if the graph is densely connected, this may retain a large proportion of the graph. (b) One solution is neighborhood sampling. As we work back from the final layer, we select a subset of neighbors (here, three) in the layer before and a subset of the neighbors of these in the layer before that. This restricts the size of the graph for training the batch. In all panels, the brightness represents the distance from the original node.
+](assets/images/GraphSampling.svg){#fig-sampling .lightbox width="80%" fig-align="center"}
+:::
+
+**Graph partitioning**: A second approach is to cluster the original graph into disjoint subsets of nodes (i.e., smaller graphs that are not connected to one another) before processing (see @fig-partitioning). There are standard algorithms to choose these subsets to maximize the number of internal links. These smaller graphs can each be treated as batches, or a random subset of them can be combined to form a batch (reinstating any edges between them from the original graph).
+
+::: {.left-caption}
+![
+  Graph partitioning. (a) Input graph. (b) The input graph is partitioned into smaller subgraphs using a principled method that removes the fewest edges. (c-d) We can now use these subgraphs as batches to train in a transductive setting, so here, there are four possible batches. (e) Alternatively, we can use combinations of the subgraphs as batches, reinstating the edges between them. If we use pairs of subgraphs, there would be six possible batches here.
+](assets/images/GraphPartitioning.svg){#fig-partitioning .lightbox width="80%" fig-align="center"}
+:::
+
+Given one of the above methods to form batches, we can now train the network parameters in the same way as for the inductive setting, dividing the labeled nodes into train, test, and validation sets as desired; we have effectively converted a transductive problem to an inductive one. To perform inference, we compute predictions for the unknown nodes based on their k-hop neighborhood. Unlike training, this does not require storing the intermediate representations, so it is much more memory efficient.
+
 
 
 

@@ -721,6 +721,59 @@ Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification
 </div>
 </div>
 </section>
+<section id="example-node-classification" class="level3">
+<h3 class="anchored" data-anchor-id="example-node-classification">Example: node classification</h3>
+<p>As a second example, consider a binary node classification task in a transductive setting. We start with a commercial-sized graph with millions of nodes. Some nodes have ground truth binary labels, and the goal is to label the remaining unlabeled nodes. The body of the network will be the same as in the previous example (equation <a href="#eq-gcn-matrix" class="quarto-xref">Equation&nbsp;9</a>) but with a different final layer that produces an output vector of size <span class="math inline">\(1 \times N\)</span>:</p>
+<p><span id="eq-node-class-transductive"><span class="math display">\[
+\mathbf{f}[\mathbf{X}, \mathbf{A}, \mathbf{\Phi}] = \text{sig} \left[ \beta_K \mathbf{1}^T + \mathbf{\omega}_K \mathbf{H}_K \right]
+\tag{11}\]</span></span></p>
+<p>where the function <span class="math inline">\(\text{sig}[\bullet]\)</span> applies the sigmoid function independently to every element of the row vector input. As usual, we use the binary cross-entropy loss, but now only at nodes where we know the ground truth label <span class="math inline">\(y\)</span>. Note that equation <a href="#eq-node-class-transductive" class="quarto-xref">Equation&nbsp;11</a> is just a vectorized version of the node classification loss from equation 13.3.</p>
+<p>Training this network raises two problems. First, it is logistically difficult to train a graph neural network of this size. Consider that we must store the node embeddings at every network layer in the forward pass. This will involve both storing and processing a structure several times the size of the entire graph, and this may not be practical. Second, we have only a single graph, so it’s not obvious how to perform stochastic gradient descent. How can we form a batch if there is only a single object?</p>
+<section id="choosing-batches" class="level4">
+<h4 class="anchored" data-anchor-id="choosing-batches">Choosing batches</h4>
+<p>One way to form a batch is to choose a random subset of labeled nodes at each training step. Each node depends on its neighbors in the previous layer. These, in turn, depend on their neighbors in the layer before, so (similarly to convolutional networks) each node has a <strong>receptive field</strong> (see <a href="#fig-receptive-field" class="quarto-xref">Figure&nbsp;9</a>). The receptive field region is termed the <strong>k-hop neighborhood</strong>. We can hence perform a gradient descent step using the graph that forms the union of the k-hop neighborhoods of the batch nodes; the remaining inputs do not contribute.</p>
+<div class="left-caption">
+<div id="fig-receptive-field" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-receptive-field-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphReceptiveField.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Figure&nbsp;9: Receptive fields in graph neural networks. Consider the orange node in hidden layer two (right). This receives input from the nodes in the 1-hop neighborhood in hidden layer one (shaded region in center). These nodes in hidden layer one receive inputs from their neighbors in turn, and the orange node in layer two receives inputs from all the input nodes in the 2-hop neighborhood (shaded area on left). The region of the graph that contributes to a given node is equivalent to the notion of a receptive field in convolutional neural networks."><img src="assets/images/GraphReceptiveField.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-receptive-field-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: Receptive fields in graph neural networks. Consider the orange node in hidden layer two (right). This receives input from the nodes in the 1-hop neighborhood in hidden layer one (shaded region in center). These nodes in hidden layer one receive inputs from their neighbors in turn, and the orange node in layer two receives inputs from all the input nodes in the 2-hop neighborhood (shaded area on left). The region of the graph that contributes to a given node is equivalent to the notion of a receptive field in convolutional neural networks.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Unfortunately, if there are many layers and the graph is densely connected, every input node may be in the receptive field of every output, and this may not reduce the graph size at all. This is known as the <strong>graph expansion problem</strong>. Two approaches that tackle this problem are <strong>neighborhood sampling</strong> and <strong>graph partitioning</strong>.</p>
+<p><strong>Neighborhood sampling</strong>: The full graph that feeds into the batch of nodes is sampled, thereby reducing the connections at each network layer (see <a href="#fig-sampling" class="quarto-xref">Figure&nbsp;10</a>). For example, we might start with the batch nodes and randomly sample a fixed number of their neighbors in the previous layer. Then, we randomly sample a fixed number of <em>their</em> neighbors in the layer before, and so on. The graph still increases in size with each layer but in a much more controlled way. This is done anew for each batch, so the contributing neighbors differ even if the same batch is drawn twice. This is also reminiscent of dropout (section 9.3.3) and adds some regularization.</p>
+<div class="left-caption">
+<div id="fig-sampling" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-sampling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphSampling.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Figure&nbsp;10: Neighborhood sampling. (a) One way of forming batches on large graphs is to choose a subset of labeled nodes in the output layer (here, just one node in layer two, right) and then working back to find all of the nodes in the K-hop neighborhood (receptive field). Only this sub-graph is needed to train this batch. Unfortunately, if the graph is densely connected, this may retain a large proportion of the graph. (b) One solution is neighborhood sampling. As we work back from the final layer, we select a subset of neighbors (here, three) in the layer before and a subset of the neighbors of these in the layer before that. This restricts the size of the graph for training the batch. In all panels, the brightness represents the distance from the original node."><img src="assets/images/GraphSampling.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-sampling-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: Neighborhood sampling. (a) One way of forming batches on large graphs is to choose a subset of labeled nodes in the output layer (here, just one node in layer two, right) and then working back to find all of the nodes in the <span class="math inline">\(K\)</span>-hop neighborhood (receptive field). Only this sub-graph is needed to train this batch. Unfortunately, if the graph is densely connected, this may retain a large proportion of the graph. (b) One solution is neighborhood sampling. As we work back from the final layer, we select a subset of neighbors (here, three) in the layer before and a subset of the neighbors of these in the layer before that. This restricts the size of the graph for training the batch. In all panels, the brightness represents the distance from the original node.
+</figcaption>
+</figure>
+</div>
+</div>
+<p><strong>Graph partitioning</strong>: A second approach is to cluster the original graph into disjoint subsets of nodes (i.e., smaller graphs that are not connected to one another) before processing (see <a href="#fig-partitioning" class="quarto-xref">Figure&nbsp;11</a>). There are standard algorithms to choose these subsets to maximize the number of internal links. These smaller graphs can each be treated as batches, or a random subset of them can be combined to form a batch (reinstating any edges between them from the original graph).</p>
+<div class="left-caption">
+<div id="fig-partitioning" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-partitioning-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="assets/images/GraphPartitioning.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="Figure&nbsp;11: Graph partitioning. (a) Input graph. (b) The input graph is partitioned into smaller subgraphs using a principled method that removes the fewest edges. (c-d) We can now use these subgraphs as batches to train in a transductive setting, so here, there are four possible batches. (e) Alternatively, we can use combinations of the subgraphs as batches, reinstating the edges between them. If we use pairs of subgraphs, there would be six possible batches here."><img src="assets/images/GraphPartitioning.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-partitioning-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;11: Graph partitioning. (a) Input graph. (b) The input graph is partitioned into smaller subgraphs using a principled method that removes the fewest edges. (c-d) We can now use these subgraphs as batches to train in a transductive setting, so here, there are four possible batches. (e) Alternatively, we can use combinations of the subgraphs as batches, reinstating the edges between them. If we use pairs of subgraphs, there would be six possible batches here.
+</figcaption>
+</figure>
+</div>
+</div>
+<p>Given one of the above methods to form batches, we can now train the network parameters in the same way as for the inductive setting, dividing the labeled nodes into train, test, and validation sets as desired; we have effectively converted a transductive problem to an inductive one. To perform inference, we compute predictions for the unknown nodes based on their k-hop neighborhood. Unlike training, this does not require storing the intermediate representations, so it is much more memory efficient.</p>
+</section>
+</section>
 </div>
 <div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
 
@@ -730,11 +783,11 @@ Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification
 <p>In the example GCN layer above, we combined the aggregated neighbors <span class="math inline">\(\mathbf{HA}\)</span> with the current nodes <span class="math inline">\(\mathbf{H}\)</span> by just summing them:</p>
 <p><span id="eq-gcn-sum"><span class="math display">\[
 \mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{A} + \mathbf{I})\right]
-\tag{11}\]</span></span></p>
+\tag{12}\]</span></span></p>
 <p>In another variation, the current node is multiplied by a factor of <span class="math inline">\((1 + \epsilon_k)\)</span> before contributing to the sum, where <span class="math inline">\(\epsilon_k\)</span> is a learned scalar that is different for each layer:</p>
 <p><span id="eq-diagonal-enhancement"><span class="math display">\[
 \mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{A} + (1 + \epsilon_k)\mathbf{I})\right]
-\tag{12}\]</span></span></p>
+\tag{13}\]</span></span></p>
 <p>This is known as <em>diagonal enhancement</em>. A related variation applies a different linear transform <span class="math inline">\(\mathbf{\Psi}_k\)</span> to the current node:</p>
 <p><span id="eq-separate-transform"><span class="math display">\[
 \begin{aligned}
@@ -742,7 +795,7 @@ Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification
 &amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + [\mathbf{\Omega}_k \,\, \mathbf{\Psi}_k] \begin{bmatrix} \mathbf{H}_k \mathbf{A} \\ \mathbf{H}_k \end{bmatrix}\right] \\
 &amp;= \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}'_k \begin{bmatrix} \mathbf{H}_k \mathbf{A} \\ \mathbf{H}_k \end{bmatrix}\right]
 \end{aligned}
-\tag{13}\]</span></span></p>
+\tag{14}\]</span></span></p>
 <p>where we have defined <span class="math inline">\(\mathbf{\Omega}'_k = [\mathbf{\Omega}_k \,\, \mathbf{\Psi}_k]\)</span> in the third line.</p>
 </section>
 <section id="residual-connections" class="level3">
@@ -750,36 +803,36 @@ Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification
 <p>With residual connections, the aggregated representation from the neighbors is transformed and passed through the activation function before summation or concatenation with the current node. For the latter case, the associated network equations are:</p>
 <p><span id="eq-residual-concat"><span class="math display">\[
 \mathbf{H}_{k+1} = \begin{bmatrix} \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k \mathbf{A}\right] \\ \mathbf{H}_k \end{bmatrix}
-\tag{14}\]</span></span></p>
+\tag{15}\]</span></span></p>
 </section>
 <section id="mean-aggregation" class="level3">
 <h3 class="anchored" data-anchor-id="mean-aggregation">Mean aggregation</h3>
 <p>The above methods aggregate the neighbors by summing the node embeddings. However, it’s possible to combine the embeddings in different ways. Sometimes it’s better to take the average of the neighbors rather than the sum; this can be superior if the embedding information is more important and the structural information less so since the magnitude of the neighborhood contributions will not depend on the number of neighbors:</p>
 <p><span id="eq-mean-agg"><span class="math display">\[
 \mathbf{agg}[n] = \frac{1}{|\text{ne}[n]|} \sum_{m \in \text{ne}[n]} \mathbf{h}_m
-\tag{15}\]</span></span></p>
-<p>where as before, <span class="math inline">\(\text{ne}[n]\)</span> denotes a set containing the indices of the neighbors of the <span class="math inline">\(n^{th}\)</span> node. Equation <a href="#eq-mean-agg" class="quarto-xref">Equation&nbsp;15</a> can be computed neatly in matrix form by introducing the diagonal <span class="math inline">\(N \times N\)</span> degree matrix <span class="math inline">\(\mathbf{D}\)</span>. Each non-zero element of this matrix contains the number for the associated node. It follows that each diagonal element in the inverse matrix <span class="math inline">\(\mathbf{D}^{-1}\)</span> contains the denominator that we need to compute the average. The new GCN layer can be written as:</p>
+\tag{16}\]</span></span></p>
+<p>where as before, <span class="math inline">\(\text{ne}[n]\)</span> denotes a set containing the indices of the neighbors of the <span class="math inline">\(n^{th}\)</span> node. Equation <a href="#eq-mean-agg" class="quarto-xref">Equation&nbsp;16</a> can be computed neatly in matrix form by introducing the diagonal <span class="math inline">\(N \times N\)</span> degree matrix <span class="math inline">\(\mathbf{D}\)</span>. Each non-zero element of this matrix contains the number for the associated node. It follows that each diagonal element in the inverse matrix <span class="math inline">\(\mathbf{D}^{-1}\)</span> contains the denominator that we need to compute the average. The new GCN layer can be written as:</p>
 <p><span id="eq-gcn-mean"><span class="math display">\[
 \mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{AD}^{-1} + \mathbf{I})\right]
-\tag{16}\]</span></span></p>
+\tag{17}\]</span></span></p>
 </section>
 <section id="kipf-normalization" class="level3">
 <h3 class="anchored" data-anchor-id="kipf-normalization">Kipf normalization</h3>
 <p>There are many variations of graph neural networks based on mean aggregation. Sometimes the current node is included with its neighbors in the mean computation rather than treated separately. In Kipf normalization, the sum of the node representations is normalized as:</p>
 <p><span id="eq-kipf-normalized"><span class="math display">\[
 \mathbf{agg}[n] = \sum_{m \in \text{ne}[n]} \frac{\mathbf{h}_m}{\sqrt{|\text{ne}[n]| |\text{ne}[m]|}}
-\tag{17}\]</span></span></p>
+\tag{18}\]</span></span></p>
 <p>with the logic that information coming from nodes with a very large number of neighbors should be down-weighted since there are many connections and they provide less unique information. This can also be expressed in matrix form using the degree matrix:</p>
 <p><span id="eq-gcn-kipf"><span class="math display">\[
 \mathbf{H}_{k+1} = \mathbf{a}\left[\beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k (\mathbf{D}^{-1/2} \mathbf{A} \mathbf{D}^{-1/2} + \mathbf{I})\right]
-\tag{18}\]</span></span></p>
+\tag{19}\]</span></span></p>
 </section>
 <section id="max-pooling-aggregation" class="level3">
 <h3 class="anchored" data-anchor-id="max-pooling-aggregation">Max pooling aggregation</h3>
 <p>An alternative operation that is also invariant to permutation is computing the maximum of a set of objects. The <em>max pooling</em> aggregation operator is:</p>
 <p><span id="eq-max-agg"><span class="math display">\[
 \mathbf{agg}[n] = \max_{m \in \text{ne}[n]} [\mathbf{h}_m]
-\tag{19}\]</span></span></p>
+\tag{20}\]</span></span></p>
 <p>where the operator <span class="math inline">\(\max\)</span> returns the element-wise maximum of the vectors <span class="math inline">\(\mathbf{h}_m\)</span> that are neighbors to the current node <span class="math inline">\(n\)</span>.</p>
 </section>
 <section id="aggregation-by-attention" class="level3">
@@ -787,25 +840,25 @@ Figure&nbsp;8: Inductive vs.&nbsp;transductive problems. (a) Node classification
 <p>The aggregation methods discussed so far either weight the contribution of the neighbors equally or in a way that depends on the graph topology. Conversely, in <em>graph attention layers</em>, the weights depend on the data at the nodes. A linear transform is applied to the current node embeddings so that:</p>
 <p><span id="eq-attention-linear"><span class="math display">\[
 \mathbf{H}'_k = \beta_k \mathbf{1}^T + \mathbf{\Omega}_k \mathbf{H}_k
-\tag{20}\]</span></span></p>
+\tag{21}\]</span></span></p>
 <p>Then the similarity <span class="math inline">\(s_{mn}\)</span> of each transformed node embedding <span class="math inline">\(\mathbf{h}'_m\)</span> to the transformed node embedding <span class="math inline">\(\mathbf{h}'_n\)</span> is computed by concatenating the pairs, taking a dot product with a column vector <span class="math inline">\(\mathbf{\phi}_k\)</span> of learned parameters, and applying an activation function:</p>
 <p><span id="eq-attention-similarity"><span class="math display">\[
 s_{mn} = \mathbf{a} \left[ \mathbf{\phi}_k^T \begin{bmatrix} \mathbf{h}'_m \\ \mathbf{h}'_n \end{bmatrix} \right]
-\tag{21}\]</span></span></p>
+\tag{22}\]</span></span></p>
 <p>These variables are stored in an <span class="math inline">\(N \times N\)</span> matrix <span class="math inline">\(\mathbf{S}\)</span>, where each element represents the similarity of every node to every other. As in dot-product self-attention, the attention weights contributing to each output embedding are normalized to be positive and sum to one using the softmax operation. However, only those values corresponding to the current node and its neighbors should contribute. The attention weights are applied to the transformed embeddings:</p>
 <p><span id="eq-attention-gather"><span class="math display">\[
 \mathbf{H}_{k+1} = \mathbf{a} \left[ \mathbf{H}'_k \cdot \text{Softmask}[\mathbf{S}, \mathbf{A} + \mathbf{I}] \right]
-\tag{22}\]</span></span></p>
+\tag{23}\]</span></span></p>
 <p>where <span class="math inline">\(\mathbf{a}[\bullet]\)</span> is a second activation function. The function <span class="math inline">\(\text{Softmask}[\bullet, \bullet]\)</span> computes the attention values by applying softmax operation separately to each column of its first argument <span class="math inline">\(\mathbf{S}\)</span>, but only after setting values where the second argument <span class="math inline">\(\mathbf{A} + \mathbf{I}\)</span> is zero to negative infinity, so they do not contribute. This ensures that the attention to non-neighboring nodes is zero.</p>
-<p>This is very similar to the dot-product self-attention computation in transformers (see <a href="#fig-graph-transformer" class="quarto-xref">Figure&nbsp;9</a>), except that (i) the keys, queries, and values are all the same, (ii) the measure of similarity is different, and (iii) the attentions are masked so that each node only attends to itself and its neighbors. As in transformers, this system can be extended to use multiple heads that are run in parallel and recombined.</p>
+<p>This is very similar to the dot-product self-attention computation in transformers (see <a href="#fig-graph-transformer" class="quarto-xref">Figure&nbsp;12</a>), except that (i) the keys, queries, and values are all the same, (ii) the measure of similarity is different, and (iii) the attentions are masked so that each node only attends to itself and its neighbors. As in transformers, this system can be extended to use multiple heads that are run in parallel and recombined.</p>
 <div class="left-caption">
 <div id="fig-graph-transformer" class="lightbox quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-graph-transformer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<a href="assets/images/GraphTransformer.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Figure&nbsp;9: Comparison of graph convolutional network, dot product attention, and graph attention network. In each case, the mechanism maps N embeddings of size D stored in a D \times N matrix \bm{X} to an output of the same size. a) The graph convolutional network applies a linear transformation \bm{X}^\prime = \bm{\Omega}\bm{X} to the data matrix. It then computes a weighted sum of the transformed data, where the weighting is based on the adjacency matrix. A bias \bm{\beta} is added, and the result is passed through an activation function. b) The outputs of the dot-product self-attention mechanism in the transformer are also weighted sums of the transformed inputs, but this time the weights depend on the data itself via the attention matrix. c) The graph attention network combines both of these mechanisms; the weights are both computed from the data and based on the adjacency matrix."><img src="assets/images/GraphTransformer.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
+<a href="assets/images/GraphTransformer.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="Figure&nbsp;12: Comparison of graph convolutional network, dot product attention, and graph attention network. In each case, the mechanism maps N embeddings of size D stored in a D \times N matrix \bm{X} to an output of the same size. a) The graph convolutional network applies a linear transformation \bm{X}^\prime = \bm{\Omega}\bm{X} to the data matrix. It then computes a weighted sum of the transformed data, where the weighting is based on the adjacency matrix. A bias \bm{\beta} is added, and the result is passed through an activation function. b) The outputs of the dot-product self-attention mechanism in the transformer are also weighted sums of the transformed inputs, but this time the weights depend on the data itself via the attention matrix. c) The graph attention network combines both of these mechanisms; the weights are both computed from the data and based on the adjacency matrix."><img src="assets/images/GraphTransformer.svg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:80.0%"></a>
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-graph-transformer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure&nbsp;9: Comparison of graph convolutional network, dot product attention, and graph attention network. In each case, the mechanism maps <span class="math inline">\(N\)</span> embeddings of size <span class="math inline">\(D\)</span> stored in a <span class="math inline">\(D \times N\)</span> matrix <span class="math inline">\(\bm{X}\)</span> to an output of the same size. a) The graph convolutional network applies a linear transformation <span class="math inline">\(\bm{X}^\prime = \bm{\Omega}\bm{X}\)</span> to the data matrix. It then computes a weighted sum of the transformed data, where the weighting is based on the adjacency matrix. A bias <span class="math inline">\(\bm{\beta}\)</span> is added, and the result is passed through an activation function. b) The outputs of the dot-product self-attention mechanism in the transformer are also weighted sums of the transformed inputs, but this time the weights depend on the data itself via the attention matrix. c) The graph attention network combines both of these mechanisms; the weights are both computed from the data and based on the adjacency matrix.
+Figure&nbsp;12: Comparison of graph convolutional network, dot product attention, and graph attention network. In each case, the mechanism maps <span class="math inline">\(N\)</span> embeddings of size <span class="math inline">\(D\)</span> stored in a <span class="math inline">\(D \times N\)</span> matrix <span class="math inline">\(\bm{X}\)</span> to an output of the same size. a) The graph convolutional network applies a linear transformation <span class="math inline">\(\bm{X}^\prime = \bm{\Omega}\bm{X}\)</span> to the data matrix. It then computes a weighted sum of the transformed data, where the weighting is based on the adjacency matrix. A bias <span class="math inline">\(\bm{\beta}\)</span> is added, and the result is passed through an activation function. b) The outputs of the dot-product self-attention mechanism in the transformer are also weighted sums of the transformed inputs, but this time the weights depend on the data itself via the attention matrix. c) The graph attention network combines both of these mechanisms; the weights are both computed from the data and based on the adjacency matrix.
 </figcaption>
 </figure>
 </div>
