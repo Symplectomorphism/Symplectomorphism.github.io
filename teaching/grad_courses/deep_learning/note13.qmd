@@ -1,5 +1,15 @@
 ---
-title: "Diffusion Models"
+title: "Diffusion and Flow Models"
+resources:
+  - "assets/misc/flow_animation.mp4"
+  - "assets/misc/euler_course.mp4"
+  - "assets/misc/euler_fine.mp4"
+  - "assets/misc/diffusion_sample_1.mp4"
+  - "assets/misc/diffusion_sample_2.mp4"
+  - "assets/misc/diffusion_sample_3.mp4"
+  - "assets/misc/stoc_proc_sigma-15.mp4"
+  - "assets/misc/stoc_proc_sigma-44.mp4"
+  - "assets/misc/stoc_proc_sigma-87.mp4"
 format: 
   html: 
     grid:
@@ -11,20 +21,500 @@ filters:
 ---
 
 
-
 ::: {.panel-tabset}
+
+## Introduction
+
+A new generation of AI systems are "creative" they generate new objects.
+
+Goal of these notes:
+
+1. Flow and diffusion models from _first_ principles.
+2. The _minimal_ but necessary amount of mathematics for 1.
+3. How to implement and apply these algorithms.
+
+::: {.column-margin}
+Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth
+:::
+
+### From Generation to Sampling
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-4}
+::: {.card .p-3 .h-100 .shadow-sm}
+**Images**
+
+- Height $H$ and Width $W$
+- 3 color channels (RGB)
+
+$$\mathbf{z} \in \mathbb{R}^{H \times W \times 3}$$
+
+![](assets/misc/image_generation_clouds.png){.rounded .mx-auto .d-block style="max-height: 200px; object-fit: contain;"}
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.card .p-3 .h-100 .shadow-sm}
+**Videos**
+
+- $T$ time frames
+- Each frame is an image
+
+$$\mathbf{z} \in \mathbb{R}^{T \times H \times W \times 3}$$
+
+![](assets/misc/image_generation_youtube.png){.rounded .mx-auto .d-block style="max-height: 200px; object-fit: contain;"}
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.card .p-3 .h-100 .shadow-sm}
+**Molecular structures**
+
+- $N$ atoms
+- Each atom has 3 coordinates
+
+$$\mathbf{z} \in \mathbb{R}^{N \times 3}$$
+
+![](assets/misc/image_generation_protein.png){.rounded .mx-auto .d-block style="max-height: 200px; object-fit: contain;"}
+:::
+:::
+
+:::
+
+<br>
+
+::: {.callout-important appearance="minimal" icon=false}
+[**We represent the objects we want to generate as vectors:**]{style="font-size: 1.25em;"}
+
+$$\mathbf{z} \in \mathbb{R}^d$$
+:::
+
+### What does it mean to successfully generate something?
+
+Prompt: *"A picture of a dog"*
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-3}
+::: {.card .h-100 .text-center .p-2 .border-light}
+![](assets/misc/subjective_noise.png){.rounded .mb-2}
+**Useless**  
+*(Impossible)*
+:::
+:::
+
+::: {.g-col-12 .g-col-md-3}
+::: {.card .h-100 .text-center .p-2 .border-light}
+![](assets/misc/subjective_bad.png){.rounded .mb-2}
+**Bad**  
+*(Rare)*
+:::
+:::
+
+::: {.g-col-12 .g-col-md-3}
+::: {.card .h-100 .text-center .p-2 .border-light}
+![](assets/misc/subjective_wrong.png){.rounded .mb-2}
+**Wrong animal**  
+*(Unlikely)*
+:::
+:::
+
+::: {.g-col-12 .g-col-md-3}
+::: {.card .h-100 .text-center .p-2 .border-light}
+![](assets/misc/subjective_great.png){.rounded .mb-2}
+**Great!**  
+*(Very likely)*
+:::
+:::
+
+:::
+
+::: {.callout-note appearance="simple" icon=false}
+**Key Insight**: How "good" an image is $\approx$ how "likely" it is under the data distribution.
+:::
+
+
+### Generation as Sampling the Data Distribution
+
+We think of the objects we want to generate as following a **data distribution** $p_{\text{data}}$. This is a probability density function:
+
+$$p_{\text{data}} : \mathbb{R}^d \to \mathbb{R}_{\ge 0}, \quad \mathbf{z} \mapsto p_{\text{data}}(\mathbf{z})$$
+
+::: {.callout-warning appearance="simple"}
+**Crucial Note**: In practice, we do not know the analytical form of $p_{\text{data}}$!
+:::
+
+In this framework, **generation means sampling** from the data distribution:
+
+::: {.text-center .p-4 .bg-light .rounded .shadow-sm .mb-4}
+[$\mathbf{z} \sim p_{\text{data}}$]{style="font-size: 2em; color: #dc3545;"} $\quad \implies \quad$ $\mathbf{z} =$ ![](assets/misc/subjective_great.png){width=150px .rounded .shadow-sm}
+:::
+
+### What consists a Dataset?
+
+Since we don't know $p_{\text{data}}$, we rely on a **dataset**: a finite collection of samples drawn from it.
+
+- **Images**: Publicly available images from the internet (e.g., LAION, ImageNet).
+- **Videos**: Large-scale video repositories (e.g., YouTube).
+- **Molecular structures**: Scientific repositories (e.g., Protein Data Bank).
+
+Mathematically, a dataset is a collection:
+$$\{\mathbf{z}_1, \dots, \mathbf{z}_N\} \sim p_{\text{data}}$$
+
+
+### Conditional Generation
+
+Standard (unconditional) generation samples from $p_{\text{data}}$. However, we often want to **condition** our generation on a prompt or label $y$ (e.g., $y = \text{"Dog"}$).
+
+::: {.grid}
+
+:::: {.g-col-12 .g-col-md-6}
+::::: {.card .p-4 .h-100 .shadow-sm}
+#### Unconditional ($p_{\text{data}}$)
+[Fixed prompt "Dog" — diverse samples of the same category:]{.text-muted .small}
+
+<div style="display:flex;gap:6px;margin-top:10px">
+<div style="flex:1;min-width:0">
+<img src="assets/misc/conditional_uncond_1.png" class="rounded" style="width:100%;height:auto;max-height:160px;object-fit:cover">
+</div>
+<div style="flex:1;min-width:0">
+<img src="assets/misc/conditional_uncond_2.png" class="rounded" style="width:100%;height:auto;max-height:160px;object-fit:cover">
+</div>
+<div style="flex:1;min-width:0">
+<img src="assets/misc/conditional_uncond_3.png" class="rounded" style="width:100%;height:auto;max-height:160px;object-fit:cover">
+</div>
+</div>
+:::::
+::::
+
+:::: {.g-col-12 .g-col-md-6}
+::::: {.card .p-4 .h-100 .shadow-sm}
+#### Conditional ($p_{\text{data}}(\cdot|y)$)
+[Changing $y$ gives different targeted categories:]{.text-muted .small}
+
+<div style="display:flex;gap:6px;margin-top:10px">
+<div style="flex:1;min-width:0;text-align:center">
+<div style="font-size:0.8em;font-weight:bold;margin-bottom:4px">$y=\text{"Dog"}$</div>
+<img src="assets/misc/conditional_cond_dog.png" class="rounded border" style="width:100%;height:auto;max-height:130px;object-fit:cover">
+</div>
+<div style="flex:1;min-width:0;text-align:center">
+<div style="font-size:0.8em;font-weight:bold;margin-bottom:4px">$y=\text{"Cat"}$</div>
+<img src="assets/misc/conditional_cond_cat.png" class="rounded border" style="width:100%;height:auto;max-height:130px;object-fit:cover">
+</div>
+<div style="flex:1;min-width:0;text-align:center">
+<div style="font-size:0.8em;font-weight:bold;margin-bottom:4px">$y=\text{"Landscape"}$</div>
+<img src="assets/misc/conditional_cond_landscape.png" class="rounded border" style="width:100%;height:auto;max-height:130px;object-fit:cover">
+</div>
+</div>
+:::::
+::::
+
+:::
+
+::: {.text-center .p-3 .mt-3 .bg-danger .bg-opacity-10 .border .border-danger .rounded}
+[**Conditional generation means sampling the conditional data distribution:**]{style="color: #a71d5d; font-weight: bold; font-size: 1.1em;"}
+$$ \color{#a71d5d}{\mathbf{z} \sim p_{\text{data}}(\cdot | y)} $$
+:::
+
+::: {.callout-tip}
+We will first focus on **unconditional generation** and then learn how to translate an unconditional model to a conditional one.
+:::
+
+### Generative Models as Transformers
+
+A generative model converts samples from a simple **initial distribution** $p_{\text{init}}$ into samples from the complex **data distribution** $p_{\text{data}}$.
+
+::: {.grid .text-center .align-items-center}
+
+::: {.g-col-12 .g-col-md-4}
+::: {.p-3 .border .rounded .bg-light}
+**Initial State**
+
+$$\mathbf{x} \sim p_{\text{init}}$$
+
+$\mathcal{N}(0, \mathbf{I}_d)$
+
+![](assets/misc/init_noise.png){width=140px .rounded .mt-2 .shadow-sm}
+:::
+:::
+
+::: {.g-col-12 .g-col-md-4}
+[$\implies$]{style="font-size: 3em; color: #6c757d;"}
+<br>
+[**Generative Model**]{.badge .bg-primary .p-3 .fs-5}
+<br>
+[$\implies$]{style="font-size: 3em; color: #6c757d;"}
+:::
+
+::: {.g-col-12 .g-col-md-4}
+::: {.p-3 .border .rounded .bg-light}
+**Target Sample**
+
+$$\mathbf{z} \sim p_{\text{data}}$$
+
+(Real Object)
+
+![](assets/misc/result_dog.png){width=140px .rounded .mt-2 .shadow-sm}
+:::
+:::
+
+:::
+
+
+
+## Flow Models
+
+::: {.column-margin}
+Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth \ 
+
+[Flow Matching](https://mariogemoll.com/flow-matching) by Mario Gemoll
+:::
+
+<figure class="mx-auto d-block" style="width: 100%; max-width: 500px; margin-top: 1em;">
+  <video src="assets/misc/flow_animation.mp4" autoplay loop muted playsinline class="rounded w-100"></video>
+  <figcaption class="figure-caption text-center mt-2">Example: ODE Trajectory</figcaption>
+</figure>
+
+
+<!-- TODO: Flow Example -->
+
+<br>
+
+### Existence and Uniqueness Theorem ODEs
+
+::: {.card .p-3 .mb-3 .border .border-dark}
+**Theorem (Picard–Lindelöf theorem)**: If the vector field $u_t(x)$ is continuously differentiable with bounded derivatives, then a _unique_ solution to the ODE
+
+$$ X_0 = x_0, \quad \frac{\mathrm{d}}{\mathrm{d}t}X_t = u_t(X_t) $$
+
+exists. In other words, a flow map exists. More generally, this is true if the vector field is [**Lipschitz**]{style="color: #007bff;"}.
+:::
+
+::: {.card .p-3 .border .border-dark}
+[Key takeaway: In the cases of practical interest for machine learning, **unique solutions to ODE/flows exist.**]{style="color: #a30000; font-size: 1.1em;"}
+:::
+
+<br>
+
+### Example: Linear ODE
+
+::: {.grid}
+
+::: {.g-col-12 .g-col-md-7}
+**Simple vector field:**
+
+$$ u_t(x) = -\theta x \quad (\theta > 0) $$
+
+**Claim:** Flow is given by
+
+$$ \psi_t(x_0) = \exp(-\theta t) x_0 $$
+
+**Proof:**
+
+1. Initial condition:
+$$ \psi_t(x_0) = \exp(0)x_0 = x_0 $$
+
+2. ODE:
+$$ \frac{\mathrm{d}}{\mathrm{d}t} \psi_t(x_0) = \frac{\mathrm{d}}{\mathrm{d}t} \left(\exp(-\theta t) x_0\right) = -\theta \exp(-\theta t) x_0 = -\theta \psi_t(x_0) = u_t(\psi_t(x_0)) $$
+:::
+
+::: {.g-col-12 .g-col-md-5 .d-flex .align-items-center}
+![](assets/misc/example_linear_ode.png){.img-fluid .rounded .shadow-sm}
+:::
+:::
+
+<br>
+
+![](assets/misc/euler_method.png){.lightbox width="80%"}
+
+<br>
+
+### Euler Method: Coarse vs Fine Steps
+
+::: {.grid .text-center}
+
+::: {.g-col-12 .g-col-md-6}
+**Large step size**
+<figure class="mt-2">
+  <video src="assets/misc/euler_course.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+  <figcaption class="figure-caption text-center mt-2 text-muted" style="font-size: 0.95em;"><em>more efficient but higher error</em></figcaption>
+</figure>
+:::
+
+::: {.g-col-12 .g-col-md-6}
+**Small step size**
+<figure class="mt-2">
+  <video src="assets/misc/euler_fine.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+  <figcaption class="figure-caption text-center mt-2 text-muted" style="font-size: 0.95em;"><em>lower error but less efficient</em></figcaption>
+</figure>
+:::
+
+:::
+
+<br>
+
+### Toy example
+
+<figure class="text-center mt-3">
+  ![](assets/misc/toy_example.png){.lightbox width="100%" .rounded .shadow-sm style="max-width: 600px;"}
+  <figcaption class="figure-caption text-center mt-2 text-muted" style="font-size: 0.9em;">
+    <em>Figure credits: Yaron Lipman</em>
+  </figcaption>
+</figure>
+
+
+<!-- TODO: Toy flow model insert -->
+
+<br>
+
+![](assets/misc/generate_objects_algo.png){.lightbox width="100%"}
+
+
 
 ## Diffusion Models
 
 ::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
+Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth \ 
+
+[Flow Matching](https://mariogemoll.com/flow-matching) by Mario Gemoll
 :::
 
+### Brownian Motion or the Wiener Process
+
+Brownian motion describes the random motion of particles in fluids or gases. It is basically a random walk. Mathematically it can be modeled as a Wiener process. For our purposes, we can think of this as a path starting at the origin at $t = 0$, and then proceeding with step size $h$, adding noise from a standard Gaussian scaled by $\sqrt{h}$ at each step, until $t = 1$:
+
+$$
+W_{t+h} = W_t + \sqrt{h}\epsilon_t, \quad \epsilon_t \sim \mathcal{N}(0, Id) \quad (t = 0, h, 2h, \dots, 1 - h)
+$$
+
+<br>
+
+::: {.grid .text-center}
+
+::: {.g-col-12 .g-col-md-4}
+**Sample 1**
+<figure class="mt-2">
+  <video src="assets/misc/diffusion_sample_1.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+</figure>
+:::
+
+::: {.g-col-12 .g-col-md-4}
+**Sample 2**
+<figure class="mt-2">
+  <video src="assets/misc/diffusion_sample_2.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+</figure>
+:::
+
+::: {.g-col-12 .g-col-md-4}
+**Sample 3**
+<figure class="mt-2">
+  <video src="assets/misc/diffusion_sample_3.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+</figure>
+:::
+
+:::
+
+**Note:** A single stochastic process can give rise to many trajectories as the evolution becomes random.
+
+
+### Stochastic Differential Equations (SDEs)
+
+We can add some Brownian motion to the paths taken by particles moving along a vector field described by an ODE, which gives rise to the concept of a stochastic differential equation (SDE):
+
+$$
+\begin{align*}
+\mathrm{d}X_t &= u_t(X_t)\mathrm{d}t + \sigma_t \mathrm{d}W_t \\
+X_0 &= x_0
+\end{align*}
+$$
+
+For the details about the $\mathrm{d}X$ notation, see [Holderrieth & Erives, 2025](https://diffusion.csail.mit.edu/).
+
+The $\sigma_t$ in the above equation is called the diffusion coefficient and controls the amount of randomness (the ODE term $u_t(X_t)$ is also called the drift coefficient).
+
+Such an SDE can be approximated by the Euler-Maruyama method (basically the Euler method with some randomness added to it):
+
+$$
+x_{t+h} = x_t + h u_t(x_t) + \sqrt{h} \sigma_t \epsilon_t, \quad \epsilon_t \sim \mathcal{N}(0, I_d)
+$$
+
+<br>
+
+::: {.grid .text-center}
+
+::: {.g-col-12 .g-col-md-4}
+**$\sigma = 0.15$**
+<figure class="mt-2">
+  <video src="assets/misc/stoc_proc_sigma-15.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+</figure>
+:::
+
+::: {.g-col-12 .g-col-md-4}
+**$\sigma = 0.44$**
+<figure class="mt-2">
+  <video src="assets/misc/stoc_proc_sigma-44.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+</figure>
+:::
+
+::: {.g-col-12 .g-col-md-4}
+**$\sigma = 0.87$**
+<figure class="mt-2">
+  <video src="assets/misc/stoc_proc_sigma-87.mp4" autoplay loop muted playsinline class="rounded shadow-sm w-100"></video>
+</figure>
+:::
+
+:::
+
+<br>
+
+### Existence and Uniqueness Theorem SDEs
+
+::: {.card .p-3 .mb-3 .border .border-dark}
+**Theorem**: If the vector field $u_t(x)$ is continuously differentiable with bounded derivatives and the diffusion coeff. is continuous, then a _unique_ solution (in distribution) to the SDE
+
+$$ X_0 = x_0, \quad \mathrm{d}X_t = u_t(X_t)\mathrm{d}t + \sigma_t\mathrm{d}W_t $$
+
+exists. More generally, this is true if the vector field is [**Lipschitz**]{style="color: #007bff;"}.
+:::
+
+::: {.card .p-3 .mb-3 .border .border-dark}
+[Key takeaway: In the cases of practical interest for machine learning, **unique solutions to SDEs exist.**]{style="color: #a30000; font-size: 1.1em;"}
+:::
+
+[Stochastic calculus class: Construct solutions via stochastic integrals and Ito-Riemann sums]{style="color: #6c757d; font-style: italic;"}
+<br>
+
+![](assets/misc/euler_maruyama.png){.lightbox width="100%"}
+
+
+### Ornstein-Uhlenbeck Process
+
+$$
+\dd X_t = -\theta X_t \dd t + \sigma \dd W_t
+$$
+
+![](assets/misc/ornstein_uhlenbeck.png){.lightbox width="100%"}
+<br>
+
+![](assets/misc/sampling_diffusion_algo.png){.lightbox width="100%"}
 
 ## Flow Matching
 
 ::: {.column-margin}
-Image credits: [Understanding Deep Learning](https://udlbook.github.io/udlbook) by Simon J. D. Prince, [CC BY 4.0]
+Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth
+:::
+
+## Score Matching
+
+::: {.column-margin}
+Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth
+:::
+
+## Guidance
+
+::: {.column-margin}
+Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth
 :::
 
 :::
