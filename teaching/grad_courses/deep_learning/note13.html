@@ -441,7 +441,8 @@ $$
 <p>Credits: <a href="https://diffusion.csail.mit.edu/">Introduction to Flow Matching and Diffusion Models</a> by Peter Holderrieth &nbsp;</p>
 <p><a href="https://mariogemoll.com/flow-matching">Flow Matching</a> by Mario Gemoll</p>
 </div><div class="tabset-margin-content tabset-1-4-tab-margin-content collapse">
-<p>Credits: <a href="https://diffusion.csail.mit.edu/">Introduction to Flow Matching and Diffusion Models</a> by Peter Holderrieth</p>
+<p>Credits: <a href="https://diffusion.csail.mit.edu/">Introduction to Flow Matching and Diffusion Models</a> by Peter Holderrieth &nbsp;</p>
+<p><a href="https://mariogemoll.com/flow-matching">Flow Matching</a> by Mario Gemoll</p>
 </div><div class="tabset-margin-content tabset-1-5-tab-margin-content collapse">
 <p>Credits: <a href="https://diffusion.csail.mit.edu/">Introduction to Flow Matching and Diffusion Models</a> by Peter Holderrieth</p>
 </div><div class="tabset-margin-content tabset-1-6-tab-margin-content collapse">
@@ -851,6 +852,883 @@ x_{t+h} = x_t + h u_t(x_t) + \sqrt{h} \sigma_t \epsilon_t, \quad \epsilon_t \sim
 </div>
 <div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
 
+<section id="reminder-flow-and-diffusion-models" class="level3">
+<h3 class="anchored" data-anchor-id="reminder-flow-and-diffusion-models">Reminder: Flow and Diffusion Models</h3>
+<div class="grid align-items-center border rounded p-3" style="background:#fafafa;">
+<div class="g-col-2 text-center border rounded p-2" style="color:#a30000; font-weight:bold; border-color:#a30000 !important;">
+<p>Flow<br>
+Model</p>
+</div>
+<div class="g-col-4">
+<p><strong>Initialize:</strong></p>
+<p><span class="math display">\[X_0 \sim \underbrace{p_{\text{init}}}_{\color{#a30000}{\text{e.g. Gaussian}}}\]</span></p>
+</div>
+<div class="g-col-6">
+<p><strong>ODE:</strong></p>
+<p><span class="math display">\[\mathrm{d}X_t = \underbrace{u_t^{\theta}(X_t)}_{\substack{\color{#a30000}{\text{neural network}} \\ \color{#a30000}{\text{vector field}}}}\mathrm{d}t\]</span></p>
+</div>
+</div>
+<div class="grid align-items-center border rounded p-3 mt-2" style="background:#fafafa;">
+<div class="g-col-2 text-center border rounded p-2" style="color:#a30000; font-weight:bold; border-color:#a30000 !important;">
+<p>Diffusion<br>
+Model</p>
+</div>
+<div class="g-col-4">
+<p><strong>Initialize:</strong></p>
+<p><span class="math display">\[X_0 \sim \underbrace{p_{\text{init}}}_{\color{#a30000}{\text{e.g. Gaussian}}}\]</span></p>
+</div>
+<div class="g-col-6">
+<p><strong>SDE:</strong></p>
+<p><span class="math display">\[\mathrm{d}X_t = \underbrace{u_t^{\theta}(X_t)}_{\substack{\color{#a30000}{\text{neural network}} \\ \color{#a30000}{\text{vector field}}}}\mathrm{d}t + \underbrace{\sigma_t}_{\color{#a30000}{\text{diffusion coeff.}}}\mathrm{d}W_t\]</span></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>To get samples, simulate ODE/SDE from <span class="math inline">\(t=0\)</span> to <span class="math inline">\(t=1\)</span> and return <span class="math inline">\(X_1\)</span></strong></p>
+</div>
+</div>
+</div>
+</section>
+<section id="next-step-training-a-flow-model" class="level3">
+<h3 class="anchored" data-anchor-id="next-step-training-a-flow-model">Next Step: Training a Flow Model</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Without training, the model produces “non-sense” <span class="math inline">\(\to\)</span> <strong>We need to train <span class="math inline">\(u_t^\theta\)</span></strong></p>
+</div>
+</div>
+</div>
+<p><strong>Training = Finding parameters <span class="math inline">\(\theta\)</span> such that</strong></p>
+<div class="grid align-items-center text-center" style="column-gap: 0;">
+<div class="g-col-4">
+<p><span class="math display">\[\underbrace{X_0 \sim p_{\text{init}}}_{\color{#a30000}{\small\textit{Start with initial distribution}}}\]</span></p>
+</div>
+<div class="g-col-3">
+<p><span class="math display">\[\underbrace{\mathrm{d}X_t = u_t^{\theta}(X_t)\mathrm{d}t}_{\color{#a30000}{\small\textit{Follow along the vector field}}}\]</span></p>
+</div>
+<div class="g-col-2 text-center">
+<p><span class="math inline">\(\Rightarrow\)</span><br>
+<span style="font-size:0.75em; color:#555;">Implies</span></p>
+</div>
+<div class="g-col-3">
+<p><span class="math display">\[\underbrace{X_1 \sim p_{\text{data}}}_{\substack{\color{#a30000}{\small\textit{Distribution of final}} \\ \color{#a30000}{\small\textit{point = data dist.}}}}\]</span></p>
+</div>
+</div>
+</section>
+<section id="the-flow-matching-matrix" class="level3">
+<h3 class="anchored" data-anchor-id="the-flow-matching-matrix">The Flow Matching Matrix</h3>
+<div class="border rounded p-3 mb-3">
+<div class="grid align-items-center text-center mb-3">
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#1a6faf;"><strong>Conditional</strong></span><br>
+<strong>Probability Path</strong></p>
+</div>
+<div class="g-col-1 text-center">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#1a6faf;"><strong>Conditional</strong></span><br>
+<strong>Vector Field</strong></p>
+</div>
+<div class="g-col-1 text-center">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-4 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#1a6faf;"><strong>Conditional</strong></span><br>
+<strong>Flow Matching Loss</strong></p>
+</div>
+</div>
+<div class="grid align-items-center text-center">
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#2a9a2a;"><strong>Marginal</strong></span><br>
+<strong>Probability Path</strong></p>
+</div>
+<div class="g-col-1 text-center">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#2a9a2a;"><strong>Marginal</strong></span><br>
+<strong>Vector Field</strong></p>
+</div>
+<div class="g-col-1 text-center">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-4 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#2a9a2a;"><strong>Marginal</strong></span><br>
+<strong>Flow Matching Loss</strong></p>
+</div>
+</div>
+</div>
+<div class="border rounded p-3 text-center">
+<p>“Conditional” = “Per single data point”</p>
+<p>“Marginal” = “Across distribution of data points”</p>
+</div>
+</section>
+<section id="probability-paths-the-path-from-noise-to-data" class="level3">
+<h3 class="anchored" data-anchor-id="probability-paths-the-path-from-noise-to-data">Probability Paths: The Path from Noise to Data</h3>
+<div class="grid align-items-center text-center" style="--bs-columns: 9; column-gap: 0.3rem;">
+<div class="g-col-1" style="font-size:0.8em; font-weight:bold;">
+<p><strong>Noise</strong></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_0.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_1.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_2.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_3.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_4.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_5.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/cat_6.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1" style="font-size:0.8em; font-weight:bold;">
+<p><strong>Data</strong></p>
+</div>
+</div>
+<div class="grid text-center" style="--bs-columns: 9; column-gap: 0.3rem; font-size:0.8em; margin-top: -0.5rem;">
+<div class="g-col-1">
+<p><span class="math inline">\(t=0\)</span></p>
+</div>
+<div class="g-col-3 text-center">
+<p><span class="math inline">\(\longleftarrow\)</span> time <span class="math inline">\(\longrightarrow\)</span></p>
+</div>
+<div class="g-col-4">
+
+</div>
+<div class="g-col-1">
+<p><span class="math inline">\(t=1\)</span></p>
+</div>
+</div>
+<p><br></p>
+<div class="grid align-items-center text-center" style="--bs-columns: 5; column-gap: 0.5rem;">
+<div class="g-col-1">
+<p><img src="assets/misc/mnist_0.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/mnist_1.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/mnist_2.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/mnist_3.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/mnist_4.png" class="img-fluid rounded"></p>
+</div>
+</div>
+</section>
+<section id="conditional-probability-path-p_tcdot-z" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-probability-path-p_tcdot-z">Conditional Probability Path <span class="math inline">\(p_t(\cdot | z)\)</span></h3>
+<div class="grid align-items-center" style="--bs-columns: 12; column-gap: 0.3rem;">
+<div class="g-col-1 text-center">
+<p><span class="math inline">\(p_{\text{init}}\)</span></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.8em; color:#555;">
+<p><span class="math inline">\(t = 0.00\)</span><br>
+<img src="assets/misc/cond_path_0.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.8em; color:#555;">
+<p><span class="math inline">\(t = 0.25\)</span><br>
+<img src="assets/misc/cond_path_1.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.8em; color:#555;">
+<p><span class="math inline">\(t = 0.50\)</span><br>
+<img src="assets/misc/cond_path_2.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.8em; color:#555;">
+<p><span class="math inline">\(t = 0.75\)</span><br>
+<img src="assets/misc/cond_path_3.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.8em; color:#555;">
+<p><span class="math inline">\(t = 1.00\)</span><br>
+<img src="assets/misc/cond_path_4.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1 text-center">
+<p><span class="math inline">\(z\)</span><br>
+<span style="color:#cc0000; font-size:1.3em;">↓</span></p>
+</div>
+</div>
+<div class="grid" style="--bs-columns: 12; column-gap: 0; font-size:0.85em; font-weight:bold; margin-top:0.25rem;">
+<div class="g-col-1">
+
+</div>
+<div class="g-col-2">
+<p><strong>t=0</strong></p>
+</div>
+<div class="g-col-7 text-center">
+<p><span class="math inline">\(\longrightarrow\)</span></p>
+</div>
+<div class="g-col-2 text-end">
+<p><strong>t=1</strong></p>
+</div>
+</div>
+<figure class="mx-auto d-block figure" style="width: 100%; max-width: 500px; margin-top: 1em;">
+<video src="assets/misc/cond_prob_path.mp4" autoplay="" loop="" muted="" playsinline="" class="rounded w-100">
+</video>
+<figcaption>
+Samples from a conditional probability path over time
+</figcaption>
+</figure>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>A probability path only specifies the marginals (each snapshot). It says <em>nothing about the evolution of a single particle</em> in time (no dynamics).</p>
+</div>
+</div>
+</div>
+</section>
+<section id="conditional-vs.-marginal-probability-path" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-vs.-marginal-probability-path">Conditional vs.&nbsp;Marginal Probability Path</h3>
+<div class="grid align-items-center" style="--bs-columns: 12; column-gap: 0.3rem; font-size:0.85em; margin-bottom:0.25rem;">
+<div class="g-col-12 text-center border rounded p-1" style="background:#f0f0f0;">
+<p>Conditional Probability Path <span class="math inline">\(p_t(\cdot | z)\)</span></p>
+</div>
+</div>
+<div class="grid align-items-center" style="--bs-columns: 12; column-gap: 0.3rem; row-gap: 0.3rem;">
+<div class="g-col-1 text-center" style="font-size:0.85em;">
+<p><span class="math inline">\(p_{\text{init}}\)</span></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.00\)</span><br>
+<img src="assets/misc/cond_path_0.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.25\)</span><br>
+<img src="assets/misc/cond_path_1.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.50\)</span><br>
+<img src="assets/misc/cond_path_2.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.75\)</span><br>
+<img src="assets/misc/cond_path_3.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=1.00\)</span><br>
+<img src="assets/misc/cond_path_4.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1 text-center" style="font-size:0.85em;">
+<p><span class="math inline">\(z\)</span><br>
+<span style="color:#cc0000; font-size:1.3em;">↓</span></p>
+</div>
+<div class="g-col-1 text-center" style="font-size:0.85em;">
+<p><span class="math inline">\(p_{\text{init}}\)</span></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.00\)</span><br>
+<img src="assets/misc/marg_path_0.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.25\)</span><br>
+<img src="assets/misc/marg_path_1.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.50\)</span><br>
+<img src="assets/misc/marg_path_2.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=0.75\)</span><br>
+<img src="assets/misc/marg_path_3.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-2 text-center" style="font-size:0.75em; color:#555;">
+<p><span class="math inline">\(t=1.00\)</span><br>
+<img src="assets/misc/marg_path_4.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1 text-center" style="font-size:0.85em;">
+<p><span class="math inline">\(p_{\text{data}}\)</span></p>
+</div>
+</div>
+<div class="grid align-items-center" style="--bs-columns: 12; column-gap: 0.3rem; font-size:0.85em; margin-top:0.25rem;">
+<div class="g-col-12 text-center border rounded p-1" style="background:#f0f0f0;">
+<p>Marginal Probability Path <span class="math inline">\(p_t\)</span></p>
+</div>
+</div>
+</section>
+<section id="conditional-probability-path" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-probability-path">Conditional Probability Path</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 30%">
+<col style="width: 35%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Gaussian example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conditional Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t(\cdot\|z)\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and a data point <span class="math inline">\(z\)</span></td>
+<td><span class="math inline">\(\mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)\)</span></td>
+</tr>
+<tr class="even">
+<td>Conditional Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^c(x,z)\)</span></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="marginal-probability-path" class="level3">
+<h3 class="anchored" data-anchor-id="marginal-probability-path">Marginal Probability Path</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 30%">
+<col style="width: 35%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Marginal Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and <span class="math inline">\(p_{\text{data}}\)</span></td>
+<td><span class="math inline">\(\int p_t(x\|z)\, p_{\text{data}}(z)\,\mathrm{d}z\)</span></td>
+</tr>
+<tr class="even">
+<td>Marginal Vector Field</td>
+<td style="text-align: center;"></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="example-conditional-vector-field-for-gaussian" class="level3">
+<h3 class="anchored" data-anchor-id="example-conditional-vector-field-for-gaussian">Example — Conditional Vector Field for Gaussian</h3>
+<div class="text-center border rounded p-3 mb-3">
+<p><span class="math display">\[u_t^{\text{target}}(x|z) = \left(\dot{\alpha}_t - \frac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \frac{\dot{\beta}_t}{\beta_t}x\]</span></p>
+</div>
+<div class="border rounded p-3" style="border-style: dashed !important;">
+<p><em>Proof Sketch:</em></p>
+<p><strong>Step 1:</strong> By checking ODE, show that the flow of the vector field is given by</p>
+<p><span class="math display">\[\psi_t^{\text{target}}(x_0|z) = \alpha_t z + \beta_t x_0\]</span></p>
+<p><strong>Step 2:</strong> If <span class="math inline">\(X_0 = x_0 \sim \mathcal{N}(0, I_d)\)</span> is random, then we know that then:</p>
+<p><span class="math display">\[X_t = \psi_t(X_0|z) = \alpha_t z + \beta_t X_0 \sim \mathcal{N}(\alpha_t z,\, \beta_t^2 I_d) = p_t(\cdot|z)\]</span></p>
+</div>
+<div class="grid align-items-center">
+<div class="g-col-12 g-col-md-3">
+<p><strong>Gaussian Conditional Probability Path And Conditional Vector Field</strong></p>
+<p><span class="text-muted" style="font-size:0.85em;"><em>Figure credit: Yaron Lipman</em></span></p>
+</div>
+<div class="g-col-12 g-col-md-9">
+<p><img src="assets/misc/gaussian_cond_prob_path_vec_field.png" class="img-fluid rounded"></p>
+</div>
+</div>
+<div class="grid align-items-center text-center" style="--bs-columns: 13; column-gap: 0.3rem; row-gap: 0.3rem;">
+<div class="g-col-1">
+
+</div>
+<div class="g-col-4" style="font-weight:bold; color:#a30000;">
+<p>Ground truth</p>
+</div>
+<div class="g-col-4" style="font-weight:bold; color:#a30000;">
+<p>ODE samples</p>
+</div>
+<div class="g-col-4" style="font-weight:bold; color:#a30000;">
+<p>ODE Trajectories</p>
+</div>
+<div class="g-col-1 text-start" style="font-style:italic; font-size:1.1em;">
+<p><span class="math inline">\(p_t(\cdot|z)\)</span></p>
+</div>
+<div class="g-col-4">
+<p><img src="assets/misc/ground_truth_cond.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-4">
+<p><img src="assets/misc/ode_samples_cond.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-4">
+<p><img src="assets/misc/ode_traj_cond.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1 text-start" style="font-style:italic; font-size:1.1em;">
+<p><span class="math inline">\(p_t\)</span></p>
+</div>
+<div class="g-col-4">
+<p><img src="assets/misc/ground_truth_marg.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-4">
+<p><img src="assets/misc/ode_samples_marg.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-4">
+<p><img src="assets/misc/ode_traj_marg.png" class="img-fluid rounded"></p>
+</div>
+</div>
+</section>
+<section id="continuity-equation" class="level3">
+<h3 class="anchored" data-anchor-id="continuity-equation">Continuity Equation</h3>
+<div class="text-center">
+<p><span style="color:#a30000; font-style:italic;"><em>Randomly initialized ODE</em></span></p>
+<p><strong>Given:</strong> <span class="math inline">\(\quad X_0 \sim p_{\text{init}}, \qquad \dfrac{\mathrm{d}}{\mathrm{d}t}X_t = u_t(X_t)\)</span></p>
+</div>
+<hr>
+<div class="grid align-items-center">
+<div class="g-col-2 text-center" style="font-size:2em; color:#aaa;">
+
+</div>
+<div class="g-col-8">
+<div class="border rounded p-3 mb-1">
+<p><strong>Follow probability path:</strong></p>
+<p><span class="math display">\[X_t \sim p_t \qquad (0 \le t \le 1)\]</span></p>
+</div>
+</div>
+<div class="g-col-2" style="font-size:0.9em;">
+<p><span style="color:#a30000; font-style:italic;"><em>Marginals are <span class="math inline">\(p_t\)</span></em></span></p>
+</div>
+</div>
+<div class="text-center" style="font-size:2em; color:#aaa; margin: 0.2em 0;">
+<p><span class="math inline">\(\Longleftrightarrow\)</span> <span style="font-size:0.4em; color:#555; vertical-align:middle;">equivalent</span></p>
+</div>
+<div class="grid align-items-center">
+<div class="g-col-2">
+
+</div>
+<div class="g-col-8">
+<div class="border rounded p-3 mb-1">
+<p><strong>Continuity equation holds</strong></p>
+<p><span class="math display">\[\frac{\mathrm{d}}{\mathrm{d}t}p_t(x) = -\operatorname{div}(p_t u_t)(x)\]</span></p>
+</div>
+</div>
+<div class="g-col-2" style="font-size:0.9em;">
+<p><span style="color:#a30000; font-style:italic;"><em>PDE holds</em></span></p>
+</div>
+</div>
+<div style="display:flex; align-items:center; gap:2rem;">
+<div style="flex:5;">
+<p><strong>Continuity Equation</strong></p>
+<p><span class="math display">\[\frac{\mathrm{d}}{\mathrm{d}t}p_t(x) = -\operatorname{div}(p_t u_t)(x)\]</span></p>
+<div class="grid" style="--bs-columns: 2; font-size:0.9em;">
+<div class="g-col-1">
+<p><span style="color:#a30000; font-style:italic;"><em>Change of probability mass at <span class="math inline">\(x\)</span></em></span></p>
+</div>
+<div class="g-col-1">
+<p><span style="color:#a30000; font-style:italic;"><em>Outflow - inflow of probability mass from <span class="math inline">\(u\)</span></em></span></p>
+</div>
+</div>
+</div>
+<div style="flex:7;">
+<p><img src="assets/misc/mass_preservation.png" class="img-fluid rounded" style="max-width:85%; display:block; margin:auto;"></p>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 3</strong> Flow Matching Training Procedure (General)</p>
+<hr>
+<p><strong>Require:</strong> A dataset of samples <span class="math inline">\(z \sim p_{\text{data}}\)</span>, neural network <span class="math inline">\(u_t^\theta\)</span></p>
+<table class="caption-top table">
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td><strong>for</strong> each mini-batch of data <strong>do</strong></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a data example <span class="math inline">\(z\)</span> from the dataset.</td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a random time <span class="math inline">\(t \sim \text{Unif}_{[0,1]}\)</span>.</td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><span class="math inline">\(\quad\)</span> Sample <span class="math inline">\(x \sim p_t(\cdot|z)\)</span></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad\)</span> Compute loss</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">\[\mathcal{L}(\theta) = \|u_t^\theta(x) - u_t^{\text{target}}(x|z)\|^2\]</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 95%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Update the model parameters <span class="math inline">\(\theta\)</span> via gradient descent on <span class="math inline">\(\mathcal{L}(\theta)\)</span></td>
+</tr>
+<tr class="even">
+<td>7:</td>
+<td><strong>end for</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section id="conditional-flow-matching-for-gaussian-probability-path" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-flow-matching-for-gaussian-probability-path">Conditional Flow Matching for Gaussian Probability Path</h3>
+<div class="grid align-items-center" style="--bs-columns: 12; column-gap: 0.5rem; row-gap: 0.5rem;">
+<div class="g-col-2 border rounded p-2 text-center" style="color:#555;">
+<p>Prob. path</p>
+</div>
+<div class="g-col-4">
+<p><span class="math inline">\(\mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)\)</span></p>
+</div>
+<div class="g-col-2 border rounded p-2 text-center" style="color:#555;">
+<p>Conditional VF</p>
+</div>
+<div class="g-col-4">
+<p><span class="math inline">\(u_t^{\text{target}}(x|z) = \left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x\)</span></p>
+</div>
+<div class="g-col-2 border rounded p-2 text-center" style="color:#555;">
+<p>Noise Sampling</p>
+</div>
+<div class="g-col-10">
+<p><span class="math inline">\(x \sim p_t(\cdot|z) \quad \Leftrightarrow \quad x = \alpha_t z + \beta_t \epsilon, \quad \epsilon \sim \mathcal{N}(0, I_d)\)</span></p>
+</div>
+</div>
+<div class="border rounded p-2 mb-2">
+<p>Plugging in Noise Sampling into CFM Loss results in:</p>
+</div>
+<p><span class="math display">\[
+\begin{align}
+L_{\text{CFM}}(\theta)
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, x \sim p_t(\cdot|z)} \left[\|u_t^\theta(x) - u_t^{\text{target}}(x|z)\|^2\right] \\
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, \epsilon \sim \mathcal{N}(0,I_d)} \left[\|u_t^\theta(\alpha_t z + \beta_t \epsilon) - u_t^{\text{target}}(\alpha_t z + \beta_t \epsilon|z)\|^2\right] \\
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, \epsilon \sim \mathcal{N}(0,I_d)} \left[\|\underbrace{u_t^\theta(\alpha_t z + \beta_t \epsilon)}_{\color{#a30000}{\textbf{noise+data}}} - \underbrace{(\dot{\alpha}_t z + \dot{\beta}_t \epsilon)}_{\color{#a30000}{\textbf{velocity}}}\|^2\right]
+\end{align}
+\]</span></p>
+</section>
+<section id="straight-line-schedule" class="level3">
+<h3 class="anchored" data-anchor-id="straight-line-schedule">Straight Line Schedule</h3>
+<p><span class="math display">\[
+\begin{align}
+L_{\text{CFM}}(\theta)
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, \epsilon \sim \mathcal{N}(0,I_d)} \left[\|u_t^\theta(\alpha_t z + \beta_t \epsilon) - (\dot{\alpha}_t z + \dot{\beta}_t \epsilon)\|^2\right] \\
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, \epsilon \sim \mathcal{N}(0,I_d)} \left[\|\underbrace{u_t^\theta(tz + (1-t)\epsilon)}_{\substack{\color{#a30000}{\textbf{Linear interpolation}} \\ \color{#a30000}{\textbf{of noise and data}}}} - \underbrace{(z - \epsilon)}_{\substack{\color{#a30000}{\textbf{Difference between}} \\ \color{#a30000}{\textbf{noise and data}}}}\|^2\right]
+\end{align}
+\]</span></p>
+<figure class="mx-auto d-block figure" style="width: 100%; max-width: 700px; margin-top: 1em;">
+<a href="assets/misc/cond_flow_matching.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7"><img src="assets/misc/cond_flow_matching.png" class="img-fluid rounded figure-img"></a>
+<figcaption>
+Figure credit: Yaron Lipman
+</figcaption>
+</figure>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 4</strong> Flow Matching Training for CondOT path</p>
+<hr>
+<p><strong>Require:</strong> A dataset of samples <span class="math inline">\(z \sim p_{\text{data}}\)</span>, neural network <span class="math inline">\(u_t^\theta\)</span></p>
+<table class="caption-top table">
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td><strong>for</strong> each mini-batch of data <strong>do</strong></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a data example <span class="math inline">\(z\)</span> from the dataset.</td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a random time <span class="math inline">\(t \sim \text{Unif}_{[0,1]}\)</span>.</td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><span class="math inline">\(\quad\)</span> Sample noise <span class="math inline">\(\epsilon \sim \mathcal{N}(0, I_d)\)</span></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad\)</span> Set <span class="math inline">\(x = tz + (1-t)\epsilon\)</span></td>
+</tr>
+<tr class="even">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Compute loss</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">\[\mathcal{L}(\theta) = \|u_t^\theta(x) - (z - \epsilon)\|^2\]</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 95%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>7:</td>
+<td><span class="math inline">\(\quad\)</span> Update the model parameters <span class="math inline">\(\theta\)</span> via gradient descent on <span class="math inline">\(\mathcal{L}(\theta)\)</span>.</td>
+</tr>
+<tr class="even">
+<td>8:</td>
+<td><strong>end for</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section id="example-flow-matching-stable-diffusion-3" class="level3">
+<h3 class="anchored" data-anchor-id="example-flow-matching-stable-diffusion-3">Example Flow Matching — Stable Diffusion 3</h3>
+<div class="grid" style="--bs-columns: 3; column-gap: 0.4rem;">
+<div class="g-col-1">
+<p><img src="assets/misc/stable_diffusion_1.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/stable_diffusion_2.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><img src="assets/misc/stable_diffusion_3.png" class="img-fluid rounded"></p>
+</div>
+</div>
+<div class="border rounded p-3 mt-3 text-center" style="font-weight:bold; color:#a30000; font-size:1.1em;">
+<p>The neural network that generates these images was trained with the algorithm just shown</p>
+</div>
+</section>
+<section id="reminder-sampling-algorithm-for-flow-model" class="level3">
+<h3 class="anchored" data-anchor-id="reminder-sampling-algorithm-for-flow-model">Reminder: Sampling Algorithm for Flow Model</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 1</strong> Sampling from a Flow Model with Euler method</p>
+<hr>
+<p><strong>Require:</strong> Neural network vector field <span class="math inline">\(u_t^\theta\)</span>, number of steps <span class="math inline">\(n\)</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 60%">
+<col style="width: 35%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td>Set <span class="math inline">\(t = 0\)</span></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td>Set step size <span class="math inline">\(h = \tfrac{1}{n}\)</span></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td>Draw a sample <span class="math inline">\(X_0 \sim p_{\text{init}}\)</span></td>
+<td><span style="color:#a30000; font-style:italic;"><em>Random initialization!</em></span></td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><strong>for</strong> <span class="math inline">\(i = 1, \dots, n-1\)</span> <strong>do</strong></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad X_{t+h} = X_t + h u_t^\theta(X_t)\)</span></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Update <span class="math inline">\(t \leftarrow t + h\)</span></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>7:</td>
+<td><strong>end for</strong></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>8:</td>
+<td><strong>return</strong> <span class="math inline">\(X_1\)</span></td>
+<td><span style="color:#a30000; font-style:italic;"><em>Return final point</em></span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="border rounded p-2 text-center mb-3" style="border-color:#a30000 !important;">
+<p><span style="color:#a30000; font-size:1.3em;"><strong>The Flow Matching Matrix</strong></span></p>
+</div>
+<div class="border rounded p-3">
+<div class="grid align-items-center text-center mb-2" style="--bs-columns: 11; column-gap: 0.3rem;">
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#1a6faf;"><strong>Conditional</strong></span><br>
+<strong>Probability Path</strong></p>
+</div>
+<div class="g-col-1">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#1a6faf;"><strong>Conditional</strong></span><br>
+<strong>Vector Field</strong></p>
+</div>
+<div class="g-col-1">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#1a6faf;"><strong>Conditional</strong></span><br>
+<strong>Flow Matching Loss</strong></p>
+</div>
+</div>
+<div class="grid align-items-center text-center mb-3" style="--bs-columns: 11; column-gap: 0.3rem;">
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#2a9a2a;"><strong>Marginal</strong></span><br>
+<strong>Probability Path</strong></p>
+</div>
+<div class="g-col-1">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#2a9a2a;"><strong>Marginal</strong></span><br>
+<strong>Vector Field</strong></p>
+</div>
+<div class="g-col-1">
+<p><span class="math inline">\(\rightarrow\)</span></p>
+</div>
+<div class="g-col-3 border rounded p-2" style="background:#f0f0f0;">
+<p><span style="color:#2a9a2a;"><strong>Marginal</strong></span><br>
+<strong>Flow Matching Loss</strong></p>
+</div>
+</div>
+<div class="grid text-center" style="--bs-columns: 3; column-gap: 0.5rem;">
+<div class="g-col-1 border rounded p-3" style="color:#a30000; font-weight:bold;">
+<p>Defines distributions from noise to data</p>
+</div>
+<div class="g-col-1 border rounded p-3" style="color:#a30000; font-weight:bold;">
+<p>Defines training target that we want to learn</p>
+</div>
+<div class="g-col-1 border rounded p-3" style="color:#a30000; font-weight:bold;">
+<p>Loss function that we want to minimize during training</p>
+</div>
+</div>
+</div>
+</section>
+<section id="conditional-probability-path-vector-field-and-flow-matching-loss" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-probability-path-vector-field-and-flow-matching-loss">Conditional Probability Path, Vector Field, and Flow Matching Loss</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 19%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Gaussian example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conditional Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t(\cdot\|z)\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and a data point <span class="math inline">\(z\)</span></td>
+<td><span class="math inline">\(\mathcal{N}(\alpha_t z,\, \beta_t^1 I_d)\)</span></td>
+</tr>
+<tr class="even">
+<td>Conditional Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x\|z)\)</span></td>
+<td>ODE follows conditional path</td>
+<td><span class="math inline">\(\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x\)</span></td>
+</tr>
+<tr class="odd">
+<td>Conditional FM Loss</td>
+<td style="text-align: center;"><span class="math inline">\(L_{\text{CFM}}(\theta)\)</span></td>
+<td>Loss we minimize during training</td>
+<td><span class="math inline">\(\mathbb{E}_{t,z,x}\left[\|u_t^\theta(x) - u_t^{\text{target}}(x\|z)\|^1\right]\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="border rounded p-3 text-center" style="border-color:#a30000 !important;">
+<p><span style="color:#a29999; font-weight:bold;"><strong>All these objects are tractable. Just analytical formulas!</strong></span></p>
+</div>
+</section>
+<section id="marginal-probability-path-vector-field-and-flow-matching-loss" class="level3">
+<h3 class="anchored" data-anchor-id="marginal-probability-path-vector-field-and-flow-matching-loss">Marginal Probability Path, Vector Field, and Flow Matching Loss</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Marginal Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and <span class="math inline">\(p_{\text{data}}\)</span></td>
+<td><span class="math inline">\(\int p_t(x\|z)\, p_{\text{data}}(z)\,\mathrm{d}z\)</span></td>
+</tr>
+<tr class="even">
+<td>Marginal Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x)\)</span></td>
+<td>ODE follows marginal path</td>
+<td><span class="math inline">\(\int u_t^{\text{target}}(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z\)</span></td>
+</tr>
+<tr class="odd">
+<td>Marginal FM Loss</td>
+<td style="text-align: center;"><span class="math inline">\(L_{\text{FM}}(\theta)\)</span></td>
+<td>Implicitly minimized via cond FM loss</td>
+<td><span class="math inline">\(\mathbb{E}_{t,z,x}\left[\|u_t^\theta(x) - u_t^{\text{target}}(x)\|^2\right]\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="border rounded p-2 text-center" style="border-color:#a30000 !important;">
+<p><span style="color:#a30000; font-weight:bold;"><strong>None of these objects are tractable. But we can still learn them!</strong></span></p>
+</div>
+</section>
 </div>
 <div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
 
