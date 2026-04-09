@@ -1732,9 +1732,729 @@ Figure credit: Yaron Lipman
 </div>
 <div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
 
+<section id="reminder-conditional-probability-path-and-conditional-vector-field" class="level3">
+<h3 class="anchored" data-anchor-id="reminder-conditional-probability-path-and-conditional-vector-field">Reminder: Conditional Probability Path and Conditional Vector Field</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Gaussian example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conditional Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t(\cdot\|z)\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and a data point <span class="math inline">\(z\)</span></td>
+<td><span class="math inline">\(\mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)\)</span></td>
+</tr>
+<tr class="even">
+<td>Conditional Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x\|z)\)</span></td>
+<td>ODE follows conditional path</td>
+<td><span class="math inline">\(\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x\)</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="reminder-marginal-probability-path-and-marginal-vector-field" class="level3">
+<h3 class="anchored" data-anchor-id="reminder-marginal-probability-path-and-marginal-vector-field">Reminder: Marginal Probability Path and Marginal Vector Field</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Marginal Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and <span class="math inline">\(p_{\text{data}}\)</span></td>
+<td><span class="math inline">\(\int p_t(x\|z)\, p_{\text{data}}(z)\,\mathrm{d}z\)</span></td>
+</tr>
+<tr class="even">
+<td>Marginal Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x)\)</span></td>
+<td>ODE follows marginal path</td>
+<td><span class="math inline">\(\int u_t^{\text{target}}(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z\)</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="algorithm-3-flow-matching-training-procedure-general" class="level3">
+<h3 class="anchored" data-anchor-id="algorithm-3-flow-matching-training-procedure-general">Algorithm 3: Flow Matching Training Procedure (General)</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 3</strong> Flow Matching Training Procedure (General)</p>
+<hr>
+<p><strong>Require:</strong> A dataset of samples <span class="math inline">\(z \sim p_{\text{data}}\)</span>, neural network <span class="math inline">\(u_t^\theta\)</span></p>
+<table class="caption-top table">
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td><strong>for</strong> each mini-batch of data <strong>do</strong></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a data example <span class="math inline">\(z\)</span> from the dataset.</td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a random time <span class="math inline">\(t \sim \text{Unif}_{[0,1]}\)</span>.</td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><span class="math inline">\(\quad\)</span> Sample <span class="math inline">\(x \sim p_t(\cdot|z)\)</span></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad\)</span> Compute loss</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">\[\mathcal{L}(\theta) = \|u_t^\theta(x) - u_t^{\text{target}}(x|z)\|^2\]</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 95%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Update the model parameters <span class="math inline">\(\theta\)</span> via gradient descent on <span class="math inline">\(\mathcal{L}(\theta)\)</span></td>
+</tr>
+<tr class="even">
+<td>7:</td>
+<td><strong>end for</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><em>We can learn the marginal vector field by approximating the cond. VF for many different data points <span class="math inline">\(z\)</span>.</em></p>
+</div>
+</div>
+</div>
+</section>
+<section id="reminder-sampling-algorithm-for-flow-model-1" class="level3">
+<h3 class="anchored" data-anchor-id="reminder-sampling-algorithm-for-flow-model-1">Reminder: Sampling Algorithm for Flow Model</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 1</strong> Sampling from a Flow Model with Euler method</p>
+<hr>
+<p><strong>Require:</strong> Neural network vector field <span class="math inline">\(u_t^\theta\)</span>, number of steps <span class="math inline">\(n\)</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 60%">
+<col style="width: 35%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td>Set <span class="math inline">\(t = 0\)</span></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td>Set step size <span class="math inline">\(h = \tfrac{1}{n}\)</span></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td>Draw a sample <span class="math inline">\(X_0 \sim p_{\text{init}}\)</span></td>
+<td><span style="color:#a30000; font-style:italic;"><em>Random initialization!</em></span></td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><strong>for</strong> <span class="math inline">\(i = 1, \dots, n-1\)</span> <strong>do</strong></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad X_{t+h} = X_t + h u_t^\theta(X_t)\)</span></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Update <span class="math inline">\(t \leftarrow t + h\)</span></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>7:</td>
+<td><strong>end for</strong></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>8:</td>
+<td><strong>return</strong> <span class="math inline">\(X_1\)</span></td>
+<td><span style="color:#a30000; font-style:italic;"><em>Return final point</em></span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section id="score-functions-gradients-of-the-log-likelihood" class="level3">
+<h3 class="anchored" data-anchor-id="score-functions-gradients-of-the-log-likelihood">Score Functions = Gradients of the log-likelihood</h3>
+<div class="grid" style="--bs-columns: 2; column-gap: 1.5rem;">
+<div class="g-col-1">
+<p><span style="color:#888;">Log-likelihood:</span> <span class="math inline">\(\log q(x)\)</span></p>
+<p><img src="assets/misc/log_likelihood.png" class="img-fluid rounded"></p>
+</div>
+<div class="g-col-1">
+<p><span style="color:#888;">Score function:</span> <span class="math inline">\(\nabla \log q(x)\)</span></p>
+<p><img src="assets/misc/grad_log_likelihood.png" class="img-fluid rounded"></p>
+</div>
+</div>
+</section>
+<section id="example-score-of-gaussian-probability-path" class="level3">
+<h3 class="anchored" data-anchor-id="example-score-of-gaussian-probability-path">Example — Score of Gaussian Probability Path</h3>
+<div class="text-center border rounded p-3 mb-3">
+<p><span class="math display">\[\nabla \log p_t(x|z) = -\frac{1}{\beta_t^2}x + \frac{\alpha_t}{\beta_t^2}z\]</span></p>
+</div>
+<div class="border rounded p-3" style="border-style: dashed !important;">
+<p><em>Proof:</em></p>
+<p><span class="math display">\[p_t(x|z) = \mathcal{N}(x;\, \alpha_t z, \beta_t^2 I_d) = \frac{1}{(2\pi)^{d/2}\beta_t^d} \exp\!\left(-\frac{1}{2\beta_t^2}\|x - \alpha_t z\|^2\right)\]</span></p>
+<p><span class="math display">\[\log p_t(x|z) = \log \mathcal{N}(x;\, \alpha_t z, \beta_t^2 I_d) = -\frac{d}{2}\log(2\pi) - d\log\beta_t - \frac{1}{2\beta_t^2}\|x - \alpha_t z\|^2\]</span></p>
+<p><span class="math display">\[\nabla \log p_t(x|z) = \nabla \log \mathcal{N}(x;\, \alpha_t z, \beta_t^2 I_d) = -\frac{x - \alpha_t z}{\beta_t^2}\]</span></p>
+</div>
+</section>
+<section id="conditional-probability-path-vector-field-and-score" class="level3">
+<h3 class="anchored" data-anchor-id="conditional-probability-path-vector-field-and-score">Conditional Probability Path, Vector Field, and Score</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Gaussian example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conditional Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t(\cdot\|z)\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and a data point <span class="math inline">\(z\)</span></td>
+<td><span class="math inline">\(\mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)\)</span></td>
+</tr>
+<tr class="even">
+<td>Conditional Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x\|z)\)</span></td>
+<td>ODE follows conditional path</td>
+<td><span class="math inline">\(\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x\)</span></td>
+</tr>
+<tr class="odd">
+<td><span style="color:#a30000;"><strong>Conditional Score Function</strong></span></td>
+<td style="text-align: center;"><span class="math inline">\(\nabla \log p_t(x\|z)\)</span></td>
+<td>Gradient of log-likelihood</td>
+<td><span class="math inline">\(\dfrac{\alpha_t}{\beta_t^2}z - \dfrac{1}{\beta_t^2}x\)</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="marginal-probability-path-vector-field-and-score" class="level3">
+<h3 class="anchored" data-anchor-id="marginal-probability-path-vector-field-and-score">Marginal Probability Path, Vector Field, and Score</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Marginal Probability Path</td>
+<td style="text-align: center;"><span class="math inline">\(p_t\)</span></td>
+<td>Interpolates <span class="math inline">\(p_{\text{init}}\)</span> and <span class="math inline">\(p_{\text{data}}\)</span></td>
+<td><span class="math inline">\(\int p_t(x\|z)\, p_{\text{data}}(z)\,\mathrm{d}z\)</span></td>
+</tr>
+<tr class="even">
+<td>Marginal Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x)\)</span></td>
+<td>ODE follows marginal path</td>
+<td><span class="math inline">\(\int u_t^{\text{target}}(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z\)</span></td>
+</tr>
+<tr class="odd">
+<td><span style="color:#a30000;"><strong>Marginal Score Function</strong></span></td>
+<td style="text-align: center;"><span class="math inline">\(\nabla \log p_t(x)\)</span></td>
+<td>Can be used to convert ODE target to SDE</td>
+<td><span class="math inline">\(\int \nabla \log p_t(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z\)</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="observation-both-conditional-vector-field-and-conditional-score-are-linear-functions-just-with-different-coefficients" class="level3">
+<h3 class="anchored" data-anchor-id="observation-both-conditional-vector-field-and-conditional-score-are-linear-functions-just-with-different-coefficients">Observation: Both Conditional Vector Field and Conditional Score are Linear Functions! Just with Different Coefficients!</h3>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 15%">
+<col style="width: 25%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Notation</th>
+<th>Key property</th>
+<th>Gaussian example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Conditional Vector Field</td>
+<td style="text-align: center;"><span class="math inline">\(u_t^{\text{target}}(x\|z)\)</span></td>
+<td>ODE follows conditional path</td>
+<td><span class="math inline">\(\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x\)</span></td>
+</tr>
+<tr class="even">
+<td><span style="color:#a30000;"><strong>Conditional Score Function</strong></span></td>
+<td style="text-align: center;"><span class="math inline">\(\nabla \log p_t(x\|z)\)</span></td>
+<td>Gradient of log-likelihood</td>
+<td><span class="math inline">\(\dfrac{\alpha_t}{\beta_t^2}z - \dfrac{1}{\beta_t^2}x\)</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="reparameterization-velocity-field-score-function" class="level3">
+<h3 class="anchored" data-anchor-id="reparameterization-velocity-field-score-function">Reparameterization: Velocity Field → Score Function</h3>
+<p><span class="math display">\[a_t = \left(\beta_t^2 \frac{\dot{\alpha}_t}{\alpha_t} - \dot{\beta}_t \beta_t\right), \qquad b_t = \frac{\dot{\alpha}_t}{\alpha_t}\]</span></p>
+<p><span class="math display">\[
+\begin{align}
+u_t^{\text{target}}(x|z) &amp;= a_t \nabla \log p_t(x|z) + b_t x \\
+u_t^{\text{target}}(x) &amp;= a_t \nabla \log p_t(x) + b_t x
+\end{align}
+\]</span></p>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 6</strong> Score Matching Training Procedure (General)</p>
+<hr>
+<p><strong>Require:</strong> A dataset of samples <span class="math inline">\(z \sim p_{\text{data}}\)</span>, score network <span class="math inline">\(s_t^\theta\)</span></p>
+<table class="caption-top table">
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td><strong>for</strong> each mini-batch of data <strong>do</strong></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a data example <span class="math inline">\(z\)</span> from the dataset.</td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a random time <span class="math inline">\(t \sim \text{Unif}_{[0,1]}\)</span>.</td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><span class="math inline">\(\quad\)</span> Sample <span class="math inline">\(x \sim p_t(\cdot|z)\)</span></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad\)</span> Compute loss</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">\[\mathcal{L}(\theta) = \|s_t^\theta(x) - \nabla \log p_t(x|z)\|^2\]</span></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 95%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Update the model parameters <span class="math inline">\(\theta\)</span> via gradient descent on <span class="math inline">\(\mathcal{L}(\theta)\)</span></td>
+</tr>
+<tr class="even">
+<td>7:</td>
+<td><strong>end for</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section id="denoising-score-matching-for-gaussian-prob.-path" class="level3">
+<h3 class="anchored" data-anchor-id="denoising-score-matching-for-gaussian-prob.-path">Denoising Score Matching for Gaussian Prob. Path</h3>
+<p><span class="math display">\[\nabla \log p_t(x|z) = -\frac{x - \alpha_t z}{\beta_t^2}\]</span></p>
+<p><span class="math display">\[\epsilon \sim \mathcal{N}(0, I_d) \quad \Rightarrow \quad x = \alpha_t z + \beta_t \epsilon \sim \mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)\]</span></p>
+<p><span class="math display">\[
+\begin{align}
+\mathcal{L}_{\text{dsm}}(\theta)
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, x \sim p_t(\cdot|z)}\!\left[\left\|s_t^\theta(x) + \frac{x - \alpha_t z}{\beta_t^2}\right\|^2\right] \\
+&amp;= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, \epsilon \sim \mathcal{N}(0,I_d)}\!\left[\left\|s_t^\theta(\alpha_t z + \beta_t \epsilon) + \frac{\epsilon}{\beta_t}\right\|^2\right]
+\end{align}
+\]</span></p>
+<p><span style="color:#a30000; font-style:italic;"><em>Note what the network does: It needs to predict the noise that was used to corrupt the data point! (<strong>DENOISING</strong> diffusion models)</em></span></p>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Algorithm 5</strong> Score Matching Training Procedure for Gaussian probability path</p>
+<hr>
+<p><strong>Require:</strong> A dataset of samples <span class="math inline">\(z \sim p_{\text{data}}\)</span>, score network <span class="math inline">\(s_t^\theta\)</span> or noise predictor <span class="math inline">\(\epsilon_t^\theta\)</span><br>
+<strong>Require:</strong> Schedulers <span class="math inline">\(\alpha_t, \beta_t\)</span> with <span class="math inline">\(\alpha_0 = \beta_1 = 0,\, \alpha_1 = \beta_0 = 1\)</span></p>
+<table class="caption-top table">
+<tbody>
+<tr class="odd">
+<td>1:</td>
+<td><strong>for</strong> each mini-batch of data <strong>do</strong></td>
+</tr>
+<tr class="even">
+<td>2:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a data example <span class="math inline">\(z\)</span> from the dataset.</td>
+</tr>
+<tr class="odd">
+<td>3:</td>
+<td><span class="math inline">\(\quad\)</span> Sample a random time <span class="math inline">\(t \sim \text{Unif}_{[0,1]}\)</span>.</td>
+</tr>
+<tr class="even">
+<td>4:</td>
+<td><span class="math inline">\(\quad\)</span> Sample noise <span class="math inline">\(\epsilon \sim \mathcal{N}(0, I_d)\)</span></td>
+</tr>
+<tr class="odd">
+<td>5:</td>
+<td><span class="math inline">\(\quad\)</span> Set <span class="math inline">\(x_t = \alpha_t z + \beta_t \epsilon\)</span></td>
+</tr>
+<tr class="even">
+<td>6:</td>
+<td><span class="math inline">\(\quad\)</span> Compute loss</td>
+</tr>
+</tbody>
+</table>
+<div class="grid align-items-center" style="--bs-columns: 12;">
+<div class="g-col-7 text-center">
+<p><span class="math display">\[\mathcal{L}(\theta) = \left\|s_t^\theta(x_t) + \frac{\epsilon}{\beta_t}\right\|^2\]</span></p>
+</div>
+<div class="g-col-5" style="font-size:0.9em;">
+<p>↖ <span style="color:#a30000; font-style:italic;"><em>Numerically unstable for low beta!</em></span></p>
+</div>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 95%">
+</colgroup>
+<tbody>
+<tr class="odd">
+<td>7:</td>
+<td><span class="math inline">\(\quad\)</span> Update the model parameters <span class="math inline">\(\theta\)</span> via gradient descent on <span class="math inline">\(\mathcal{L}(\theta)\)</span>.</td>
+</tr>
+<tr class="even">
+<td>8:</td>
+<td><strong>end for</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section id="fokker-planck-equation" class="level3">
+<h3 class="anchored" data-anchor-id="fokker-planck-equation">Fokker-Planck Equation</h3>
+<div class="text-center">
+<p><span style="color:#a30000; font-style:italic;"><em>Randomly initialized SDE</em></span></p>
+<p><strong>Given:</strong> <span class="math inline">\(\quad X_0 \sim p_{\text{init}}, \qquad \mathrm{d}X_t = u_t(X_t)\mathrm{d}t + \sigma_t\mathrm{d}W_t\)</span></p>
+</div>
+<hr>
+<div class="grid align-items-center">
+<div class="g-col-2">
+
+</div>
+<div class="g-col-8">
+<div class="border rounded p-3 mb-1">
+<p><strong>Follow probability path:</strong></p>
+<p><span class="math display">\[X_t \sim p_t \qquad (0 \le t \le 1)\]</span></p>
+</div>
+</div>
+<div class="g-col-2" style="font-size:0.9em;">
+<p><span style="color:#a30000; font-style:italic;"><em>Marginals are <span class="math inline">\(p_t\)</span></em></span></p>
+</div>
+</div>
+<div class="text-center" style="font-size:2em; color:#aaa; margin: 0.2em 0;">
+<p><span class="math inline">\(\Longleftrightarrow\)</span> <span style="font-size:0.4em; color:#555; vertical-align:middle;">equivalent</span></p>
+</div>
+<div class="grid align-items-center">
+<div class="g-col-2">
+
+</div>
+<div class="g-col-8">
+<div class="border rounded p-3 mb-1">
+<p><strong>Fokker-Planck equation holds</strong></p>
+<p><span class="math display">\[\frac{\mathrm{d}}{\mathrm{d}t}p_t(x) = \underbrace{-\operatorname{div}(p_t u_t)(x)}_{\color{#a30000}{\small\textit{Continuity equation}}} + \underbrace{\frac{\sigma_t^2}{2}\Delta p_t(x)}_{\color{#a30000}{\small\textit{Heat equation}}}\]</span></p>
+</div>
+</div>
+<div class="g-col-2">
+
+</div>
+</div>
+<div style="display:flex; align-items:center; gap:2rem;">
+<div style="flex:5;">
+<p><strong>Fokker-Planck Equation</strong></p>
+<p><span class="math display">\[\underbrace{\frac{\mathrm{d}}{\mathrm{d}t}p_t(x)}_{\color{#a30000}{\small\textit{Change of prob. mass at } x}} = \underbrace{-\operatorname{div}(p_t u_t)(x)}_{\color{#a30000}{\small\textit{Mass conservation}}} + \underbrace{\frac{\sigma_t^2}{2}\Delta p_t(x)}_{\color{#a30000}{\small\textit{Heat dispersion}}}\]</span></p>
+</div>
+<div style="flex:7;">
+<p><img src="assets/misc/fokker_planck_plot.png" class="img-fluid rounded" style="max-width:85%; display:block; margin:auto;"></p>
+</div>
+</div>
+</section>
+<section id="stochastic-sampling-of-diffusion-models" class="level3">
+<h3 class="anchored" data-anchor-id="stochastic-sampling-of-diffusion-models">Stochastic Sampling of Diffusion Models</h3>
+<p>Choose noise level <span class="math inline">\(\sigma_t\)</span>. By “SDE extension trick”, we can sample from:</p>
+<div class="p-3 rounded" style="background:#eef4fb;">
+<p><span class="math display">\[\mathrm{d}X_t = \left[{\color{#1a6faf}{u_t^{\text{target}}(X_t)}} + {\color{#2a9a2a}{\frac{\sigma_t^2}{2}\nabla \log p_t(X_t)}}\right]\mathrm{d}t + \sigma_t\mathrm{d}W_t\]</span></p>
+</div>
+<p>For Gaussian probability paths, we can express this solely in terms of the score:</p>
+<div class="p-3 rounded" style="background:#f0f0f0;">
+<p><span class="math display">\[\mathrm{d}X_t = \left[\left(a_t + \frac{\sigma_t^2}{2}\right)\nabla \log p_t(X_t) + b_t X_t\right]\mathrm{d}t + \sigma_t\mathrm{d}W_t\]</span></p>
+</div>
+<p>Plugin score network:</p>
+<div class="p-3 rounded" style="background:#f0f0f0;">
+<p><span class="math display">\[\mathrm{d}X_t = \left[\left(a_t + \frac{\sigma_t^2}{2}\right)s_t^\theta(X_t) + b_t X_t\right]\mathrm{d}t + \sigma_t\mathrm{d}W_t\]</span></p>
+</div>
+</section>
+<section id="why-would-we-want-stochasticsde-dynamics" class="level3">
+<h3 class="anchored" data-anchor-id="why-would-we-want-stochasticsde-dynamics">Why Would We Want Stochastic/SDE Dynamics?</h3>
+<p><strong>In theory:</strong> All diffusion coefficients lead to the same result (sample from data distribution).</p>
+<p><strong>In practice:</strong></p>
+<ul>
+<li><strong>Training error:</strong> Neural network has not perfectly learnt the marginal vector field/score.</li>
+<li><strong>Simulation error:</strong> We need to simulate SDE/ODE leading to discretization error.</li>
+</ul>
+<p><strong>Downstream applications</strong>: Fine-tuning, inference-time optimization, etc. might require stochastic evolution</p>
+<div class="border rounded p-3" style="border-color:#a30000 !important;">
+<p><span style="color:#a30000; font-weight:bold; font-size:1.05em;"><strong>Good news: ODE sampling often leads to the best results. Therefore, SDE sampling is an option, not a must!</strong></span></p>
+</div>
+</section>
 </div>
 <div id="tabset-1-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-6-tab">
 
+<div class="d-flex justify-content-end mb-1">
+<p><strong>Image source</strong>: Scaling Rectified Flow Transformers for High-Resolution Image Synthesis [1]</p>
+</div>
+<div class="grid">
+<div class="g-col-4 text-center">
+<p><img src="assets/misc/ogre.png" class="img-fluid" style="width:100.0%"></p>
+<div class="side-caption">
+<p>A swamp ogre with a pearl earring by Johannes Vermeer</p>
+</div>
+</div>
+<div class="g-col-4 text-center">
+<p><img src="assets/misc/veg_car.png" class="img-fluid" style="width:100.0%"></p>
+<div class="side-caption">
+<p>A car made out of vegetables.</p>
+</div>
+</div>
+<div class="g-col-4 text-center">
+<p><img src="assets/misc/heat_death.png" class="img-fluid" style="width:100.0%"></p>
+<div class="side-caption">
+<p>heat death of the universe, line art</p>
+</div>
+</div>
+</div>
+<p><strong>Unguided</strong>: Generate an image.</p>
+<p><strong>Guided:</strong> Generate an image of a cat baking a cake.</p>
+<section id="vanilla-guided-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="vanilla-guided-sampling">Vanilla Guided Sampling</h3>
+<div class="callout callout-style-simple callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Algorithm 7 Guided Sampling Procedure
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Require:</strong> A trained guided vector field <span class="math inline">\(u_t^\theta(x|y)\)</span>.</p>
+<ol type="1">
+<li>Select a prompt <span class="math inline">\(y \in \mathcal{Y}\)</span>, such as “a cat baking a cake”.</li>
+<li>Initialize <span class="math inline">\(X_0 \sim p_\mathrm{init}\)</span>.</li>
+<li>Simulate <span class="math inline">\(\mathrm{d}X_t = u_t^\theta(X_t|y)\mathrm{d}t\)</span> from <span class="math inline">\(t = 0\)</span> to <span class="math inline">\(t = 1\)</span>.</li>
+</ol>
+</div>
+</div>
+</section>
+<section id="vanilla-guidance-leads-to-suboptimal-results" class="level3">
+<h3 class="anchored" data-anchor-id="vanilla-guidance-leads-to-suboptimal-results">Vanilla Guidance leads to suboptimal results</h3>
+<div style="display:flex; align-items:center; gap:2rem;">
+<div style="flex:0 0 58%;">
+<p><img src="assets/misc/corgi_set.png" class="img-fluid" style="width:100.0%"></p>
+</div>
+<div>
+<p><em>Prompt:</em> <strong><em>“Corgi dog”</em></strong></p>
+<p><span style="color:#cc0000;"><strong><em>These images do not fit well to the prompt and they have errors!</em></strong></span></p>
+</div>
+</div>
+</section>
+<section id="intuition-classifier-guidance" class="level3">
+<h3 class="anchored" data-anchor-id="intuition-classifier-guidance">Intuition: Classifier Guidance</h3>
+<div style="position:relative; width:70%;">
+<img id="prompt-decomp-img-0" src="assets/misc/prompt_decomp.png" style="width:100%; display:block; visibility:visible;"> <img id="prompt-decomp-img-1" src="assets/misc/scaled_prompt_decomp.png" style="width:100%; display:block; position:absolute; top:0; left:0; visibility:hidden;">
+<div id="toggle-prompt-img" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;">
+
+</div>
+</div>
+<script>
+(function() {
+  var idx = 0;
+  document.getElementById("toggle-prompt-img").addEventListener("click", function() {
+    idx = 1 - idx;
+    document.getElementById("prompt-decomp-img-0").style.visibility = idx === 0 ? "visible" : "hidden";
+    document.getElementById("prompt-decomp-img-1").style.visibility = idx === 1 ? "visible" : "hidden";
+  });
+})();
+</script>
+</section>
+<section id="classifier-free-guidance" class="level3">
+<h3 class="anchored" data-anchor-id="classifier-free-guidance">Classifier-Free Guidance</h3>
+<div style="position:relative; width:70%;">
+<img id="cfg-img-0" src="assets/misc/classifier_free_vf.png" style="width:100%; display:block; visibility:visible;"> <img id="cfg-img-1" src="assets/misc/reinforced_classifier_free_vf.png" style="width:100%; display:block; position:absolute; top:0; left:0; visibility:hidden;">
+<div id="toggle-cfg-img" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;">
+
+</div>
+</div>
+<script>
+(function() {
+  var idx = 0;
+  document.getElementById("toggle-cfg-img").addEventListener("click", function() {
+    idx = 1 - idx;
+    document.getElementById("cfg-img-0").style.visibility = idx === 0 ? "visible" : "hidden";
+    document.getElementById("cfg-img-1").style.visibility = idx === 1 ? "visible" : "hidden";
+  });
+})();
+</script>
+</section>
+<section id="classifier-free-guidance-training-account-for-empty-token-varnothing" class="level3">
+<h3 class="anchored" data-anchor-id="classifier-free-guidance-training-account-for-empty-token-varnothing">Classifier-free guidance training: Account for empty token <span class="math inline">\(\varnothing\)</span></h3>
+<div class="callout callout-style-simple callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Algorithm 5 Classifier-free guidance training
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Require:</strong> Paired dataset <span class="math inline">\((z, y) \sim p_\mathrm{data}\)</span>, neural network <span class="math inline">\(u_t^\theta\)</span></p>
+<ol type="1">
+<li><strong>for</strong> each mini-batch of data <strong>do</strong></li>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;Sample a data example <span class="math inline">\((z, y)\)</span> from the dataset.</li>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;Sample a random time <span class="math inline">\(t \sim \mathrm{Unif}_{[0,1]}\)</span>.</li>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;Sample noise <span class="math inline">\(\epsilon \sim \mathcal{N}(0, I_d)\)</span></li>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;Set <span class="math inline">\(x = \alpha_t z + \beta_t \epsilon\)</span></li>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;With probability <span class="math inline">\(p\)</span> drop label: <span class="math inline">\(y \leftarrow \varnothing\)</span> &nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#cc0000;"><strong><em>Drop label with a certain probability!</em></strong></span></li>
+<li>&nbsp;&nbsp;&nbsp;&nbsp;Compute loss</li>
+</ol>
+<p><span class="math display">\[\mathcal{L}(\theta) = \|u_t^\theta(x|y) - u_t^\mathrm{target}(x|z)\|^2\]</span></p>
+<ol start="8" type="1">
+<li>&nbsp;&nbsp;&nbsp;&nbsp;Update the model parameters <span class="math inline">\(\theta\)</span> via gradient descent on <span class="math inline">\(\mathcal{L}(\theta)\)</span>.</li>
+<li><strong>end for</strong></li>
+</ol>
+</div>
+</div>
+</section>
+<section id="sampling-with-classifier-free-guidance" class="level3">
+<h3 class="anchored" data-anchor-id="sampling-with-classifier-free-guidance">Sampling with Classifier-Free Guidance</h3>
+<p>Simply is the same as before but we use the weighted vector field:</p>
+<p><span class="math display">\[u_t^{\theta,w}(x) = (1-w)u_t^\theta(x|\varnothing) + wu_t^\theta(x|y)\]</span></p>
+<div class="callout callout-style-simple callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Algorithm 8 Classifier-Free Guidance Sampling Procedure
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Require:</strong> A trained guided vector field <span class="math inline">\(u_t^\theta(x|y)\)</span>.</p>
+<ol type="1">
+<li>Select a prompt <span class="math inline">\(y \in \mathcal{Y}\)</span>, or take <span class="math inline">\(y = \varnothing\)</span> for unguided sampling.</li>
+<li>Select a <span style="color:#cc0000;"><strong>guidance scale</strong></span> <span class="math inline">\(w &gt; 1\)</span>.</li>
+<li>Initialize <span class="math inline">\(X_0 \sim p_\mathrm{init}\)</span>.</li>
+<li>Simulate <span class="math inline">\(\mathrm{d}X_t = \left[(1-w)u_t^\theta(X_t|\varnothing) + wu_t^\theta(X_t|y)\right]\mathrm{d}t\)</span> from <span class="math inline">\(t=0\)</span> to <span class="math inline">\(t=1\)</span>.</li>
+</ol>
+</div>
+</div>
+</section>
+<section id="example-classifier-free-guidance" class="level3">
+<h3 class="anchored" data-anchor-id="example-classifier-free-guidance">Example: Classifier-Free Guidance</h3>
+<div class="grid">
+<div class="g-col-6 text-center">
+<p>w=1.0</p>
+<p><img src="assets/misc/classifier_free_w1.png" class="img-fluid" style="width:100.0%"></p>
+</div>
+<div class="g-col-6 text-center">
+<p>w=4.0</p>
+<p><img src="assets/misc/classifier_free_w4.png" class="img-fluid" style="width:100.0%"></p>
+</div>
+</div>
+</section>
+<div style="display:flex; align-items:center; gap:2rem;">
+<section id="example-classifier-free-guidance-1" class="level3" style="flex:0 0 25%;">
+<h3 class="anchored" data-anchor-id="example-classifier-free-guidance-1">Example: Classifier-Free Guidance</h3>
+</section>
+<div style="flex:1;">
+<p><img src="assets/misc/cfg_examples.png" class="img-fluid" style="width:100.0%"></p>
+</div>
+</div>
 </div>
 </div>
 </div>
