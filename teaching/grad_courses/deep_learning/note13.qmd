@@ -1279,12 +1279,336 @@ Loss function that we want to minimize during training
 :::
 
 
-
-
 ## Score Matching
 
 ::: {.column-margin}
 Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth
+:::
+
+
+### Reminder: Conditional Probability Path and Conditional Vector Field
+
+|  | Notation | Key property | Gaussian example |
+|---|:---:|---|---|
+| Conditional Probability Path | $p_t(\cdot\|z)$ | Interpolates $p_{\text{init}}$ and a data point $z$ | $\mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)$ |
+| Conditional Vector Field | $u_t^{\text{target}}(x\|z)$ | ODE follows conditional path | $\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x$ |
+
+: {.striped .hover tbl-colwidths="[20,15,25,40]"}
+
+### Reminder: Marginal Probability Path and Marginal Vector Field
+
+|  | Notation | Key property | Formula |
+|---|:---:|---|---|
+| Marginal Probability Path | $p_t$ | Interpolates $p_{\text{init}}$ and $p_{\text{data}}$ | $\int p_t(x\|z)\, p_{\text{data}}(z)\,\mathrm{d}z$ |
+| Marginal Vector Field | $u_t^{\text{target}}(x)$ | ODE follows marginal path | $\int u_t^{\text{target}}(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z$ |
+
+: {.striped .hover tbl-colwidths="[20,15,25,40]"}
+
+
+### Algorithm 3: Flow Matching Training Procedure (General)
+
+::: {.callout-note appearance="minimal" icon=false}
+**Algorithm 3** Flow Matching Training Procedure (General)
+
+---
+
+**Require:** A dataset of samples $z \sim p_{\text{data}}$, neural network $u_t^\theta$
+
+| | |
+|---|---|
+| 1: | **for** each mini-batch of data **do** |
+| 2: | $\quad$ Sample a data example $z$ from the dataset. |
+| 3: | $\quad$ Sample a random time $t \sim \text{Unif}_{[0,1]}$. |
+| 4: | $\quad$ Sample $x \sim p_t(\cdot|z)$ |
+| 5: | $\quad$ Compute loss |
+
+$$\mathcal{L}(\theta) = \|u_t^\theta(x) - u_t^{\text{target}}(x|z)\|^2$$
+
+| | |
+|---|---|
+| 6: | $\quad$ Update the model parameters $\theta$ via gradient descent on $\mathcal{L}(\theta)$ |
+| 7: | **end for** |
+
+: {tbl-colwidths="[5,95]"}
+:::
+
+::: {.callout-note appearance="simple" icon=false}
+*We can learn the marginal vector field by approximating the cond. VF for many different data points $z$.*
+:::
+
+
+### Reminder: Sampling Algorithm for Flow Model
+
+::: {.callout-note appearance="minimal" icon=false}
+**Algorithm 1** Sampling from a Flow Model with Euler method
+
+---
+
+**Require:** Neural network vector field $u_t^\theta$, number of steps $n$
+
+| | | |
+|---|---|---|
+| 1: | Set $t = 0$ | |
+| 2: | Set step size $h = \tfrac{1}{n}$ | |
+| 3: | Draw a sample $X_0 \sim p_{\text{init}}$ | [*Random initialization!*]{style="color:#a30000; font-style:italic;"} |
+| 4: | **for** $i = 1, \dots, n-1$ **do** | |
+| 5: | $\quad X_{t+h} = X_t + h u_t^\theta(X_t)$ | |
+| 6: | $\quad$ Update $t \leftarrow t + h$ | |
+| 7: | **end for** | |
+| 8: | **return** $X_1$ | [*Return final point*]{style="color:#a30000; font-style:italic;"} |
+
+: {tbl-colwidths="[5,60,35]"}
+:::
+
+### Score Functions = Gradients of the log-likelihood
+
+::: {.grid style="--bs-columns: 2; column-gap: 1.5rem;"}
+
+::: {.g-col-1}
+[Log-likelihood:]{style="color:#888;"} $\log q(x)$
+
+![](assets/misc/log_likelihood.png){.img-fluid .rounded}
+:::
+
+::: {.g-col-1}
+[Score function:]{style="color:#888;"} $\nabla \log q(x)$
+
+![](assets/misc/grad_log_likelihood.png){.img-fluid .rounded}
+:::
+
+:::
+
+### Example — Score of Gaussian Probability Path
+
+::: {.text-center .border .rounded .p-3 .mb-3}
+$$\nabla \log p_t(x|z) = -\frac{1}{\beta_t^2}x + \frac{\alpha_t}{\beta_t^2}z$$
+:::
+
+::: {.border .rounded .p-3 style="border-style: dashed !important;"}
+*Proof:*
+
+$$p_t(x|z) = \mathcal{N}(x;\, \alpha_t z, \beta_t^2 I_d) = \frac{1}{(2\pi)^{d/2}\beta_t^d} \exp\!\left(-\frac{1}{2\beta_t^2}\|x - \alpha_t z\|^2\right)$$
+
+$$\log p_t(x|z) = \log \mathcal{N}(x;\, \alpha_t z, \beta_t^2 I_d) = -\frac{d}{2}\log(2\pi) - d\log\beta_t - \frac{1}{2\beta_t^2}\|x - \alpha_t z\|^2$$
+
+$$\nabla \log p_t(x|z) = \nabla \log \mathcal{N}(x;\, \alpha_t z, \beta_t^2 I_d) = -\frac{x - \alpha_t z}{\beta_t^2}$$
+:::
+
+### Conditional Probability Path, Vector Field, and Score
+
+|  | Notation | Key property | Gaussian example |
+|---|:---:|---|---|
+| Conditional Probability Path | $p_t(\cdot\|z)$ | Interpolates $p_{\text{init}}$ and a data point $z$ | $\mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)$ |
+| Conditional Vector Field | $u_t^{\text{target}}(x\|z)$ | ODE follows conditional path | $\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x$ |
+| [**Conditional Score Function**]{style="color:#a30000;"} | $\nabla \log p_t(x\|z)$ | Gradient of log-likelihood | $\dfrac{\alpha_t}{\beta_t^2}z - \dfrac{1}{\beta_t^2}x$ |
+
+: {.striped .hover tbl-colwidths="[20,15,25,40]"}
+
+### Marginal Probability Path, Vector Field, and Score
+
+|  | Notation | Key property | Formula |
+|---|:---:|---|---|
+| Marginal Probability Path | $p_t$ | Interpolates $p_{\text{init}}$ and $p_{\text{data}}$ | $\int p_t(x\|z)\, p_{\text{data}}(z)\,\mathrm{d}z$ |
+| Marginal Vector Field | $u_t^{\text{target}}(x)$ | ODE follows marginal path | $\int u_t^{\text{target}}(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z$ |
+| [**Marginal Score Function**]{style="color:#a30000;"} | $\nabla \log p_t(x)$ | Can be used to convert ODE target to SDE | $\int \nabla \log p_t(x\|z)\,\dfrac{p_t(x\|z)\,p_{\text{data}}(z)}{p_t(x)}\,\mathrm{d}z$ |
+
+: {.striped .hover tbl-colwidths="[20,15,25,40]"}
+
+### Observation: Both Conditional Vector Field and Conditional Score are Linear Functions! Just with Different Coefficients!
+
+|  | Notation | Key property | Gaussian example |
+|---|:---:|---|---|
+| Conditional Vector Field | $u_t^{\text{target}}(x\|z)$ | ODE follows conditional path | $\left(\dot{\alpha}_t - \dfrac{\dot{\beta}_t}{\beta_t}\alpha_t\right)z + \dfrac{\dot{\beta}_t}{\beta_t}x$ |
+| [**Conditional Score Function**]{style="color:#a30000;"} | $\nabla \log p_t(x\|z)$ | Gradient of log-likelihood | $\dfrac{\alpha_t}{\beta_t^2}z - \dfrac{1}{\beta_t^2}x$ |
+
+: {.striped .hover tbl-colwidths="[20,15,25,40]"}
+
+### Reparameterization: Velocity Field → Score Function
+
+$$a_t = \left(\beta_t^2 \frac{\dot{\alpha}_t}{\alpha_t} - \dot{\beta}_t \beta_t\right), \qquad b_t = \frac{\dot{\alpha}_t}{\alpha_t}$$
+
+$$
+\begin{align}
+u_t^{\text{target}}(x|z) &= a_t \nabla \log p_t(x|z) + b_t x \\
+u_t^{\text{target}}(x) &= a_t \nabla \log p_t(x) + b_t x
+\end{align}
+$$
+
+::: {.callout-note appearance="minimal" icon=false}
+**Algorithm 6** Score Matching Training Procedure (General)
+
+---
+
+**Require:** A dataset of samples $z \sim p_{\text{data}}$, score network $s_t^\theta$
+
+| | |
+|---|---|
+| 1: | **for** each mini-batch of data **do** |
+| 2: | $\quad$ Sample a data example $z$ from the dataset. |
+| 3: | $\quad$ Sample a random time $t \sim \text{Unif}_{[0,1]}$. |
+| 4: | $\quad$ Sample $x \sim p_t(\cdot|z)$ |
+| 5: | $\quad$ Compute loss |
+
+$$\mathcal{L}(\theta) = \|s_t^\theta(x) - \nabla \log p_t(x|z)\|^2$$
+
+| | |
+|---|---|
+| 6: | $\quad$ Update the model parameters $\theta$ via gradient descent on $\mathcal{L}(\theta)$ |
+| 7: | **end for** |
+
+: {tbl-colwidths="[5,95]"}
+:::
+
+### Denoising Score Matching for Gaussian Prob. Path
+
+$$\nabla \log p_t(x|z) = -\frac{x - \alpha_t z}{\beta_t^2}$$
+
+$$\epsilon \sim \mathcal{N}(0, I_d) \quad \Rightarrow \quad x = \alpha_t z + \beta_t \epsilon \sim \mathcal{N}(\alpha_t z,\, \beta_t^2 I_d)$$
+
+$$
+\begin{align}
+\mathcal{L}_{\text{dsm}}(\theta)
+&= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, x \sim p_t(\cdot|z)}\!\left[\left\|s_t^\theta(x) + \frac{x - \alpha_t z}{\beta_t^2}\right\|^2\right] \\
+&= \mathbb{E}_{t \sim \text{Unif},\, z \sim p_{\text{data}},\, \epsilon \sim \mathcal{N}(0,I_d)}\!\left[\left\|s_t^\theta(\alpha_t z + \beta_t \epsilon) + \frac{\epsilon}{\beta_t}\right\|^2\right]
+\end{align}
+$$
+
+[*Note what the network does: It needs to predict the noise that was used to corrupt the data point! (**DENOISING** diffusion models)*]{style="color:#a30000; font-style:italic;"}
+
+::: {.callout-note appearance="minimal" icon=false}
+**Algorithm 5** Score Matching Training Procedure for Gaussian probability path
+
+---
+
+**Require:** A dataset of samples $z \sim p_{\text{data}}$, score network $s_t^\theta$ or noise predictor $\epsilon_t^\theta$\
+**Require:** Schedulers $\alpha_t, \beta_t$ with $\alpha_0 = \beta_1 = 0,\, \alpha_1 = \beta_0 = 1$
+
+| | |
+|---|---|
+| 1: | **for** each mini-batch of data **do** |
+| 2: | $\quad$ Sample a data example $z$ from the dataset. |
+| 3: | $\quad$ Sample a random time $t \sim \text{Unif}_{[0,1]}$. |
+| 4: | $\quad$ Sample noise $\epsilon \sim \mathcal{N}(0, I_d)$ |
+| 5: | $\quad$ Set $x_t = \alpha_t z + \beta_t \epsilon$ |
+| 6: | $\quad$ Compute loss |
+
+::: {.grid .align-items-center style="--bs-columns: 12;"}
+::: {.g-col-7 .text-center}
+$$\mathcal{L}(\theta) = \left\|s_t^\theta(x_t) + \frac{\epsilon}{\beta_t}\right\|^2$$
+:::
+::: {.g-col-5 style="font-size:0.9em;"}
+↖ [*Numerically unstable for low beta!*]{style="color:#a30000; font-style:italic;"}
+:::
+:::
+
+| | |
+|---|---|
+| 7: | $\quad$ Update the model parameters $\theta$ via gradient descent on $\mathcal{L}(\theta)$. |
+| 8: | **end for** |
+
+: {tbl-colwidths="[5,95]"}
+:::
+
+### Fokker-Planck Equation
+
+::: {.text-center}
+[*Randomly initialized SDE*]{style="color:#a30000; font-style:italic;"}
+
+**Given:** $\quad X_0 \sim p_{\text{init}}, \qquad \mathrm{d}X_t = u_t(X_t)\mathrm{d}t + \sigma_t\mathrm{d}W_t$
+:::
+
+---
+
+::: {.grid .align-items-center}
+
+::: {.g-col-2}
+:::
+
+::: {.g-col-8}
+::: {.border .rounded .p-3 .mb-1}
+**Follow probability path:**
+
+$$X_t \sim p_t \qquad (0 \le t \le 1)$$
+:::
+:::
+
+::: {.g-col-2 style="font-size:0.9em;"}
+[*Marginals are $p_t$*]{style="color:#a30000; font-style:italic;"}
+:::
+
+:::
+
+::: {.text-center style="font-size:2em; color:#aaa; margin: 0.2em 0;"}
+$\Longleftrightarrow$ [equivalent]{style="font-size:0.4em; color:#555; vertical-align:middle;"}
+:::
+
+::: {.grid .align-items-center}
+
+::: {.g-col-2}
+:::
+
+::: {.g-col-8}
+::: {.border .rounded .p-3 .mb-1}
+**Fokker-Planck equation holds**
+
+$$\frac{\mathrm{d}}{\mathrm{d}t}p_t(x) = \underbrace{-\operatorname{div}(p_t u_t)(x)}_{\color{#a30000}{\small\textit{Continuity equation}}} + \underbrace{\frac{\sigma_t^2}{2}\Delta p_t(x)}_{\color{#a30000}{\small\textit{Heat equation}}}$$
+:::
+:::
+
+::: {.g-col-2}
+:::
+
+:::
+
+<div style="display:flex; align-items:center; gap:2rem;">
+
+<div style="flex:5;">
+
+**Fokker-Planck Equation**
+
+$$\underbrace{\frac{\mathrm{d}}{\mathrm{d}t}p_t(x)}_{\color{#a30000}{\small\textit{Change of prob. mass at } x}} = \underbrace{-\operatorname{div}(p_t u_t)(x)}_{\color{#a30000}{\small\textit{Mass conservation}}} + \underbrace{\frac{\sigma_t^2}{2}\Delta p_t(x)}_{\color{#a30000}{\small\textit{Heat dispersion}}}$$
+
+</div>
+
+<div style="flex:7;">
+![](assets/misc/fokker_planck_plot.png){.img-fluid .rounded style="max-width:85%; display:block; margin:auto;"}
+</div>
+
+</div>
+
+### Stochastic Sampling of Diffusion Models
+
+Choose noise level $\sigma_t$. By "SDE extension trick", we can sample from:
+
+::: {.p-3 .rounded style="background:#eef4fb;"}
+$$\mathrm{d}X_t = \left[{\color{#1a6faf}{u_t^{\text{target}}(X_t)}} + {\color{#2a9a2a}{\frac{\sigma_t^2}{2}\nabla \log p_t(X_t)}}\right]\mathrm{d}t + \sigma_t\mathrm{d}W_t$$
+:::
+
+For Gaussian probability paths, we can express this solely in terms of the score:
+
+::: {.p-3 .rounded style="background:#f0f0f0;"}
+$$\mathrm{d}X_t = \left[\left(a_t + \frac{\sigma_t^2}{2}\right)\nabla \log p_t(X_t) + b_t X_t\right]\mathrm{d}t + \sigma_t\mathrm{d}W_t$$
+:::
+
+Plugin score network:
+
+::: {.p-3 .rounded style="background:#f0f0f0;"}
+$$\mathrm{d}X_t = \left[\left(a_t + \frac{\sigma_t^2}{2}\right)s_t^\theta(X_t) + b_t X_t\right]\mathrm{d}t + \sigma_t\mathrm{d}W_t$$
+:::
+
+### Why Would We Want Stochastic/SDE Dynamics?
+
+**In theory:** All diffusion coefficients lead to the same result (sample from data distribution).
+
+**In practice:**
+
+- **Training error:** Neural network has not perfectly learnt the marginal vector field/score.
+- **Simulation error:** We need to simulate SDE/ODE leading to discretization error.
+
+**Downstream applications**: Fine-tuning, inference-time optimization, etc. might require stochastic evolution
+
+::: {.border .rounded .p-3 style="border-color:#a30000 !important;"}
+[**Good news: ODE sampling often leads to the best results. Therefore, SDE sampling is an option, not a must!**]{style="color:#a30000; font-weight:bold; font-size:1.05em;"}
 :::
 
 ## Guidance
@@ -1292,6 +1616,177 @@ Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.
 ::: {.column-margin}
 Credits: [Introduction to Flow Matching and Diffusion Models](https://diffusion.csail.mit.edu/) by Peter Holderrieth
 :::
+
+::: {.d-flex .justify-content-end .mb-1}
+**Image source**: Scaling Rectified Flow Transformers for High-Resolution Image Synthesis [1]
+:::
+
+::: {.grid}
+::: {.g-col-4 .text-center}
+![](assets/misc/ogre.png){width="100%"}
+
+::: {.side-caption}
+A swamp ogre with a pearl earring by Johannes Vermeer
+:::
+:::
+::: {.g-col-4 .text-center}
+![](assets/misc/veg_car.png){width="100%"}
+
+::: {.side-caption}
+A car made out of vegetables.
+:::
+:::
+::: {.g-col-4 .text-center}
+![](assets/misc/heat_death.png){width="100%"}
+
+::: {.side-caption}
+heat death of the universe, line art
+:::
+:::
+:::
+
+**Unguided**: Generate an image.
+
+**Guided:** Generate an image of a cat baking a cake.
+
+### Vanilla Guided Sampling
+
+::: {.callout-note appearance="minimal" icon=false}
+## Algorithm 7 Guided Sampling Procedure
+
+**Require:** A trained guided vector field $u_t^\theta(x|y)$.
+
+1. Select a prompt $y \in \mathcal{Y}$, such as "a cat baking a cake".
+2. Initialize $X_0 \sim p_\mathrm{init}$.
+3. Simulate $\mathrm{d}X_t = u_t^\theta(X_t|y)\mathrm{d}t$ from $t = 0$ to $t = 1$.
+:::
+
+### Vanilla Guidance leads to suboptimal results
+
+<div style="display:flex; align-items:center; gap:2rem;">
+<div style="flex:0 0 58%;">
+
+![](assets/misc/corgi_set.png){width="100%"}
+
+</div>
+<div>
+
+*Prompt:* ***"Corgi dog"***
+
+[***These images do not fit well to the prompt and they have errors!***]{style="color:#cc0000;"}
+
+</div>
+</div>
+
+
+### Intuition: Classifier Guidance
+
+<div style="position:relative; width:70%;">
+<img id="prompt-decomp-img-0" src="assets/misc/prompt_decomp.png" style="width:100%; display:block; visibility:visible;" />
+<img id="prompt-decomp-img-1" src="assets/misc/scaled_prompt_decomp.png" style="width:100%; display:block; position:absolute; top:0; left:0; visibility:hidden;" />
+<div id="toggle-prompt-img" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;"></div>
+</div>
+
+```{=html}
+<script>
+(function() {
+  var idx = 0;
+  document.getElementById("toggle-prompt-img").addEventListener("click", function() {
+    idx = 1 - idx;
+    document.getElementById("prompt-decomp-img-0").style.visibility = idx === 0 ? "visible" : "hidden";
+    document.getElementById("prompt-decomp-img-1").style.visibility = idx === 1 ? "visible" : "hidden";
+  });
+})();
+</script>
+```
+
+### Classifier-Free Guidance
+
+<div style="position:relative; width:70%;">
+<img id="cfg-img-0" src="assets/misc/classifier_free_vf.png" style="width:100%; display:block; visibility:visible;" />
+<img id="cfg-img-1" src="assets/misc/reinforced_classifier_free_vf.png" style="width:100%; display:block; position:absolute; top:0; left:0; visibility:hidden;" />
+<div id="toggle-cfg-img" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:pointer;"></div>
+</div>
+
+```{=html}
+<script>
+(function() {
+  var idx = 0;
+  document.getElementById("toggle-cfg-img").addEventListener("click", function() {
+    idx = 1 - idx;
+    document.getElementById("cfg-img-0").style.visibility = idx === 0 ? "visible" : "hidden";
+    document.getElementById("cfg-img-1").style.visibility = idx === 1 ? "visible" : "hidden";
+  });
+})();
+</script>
+```
+
+### Classifier-free guidance training: Account for empty token $\varnothing$
+
+::: {.callout-note appearance="minimal" icon=false}
+## Algorithm 5 Classifier-free guidance training
+
+**Require:** Paired dataset $(z, y) \sim p_\mathrm{data}$, neural network $u_t^\theta$
+
+1. **for** each mini-batch of data **do**
+2. &nbsp;&nbsp;&nbsp;&nbsp;Sample a data example $(z, y)$ from the dataset.
+3. &nbsp;&nbsp;&nbsp;&nbsp;Sample a random time $t \sim \mathrm{Unif}_{[0,1]}$.
+4. &nbsp;&nbsp;&nbsp;&nbsp;Sample noise $\epsilon \sim \mathcal{N}(0, I_d)$
+5. &nbsp;&nbsp;&nbsp;&nbsp;Set $x = \alpha_t z + \beta_t \epsilon$
+6. &nbsp;&nbsp;&nbsp;&nbsp;With probability $p$ drop label: $y \leftarrow \varnothing$ &nbsp;&nbsp;&nbsp;&nbsp; [***Drop label with a certain probability!***]{style="color:#cc0000;"}
+7. &nbsp;&nbsp;&nbsp;&nbsp;Compute loss
+
+$$\mathcal{L}(\theta) = \|u_t^\theta(x|y) - u_t^\mathrm{target}(x|z)\|^2$$
+
+8. &nbsp;&nbsp;&nbsp;&nbsp;Update the model parameters $\theta$ via gradient descent on $\mathcal{L}(\theta)$.
+9. **end for**
+:::
+
+
+### Sampling with Classifier-Free Guidance
+
+Simply is the same as before but we use the weighted vector field:
+
+$$u_t^{\theta,w}(x) = (1-w)u_t^\theta(x|\varnothing) + wu_t^\theta(x|y)$$
+
+::: {.callout-note appearance="minimal" icon=false}
+## Algorithm 8 Classifier-Free Guidance Sampling Procedure
+
+**Require:** A trained guided vector field $u_t^\theta(x|y)$.
+
+1. Select a prompt $y \in \mathcal{Y}$, or take $y = \varnothing$ for unguided sampling.
+2. Select a [**guidance scale**]{style="color:#cc0000;"} $w > 1$.
+3. Initialize $X_0 \sim p_\mathrm{init}$.
+4. Simulate $\mathrm{d}X_t = \left[(1-w)u_t^\theta(X_t|\varnothing) + wu_t^\theta(X_t|y)\right]\mathrm{d}t$ from $t=0$ to $t=1$.
+:::
+
+### Example: Classifier-Free Guidance
+
+::: {.grid}
+::: {.g-col-6 .text-center}
+w=1.0
+
+![](assets/misc/classifier_free_w1.png){width="100%"}
+:::
+::: {.g-col-6 .text-center}
+w=4.0
+
+![](assets/misc/classifier_free_w4.png){width="100%"}
+:::
+:::
+
+<div style="display:flex; align-items:center; gap:2rem;">
+<div style="flex:0 0 25%;">
+
+### Example: Classifier-Free Guidance
+
+</div>
+<div style="flex:1;">
+
+![](assets/misc/cfg_examples.png){width="100%"}
+
+</div>
+</div>
 
 
 
