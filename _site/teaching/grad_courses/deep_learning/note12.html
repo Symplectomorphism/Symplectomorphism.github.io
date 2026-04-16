@@ -447,9 +447,11 @@ $$
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0] and<br>
 <a href="https://arxiv.org/abs/1906.02691">An Introduction to Variational Autoencoders</a> by Kingma, D. P. and Welling, M.</p>
 </div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
+<p>Credits: <a href="https://diffusion.csail.mit.edu/">Introduction to Flow Matching and Diffusion Models</a> by Peter Holderrieth</p>
+</div><div class="tabset-margin-content tabset-1-3-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Theory</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Application to MNIST</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Theory</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Additional Perspectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">Application to MNIST</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
@@ -905,6 +907,117 @@ q_\phi(\bm{z} \mid \bm{x}) &amp;= \mc{N}(\bm{z}; \bm{\mu}, \operatorname{diag}{(
 </section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+
+<ul>
+<li><p>Both the encoder and the decoder give rise to a joint distribution over both <span class="math inline">\(x\)</span> and the latent <span class="math inline">\(z\)</span>, that is, <span class="math display">\[
+\begin{aligned}
+q_\phi(x, z) &amp;= p_{\text{data}}(x) q_\phi(z \mid x) \\
+p_\theta(x, z) &amp;= p_\theta(x \mid z) p_{\text{prior}}(z)
+\end{aligned}
+\]</span></p></li>
+<li><p>Conceptualize training the VAE as learning <span class="math inline">\(\phi\)</span> and <span class="math inline">\(\theta\)</span> so that the encoder and decoder joint distributions are reasonably similar.</p>
+<ul>
+<li>Do this via minimizing the KL-divergence of the joint latent and data distributions: <span class="math display">\[
+\begin{aligned}
+D_{\text{KL}}\left(q_\phi(x, z)\, \|\, p_\theta(x, z)\right) &amp;= D_{\text{KL}}\left( p_{\text{data}}(x) q_\phi(z \mid x)\, \|\, p_\theta(x \mid z) p_{\text{prior}}(z) \right) \\
+&amp;= \E_\blacksquare \left[ \log \left( \frac{p_{\text{data}}(x) q_\phi(z \mid x)}{p_\theta(x \mid z) p_{\text{prior}}(z)} \right) \right] \\
+&amp;= \textcolor{#1f77b4}{\E_\blacksquare\left[\log p_{\text{data}}(x)\right]} + \textcolor{#ff7f0e}{\E_\blacksquare\left[\log \frac{q_\phi(z \mid x)}{p_{\text{prior}}(z)}\right]} - \textcolor{#2ca02c}{\E_\blacksquare\left[\log p_\theta(x \mid z)\right]} \\
+\blacksquare &amp;= x \sim p_{\text{data}}(x), \, z \sim q_\phi(z \mid x)
+\end{aligned}
+\]</span></li>
+</ul></li>
+<li><p>Analyze the first term: <span class="math display">\[
+\textcolor{#1f77b4}{\E_\blacksquare\left[\log p_{\text{data}}(x)\right]
+= \E_{x \sim p_{\text{data}}(x)}[\log p_{\text{data}}(x)] = C,
+}
+\]</span> for some constant <span class="math inline">\(C\)</span> independent of <span class="math inline">\(\phi\)</span> and <span class="math inline">\(\theta\)</span>.</p></li>
+<li><p>Analyze the second term: <span class="math display">\[
+\textcolor{#ff7f0e}{\E_\blacksquare\left[\log \frac{q_\phi(z \mid x)}{p_{\text{prior}}(z)}\right]
+= \E_{x \sim p_{\text{data}}(x)} \left[ D_{\text{KL}}(q_\phi(z \mid x)\, \|\, p_{\text{prior}}(z)) \right]
+}
+\]</span> encourages <span class="math inline">\(q_\phi(z \mid x)\)</span> to resemble the prior <span class="math inline">\(p_{\text{prior}}(z)\)</span>.</p></li>
+<li><p>Analyze the third term: <span class="math display">\[
+-\textcolor{#2ca02c}{\E_\blacksquare\left[\log p_\theta(x \mid z)\right]
+= -\E_{x \sim p_{\text{data}}(x), z \sim q_\phi(z \mid x)}[\log p_\theta(x \mid z)]
+}
+\]</span> corresponds to the average negative log-likelihood, and thus serves to minimize the reconstruction loss.</p></li>
+<li><p>Ignoring the constant term, we combine the and terms to obtain that the VAE loss is actually simply the KL-divergence in joint data and latent space: <span class="math display">\[
+\begin{aligned}
+\mc{L}_{\text{VAE}}(\theta, \phi) &amp;= \underbrace{\textcolor{#ff7f0e}{\E_{x \sim p_{\text{data}}(x)}
+\left[ D_{\text{KL}}(q_\phi(z \mid x)\, \|\, p_{\text{prior}}(z)) \right]}}_{\text{prior enforcement loss}} -
+\underbrace{\textcolor{#2ca02c}{\E_{x \sim p_{\text{data}}(x), z \sim q_\phi(z \mid x)}[\log p_\theta(x \mid z)]}}_{\text{reconstruction loss}} \\
+&amp;= D_{\text{KL}}\left(q_\phi(x, z)\, \|\, p_\theta(x, z)\right) + \text{const}
+\end{aligned}
+\]</span> Therefore, we can interpret the VAE as a KL-divergence in the joint space of latents and images.</p></li>
+</ul>
+<section id="vaes-as-generative-models" class="level3">
+<h3 class="anchored" data-anchor-id="vaes-as-generative-models">VAEs as generative models</h3>
+<p>Another interpretation of VAEs is as a generative model.</p>
+<ul>
+<li>We can generate a sample by setting <span class="math inline">\(z \sim p_{\text{prior}}(z) = \mathcal{N}(0, I)\)</span> and sampling <span class="math inline">\(x \sim p_\theta(\cdot \mid z)\)</span> from the decoder.</li>
+<li>The distribution that we would get is given by <span class="math display">\[ p_\theta(x) = \int p_\theta(x \mid z) p_{\text{prior}}(z) dz. \]</span></li>
+</ul>
+<div id="prp-chain-rule" class="theorem proposition">
+<p><span class="theorem-title"><strong>Proposition 1 (Chain rule)</strong></span> Let <span class="math inline">\(q(x, z)\)</span>, <span class="math inline">\(p(x, z)\)</span> be distributions over two variables <span class="math inline">\(x \in \R^{l_1}\)</span>, <span class="math inline">\(\R^{l_2}\)</span>. Then, it holds that <span class="math display">\[
+D_{\text{KL}}(q(x, z)\, \|\, p(x, z)) = \E_{x \sim q(x)} \left[ D_{\text{KL}}(q(z \mid x)\, \|\, p(z \mid x)) \right] +
+D_{\text{KL}}(q(x)\, \|\, p(x)).
+\]</span> In particular, as the second summand is nonnegative, we obtain the data-processing inequality <span class="math display">\[
+D_{\text{KL}}(q(x)\, \| \, p(x)) \le D_{\text{KL}}(q(x, z)\, \|\, p(x, z)).
+\]</span></p>
+</div>
+<div class="proof">
+<p><span class="proof-title"><em>Proof</em>. </span><span class="math display">\[
+\begin{aligned}
+D_{\text{KL}}\left(q(x, z) \,\|\, p(x, z)\right) &amp;= \E_{(x, z) \sim q(x, z)} \left[ \log \frac{q(x, z)}{p(x, z)} \right] \\
+&amp;= \E_{(x, z) \sim q(x, z)} \left[ \log \frac{q(x) q(z \mid x)}{p(x) p(z \mid x)} \right] \\
+&amp;= \E_{x \sim q(x)} \left[ \log \frac{q(x)}{p(x)}\right] + \E_{(x, z) \sim q(x, z)} \left[ \log \frac{q(z \mid x)}{p(z \mid x)} \right] \\
+&amp;= D_{\text{KL}}(q(x) \,\|\, p(x)) + \E_{x \sim q(x)} \left[ D_{\text{KL}}(q(z \mid x) \,\|\, p(z \mid x)) \right]
+\end{aligned}
+\]</span> where we have repeatedly applied the definition of KL-divergence. <span style="float: right;"><span class="math inline">\(\square\)</span></span></p>
+</div>
+<p>By <a href="#prp-chain-rule" class="quarto-xref">Proposition&nbsp;1</a>, we can now show that <span id="eq-amortization-data"><span class="math display">\[
+\mc{L}_{\text{VAE}}(\phi, \theta) = D_{\text{KL}}\left( q_\phi(x, z) \,\|\, p_\theta(x, z) \right) + \text{const} \ge D_{\text{KL}}(p_{\text{data}}(x) \,\|\, p_\theta(x)) + \text{const}.
+\tag{5}\]</span></span> where we used the fact that the <span class="math inline">\(x\)</span>-marginal of <span class="math inline">\(q_\phi(x, z)\)</span> is <span class="math inline">\(p_{\text{data}}(x)\)</span>.</p>
+<ul>
+<li>In other words, the VAE loss inimizes an upper bound on the KL-divergence between the data distribution <span class="math inline">\(p_{\text{data}}\)</span> and the distribution <span class="math inline">\(p_\theta(x)\)</span> generated by the VAE.
+<ul>
+<li>Hence, we can look at VAEs as generative models in their own right.</li>
+</ul></li>
+<li>In the same way, we can show that <span id="eq-amortization-latent"><span class="math display">\[
+\mc{L}_{\text{VAE}}(\phi, \theta) = D_{\text{KL}}\left( q_\phi(x, z) \,\|\, p_\theta(x, z) \right) + \text{const} \ge D_{\text{KL}}(q_\phi(z) \,\|\, p_{\text{prior}}(z)) + \text{const}.
+\tag{6}\]</span></span> In other words, the VAE objective minimize an upper bound on the KL-divergence between the latent distribution and the prior.</li>
+</ul>
+</section>
+<section id="why-not-stop-at-vaes" class="level3">
+<h3 class="anchored" data-anchor-id="why-not-stop-at-vaes">Why not stop at VAEs?</h3>
+<ul>
+<li><p>VAEs can be realized as generative models in their own right</p>
+<ul>
+<li>Encoder facilitates the training of a complementary decoder.</li>
+<li>Decoder transforms a Gaussian into the desired distribution</li>
+<li>Samples can be obtained by sampling <span class="math inline">\(z \sim p_{\text{prior}}(z)\)</span> and then <span class="math inline">\(x \sim p_\theta(\cdot \mid z)\)</span>.</li>
+</ul></li>
+<li><p>Why then do we need other models, such as diffusion models?</p></li>
+<li><p>The answer has to do with the so-called <strong>amortization gap</strong> between the left and right-hand sides of both <a href="#eq-amortization-data" class="quarto-xref">Equation&nbsp;5</a> and <a href="#eq-amortization-latent" class="quarto-xref">Equation&nbsp;6</a>.</p>
+<ul>
+<li>This gap is zero if and only if <span class="math inline">\(q_\phi(z \mid x) = p_\theta(z \mid x)\)</span>, in which case the encoder represents the true posterior.</li>
+<li>While <span class="math inline">\(D_{\text{KL}}(q_\phi(x, z) \,\|\, p_\theta(x, z))\)</span> is minimized implies <span class="math inline">\(D_{\text{KL}}(q_\phi(z) \,\|\, p_{\text{prior}}(z))\)</span> is minimized (see <a href="#eq-amortization-latent" class="quarto-xref">Equation&nbsp;6</a>), a decrease in the former does not necessarily imply an equal decrease in the latter.</li>
+<li>Consequently, at the end of training, it is simultaneously true that both <span class="math inline">\(D_{\text{KL}}(q_\phi(x, z) \,\|\, p_\theta(x, z))\)</span> and the amortization gap <span class="math display">\[
+D_{\text{KL}}(q_\phi(x, z) \,\|\, p_\theta(x, z)) - D_{\text{KL}}(q_\phi(z) \,\|\, p_{\text{prior}}(z))
+\]</span> are not completely minimized, so that <span class="math inline">\(q_\phi(z) \ne p_{\text{prior}}(z)\)</span> and <span class="math inline">\(p_\theta(x) \ne p_{\text{data}}(x)\)</span>.</li>
+</ul></li>
+<li><p>Finally, observe that during training, the decoder learns to reconstruct from <span class="math inline">\(q_\phi(z)\)</span> rather than <span class="math inline">\(p_{\text{prior}}(z)\)</span>.</p>
+<ul>
+<li>Hence, switching to reconstruction from <span class="math inline">\(p_{\text{prior}}(z)\)</span> during inference would amount to going out of distribution from training.</li>
+<li>In practice, however, this is a feature, rather than a bug.
+<ul>
+<li>Practice has shown flow and diffusion models to be more capable models, in general, than the convolutional stacks used to implement the VAE decoder.</li>
+</ul></li>
+</ul></li>
+</ul>
+</section>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
 
 </div>
 </div>
