@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.8.26">
+<meta name="generator" content="quarto-1.9.37">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>Reinforcement Learning – Satici Lab</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -35,15 +38,17 @@ ul.task-list li input[type="checkbox"] {
 <link href="../../../images/monogram_solid-cmyk.png" rel="icon" type="image/png">
 <script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../../site_libs/bootstrap/bootstrap-dde5a511f69de668eb26e21f44dd46b8.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-9f859ddf41293168a90a05477a92336c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -82,11 +87,42 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../../styles.css">
 <meta property="og:title" content="Reinforcement Learning – Satici Lab">
 <meta property="og:description" content="Research website for the Satici Lab">
+<meta property="og:image" content="assets/images/IntroReinforce.svg">
 <meta property="og:site_name" content="Satici Lab">
+<meta property="og:image:alt" content="A deep network maps the board state to a probability over possible moves — this mapping is called a policy.">
 </head>
 
 <body class="nav-sidebar docked nav-fixed slimcontent quarto-light">
@@ -349,8 +385,14 @@ window.MathJax = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#challenges-of-rl-the-chess-example" id="toc-challenges-of-rl-the-chess-example" class="nav-link active" data-scroll-target="#challenges-of-rl-the-chess-example">Challenges of RL: The Chess Example</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content page-columns page-full" id="quarto-document-content">
@@ -397,23 +439,902 @@ $$
 </header>
 
 
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><span style="font-size:1.15em;"><strong>Reinforcement learning (RL)</strong></span> — a sequential decision-making framework where an <strong>agent</strong> learns to take <strong>actions</strong> in an <strong>environment</strong> to maximize cumulative <strong>rewards</strong>.</p>
+</div>
+</div>
+</div>
+<div class="grid">
+<div class="g-col-12 g-col-md-4">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Video Games</strong></p>
+<p>State: game display — Action: controller input — Reward: score</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-4">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Robotics</strong></p>
+<p>State: sensor readings — Action: motor commands — Reward: task completion</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-4">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Finance</strong></p>
+<p>State: market data — Action: buy/sell — Reward: profit</p>
+</div>
+</div>
+</div>
+<p><br></p>
+<section id="challenges-of-rl-the-chess-example" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="challenges-of-rl-the-chess-example">Challenges of RL: The Chess Example</h3>
+<p>Reward: <span class="math inline">\(+1\)</span> (win) / <span class="math inline">\(-1\)</span> (loss) / <span class="math inline">\(0\)</span> (draw or intermediate step)</p>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-danger border-3">
+<p><strong>Sparse rewards</strong></p>
+<p>Feedback only arrives at the end of the game.</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-danger border-3">
+<p><strong>Temporal credit assignment</strong></p>
+<p>A decisive move thirty steps ago caused today’s reward — which action deserves credit?</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-danger border-3">
+<p><strong>Stochastic environment</strong></p>
+<p>The opponent varies — was a win due to skill or luck?</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-danger border-3">
+<p><strong>Exploration vs.&nbsp;exploitation</strong></p>
+<p>Try new openings (explore) or stick with what works (exploit)?</p>
+</div>
+</div>
+</div>
+<p><br></p>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/IntroReinforce.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="A deep network maps the board state to a probability over possible moves — this mapping is called a policy."><img src="assets/images/IntroReinforce.svg" class="img-fluid figure-img" style="width:100.0%" alt="A deep network maps the board state to a probability over possible moves — this mapping is called a policy."></a></p>
+<figcaption>A deep network maps the board state to a probability over possible moves — this mapping is called a <em>policy</em>.</figcaption>
+</figure>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>RL does not require deep learning, but state-of-the-art systems use deep networks to encode environment observations and map them to actions.</p>
+</div>
+</div>
+</div>
+<p><br></p>
 <div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-1-1-tab-margin-content">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div><div class="tabset-margin-content tabset-1-2-tab-margin-content collapse">
 <p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-1-3-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-1-4-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
 </div></div></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Markov Decision Processes</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Policy Gradient Methods</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">MDPs, Returns, and Policies</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">Expected Return</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">Tabular RL</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false" href="">Fitted Q-learning</a></li></ul>
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 
+<p>We learn a <em>policy</em> that maximizes the expected <em>return</em> in a <strong>Markov decision process (MDP)</strong>.</p>
+<section id="markov-process" class="level3">
+<h3 class="anchored" data-anchor-id="markov-process">Markov Process</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Markov process</strong> — the world occupies one of a set of <strong>states</strong> <span class="math inline">\(s_t\)</span>. Transitions are governed by <strong>transition probabilities</strong> <span class="math inline">\(Pr(s_{t+1}|s_t)\)</span>.</p>
+<ul>
+<li><strong>Markov property:</strong> next state depends only on the <em>current</em> state, not history</li>
+<li>Produces a trajectory <span class="math inline">\(\tau = [s_1, s_2, s_3, \ldots]\)</span></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceMDP.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="a) 16 positions (states) on an icy grid. b) From any position, the penguin moves to each adjacent state with equal probability (e.g., 25% each from position 6)."><img src="assets/images/ReinforceMDP.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) 16 positions (states) on an icy grid. b) From any position, the penguin moves to each adjacent state with equal probability (e.g., 25% each from position 6)."></a></p>
+<figcaption><strong>a)</strong> 16 positions (states) on an icy grid. <strong>b)</strong> From any position, the penguin moves to each adjacent state with equal probability (e.g., 25% each from position 6).</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="markov-reward-process" class="level3">
+<h3 class="anchored" data-anchor-id="markov-reward-process">Markov Reward Process</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Markov reward process</strong> — adds rewards <span class="math inline">\(r_{t+1} \sim Pr(r_{t+1}|s_t)\)</span> to the Markov process.</p>
+<ul>
+<li>Trajectory: <span class="math inline">\(s_1, r_2, s_2, r_3, s_3, r_4, \ldots\)</span></li>
+<li><strong>Return</strong> at time <span class="math inline">\(t\)</span> (with discount factor <span class="math inline">\(\gamma \in (0,1]\)</span>):</li>
+</ul>
+<p><span class="math display">\[G_t = \sum_{k=0}^{\infty} \gamma^k r_{t+k+1}\]</span></p>
+<ul>
+<li><span class="math inline">\(\gamma &lt; 1\)</span> makes near-term rewards more valuable than distant ones</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceMDP2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Penguin gets +1 for each fish, 0 otherwise (\gamma = 0.9). Return G_t increases as the penguin gets closer to the fish."><img src="assets/images/ReinforceMDP2.svg" class="img-fluid figure-img" style="width:100.0%" alt="Penguin gets +1 for each fish, 0 otherwise (\gamma = 0.9). Return G_t increases as the penguin gets closer to the fish."></a></p>
+<figcaption>Penguin gets <span class="math inline">\(+1\)</span> for each fish, <span class="math inline">\(0\)</span> otherwise (<span class="math inline">\(\gamma = 0.9\)</span>). Return <span class="math inline">\(G_t\)</span> increases as the penguin gets closer to the fish.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="markov-decision-process" class="level3">
+<h3 class="anchored" data-anchor-id="markov-decision-process">Markov Decision Process</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>MDP</strong> — extends the Markov reward process by adding <strong>actions</strong> <span class="math inline">\(a_t\)</span>.</p>
+<ul>
+<li>Transition probabilities: <span class="math inline">\(Pr(s_{t+1}|s_t, a_t)\)</span></li>
+<li>Rewards: <span class="math inline">\(Pr(r_{t+1}|s_t, a_t)\)</span></li>
+<li>Trajectory: <span class="math inline">\((s_1,a_1,r_2),\,(s_2,a_2,r_3),\,(s_3,a_3,r_4),\ldots\)</span></li>
+<li>The entity choosing actions is the <strong>agent</strong></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceMDP3.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="a) Agent chooses one of four actions (up/right/down/left) at each step. b-c) Action changes transition probabilities — the penguin moves in the intended direction with 50% probability but may slip. Reward is received upon leaving a fish square."><img src="assets/images/ReinforceMDP3.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) Agent chooses one of four actions (up/right/down/left) at each step. b-c) Action changes transition probabilities — the penguin moves in the intended direction with 50% probability but may slip. Reward is received upon leaving a fish square."></a></p>
+<figcaption><strong>a)</strong> Agent chooses one of four actions (up/right/down/left) at each step. <strong>b-c)</strong> Action changes transition probabilities — the penguin moves in the intended direction with 50% probability but may slip. Reward is received upon <em>leaving</em> a fish square.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="partially-observable-mdp-pomdp" class="level3">
+<h3 class="anchored" data-anchor-id="partially-observable-mdp-pomdp">Partially Observable MDP (POMDP)</h3>
+<div class="callout callout-style-simple callout-warning no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>POMDP</strong> — the state <span class="math inline">\(s_t\)</span> is <strong>not directly visible</strong>; instead the agent receives an observation <span class="math inline">\(o_t \sim Pr(o_t|s_t)\)</span>.</p>
+<ul>
+<li>Trajectory: <span class="math inline">\(s_1, o_1, a_1, r_2, s_2, o_2, a_2, r_3, o_3, a_3, s_3, r_4, \ldots\)</span></li>
+<li>Each observation is more compatible with some states than others, but <strong>insufficient to identify the state uniquely</strong></li>
+<li>Example: states 3 and 9 look identical locally, yet moving right yields <span class="math inline">\(-2\)</span> (hole) from state 3 and <span class="math inline">\(+3\)</span> (fish) from state 9</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforcePOMDP.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="The penguin can only see tiles in its vicinity (dashed box). States 3 and 9 are visually indistinguishable, yet lead to very different outcomes when moving right."><img src="assets/images/ReinforcePOMDP.svg" class="img-fluid figure-img" style="width:80.0%" alt="The penguin can only see tiles in its vicinity (dashed box). States 3 and 9 are visually indistinguishable, yet lead to very different outcomes when moving right."></a></p>
+<figcaption>The penguin can only see tiles in its vicinity (dashed box). States 3 and 9 are visually indistinguishable, yet lead to very different outcomes when moving right.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="policy" class="level3">
+<h3 class="anchored" data-anchor-id="policy">Policy</h3>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>A <strong>policy</strong> <span class="math inline">\(\pi[a|s]\)</span> defines the rules by which the agent selects actions.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Definition</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Stochastic</strong></td>
+<td><span class="math inline">\(\pi[a|s]\)</span> is a probability distribution over actions</td>
+<td>Sample <span class="math inline">\(a \sim \pi[\cdot|s]\)</span></td>
+</tr>
+<tr class="even">
+<td><strong>Deterministic</strong></td>
+<td><span class="math inline">\(\pi[a|s] = 1\)</span> for one action, <span class="math inline">\(0\)</span> otherwise</td>
+<td>Always picks the same action in state <span class="math inline">\(s\)</span></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>A <strong>stationary</strong> policy depends only on the current state <span class="math inline">\(s_t\)</span></li>
+<li>A <strong>non-stationary</strong> policy also depends on the time step <span class="math inline">\(t\)</span></li>
+<li>Stochastic policies encourage <strong>exploration</strong>, which can be essential in POMDPs</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforcePolicy.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="a) Deterministic policy — one fixed action per state. b) A more random deterministic policy. c) Stochastic policy — arrow size indicates probability; encourages thorough exploration."><img src="assets/images/ReinforcePolicy.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) Deterministic policy — one fixed action per state. b) A more random deterministic policy. c) Stochastic policy — arrow size indicates probability; encourages thorough exploration."></a></p>
+<figcaption><strong>a)</strong> Deterministic policy — one fixed action per state. <strong>b)</strong> A more random deterministic policy. <strong>c)</strong> Stochastic policy — arrow size indicates probability; encourages thorough exploration.</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="the-rl-loop" class="level3">
+<h3 class="anchored" data-anchor-id="the-rl-loop">The RL Loop</h3>
+<p>At each step, agent and environment interact in a closed loop:</p>
+<ol type="1">
+<li>Agent observes state <span class="math inline">\(s_t\)</span> and last reward <span class="math inline">\(r_t\)</span></li>
+<li>Agent samples action <span class="math inline">\(a_t \sim \pi[a_t|s_t]\)</span></li>
+<li>Environment transitions to <span class="math inline">\(s_{t+1} \sim Pr(s_{t+1}|s_t, a_t)\)</span> and issues <span class="math inline">\(r_{t+1} \sim Pr(r_{t+1}|s_t, a_t)\)</span></li>
+<li>Repeat</li>
+</ol>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceMDPLoop.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="The agent applies its policy \pi[a_t|s_t] to choose an action; the environment returns the next state and reward via its transition and reward functions."><img src="assets/images/ReinforceMDPLoop.svg" class="img-fluid figure-img" style="width:80.0%" alt="The agent applies its policy \pi[a_t|s_t] to choose an action; the environment returns the next state and reward via its transition and reward functions."></a></p>
+<figcaption>The agent applies its policy <span class="math inline">\(\pi[a_t|s_t]\)</span> to choose an action; the environment returns the next state and reward via its transition and reward functions.</figcaption>
+</figure>
+</div>
+</div>
+</section>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 
+<p>Goal: choose a <strong>policy</strong> that maximizes the <strong>expected return</strong>. We make this precise by assigning a <em>value</em> to each state <span class="math inline">\(s_t\)</span> and state-action pair <span class="math inline">\(\{s_t, a_t\}\)</span>.</p>
+<p>The return <span class="math inline">\(G_t\)</span> is stochastic — the policy <span class="math inline">\(\pi[a_t|s_t]\)</span>, transitions <span class="math inline">\(Pr(s_{t+1}|s_t,a_t)\)</span>, and rewards <span class="math inline">\(Pr(r_{t+1}|s_t,a_t)\)</span> are all stochastic, so trajectories differ each run.</p>
+<section id="state-and-action-values" class="level3">
+<h3 class="anchored" data-anchor-id="state-and-action-values">State and Action Values</h3>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>State value</strong> (state-value function)</p>
+<p><span class="math display">\[v[s_t|\pi] = \E\bigl[G_t\big|s_t,\pi\bigr]\]</span></p>
+<p>Expected return starting from <span class="math inline">\(s_t\)</span> and following <span class="math inline">\(\pi\)</span> thereafter. Highest for states where large rewards are likely soon.</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Action value</strong> (state-action value function)</p>
+<p><span class="math display">\[q[s_t, a_t|\pi] = \E\bigl[G_t\big|s_t, a_t, \pi\bigr]\]</span></p>
+<p>Expected return from taking action <span class="math inline">\(a_t\)</span> in state <span class="math inline">\(s_t\)</span>, then following <span class="math inline">\(\pi\)</span>. Connects future rewards to current actions — resolves the <strong>temporal credit assignment problem</strong>.</p>
+</div>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceValueOfAction.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="a) State values v[s_t|\pi] — states closer to the fish are more valuable. b) Action values q[s_t,a_t|\pi] — four values per state (one per action); larger for actions heading toward the fish. c) Improved policy: always pick the action with the highest value (red numbers in b)."><img src="assets/images/ReinforceValueOfAction.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) State values v[s_t|\pi] — states closer to the fish are more valuable. b) Action values q[s_t,a_t|\pi] — four values per state (one per action); larger for actions heading toward the fish. c) Improved policy: always pick the action with the highest value (red numbers in b)."></a></p>
+<figcaption><strong>a)</strong> State values <span class="math inline">\(v[s_t|\pi]\)</span> — states closer to the fish are more valuable. <strong>b)</strong> Action values <span class="math inline">\(q[s_t,a_t|\pi]\)</span> — four values per state (one per action); larger for actions heading toward the fish. <strong>c)</strong> Improved policy: always pick the action with the highest value (red numbers in b).</figcaption>
+</figure>
+</div>
+</div>
+</section>
+<section id="optimal-policy" class="level3">
+<h3 class="anchored" data-anchor-id="optimal-policy">Optimal Policy</h3>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>For MDPs (but <strong>not</strong> POMDPs), there always exists a <strong>deterministic, stationary</strong> policy that simultaneously maximizes the value of every state.</p>
+</div>
+</div>
+</div>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Optimal state value</strong></p>
+<p><span class="math display">\[v^*[s_t] = \max_{\pi}\,\E\bigl[G_t\big|s_t,\pi\bigr]\]</span></p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Optimal action value</strong></p>
+<p><span class="math display">\[q^*[s_t,a_t] = \max_{\pi}\,\E\bigl[G_t\big|s_t,a_t,\pi\bigr]\]</span></p>
+</div>
+</div>
+</div>
+<p><br></p>
+<p>If we know <span class="math inline">\(q^*[s_t,a_t]\)</span>, the optimal policy follows immediately — just pick the best action:</p>
+<p><span class="math display">\[\pi[a_t|s_t] \leftarrow \argmax_{a_t}\bigl[q^*[s_t,a_t]\bigr]\]</span></p>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Many RL algorithms alternate between <strong>estimating action values</strong> and <strong>improving the policy</strong> based on those estimates.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="bellman-equations" class="level3">
+<h3 class="anchored" data-anchor-id="bellman-equations">Bellman Equations</h3>
+<div class="callout callout-style-simple callout-tip no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>For simplicity, we now write <span class="math inline">\(v[s_t]\)</span> and <span class="math inline">\(q[s_t,a_t]\)</span> (dropping the <span class="math inline">\(\pi\)</span> dependence), and assume <strong>deterministic rewards</strong> <span class="math inline">\(r[s_t,a_t]\)</span>.</p>
+</div>
+</div>
+</div>
+<p>State value and action value are mutually consistent:</p>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong><span class="math inline">\(v\)</span> from <span class="math inline">\(q\)</span></strong> — weighted average of action values under the policy:</p>
+<p><span class="math display">\[v[s_t] = \sum_{a_t} \pi[a_t|s_t]\, q[s_t, a_t]\]</span></p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong><span class="math inline">\(q\)</span> from <span class="math inline">\(v\)</span></strong> — immediate reward plus discounted value of next state:</p>
+<p><span class="math display">\[q[s_t, a_t] = r[s_t,a_t] + \gamma\!\sum_{s_{t+1}}\! Pr(s_{t+1}|s_t,a_t)\,v[s_{t+1}]\]</span></p>
+</div>
+</div>
+</div>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceBellman3.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="v[s_t] is a weighted sum of action values q[s_t,a_t], where weights are the policy probabilities \pi[a_t|s_t]."><img src="assets/images/ReinforceBellman3.svg" class="img-fluid figure-img" style="width:100.0%" alt="v[s_t] is a weighted sum of action values q[s_t,a_t], where weights are the policy probabilities \pi[a_t|s_t]."></a></p>
+<figcaption><span class="math inline">\(v[s_t]\)</span> is a weighted sum of action values <span class="math inline">\(q[s_t,a_t]\)</span>, where weights are the policy probabilities <span class="math inline">\(\pi[a_t|s_t]\)</span>.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceBellman2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="q[s_t,a_t] equals the immediate reward plus a discounted weighted sum of successor state values v[s_{t+1}]."><img src="assets/images/ReinforceBellman2.svg" class="img-fluid figure-img" style="width:100.0%" alt="q[s_t,a_t] equals the immediate reward plus a discounted weighted sum of successor state values v[s_{t+1}]."></a></p>
+<figcaption><span class="math inline">\(q[s_t,a_t]\)</span> equals the immediate reward plus a discounted weighted sum of successor state values <span class="math inline">\(v[s_{t+1}]\)</span>.</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>Substituting each equation into the other yields the <strong>Bellman equations</strong> — self-consistency relations that link values at time <span class="math inline">\(t\)</span> to values at time <span class="math inline">\(t+1\)</span>:</p>
+<p><span class="math display">\[v[s_t] = \sum_{a_t}\pi[a_t|s_t]\!\left(r[s_t,a_t] + \gamma\!\sum_{s_{t+1}}\!Pr(s_{t+1}|s_t,a_t)\,v[s_{t+1}]\right)\]</span></p>
+<p><span class="math display">\[q[s_t,a_t] = r[s_t,a_t] + \gamma\!\sum_{s_{t+1}}\!Pr(s_{t+1}|s_t,a_t)\!\left(\sum_{a_{t+1}}\!\pi[a_{t+1}|s_{t+1}]\,q[s_{t+1},a_{t+1}]\right)\]</span></p>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>The Bellman equations are the <strong>backbone of many RL methods</strong>. They say that state/action values must be self-consistent: updating one value propagates as a ripple to all others.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+
+<p><em>Tabular RL</em> algorithms (no function approximation) split into two camps:</p>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Model-based</strong></p>
+<p>Use the MDP structure explicitly — transition matrix <span class="math inline">\(Pr(s_{t+1}|s_t,a_t)\)</span> and reward structure <span class="math inline">\(r[s,a]\)</span>.</p>
+<ul>
+<li>If known <span class="math inline">\(\to\)</span> solved by <strong>dynamic programming</strong></li>
+<li>If unknown <span class="math inline">\(\to\)</span> estimate from observed trajectories</li>
+</ul>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 shadow-sm">
+<p><strong>Model-free</strong></p>
+<p>Transition matrix and reward structure are <strong>unknown</strong>. Two families:</p>
+<ol type="1">
+<li><em>Value estimation</em> — estimate optimal <span class="math inline">\(q[s,a]\)</span>, then set <span class="math inline">\(\pi\)</span> to the greedy action</li>
+<li><em>Policy estimation</em> — directly optimize <span class="math inline">\(\pi\)</span> via gradient descent</li>
+</ol>
+</div>
+</div>
+</div>
+<p><br></p>
+<p>Within each family, algorithms differ in <em>when</em> they update:</p>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-primary border-3">
+<p><strong>Monte Carlo (MC)</strong></p>
+<p>Simulate many complete trajectories (episodes), then update.</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-primary border-3">
+<p><strong>Temporal Difference (TD)</strong></p>
+<p>Update the policy <em>while</em> the agent traverses the MDP — no need to wait for episode end.</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Terminology:</strong> A <em>trajectory</em> is an observed sequence of states, rewards, and actions. A <em>rollout</em> is a simulated trajectory. An <em>episode</em> is a trajectory from an initial state to a terminal state (e.g., a full chess game).</p>
+</div>
+</div>
+</div>
+<section id="dynamic-programming" class="level3">
+<h3 class="anchored" data-anchor-id="dynamic-programming">Dynamic Programming</h3>
+<div class="callout callout-style-simple callout-warning no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Assumes <strong>perfect knowledge</strong> of <span class="math inline">\(Pr(s_{t+1}|s_t,a_t)\)</span> and <span class="math inline">\(r[s,a]\)</span> — unlike most RL methods which must estimate these from interaction.</p>
+</div>
+</div>
+</div>
+<p>Initialize <span class="math inline">\(v[s]\)</span> to zero and <span class="math inline">\(\pi[a|s]\)</span> randomly, then alternate:</p>
+<div class="card p-3 mb-3 shadow-sm">
+<p><strong>Policy evaluation</strong> — sweep through states, bootstrapping from neighbors:</p>
+<p><span class="math display">\[v[s_t] \leftarrow \sum_{a_t}\!\pi[a_t|s_t]\!\left(r[s_t,a_t] + \gamma\!\sum_{s_{t+1}}\!Pr(s_{t+1}|s_t,a_t)\,v[s_{t+1}]\right)\]</span></p>
+</div>
+<div class="card p-3 shadow-sm">
+<p><strong>Policy improvement</strong> — greedily choose the action with the highest value:</p>
+<p><span class="math display">\[\pi[a_t|s_t] \leftarrow \argmax_{a_t}\!\left[r[s_t,a_t] + \gamma\!\sum_{s_{t+1}}\!Pr(s_{t+1}|s_t,a_t)\,v[s_{t+1}]\right]\]</span></p>
+<p>Guaranteed to improve the policy (<em>policy improvement theorem</em>).</p>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceDP.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-11" title="a) Values initialized to zero, random policy. b) After two evaluation-improvement iterations. c) Converged optimal policy — avoids holes, reaches the fish."><img src="assets/images/ReinforceDP.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) Values initialized to zero, random policy. b) After two evaluation-improvement iterations. c) Converged optimal policy — avoids holes, reaches the fish."></a></p>
+<figcaption><strong>a)</strong> Values initialized to zero, random policy. <strong>b)</strong> After two evaluation-improvement iterations. <strong>c)</strong> Converged optimal policy — avoids holes, reaches the fish.</figcaption>
+</figure>
+</div>
+</div>
+<p><strong>Variations:</strong></p>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>Policy iteration</em></td>
+<td>Fully evaluate the policy to convergence before each improvement step</td>
+</tr>
+<tr class="even">
+<td><em>Value iteration</em></td>
+<td>One evaluation sweep per improvement step</td>
+</tr>
+<tr class="odd">
+<td><em>Asynchronous DP</em></td>
+<td>Update a subset of states in arbitrary order at each step</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="monte-carlo-methods" class="level3">
+<h3 class="anchored" data-anchor-id="monte-carlo-methods">Monte Carlo Methods</h3>
+<p>No knowledge of the MDP structure — instead, gain experience by <strong>repeatedly sampling trajectories</strong> and observing rewards. Alternates between:</p>
+<ol type="1">
+<li><strong>Estimating</strong> <span class="math inline">\(q[s,a]\)</span> as the average empirical return each time a state-action pair is visited</li>
+<li><strong>Improving</strong> the policy greedily: <span class="math inline">\(\pi[a|s] \leftarrow \argmax_a\bigl[q[s,a]\bigr]\)</span></li>
+</ol>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceMC.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-12" title="a) Random initial policy; MDP simulated repeatedly. b) Action values estimated by averaging observed returns per state-action pair. c) Policy updated to the best-valued action at each state."><img src="assets/images/ReinforceMC.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) Random initial policy; MDP simulated repeatedly. b) Action values estimated by averaging observed returns per state-action pair. c) Policy updated to the best-valued action at each state."></a></p>
+<figcaption><strong>a)</strong> Random initial policy; MDP simulated repeatedly. <strong>b)</strong> Action values estimated by averaging observed returns per state-action pair. <strong>c)</strong> Policy updated to the best-valued action at each state.</figcaption>
+</figure>
+</div>
+</div>
+<p><strong>On-policy vs.&nbsp;off-policy:</strong></p>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-warning border-3">
+<p><strong>On-policy</strong></p>
+<p>The current policy guides exploration — but unexplored actions can never be estimated.</p>
+<ul>
+<li><em>Exploring starts:</em> initiate episodes from every state-action pair (impractical for large state spaces)</li>
+<li><em><span class="math inline">\(\epsilon\)</span>-greedy:</em> take a random action with prob <span class="math inline">\(\epsilon\)</span>, the optimal action with prob <span class="math inline">\(1-\epsilon\)</span> — trades off exploration and exploitation</li>
+</ul>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-success border-3">
+<p><strong>Off-policy</strong></p>
+<p>Learn a deterministic <strong>target policy</strong> <span class="math inline">\(\pi\)</span> using data collected by a stochastic <strong>behavior policy</strong> <span class="math inline">\(\pi'\)</span> (e.g., <span class="math inline">\(\epsilon\)</span>-greedy).</p>
+<ul>
+<li>Behavior policy explores; target policy stays efficient</li>
+<li>Some methods use <em>importance sampling</em> to correct for the mismatch; others (e.g., Q-learning) estimate values from the greedy action regardless of what was taken</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<section id="temporal-difference-methods" class="level3">
+<h3 class="anchored" data-anchor-id="temporal-difference-methods">Temporal Difference Methods</h3>
+<p>TD methods <strong>combine bootstrapping</strong> (like DP) <strong>with sampling</strong> (like MC), updating values <em>while</em> the agent traverses the MDP — no waiting for episode end.</p>
+<div class="card p-3 mb-3 shadow-sm">
+<p><strong>SARSA</strong> (on-policy) — uses the <em>next</em> action <span class="math inline">\(a_{t+1}\)</span> sampled from the current policy:</p>
+<p><span class="math display">\[q[s_t,a_t] \leftarrow q[s_t,a_t] + \alpha\Bigl(r[s_t,a_t] + \gamma\cdot q[s_{t+1},a_{t+1}] - q[s_t,a_t]\Bigr)\]</span></p>
+<p>The bracketed term is the <strong>TD error</strong> — measures inconsistency between <span class="math inline">\(q[s_t,a_t]\)</span> and the one-step estimate <span class="math inline">\(r[s_t,a_t] + \gamma\cdot q[s_{t+1},a_{t+1}]\)</span>.</p>
+</div>
+<div class="card p-3 shadow-sm">
+<p><strong>Q-Learning</strong> (off-policy) — uses the <em>greedy</em> action at <span class="math inline">\(s_{t+1}\)</span>, regardless of what the behavior policy <span class="math inline">\(\pi'\)</span> actually chose:</p>
+<p><span class="math display">\[q[s_t,a_t] \leftarrow q[s_t,a_t] + \alpha\Bigl(r[s_t,a_t] + \gamma\cdot\max_a\bigl[q[s_{t+1},a]\bigr] - q[s_t,a_t]\Bigr)\]</span></p>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceTD.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-13" title="a) Agent in state s_t takes action a_t=2 (move down), receives reward 0. b) Maximum action value at the new state is found (0.43). c) q[s_t,a_t] updated to 1.12 using \alpha=0.1, \gamma=0.9 — the policy at the original state changes."><img src="assets/images/ReinforceTD.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) Agent in state s_t takes action a_t=2 (move down), receives reward 0. b) Maximum action value at the new state is found (0.43). c) q[s_t,a_t] updated to 1.12 using \alpha=0.1, \gamma=0.9 — the policy at the original state changes."></a></p>
+<figcaption><strong>a)</strong> Agent in state <span class="math inline">\(s_t\)</span> takes action <span class="math inline">\(a_t=2\)</span> (move down), receives reward <span class="math inline">\(0\)</span>. <strong>b)</strong> Maximum action value at the new state is found (0.43). <strong>c)</strong> <span class="math inline">\(q[s_t,a_t]\)</span> updated to 1.12 using <span class="math inline">\(\alpha=0.1\)</span>, <span class="math inline">\(\gamma=0.9\)</span> — the policy at the original state changes.</figcaption>
+</figure>
+</div>
+</div>
+<p>In both cases the policy is updated by <span class="math inline">\(\pi[a|s] \leftarrow \argmax_a[q[s,a]]\)</span>. These updates are contraction mappings and <strong>converge</strong> to the true action values, provided every state-action pair is visited infinitely often.</p>
+</section>
+</div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+
+<p>Tabular methods update <span class="math inline">\(q[s_t, a_t]\)</span> for every state-action pair — only practical when the state-action space is small. Even a chessboard has <span class="math inline">\(&gt;10^{40}\)</span> legal states.</p>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Fitted Q-learning</strong> replaces the discrete table <span class="math inline">\(q[s_t, a_t]\)</span> with a <strong>machine learning model</strong> <span class="math inline">\(q[\mathbf{s}_t, a_t, \phi]\)</span>, where the state is now a vector <span class="math inline">\(\mathbf{s}_t\)</span> rather than an index.</p>
+</div>
+</div>
+</div>
+<p><strong>Loss</strong> — based on the Q-learning consistency condition:</p>
+<p><span class="math display">\[L[\phi] = \left(r[\mathbf{s}_t, a_t] + \gamma \cdot \max_a\bigl[q[\mathbf{s}_{t+1}, a, \phi]\bigr] - q[\mathbf{s}_t, a_t, \phi]\right)^2\]</span></p>
+<p><strong>Gradient update:</strong></p>
+<p><span class="math display">\[\phi \leftarrow \phi + \alpha\!\left(r[\mathbf{s}_t, a_t] + \gamma \cdot \max_a\bigl[q[\mathbf{s}_{t+1}, a, \phi]\bigr] - q[\mathbf{s}_t, a_t, \phi]\right)\frac{\partial q[\mathbf{s}_t, a_t, \phi]}{\partial \phi}\]</span></p>
+<div class="callout callout-style-simple callout-warning no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Convergence is no longer guaranteed.</strong> Updating <span class="math inline">\(\phi\)</span> simultaneously shifts both the prediction <span class="math inline">\(q[\mathbf{s}_t, a_t, \phi]\)</span> and the target <span class="math inline">\(r[\mathbf{s}_t, a_t] + \gamma \cdot \max_a[q[\mathbf{s}_{t+1}, a, \phi]]\)</span>, which can damage convergence in theory and practice.</p>
+</div>
+</div>
+</div>
+<section id="deep-q-networks-dqn-for-atari-games" class="level3">
+<h3 class="anchored" data-anchor-id="deep-q-networks-dqn-for-atari-games">Deep Q-Networks (DQN) for ATARI Games</h3>
+<p>Deep networks naturally handle high-dimensional states — the network takes <strong>state as input</strong> and <strong>predicts action values for all actions simultaneously</strong>.</p>
+<p><strong>State representation:</strong> <span class="math inline">\(220\times160\)</span> ATARI frames (128 colors) → resized to <span class="math inline">\(84\times84\)</span> grayscale → last <strong>4 frames stacked</strong> to capture velocity.</p>
+<p><strong>Training tricks:</strong></p>
+<table class="table-striped table-hover caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Trick</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><em>Reward clipping</em></td>
+<td>Score changes clipped to <span class="math inline">\(\pm1\)</span> — normalizes rewards across 49 games</td>
+</tr>
+<tr class="even">
+<td><em>Experience replay</em></td>
+<td>Tuples <span class="math inline">\(\langle\mathbf{s}_t,a_t,r_{t+1},\mathbf{s}_{t+1}\rangle\)</span> stored in a buffer; random batches sampled — reduces correlation between adjacent frames</td>
+</tr>
+<tr class="odd">
+<td><em>Fixed target network</em></td>
+<td>Target parameters <span class="math inline">\(\phi^-\)</span> held fixed and updated only periodically — network no longer chases a moving target</td>
+</tr>
+</tbody>
+</table>
+<p>With the fixed target network, the update becomes:</p>
+<p><span class="math display">\[\phi \leftarrow \phi + \alpha\!\left(r[\mathbf{s}_t, a_t] + \gamma \cdot \max_a\bigl[q[\mathbf{s}_{t+1}, a, \phi^-]\bigr] - q[\mathbf{s}_t, a_t, \phi]\right)\frac{\partial q[\mathbf{s}_t, a_t, \phi]}{\partial \phi}\]</span></p>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceDQL.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-14" title="Atari benchmark: 49 games including Breakout (pictured). a–d) Four adjacent frames form the state. e) Joystick action input. f) 18 possible actions (8 directions + no movement, with/without button)."><img src="assets/images/ReinforceDQL.svg" class="img-fluid figure-img" style="width:100.0%" alt="Atari benchmark: 49 games including Breakout (pictured). a–d) Four adjacent frames form the state. e) Joystick action input. f) 18 possible actions (8 directions + no movement, with/without button)."></a></p>
+<figcaption>Atari benchmark: 49 games including Breakout (pictured). <strong>a–d)</strong> Four adjacent frames form the state. <strong>e)</strong> Joystick action input. <strong>f)</strong> 18 possible actions (8 directions + no movement, with/without button).</figcaption>
+</figure>
+</div>
+</div>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceDQL2.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-15" title="DQN architecture: 4 stacked 84\times84 grayscale frames → Conv 8\times8 stride 4 → Conv 4\times4 stride 2 → FC → FC → outputs q[\mathbf{s}_t, a_t] for all 18 actions."><img src="assets/images/ReinforceDQL2.svg" class="img-fluid figure-img" style="display:block; margin:auto;;width:60.0%" alt="DQN architecture: 4 stacked 84\times84 grayscale frames → Conv 8\times8 stride 4 → Conv 4\times4 stride 2 → FC → FC → outputs q[\mathbf{s}_t, a_t] for all 18 actions."></a></p>
+<figcaption>DQN architecture: 4 stacked <span class="math inline">\(84\times84\)</span> grayscale frames → Conv <span class="math inline">\(8\times8\)</span> stride 4 → Conv <span class="math inline">\(4\times4\)</span> stride 2 → FC → FC → outputs <span class="math inline">\(q[\mathbf{s}_t, a_t]\)</span> for all 18 actions.</figcaption>
+</figure>
+</div>
+</div>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>DQN reached <strong>professional game tester level</strong> on 49 ATARI games (~38 days of experience per game). It struggled on <em>Montezuma’s Revenge</em> — a game with sparse rewards and many visually distinct screens.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="double-q-learning-and-double-dqns" class="level3">
+<h3 class="anchored" data-anchor-id="double-q-learning-and-double-dqns">Double Q-Learning and Double DQNs</h3>
+<p><strong>Problem:</strong> the <span class="math inline">\(\max\)</span> in the Q-learning update introduces <strong>systematic overestimation</strong> — stochastic rewards or random network outputs occasionally produce inflated values that get selected by the max, biasing <span class="math inline">\(q[s_t,a_t]\)</span> upward.</p>
+<p>The root cause: the same network both <strong>selects</strong> the best action and <strong>evaluates</strong> it.</p>
+<p><strong>Fix — train two models</strong> <span class="math inline">\(q_1\)</span> and <span class="math inline">\(q_2\)</span> simultaneously; each selects the action, the <em>other</em> evaluates it:</p>
+<p><span class="math display">\[q_1[s_t,a_t] \leftarrow q_1[s_t,a_t] + \alpha\!\left(r[s_t,a_t] + \gamma\cdot q_2\!\left[s_{t+1},\,\argmax_a\bigl[q_1[s_{t+1},a]\bigr]\right] - q_1[s_t,a_t]\right)\]</span></p>
+<p><span class="math display">\[q_2[s_t,a_t] \leftarrow q_2[s_t,a_t] + \alpha\!\left(r[s_t,a_t] + \gamma\cdot q_1\!\left[s_{t+1},\,\argmax_a\bigl[q_2[s_{t+1},a]\bigr]\right] - q_2[s_t,a_t]\right)\]</span></p>
+<p>New tuples are randomly assigned to update one model or the other. <strong>Double DQNs</strong> apply this idea with deep networks <span class="math inline">\(q[\mathbf{s}_t,a_t,\phi_1]\)</span> and <span class="math inline">\(q[\mathbf{s}_t,a_t,\phi_2]\)</span>:</p>
+<p><span class="math display">\[\phi_1 \leftarrow \phi_1 + \alpha\!\left(r[\mathbf{s}_t,a_t] + \gamma\cdot q\!\left[\mathbf{s}_{t+1},\argmax_a\bigl[q[\mathbf{s}_{t+1},a,\phi_1]\bigr],\phi_2\right] - q[\mathbf{s}_t,a_t,\phi_1]\right)\frac{\partial q[\mathbf{s}_t,a_t,\phi_1]}{\partial\phi_1}\]</span></p>
+<p><span class="math display">\[\phi_2 \leftarrow \phi_2 + \alpha\!\left(r[\mathbf{s}_t,a_t] + \gamma\cdot q\!\left[\mathbf{s}_{t+1},\argmax_a\bigl[q[\mathbf{s}_{t+1},a,\phi_2]\bigr],\phi_1\right] - q[\mathbf{s}_t,a_t,\phi_2]\right)\frac{\partial q[\mathbf{s}_t,a_t,\phi_2]}{\partial\phi_2}\]</span></p>
+</section>
+</div>
+</div>
+</div>
+<div class="tabset-margin-container page-columns page-full"><div class="no-row-height column-margin column-container"><div class="tabset-margin-content tabset-2-1-tab-margin-content">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-2-2-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div><div class="tabset-margin-content tabset-2-3-tab-margin-content collapse">
+<p>Image credits: <a href="https://udlbook.github.io/udlbook">Understanding Deep Learning</a> by Simon J. D. Prince, [CC BY 4.0]</p>
+</div></div></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Policy Gradients</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">Actor-Critic Methods</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false" href="">Offline Reinforcement Learning</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+
+<p>Q-learning estimates action values first, then derives a policy. <strong>Policy-based methods</strong> skip the middleman and directly learn a stochastic policy <span class="math inline">\(\pi[a_t|\mathbf{s}_t, \boldsymbol{\theta}]\)</span> — a parametric function mapping state <span class="math inline">\(\mathbf{s}_t\)</span> to a distribution <span class="math inline">\(Pr(a_t|\mathbf{s}_t)\)</span> over actions.</p>
+<p>In MDPs there is always an optimal <em>deterministic</em> policy — yet there are three strong reasons to use a stochastic one:</p>
+<div class="grid">
+<div class="g-col-12 g-col-md-4">
+<div class="card p-3 h-100 border-start border-primary border-3">
+<p><strong>Exploration</strong></p>
+<p>We are not obliged to take the best known action at every step — the policy naturally explores the space.</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-4">
+<div class="card p-3 h-100 border-start border-primary border-3">
+<p><strong>Smooth loss</strong></p>
+<p>The loss changes smoothly as <span class="math inline">\(\boldsymbol{\theta}\)</span> changes → gradient descent works even with discrete rewards (analogous to maximum likelihood in classification).</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-4">
+<div class="card p-3 h-100 border-start border-primary border-3">
+<p><strong>Partial observability</strong></p>
+<p>When the state is not fully observed (see POMDP section), two visually identical observations may require different actions. A stochastic policy can take different actions until the ambiguity is resolved.</p>
+</div>
+</div>
+</div>
+<section id="derivation-of-the-policy-gradient" class="level3">
+<h3 class="anchored" data-anchor-id="derivation-of-the-policy-gradient">Derivation of the Policy Gradient</h3>
+<p>Consider a trajectory <span class="math inline">\(\boldsymbol{\tau} = [\mathbf{s}_1, a_1, \mathbf{s}_2, a_2, \ldots, \mathbf{s}_T, a_T]\)</span>. Its probability under the current policy is:</p>
+<p><span class="math display">\[Pr(\boldsymbol{\tau}|\boldsymbol{\theta}) = Pr(\mathbf{s}_1)\prod_{t=1}^{T}\pi[a_t|\mathbf{s}_t,\boldsymbol{\theta}]\,Pr(\mathbf{s}_{t+1}|\mathbf{s}_t,a_t)\]</span></p>
+<p><strong>Objective</strong> — maximize expected return over trajectories:</p>
+<p><span class="math display">\[\boldsymbol{\theta} = \argmax_{\boldsymbol{\theta}}\Bigl[\mathbb{E}_{\boldsymbol{\tau}}\bigl[r[\boldsymbol{\tau}]\bigr]\Bigr] = \argmax_{\boldsymbol{\theta}}\left[\int Pr(\boldsymbol{\tau}|\boldsymbol{\theta})\,r[\boldsymbol{\tau}]\,d\boldsymbol{\tau}\right]\]</span></p>
+<p><strong>Gradient ascent</strong> — multiply and divide by <span class="math inline">\(Pr(\boldsymbol{\tau}|\boldsymbol{\theta})\)</span> to convert to an expectation, then approximate with <span class="math inline">\(I\)</span> observed trajectories:</p>
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\int\frac{\partial Pr(\boldsymbol{\tau}|\boldsymbol{\theta})}{\partial\boldsymbol{\theta}}\,r[\boldsymbol{\tau}]\,d\boldsymbol{\tau} \approx \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\frac{1}{Pr(\boldsymbol{\tau}_i|\boldsymbol{\theta})}\frac{\partial Pr(\boldsymbol{\tau}_i|\boldsymbol{\theta})}{\partial\boldsymbol{\theta}}\,r[\boldsymbol{\tau}_i]\]</span></p>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforcePolicyGrad.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-16" title="Five episodes for the same policy (brighter = higher reward). Trajectories 1–3 yield high rewards but are already common — small update. Trajectory 4 yields low rewards — policy adjusted to avoid it. Trajectory 5 yields high rewards and is unusual — largest update."><img src="assets/images/ReinforcePolicyGrad.svg" class="img-fluid figure-img" style="width:80.0%" alt="Five episodes for the same policy (brighter = higher reward). Trajectories 1–3 yield high rewards but are already common — small update. Trajectory 4 yields low rewards — policy adjusted to avoid it. Trajectory 5 yields high rewards and is unusual — largest update."></a></p>
+<figcaption>Five episodes for the same policy (brighter = higher reward). Trajectories 1–3 yield high rewards but are already common — small update. Trajectory 4 yields low rewards — policy adjusted to avoid it. Trajectory 5 yields high rewards <em>and</em> is unusual — <strong>largest update</strong>.</figcaption>
+</figure>
+</div>
+</div>
+<p><strong>Likelihood ratio identity</strong> <span class="math inline">\(\left(\frac{\partial \log f[z]}{\partial z} = \frac{1}{f[z]}\frac{\partial f[z]}{\partial z}\right)\)</span> simplifies the update to:</p>
+<div class="card p-3 mb-3 shadow-sm">
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\frac{\partial\log\bigl[Pr(\boldsymbol{\tau}_i|\boldsymbol{\theta})\bigr]}{\partial\boldsymbol{\theta}}\,r[\boldsymbol{\tau}_i]\]</span></p>
+</div>
+<p><strong>Log-trajectory decomposition</strong> — expanding <span class="math inline">\(\log[Pr(\boldsymbol{\tau}|\boldsymbol{\theta})]\)</span>:</p>
+<p><span class="math display">\[\log[Pr(\boldsymbol{\tau}|\boldsymbol{\theta})] = \log[Pr(\mathbf{s}_1)] + \sum_{t=1}^{T}\log[\pi[a_t|\mathbf{s}_t,\boldsymbol{\theta}]] + \sum_{t=1}^{T}\log[Pr(\mathbf{s}_{t+1}|\mathbf{s}_t,a_t)]\]</span></p>
+<p>Only the middle term depends on <span class="math inline">\(\boldsymbol{\theta}\)</span>, giving the <strong>REINFORCE update</strong>:</p>
+<div class="card p-3 mb-3 shadow-sm">
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\sum_{t=1}^{T}\frac{\partial\log[\pi[a_{it}|\mathbf{s}_{it},\boldsymbol{\theta}]]}{\partial\boldsymbol{\theta}}\,r[\boldsymbol{\tau}_i]\]</span></p>
+<p>State transition terms <span class="math inline">\(Pr(\mathbf{s}_{t+1}|\mathbf{s}_t,a_t)\)</span> vanish — the update <strong>does not require a Markov model</strong>.</p>
+</div>
+<p><strong>Further simplification</strong> — since past rewards cannot be affected by the action at time <span class="math inline">\(t\)</span>, only <em>future</em> rewards matter:</p>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\sum_{t=1}^{T}\frac{\partial\log[\pi[a_{it}|\mathbf{s}_{it},\boldsymbol{\theta}]]}{\partial\boldsymbol{\theta}}\sum_{k=t}^{T}r_{i,k+1}\]</span></p>
+</div>
+</div>
+</div>
+</section>
+<section id="reinforce-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="reinforce-algorithm">REINFORCE Algorithm</h3>
+<p><em>REINFORCE</em> is an early policy gradient algorithm that incorporates discounting. It is a Monte Carlo method that generates episodes <span class="math inline">\(\boldsymbol{\tau}_i = [\mathbf{s}_{i1}, a_{i1}, r_{i2}, \mathbf{s}_{i2}, a_{i2}, r_{i3}, \ldots, r_{iT}]\)</span> under the current policy <span class="math inline">\(\pi[a|\mathbf{s},\boldsymbol{\theta}]\)</span>.</p>
+<p>For discrete actions, <span class="math inline">\(\pi[\mathbf{s}|\boldsymbol{\theta}]\)</span> is a neural network that takes state <span class="math inline">\(\mathbf{s}\)</span> and outputs one value per action — passed through a <strong>softmax</strong> to form a distribution, then sampled at each step.</p>
+<p>For each episode <span class="math inline">\(i\)</span> and time step <span class="math inline">\(t\)</span>, compute the <strong>discounted return</strong> of the partial trajectory <span class="math inline">\(\boldsymbol{\tau}_{it}\)</span> starting at <span class="math inline">\(t\)</span>:</p>
+<p><span class="math display">\[r[\boldsymbol{\tau}_{it}] = \sum_{k=t+1}^{T}\gamma^{k-1}\,r_{i,k}\]</span></p>
+<p>Then update parameters for every <span class="math inline">\((i,t)\)</span>:</p>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{\partial\log\bigl[\pi_{a_{it}}[\mathbf{s}_{it},\boldsymbol{\theta}]\bigr]}{\partial\boldsymbol{\theta}}\,r[\boldsymbol{\tau}_{it}] \qquad \forall\, i,t\]</span></p>
+<p>where <span class="math inline">\(\pi_{a_t}[\mathbf{s}_t,\boldsymbol{\theta}]\)</span> is the probability of action <span class="math inline">\(a_t\)</span> produced by the network given state <span class="math inline">\(\mathbf{s}_t\)</span>.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="baselines" class="level3">
+<h3 class="anchored" data-anchor-id="baselines">Baselines</h3>
+<p>Policy gradient estimates have <strong>high variance</strong> — many episodes may be needed for stable gradient estimates. One fix: subtract a <strong>baseline</strong> <span class="math inline">\(b\)</span> from the returns:</p>
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\sum_{t=1}^{T}\frac{\partial\log[\pi_{a_{it}}[\mathbf{s}_{it},\boldsymbol{\theta}]]}{\partial\boldsymbol{\theta}}\bigl(r[\boldsymbol{\tau}_{it}] - b\bigr)\]</span></p>
+<p>As long as <span class="math inline">\(b\)</span> does not depend on the actions, the expected value is unchanged:</p>
+<p><span class="math display">\[\mathbb{E}_{\boldsymbol{\tau}}\!\left[\sum_{t=1}^{T}\frac{\partial\log[\pi_{a_{it}}[\mathbf{s}_{it},\boldsymbol{\theta}]]}{\partial\boldsymbol{\theta}}\cdot b\right] = 0\]</span></p>
+<p>If <span class="math inline">\(b\)</span> co-varies with irrelevant factors that add noise, subtracting it <strong>reduces variance</strong> without introducing bias (<em>control variates</em>).</p>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforcementVariance.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-17" title="a) Estimating \mathbb{E}[a] from few samples has high variance. b) Observe b with \mathbb{E}[b]=0 that co-varies with a. c) Samples of a-b have much lower variance while \mathbb{E}[a-b]=\mathbb{E}[a] — same estimate, lower noise."><img src="assets/images/ReinforcementVariance.svg" class="img-fluid figure-img" style="width:100.0%" alt="a) Estimating \mathbb{E}[a] from few samples has high variance. b) Observe b with \mathbb{E}[b]=0 that co-varies with a. c) Samples of a-b have much lower variance while \mathbb{E}[a-b]=\mathbb{E}[a] — same estimate, lower noise."></a></p>
+<figcaption><strong>a)</strong> Estimating <span class="math inline">\(\mathbb{E}[a]\)</span> from few samples has high variance. <strong>b)</strong> Observe <span class="math inline">\(b\)</span> with <span class="math inline">\(\mathbb{E}[b]=0\)</span> that co-varies with <span class="math inline">\(a\)</span>. <strong>c)</strong> Samples of <span class="math inline">\(a-b\)</span> have much lower variance while <span class="math inline">\(\mathbb{E}[a-b]=\mathbb{E}[a]\)</span> — same estimate, lower noise.</figcaption>
+</figure>
+</div>
+</div>
+<p><strong>Optimal baseline</strong> (minimizes variance):</p>
+<p><span class="math display">\[b = \sum_i\frac{\sum_{t=1}^{T}\!\bigl(\partial\log[\pi_{a_{it}}[\mathbf{s}_{it},\boldsymbol{\theta}]]/\partial\boldsymbol{\theta}\bigr)^2 r[\boldsymbol{\tau}_{it}]}{\sum_{t=1}^{T}\!\bigl(\partial\log[\pi_{a_{it}}[\mathbf{s}_{it},\boldsymbol{\theta}]]/\partial\boldsymbol{\theta}\bigr)^2}\]</span></p>
+<p>In practice, this is approximated by the <strong>mean return</strong>:</p>
+<p><span class="math display">\[b \approx \frac{1}{I}\sum_i r[\boldsymbol{\tau}_i]\]</span></p>
+<p>This removes variance that occurs when all trajectories pass through high-return states regardless of the actions taken.</p>
+</section>
+<section id="state-dependent-baselines" class="level3">
+<h3 class="anchored" data-anchor-id="state-dependent-baselines">State-Dependent Baselines</h3>
+<p>A better baseline depends on the <strong>current state</strong> <span class="math inline">\(\mathbf{s}_{it}\)</span>:</p>
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\sum_{t=1}^{T}\frac{\partial\log[\pi_{a_{it}}[\mathbf{s}_{it},\boldsymbol{\theta}]]}{\partial\boldsymbol{\theta}}\bigl(r[\boldsymbol{\tau}_{it}] - b[\mathbf{s}_{it}]\bigr)\]</span></p>
+<p>This compensates for variance introduced by some states having greater overall returns than others, regardless of the actions taken.</p>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>A natural choice is <span class="math inline">\(b[\mathbf{s}] = v[\mathbf{s}]\)</span>, the <strong>state value</strong>. The difference <span class="math inline">\(r[\boldsymbol{\tau}_{it}] - v[\mathbf{s}_{it}]\)</span> is called the <strong>advantage estimate</strong> — how much better this trajectory was than average from this state.</p>
+<p>Parameterize as a neural network <span class="math inline">\(b[\mathbf{s}] = v[\mathbf{s},\boldsymbol{\phi}]\)</span> and fit to observed returns with least squares:</p>
+<p><span class="math display">\[L[\boldsymbol{\phi}] = \sum_{i=1}^{I}\sum_{t=1}^{T}\left(v[\mathbf{s}_{it},\boldsymbol{\phi}] - \sum_{j=t}^{T}r_{i,j+1}\right)^2\]</span></p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+
+<p>Actor-critic algorithms are <strong>TD policy gradient</strong> methods — they can update the policy network at <em>each step</em>, without waiting for an episode to complete (unlike Monte Carlo REINFORCE).</p>
+<p>In the TD approach we don’t have access to all future rewards <span class="math inline">\(r[\boldsymbol{\tau}_t] = \sum_{k=t}^{T}r_k\)</span>. Instead, approximate with the current reward plus the discounted value of the next state:</p>
+<p><span class="math display">\[r[\boldsymbol{\tau}_{it}] \approx r_{i,t+1} + \gamma\cdot v[\mathbf{s}_{i,t+1},\boldsymbol{\phi}]\]</span></p>
+<p>where <span class="math inline">\(v[\mathbf{s},\boldsymbol{\phi}]\)</span> is a <strong>second neural network</strong> (the <em>critic</em>) estimating the state value.</p>
+<p>Substituting into the state-dependent baseline update (with <span class="math inline">\(b[\mathbf{s}_{it}] = v[\mathbf{s}_{it},\boldsymbol{\phi}]\)</span>) gives the <strong>actor update</strong>:</p>
+<div class="card p-3 mb-3 shadow-sm">
+<p><strong>Actor</strong> — policy network <span class="math inline">\(\pi[\mathbf{s}_t,\boldsymbol{\theta}]\)</span>:</p>
+<p><span class="math display">\[\boldsymbol{\theta} \leftarrow \boldsymbol{\theta} + \alpha\cdot\frac{1}{I}\sum_{i=1}^{I}\sum_{t=1}^{T}\frac{\partial\log[Pr(a_{it}|\mathbf{s}_{it},\boldsymbol{\theta})]}{\partial\boldsymbol{\theta}}\Bigl(r_{i,t+1} + \gamma\cdot v[\mathbf{s}_{i,t+1},\boldsymbol{\phi}] - v[\mathbf{s}_{i,t},\boldsymbol{\phi}]\Bigr)\]</span></p>
+</div>
+<p>Concurrently, update the critic by <strong>bootstrapping</strong>:</p>
+<div class="card p-3 mb-3 shadow-sm">
+<p><strong>Critic</strong> — value network <span class="math inline">\(v[\mathbf{s}_t,\boldsymbol{\phi}]\)</span>:</p>
+<p><span class="math display">\[L[\boldsymbol{\phi}] = \sum_{i=1}^{I}\sum_{t=1}^{T}\Bigl(r_{i,t+1} + \gamma\cdot v[\mathbf{s}_{i,t+1},\boldsymbol{\phi}] - v[\mathbf{s}_{i,t},\boldsymbol{\phi}]\Bigr)^2\]</span></p>
+</div>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Often the <strong>same network</strong> represents both actor and critic, with two sets of output heads. Although actor-critic methods <em>can</em> update at every step, in practice the agent collects a batch of experience over many time steps before updating.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+
+<p>In standard RL the agent must interact with the environment to learn. This is impractical when:</p>
+<div class="grid">
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-danger border-3">
+<p><strong>Dangerous exploration</strong></p>
+<p>e.g., autonomous vehicles — erratic behavior during learning is unacceptable.</p>
+</div>
+</div>
+<div class="g-col-12 g-col-md-6">
+<div class="card p-3 h-100 border-start border-danger border-3">
+<p><strong>Expensive data collection</strong></p>
+<p>e.g., financial trading — each exploratory action has real cost.</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-simple callout-important no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Offline RL</strong> (or <em>batch RL</em>) learns to maximize future rewards by observing <strong>past sequences</strong> <span class="math inline">\(\mathbf{s}_1,a_1,r_2,\mathbf{s}_2,a_2,r_3,\ldots\)</span> collected by human agents — <strong>without ever interacting with the environment</strong>.</p>
+<p>Distinct from <em>imitation learning</em>: offline RL has access to rewards and aims to <strong>improve</strong> beyond the historical agent, not merely replicate it.</p>
+</div>
+</div>
+</div>
+<section id="decision-transformer" class="level3">
+<h3 class="anchored" data-anchor-id="decision-transformer">Decision Transformer</h3>
+<p>Offline RL opens a new framing: treat it as a <strong>sequence prediction problem</strong> — predict the next action given the history of states, rewards, and actions. The <em>decision transformer</em> exploits a transformer decoder for this.</p>
+<p><strong>Key modification — returns-to-go (RTG):</strong> replace <span class="math inline">\(r_t\)</span> with <span class="math inline">\(R_{t:T} = \sum_{t'=t}^{T}r_{t'}\)</span> (remaining future rewards), so the model conditions on <em>how much reward is still to come</em>.</p>
+<div class="left-caption">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="assets/images/ReinforceDecisionTransformer.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-18" title="Input sequence: triples of (state, action, RTG), each embedded into fixed-size vectors. At each step, the transformer decoder predicts the next action. At test time, start with the desired total return and decrement by observed rewards."><img src="assets/images/ReinforceDecisionTransformer.svg" class="img-fluid figure-img" style="width:100.0%" alt="Input sequence: triples of (state, action, RTG), each embedded into fixed-size vectors. At each step, the transformer decoder predicts the next action. At test time, start with the desired total return and decrement by observed rewards."></a></p>
+<figcaption>Input sequence: triples of (state, action, RTG), each embedded into fixed-size vectors. At each step, the transformer decoder predicts the next action. At test time, start with the desired total return and decrement by observed rewards.</figcaption>
+</figure>
+</div>
+</div>
+<p><strong>Architecture:</strong> states, actions, and RTG are each mapped to fixed-size embeddings (states via CNN for images; actions and RTG via learned embeddings). Trained with <strong>masked self-attention</strong> and position embeddings.</p>
+<p><strong>At inference:</strong> specify the desired total return at step 1 and decrement as rewards arrive (e.g., in Atari, set it to the score required to win).</p>
+<div class="callout callout-style-simple callout-note no-icon">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>Why this matters:</strong> Decision transformers replace most of the RL machinery and its instability with standard <strong>supervised learning</strong>. Transformers ingest large context windows — making the temporal credit assignment problem more tractable — and can be fine-tuned from online experience to improve over time.</p>
+</div>
+</div>
+</div>
+</section>
 </div>
 </div>
 </div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -829,6 +1750,38 @@ $$
   </div>
 </nav>
 </div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 
