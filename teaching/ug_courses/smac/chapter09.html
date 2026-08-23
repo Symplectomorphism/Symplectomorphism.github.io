@@ -38,6 +38,7 @@
   </style>
   <link rel="stylesheet" href="../../../site_libs/revealjs/dist/theme/quarto-0427d8d92a431aa6a6430e53ec02a470.css">
   <link rel="stylesheet" href="revealjs-styles.css">
+  <link rel="stylesheet" href="chapter09-styles.css">
   <link href="../../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -150,8 +151,1896 @@ John N. Chiasson and Aykut C. Satici
 </div>
 
 </section>
-<section id="servomechanism" class="slide level2">
-<h2>Servomechanism</h2>
+<section id="contents" class="title-slide slide level1 contents-slide center">
+<h1>Contents</h1>
+<ul>
+<li><p>Servomechanism Modeling</p></li>
+<li><p>DC Servo Tracking and Disturbance Rejection</p></li>
+<li><p>PI and PID Control</p></li>
+<li><p>Tracking Theory and the Internal Model Principle</p></li>
+<li><p>Aircraft Pitch Control Design</p></li>
+</ul>
+</section>
+
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Servomechanism
+</div>
+<p><em>Servomechanisms</em> are used for positioning applications (robot arms, machine tools, etc.).</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_001.png">
+</div>
+</div>
+<p>Schematic diagram for a servomechanism.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_002.png">
+</div>
+</div>
+<ul>
+<li><p>Choose the amplifier gain so the <span class="math inline">\(\theta(t)\rightarrow\theta_{ref}.\)</span></p></li>
+<li><p>Equivalently, we want the error <span class="math inline">\(e(t)=\theta_{ref}-\theta\rightarrow0.\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_002.png">
+</div>
+</div>
+<p><span class="math inline">\(K_{T}\)</span> is the motor torque constant (<span class="math inline">\(\tau_{m}=K_{T}i\)</span>).</p>
+<p><span class="math inline">\(K_{b}=K_{T}\)</span> is the back-emf constant (<span class="math inline">\(v_{b}=K_{b}\omega_{m}\)</span>).</p>
+<p><span class="math inline">\(K\)</span> is the amplifier gain.</p>
+<p><span class="math inline">\(K_{0}\)</span> is the conversion factor from encoder counts to radians</p>
+<p><span class="math inline">\(J_{1}\)</span> is the moment of inertia of the motor shaft.</p>
+<p><span class="math inline">\(J_{2}\)</span> is the moment of inertia of the output shaft.</p>
+<p><span class="math inline">\(f_{1}\)</span> is the viscous-friction coefficient of the motor shaft.</p>
+<p><span class="math inline">\(f_{2}\)</span> is the viscous-friction coefficient of the output shaft.</p>
+<p><span class="math inline">\(n_{1}\)</span> is the number of gear teeth on the motor shaft.</p>
+<p><span class="math inline">\(n_{2}\)</span> is the number of gear teeth on output shaft.</p>
+<p><span class="math inline">\(n=n_{2}/n_{1}\)</span> is the gear ratio.</p>
+<p><span class="math inline">\(J=J_{1}+n^{2}J_{2}\)</span> is total inertia reflected to motor shaft.</p>
+<p><span class="math inline">\(f=f_{1}+n^{2}f_{2}\)</span> is the total viscous friction coefficient reflected to the motor shaft.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/gear_008.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\tau_{m}-\tau_{1}-f_{1}\omega_{1}  &amp;  =J_{1}\frac{d\omega_{1}}{dt}\\
+\tau_{2}-\tau_{L}-f_{2}\omega_{2}  &amp;  =J_{2}\frac{d\omega_{2}}{dt}
+\end{aligned}
+\]</span></p>
+<p>with</p>
+<p><span class="math display">\[
+\begin{aligned}
+\dfrac{\tau_{2}}{\tau_{1}}  &amp;  =\dfrac{r_{2}}{r_{1}}=\dfrac{n_{2}}{n_{1}}\\
+\quad{}r_{1}\theta_{1}  &amp;  =r_{2}\theta_{2}\text{ }\Longrightarrow\text{
+}r_{1}\omega_{1}=r_{2}\omega_{2}\\
+\omega_{m}  &amp;  =\omega_{1}=\frac{n_{2}}{n_{1}}\omega_{2}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<p>Using <span class="math inline">\(\tau_{1}=\dfrac{n_{1}}{n_{2}}\tau_{2}\)</span> &nbsp;and <span class="math inline">\(\tau_{2}-\tau_{L}
+-f_{2}\omega_{2}=J_{2}\dfrac{d\omega_{2}}{dt}\)</span>:</p>
+<p><span class="math display">\[
+\begin{aligned}
+\tau_{1}=\frac{n_{1}}{n_{2}}\tau_{2}=\frac{n_{1}}{n_{2}}\left(  \tau_{L}
++f_{2}\omega_{2}+J_{2}\frac{d\omega_{2}}{dt}\right)   &amp;  =\frac{n_{1}}{n_{2}
+}\!\left(  \tau_{L}+f_{2}\left(  \frac{n_{1}}{n_{2}}\omega_{1}\right)
++J_{2}\frac{d\left(  \dfrac{n_{1}}{n_{2}}\omega_{1}\right)  }{dt}\right) \\
+&amp;  =\frac{n_{1}}{n_{2}}\tau_{L}+\left(  \frac{n_{1}}{n_{2}}\right)
+^{\!2}\!\!f_{2}\omega_{1}+\left(  \frac{n_{1}}{n_{2}}\right)  ^{\!2}
+\!\!J_{2}\frac{d\omega_{1}}{dt}.
+\end{aligned}
+\]</span></p>
+<p>Using <span class="math inline">\(\tau_{m}-\tau_{1}-f_{1}\omega_{1}=J_{1}\dfrac{d\omega_{1}}{dt}\)</span>:</p>
+<p><span class="math display">\[
+\tau_{m}=\underset{J}{\underbrace{\left(  \left(  \frac{n_{1}}{n_{2}}\right)
+^{\!2}\!\!J_{2}+J_{1}\right)  }}\frac{d\omega_{1}}{dt}
++\underset{f}{\underbrace{\left(  \left(  \frac{n_{1}}{n_{2}}\right)
+^{\!2}\!\!f_{2}+f_{1}\right)  }}\omega_{1}+\frac{n_{1}}{n_{2}}\tau_{L}.
+\]</span></p>
+<p>With <span class="math inline">\(\omega_{m}=\omega_{1}\)</span>:</p>
+<p><span class="math display">\[
+\tau_{m}=J\frac{d\omega_{m}}{dt}+f\omega_{m}+\frac{n_{1}}{n_{2}}\tau_{L}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+L\frac{di(t)}{dt}  &amp;  =-Ri(t)-K_{b}\omega_{m}(t)+v_{a}(t)\\
+J\frac{d\omega_{m}(t)}{dt}  &amp;  =\underset{\tau_{m}}{\underbrace{K_{T}i(t)}
+}-f\omega_{m}(t)-\frac{n_{1}}{n_{2}}\tau_{L}(t)\\
+\frac{d\theta_{m}(t)}{dt}  &amp;  =\omega_{m}(t)\\
+\theta(t)  &amp;  \triangleq\theta_{2}(t)=\frac{n_{1}}{n_{2}}\theta_{m}(t)\\
+v_{a}(t)  &amp;  =K\!\left(  \theta_{ref}(t)-\theta(t)\right)  .
+\end{aligned}
+\]</span></p>
+<p>Let <span class="math inline">\(r\triangleq\theta_{ref},c\triangleq\theta\)</span> and compute Laplace Transforms:</p>
+<p><span class="math display">\[
+\begin{aligned}
+(sL+R)I(s)  &amp;  =V_{a}(s)-K_{b}\omega_{m}(s)\\
+(Js+f)\omega_{m}(s)  &amp;  =K_{T}I(s)-\frac{n_{1}}{n_{2}}\tau_{L}(s)\\
+s\theta_{m}(s)  &amp;  =\omega_{m}(s)\\
+C(s)  &amp;  \triangleq\theta_{2}(s)=\frac{n_{1}}{n_{2}}\theta_{m}(s)\\
+V_{a}(s)  &amp;  =K\!\left(  R(s)-C(s)\right)  .
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+(sL+R)I(s)  &amp;  =V_{a}(s)-K_{b}\omega_{m}(s)\\
+(Js+f)\omega_{m}(s)  &amp;  =K_{T}I(s)-\frac{n_{1}}{n_{2}}\tau_{L}(s)\\
+s\theta_{m}(s)  &amp;  =\omega_{m}(s)\\
+C(s)  &amp;  \triangleq\theta_{2}(s)=\frac{n_{1}}{n_{2}}\theta_{m}(s)\\
+V_{a}(s)  &amp;  =K\!\left(  R(s)-C(s)\right)  .
+\end{aligned}
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_003.png">
+</div>
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_004.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide multi-figure-slide dense-multi-slide review-two-figure-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_004.png">
+</div>
+</div>
+<p>Set <span class="math inline">\(\frac{\tfrac{K_{T}/R}{sJ+f}}{1+K_{b}\tfrac{K_{T}/R}{sJ+f}}=\dfrac
+{b^{\prime}}{s+a}\)</span> where&nbsp;&nbsp;<span class="math inline">\(b^{\prime}\triangleq\dfrac{K_{T}}{RJ},\)</span> &nbsp;<span class="math inline">\(a\triangleq\dfrac{Rf+K_{b}K_{T}}{RJ}.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_004b.png">
+</div>
+</div>
+<p>Set <span class="math inline">\(b\triangleq b^{\prime}/n,\)</span> &nbsp;<span class="math inline">\(K_{L}\triangleq R/(nK_{T}).\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_005.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide multi-figure-slide">
+<div class="slide-title">
+Modeling a Servomechanism
+</div>
+<p>The amplifier, motor, gears, and load torque are modeled by a simple block diagram.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_005a.png">
+</div>
+</div>
+<p>Block diagram for the proportional controlled servomechanism.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_005.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(K_{L}=\dfrac{R}{nK_{T}}\)</span> has the units <span class="math inline">\(\frac{\text{Ohms}
+}{\text{Nm/Amp}}=\frac{\text{Ohms-Amp}}{\text{Nm}}=\frac{\text{Volts}
+}{\text{Nm}}\)</span></p></li>
+<li><p><span class="math inline">\(K_{L}\tau_{L}\)</span> has the units of Volts.</p></li>
+<li><p>A voltage <span class="math inline">\(-K_{L}\tau_{L}\)</span> applied to the motor has same effect on <span class="math inline">\(c(t)\)</span> as <span class="math inline">\(\tau_{L}\)</span>.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide multi-figure-slide dense-multi-slide review-two-figure-slide">
+<div class="slide-title">
+Standard Block Diagram Form
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_005.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{m}(s)=\dfrac{b}{s\left(  s+a\right)  },\)</span> &nbsp;<span class="math inline">\(D(s)=K_{L}\tau_{L}(s)\)</span>:</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_006.png">
+</div>
+</div>
+<p>Standard Block Diagram: Replace <span class="math inline">\(K\)</span> by <span class="math inline">\(G_{c}(s)=b_{c}(s)/a_{c}(s).\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_007.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+The Control Problem
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_007.png">
+</div>
+</div>
+<p>Compute <span class="math inline">\(C(s)\)</span> in terms of <span class="math inline">\(R(s)\)</span> and <span class="math inline">\(D(s)\)</span> via block diagram reduction.</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_007b.png">
+</div>
+<p></p>
+</figure>
+<p><span class="math display">\[
+C(s)=\frac{G_{c}(s)G_{m}(s)}{1+G_{c}(s)G_{m}(s)}\!\left(  \!R(s)-\frac
+{1}{G_{c}(s)}D(s)\!\right)  \!.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+The Control Problem
+</div>
+<p><span class="math display">\[
+C(s)=\frac{G_{c}(s)G_{m}(s)}{1+G_{c}(s)G_{m}(s)}\!\left(  \!R(s)-\frac
+{1}{G_{c}(s)}D(s)\!\right)
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+C(s)=\frac{G_{c}(s)G_{m}(s)}{1+G_{c}(s)G_{m}(s)}R(s)-\frac{G_{m}(s)}
+{1+G_{c}(s)G_{m}(s)}D(s).
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_007.png">
+</div>
+</div>
+<p>Error <span class="math inline">\(E(s)\)</span>:</p>
+<p><span class="math display">\[
+E(s)=R(s)-C(s)=\frac{1}{1+G_{c}(s)G_{m}(s)}R(s)+\frac{G_{m}(s)}{1+G_{c}
+(s)G_{m}(s)}D(s)\nonumber
+\]</span></p>
+<ul>
+<li><p><em>Tracking:</em> &nbsp;If <span class="math inline">\(r(t)=R_{0}\)</span>, then we want <span class="math inline">\(c(t)\rightarrow R_{0}\)</span> as <span class="math inline">\(t\rightarrow\infty.\)</span></p></li>
+<li><p><em>Disturbance Rejection:</em> &nbsp;We want <span class="math inline">\(c(t)\rightarrow R_{0}\)</span> despite any load torque on the motor.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Control of a DC Servo Motor
+</div>
+<p><strong>Tracking</strong></p>
+<p><strong>Example</strong> &nbsp;<em>Tracking a Step Input</em></p>
+<p><span class="math inline">\(R(s)=R_{0}/s,D(s)=0,\)</span> and <span class="math inline">\(G_{m}(s)=\dfrac{1}{s(s+1)}.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_008.png">
+</div>
+</div>
+<p>Objective: <span class="math inline">\(c(t)\rightarrow R_{0}\)</span> or equivalently, <span class="math inline">\(e(t)\rightarrow0.\)</span></p>
+<p><span class="math display">\[
+C(s)=\frac{KG_{m}(s)}{1+KG_{m}(s)}R(s)\qquad{}\text{and}\qquad{}E(s)=\frac{1}
+{1+KG_{m}(s)}R(s).
+\]</span></p>
+<p><span class="math display">\[
+E(s)=\frac{1}{1+K\dfrac{1}{s(s+1)}}\frac{R_{0}}{s}=\frac{s(s+1)}
+{s(s+1)+K}\frac{R_{0}}{s}=\frac{s+1}{s^{2}+s+K}R_{0}.
+\]</span></p>
+<ul>
+<li><p>The poles of <span class="math inline">\(KG_{m}(s)=K\dfrac{1}{s(s+1)}\)</span> reappear in the numerator of <span class="math inline">\(E(s).\)</span></p></li>
+<li><p>After clearing the fractions, the “<span class="math inline">\(s\)</span>” &nbsp;in <span class="math inline">\(K\dfrac{1}{s(s+1)}\)</span> cancelled the “<span class="math inline">\(s\)</span>”&nbsp;in <span class="math inline">\(R(s)\)</span>.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Tracking
+</div>
+<p><strong>Example</strong> &nbsp;<em>Tracking a Step Input</em> &nbsp;<strong>(continued)</strong></p>
+<p>From previous slide:</p>
+<p><span class="math display">\[
+E(s)=\frac{1}{1+K\dfrac{1}{s(s+1)}}\frac{R_{0}}{s}=\frac{s(s+1)}
+{s(s+1)+K}\frac{R_{0}}{s}=\frac{s+1}{s^{2}+s+K}R_{0}.
+\]</span></p>
+<ul>
+<li><p>For <span class="math inline">\(K&gt;0\)</span>, <span class="math inline">\(s^{2}+s+K\)</span> is a stable polynomial so <span class="math inline">\(sE(s)\)</span> is stable.</p></li>
+<li><p>FVT: <span class="math inline">\(e(\infty)=\lim_{s\rightarrow0}sE(s)=\lim_{s\rightarrow0}
+s\dfrac{s(s+1)}{s(s+1)+K}\dfrac{R_{0}}{s}=0.\)</span></p></li>
+<li><p>Thus <span class="math inline">\(c(t)\rightarrow R_{0}!\)</span></p></li>
+<li><p><em>Where does stability come in?</em> Let <span class="math inline">\(K=1\)</span> so that</p></li>
+</ul>
+<p><span class="math display">\[
+s^{2}+s+1=\left[  s-\left(  -\frac{1}{2}+\frac{j\sqrt{3}}{2}\right)  \right]
+    \left[  s-\left(  -\frac{1}{2}-\frac{j\sqrt{3}}{2}\right)  \right]
+    =(s-p_{1})(s-p_{2})
+\]</span></p>
+<ul>
+<li>PFE: <span class="math inline">\(E(s)=\dfrac{s(s+1)}{s(s+1)+K}\dfrac{R_{0}}{s}=\dfrac
+{s+1}{(s-p_{1})(s-p_{2})}R_{0}=\dfrac{\beta}{s-p_{1}}+\dfrac{\beta^{\ast}
+}{s-p_{2}}.\)</span></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    e(t)=\beta e^{p_{1}t}+\beta^{\ast}e^{p_{2}t}  &amp;  =|\beta|e^{j\angle\beta
+    }e^{-(1/2)t+j(\sqrt{3}/2)t}+|\beta|e^{-j\angle\beta}e^{-(1/2)t-j(\sqrt{3}
+    /2)t}\\
+    &amp;  =2|\beta|e^{-(1/2)t}\cos\!\left(  \!(\sqrt{3}/2)t+\angle\beta\right)
+    \rightarrow0\text{ as }t\rightarrow\infty.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide multi-figure-slide review-equation-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Tracking a Ramp Input</em></p>
+<p>Let <span class="math inline">\(r(t)=\omega_{0}t\)</span> <span class="math inline">\(\Longrightarrow\)</span> <span class="math inline">\(R(s)=\omega_{0}/s^{2}\)</span> and <span class="math inline">\(D(s)=0\)</span>.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_009.png">
+</div>
+</div>
+<p><span class="math display">\[
+E(s)=\frac{1}{1+K\dfrac{1}{s(s+1)}}\frac{\omega_{0}}{s^{2}}=\frac
+{s(s+1)}{s(s+1)+K}\frac{\omega_{0}}{s^{2}}=\frac{s+1}{s^{2}+s+K}\frac
+{\omega_{0}}{s}.
+\]</span></p>
+<ul>
+<li><p>The pole of <span class="math inline">\(KG_{m}(s)\)</span> at <span class="math inline">\(s=0\)</span> cancelled one of the poles <span class="math inline">\(R(s)\)</span>.</p></li>
+<li><p>For <span class="math inline">\(K&gt;0\)</span> it follows that <span class="math inline">\(s^{2}+s+K\)</span> is stable and thus <span class="math inline">\(sE(s)\)</span> is stable.</p></li>
+<li><p>FVT: <span class="math inline">\(e(\infty)=\lim_{s\rightarrow0}sE(s)=\lim_{s\rightarrow0}
+\dfrac{s+1}{s(s+1)+K}\omega_{0}=\dfrac{\omega_{0}}{K}.\)</span></p></li>
+<li><p>Asymptotic tracking is <em>not</em> achieved as <span class="math inline">\(e(t)\nrightarrow0\)</span> as <span class="math inline">\(t\rightarrow\infty\)</span>.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_010.png">
+</div>
+</div></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Tracking a Ramp Input</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_010.png">
+</div>
+</div>
+<p><em>Where does stability come in?</em> Let <span class="math inline">\(K=1\)</span> so that</p>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)=\frac{s(s+1)}{s(s+1)+K}\frac{\omega_{0}}{s^{2}} &amp;  =\frac{s+1}
+{s(s-p_{1})(s-p_{2})}\omega_{0},\quad{}p_{i}=-\frac{1}{2}\pm j\frac
+{\sqrt{3}}{2}\\
+&amp;  =\frac{A}{s}+\frac{\beta}{s-p_{1}}+\frac{\beta^{\ast}}{s-p_{2}}\\
+&amp;  =\frac{\omega_{0}}{s}+\frac{\beta}{s-p_{1}}+\frac{\beta^{\ast}}{s-p_{2}
+},\quad{}\omega_{0}=\lim_{s\rightarrow0}sE(s).
+\end{aligned}
+\]</span></p>
+<p>Then as <span class="math inline">\(t\rightarrow\infty\)</span></p>
+<p><span class="math display">\[
+e(t)=\omega_{0}u_{s}(t)+\beta e^{p_{1}t}+\beta^{\ast}e^{p_{2}t}\rightarrow
+\omega_{0}.
+\]</span></p>
+<ul>
+<li><p>A&nbsp;proportional controller will <em>not</em> track <span class="math inline">\(r(t)=\omega_{0}t\)</span> with zero steady-state error.</p></li>
+<li><p>Try a different controller!</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Tracking
+</div>
+<p><strong>Example</strong> &nbsp;<em>Integral Controller</em></p>
+<p>New controller: <span class="math inline">\(G_{c}(s)=K/s\)</span>.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_011.png">
+</div>
+</div>
+<p><span class="math display">\[
+E(s)=\frac{1}{1+\dfrac{K}{s}\dfrac{1}{s(s+1)}}\frac{\omega_{0}}{s^{2}}
+=\frac{s^{2}(s+1)}{s^{2}(s+1)+K}\frac{\omega_{0}}{s^{2}}=\frac{s+1}
+{s^{3}+s^{2}+K}\omega_{0}
+\]</span></p>
+<ul>
+<li><p>The denominator of <span class="math inline">\(\dfrac{K}{s}\dfrac{1}{s(s+1)}\)</span> reappears in the numerator of <span class="math inline">\(E(s)\)</span>.</p></li>
+<li><p>The factor <span class="math inline">\(s^{2}\)</span> in the numerator of <span class="math inline">\(E(s)\)</span> cancels the <span class="math inline">\(s^{2}\)</span> in denominator of <span class="math inline">\(R(s)\)</span>.</p></li>
+<li><p><strong>If</strong></p>
+<p><span class="math inline">\(s^{3}+s^{2}+K\)</span> was stable, by the FVT</p></li>
+</ul>
+<p><span class="math display">\[
+e(\infty)=\lim_{s\rightarrow0}sE(s)=\lim_{s\rightarrow0}s\frac{s+1}
+    {s^{3}+s^{2}+K}\omega_{0}=0.
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(s^{3}+s^{2}+K\)</span> is</p>
+<p><strong>not</strong></p>
+<p>stable for any value of <span class="math inline">\(K\)</span>!</p></li>
+<li><p>This controller will <em>not</em> work!</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Tracking
+</div>
+<p><strong>Example</strong> &nbsp;<em>Integral Controller</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_011.png">
+</div>
+</div>
+<ul>
+<li>E.g., let <span class="math inline">\(K=1\)</span> for which <span class="math inline">\(s^{3}+s^{2}+1\)</span> has roots <span class="math inline">\(-1.47,0.23\pm
+j0.79\)</span>.</li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    E(s)  &amp;  =\left.  \frac{s+1}{s^{3}+s^{2}+K}\omega_{0}\right\vert _{K=1}\\
+    &amp;  =\frac{s+1}{(s+1.47)[s-(0.23+j0.79)][s-(0.23-j0.79)]}\omega_{0}\\
+    &amp;  =\frac{A}{s+1.47}+\frac{\beta}{s-(0.23+j0.79)}+\frac{\beta^{\ast}
+    }{s-(0.23-j0.79)}.\\
+    &amp; \\
+    e(t)  &amp;  =Ae^{-1.47t}+\beta e^{0.23t}e^{j0.79t}+\beta^{\ast}e^{0.23t}
+    e^{-j0.79t}\\
+    &amp;  =Ae^{-1.47t}+2\left\vert \beta\right\vert e^{0.23t}\cos(0.79t+\angle\beta).
+    \end{aligned}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(e(t)\nrightarrow0\)</span> due to the complex-conjugate pair of unstable poles at <span class="math inline">\(0.23\pm j0.79\)</span>.</p></li>
+<li><p><span class="math inline">\(\lim\limits_{s\rightarrow0}sE(s)=0\)</span> says nothing about the final value unless <span class="math inline">\(sE(s)\)</span> is stable!</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Tracking
+</div>
+<p><strong>Example</strong> &nbsp;<em>Proportional Plus Integral Controller</em></p>
+<p>New controller: <span class="math inline">\(G_{c}(s)=K\dfrac{s+\alpha}{s}=K+\dfrac{\alpha K}{s}\)</span> &nbsp;and &nbsp;<span class="math inline">\(R(s)=\dfrac{\omega_{0}}{s^{2}}\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_012.png">
+</div>
+</div>
+<p><span class="math display">\[
+E(s)=\frac{1}{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s(s+1)}}R(s)=\frac{s^{2}
+(s+1)}{s^{2}(s+1)+K(s+\alpha)}\frac{\omega_{0}}{s^{2}}=\frac{s+1}{s^{3}
++s^{2}+Ks+\alpha K}\omega_{0}.
+\]</span></p>
+<p>The denominator of <span class="math inline">\(K\dfrac{s+\alpha}{s}\dfrac{1}{s(s+1)}\)</span> reappears in the numerator of <span class="math inline">\(E(s)\)</span>.</p>
+<p>The “<span class="math inline">\(s^{2}\)</span>”&nbsp;in the numerator of <span class="math inline">\(E(s)\)</span> cancels the “<span class="math inline">\(s^{2}\)</span>”&nbsp;in the denominator of <span class="math inline">\(R(s)\)</span>.</p>
+<p><strong>If</strong> <span class="math inline">\(s^{3}+s^{2}+Ks+\alpha K\)</span> is stable, the FVT gives</p>
+<p><span class="math display">\[
+e(\infty)=\lim_{s\rightarrow0}sE(s)=\lim_{s\rightarrow0}s\frac{s+1}
+{s^{3}+s^{2}+Ks+\alpha K}\omega_{0}=0.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Tracking
+</div>
+<p><strong>Example</strong> &nbsp;<em>Proportional Plus Integral Controller</em> <strong>(continued)</strong></p>
+<p>Check stability of <span class="math inline">\(\dfrac{s+1}{s^{3}+s^{2}+Ks+\alpha K}\omega_{0}\)</span>:</p>
+<p><span class="math display">\[
+\begin{array}{ccc}
+s^{3} &amp; 1 &amp; K\\
+s^{2} &amp; 1 &amp; \alpha K\\
+s &amp; \dfrac{K-\alpha K}{1} &amp; 0\\
+s^{0} &amp; \alpha K &amp;
+\end{array}
+\]</span></p>
+<p>Stability requires</p>
+<p><span class="math display">\[
+\alpha K&gt;0\qquad{}\text{and}\qquad{}K-\alpha K=K(1-\alpha)&gt;0
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+K&gt;0\text{ and }0&lt;\alpha&lt;1.
+\]</span></p>
+<p>E.g., let <span class="math inline">\(K=1\)</span> and <span class="math inline">\(\alpha=1/2\)</span>:</p>
+<p><span class="math display">\[
+s^{3}+s^{2}+s+1/2=(s+0.65)(s-[-0.176+j0.861])(s-[-0.176-j0.861]).
+\]</span></p>
+<p><span class="math display">\[
+E(s)=\frac{s+1}{(s-r)(s-p_{1})(s-p_{2})}\omega_{0}=\frac{A}{s-r}+\frac{\beta
+}{s-p_{1}}+\frac{\beta^{\ast}}{s-p_{2}}.
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+e(t)  &amp;  =Ae^{-0.65t}+\beta e^{-0.176t}e^{j0.861t}+\beta^{\ast}e^{-0.176t}
+e^{-j0.861t}\\
+&amp;  =Ae^{-0.65t}+2|\beta|e^{-0.176t}\cos(0.861t+\angle\beta)\rightarrow0\text{
+as }t\rightarrow\infty.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide review-equation-slide">
+<div class="slide-title">
+Disturbance Rejection
+</div>
+<p><strong>Example</strong> &nbsp;<em>Constant Load Torque with a Proportional Controller</em></p>
+<p>Let <span class="math inline">\(G_{m}(s)=\dfrac{1}{s(s+1)}\)</span> and <span class="math inline">\(\tau_{L}(t)=\tau_{L0}u_{s}(t)\)</span> so <span class="math inline">\(D(s)=K_{L}\tau_{L}(s)=K_{L}\tau_{L0}/s\)</span>.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_013.png">
+</div>
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_014.png">
+</div>
+</div>
+<p><span class="math display">\[
+E(s)=\underset{E_{R}(s)}{\underbrace{\frac{1}{1+KG_{m}(s)}R(s)}}
++\underset{E_{D}(s)}{\underbrace{\frac{G_{m}(s)}{1+KG_{m}(s)}D(s)}}
+\]</span></p>
+<p>For <span class="math inline">\(K&gt;0\)</span> and <span class="math inline">\(R(s)=R_{0}/s\)</span> we saw <span class="math inline">\(\mathcal{L}^{-1}\{E_{R}(s)\}=e_{R}(t)\rightarrow0.\)</span></p>
+<p>Does <span class="math inline">\(e_{D}(t)=\mathcal{L}^{-1}\{E_{D}(s)\}\rightarrow0\)</span> as <span class="math inline">\(t\rightarrow\infty?\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Disturbance Rejection
+</div>
+<p><strong>Example</strong> &nbsp;<em>Constant Load Torque with a Proportional Controller</em> &nbsp;<strong>(continued)</strong></p>
+<p><span class="math display">\[
+E_{D}(s)=\frac{G_{m}(s)}{1+KG_{m}(s)}D(s)=\frac{\dfrac{1}{s(s+1)}}
+{1+K\dfrac{1}{s(s+1)}}K_{L}\tau_{L}(s)=\frac{K_{L}}{s^{2}+s+K}\frac{\tau_{L0}
+}{s}.
+\]</span></p>
+<p>As <span class="math inline">\(s^{2}+s+K\)</span> is stable for <span class="math inline">\(K&gt;0\)</span> it follows that <span class="math inline">\(sE_{D}(s)\)</span> is stable so</p>
+<p><span class="math display">\[
+e_{D}(\infty)=\lim_{s\rightarrow0}sE_{D}(s)=\lim_{s\rightarrow0}s\frac{K_{L}
+}{s^{2}+s+K}\frac{\tau_{L0}}{s}=\frac{K_{L}\tau_{L0}}{K}.
+\]</span></p>
+<p>The error</p>
+<p><span class="math display">\[
+r(t)-c(t)=e(t)=e_{R}(t)+e_{D}(t)\rightarrow e(\infty)=e_{R}(\infty
+)+e_{D}(\infty)=0+K_{L}\tau_{L0}/K.
+\]</span></p>
+<p>Rearranging, we have</p>
+<p><span class="math display">\[
+c(\infty)=r(\infty)-e(\infty)=R_{0}-K_{L}\tau_{L0}/K.
+\]</span></p>
+<ul>
+<li><p>The final output position depends on the value of the load torque <span class="math inline">\(\tau_{L0}\)</span>.</p></li>
+<li><p>It is usually important to precisely position the motor regardless of the load.</p></li>
+<li><p>Try a different controller!</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Disturbance Rejection
+</div>
+<p><strong>Example</strong> <em>Constant Load Torque with a PI Controller</em></p>
+<p>Let <span class="math inline">\(G_{c}(s)=K_{p}+K_{I}/s=K\dfrac{s+\alpha}{s}\)</span> where <span class="math inline">\(K_{p}=K,K_{I}=\alpha
+K.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_015.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!\!E_{D}(s)=\frac{G_{m}(s)}{1+G_{c}(s)G_{m}(s)}D(s)=\frac{\dfrac
+{1}{s(s+1)}}{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s(s+1)}}\frac{K_{L}\tau_{L0}}
+{s}\! &amp;  =\frac{s}{s^{2}(s+1)+K(s+\alpha)}\frac{K_{L}\tau_{L0}}{s}\\
+\! &amp;  =\frac{1}{s^{3}+s^{2}+Ks+\alpha K}K_{L}\tau_{L0}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>Only the denominator of <span class="math inline">\(G_{c}(s),\)</span> i.e., ” <span class="math inline">\(s\)</span>“&nbsp;reappears in the numerator.</p></li>
+<li><p>This “<span class="math inline">\(s\)</span>”&nbsp;cancels the <span class="math inline">\(1/s\)</span> in <span class="math inline">\(\tau_{L}(s)\)</span>.</p></li>
+<li><p><span class="math inline">\(s^{3}+s^{2}+Ks+\alpha K\)</span> is stable for <span class="math inline">\(K&gt;0\)</span> and <span class="math inline">\(0&lt;\alpha&lt;1\)</span>, and so <span class="math inline">\(sE_{D}(s)\)</span> is also stable.</p>
+<p><span class="math inline">\(\qquad\Longrightarrow\)</span> <span class="math inline">\(e_{D}(\infty)=\lim_{s\rightarrow0}sE_{D}
+(s)=\lim_{s\rightarrow0}s\dfrac{{}}{s^{3}+s^{2}+Ks+\alpha K}K_{L}\tau
+_{L0}=0.\)</span></p></li>
+<li><p>The load torque <span class="math inline">\(\tau_{L0}\)</span> has <em>no</em> effect on the final position.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide multi-figure-slide review-ultra-dense-slide">
+<div class="slide-title">
+Interpretation of the PI Controller
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_016.png">
+</div>
+</div>
+<p><span class="math inline">\(R(s)=R_{0}/s,\tau_{L}(s)=\tau_{L0}/s,\)</span> and <span class="math inline">\(K,\alpha\)</span> chosen so <span class="math inline">\(e(\infty)=\lim_{s\rightarrow0}sE(s)=0.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+V_{a}(s) &amp;  =K\dfrac{s+\alpha}{s}E(s)=KE(s)+\dfrac{\alpha K}{s}E(s)=\mathcal{L}\left\{  Ke(t)+\alpha K\int_{0}^{t}e(\tau)d\tau\right\}  .\\
+E(s) &amp;  =\underset{E_{R}(s)}{\underbrace{\frac{s^{2}(s+1)}{s^{3}
++s^{2}+Ks+\alpha K}\frac{R_{0}}{s}}}+\underset{E_{D}(s)}{\underbrace{\frac
+{s}{s^{3}+s^{2}+Ks+\alpha K}\frac{K_{L}\tau_{L0}}{s}}}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(E(s)\)</span> is stable for <span class="math inline">\(K&gt;0\)</span> and <span class="math inline">\(0&lt;\alpha&lt;1\)</span>. Also, <span class="math inline">\(E(0)=\dfrac{K_{L}\tau
+_{L0}}{\alpha K}.\)</span></p>
+<p><span class="math display">\[
+\Longrightarrow v_{a}(\infty)=\lim_{t\rightarrow\infty}v_{a}(t)=\lim
+_{s\rightarrow0}sV_{a}(s)=\lim_{s\rightarrow0}\left(  sKE(s)+\alpha
+KE(s)\right)  =\alpha KE(0)=K_{L}\tau_{L0}
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_017.png">
+</div>
+</div>
+<p>Shaded area is <span class="math inline">\(\int_{0}^{\infty}e(t)dt\)</span> and <span class="math inline">\(v_{a}(\infty)=\alpha K\int
+_{0}^{\infty}e(t)dt=K_{L}\tau_{L0}.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Summary of the PI Controller for a DC Servo
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_016.png">
+</div>
+</div>
+<p><span class="math inline">\(R(s)=R_{0}/s+\omega_{0}/s^{2}=\mathcal{L}\{R_{0}+\omega_{0}t\}\)</span> and <span class="math inline">\(\tau_{L}(s)=\tau_{L0}/s.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+C(s) &amp;  =\frac{G_{c}(s)G_{m}(s)}{1+G_{c}(s)G_{m}(s)}R(s)-\frac{G_{m}
+(s)}{1+G_{c}(s)G_{m}(s)}K_{L}\tau_{L}(s)\\
+E(s) &amp;  =\frac{1}{1+G_{c}(s)G_{m}(s)}R(s)+\frac{G_{m}(s)}{1+G_{c}(s)G_{m}
+(s)}K_{L}\tau_{L}(s).
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+E(s)=\frac{s^{2}(s+1)}{s^{3}+s^{2}+Ks+\alpha K}\left(  \frac{R_{0}}{s}
++\frac{\omega_{0}}{s^{2}}\right)  +\frac{s}{s^{3}+s^{2}+Ks+\alpha K}
+\frac{K_{L}\tau_{L0}}{s}.
+\]</span></p>
+<p><span class="math inline">\(K,\alpha\)</span> chosen so <span class="math inline">\(s^{3}+s^{2}+Ks+\alpha K=(s-r)(s-p_{1})(s-p_{2})\)</span> is stable.</p>
+<p><span class="math display">\[
+E(s)=\frac{(s+1)(R_{0}s+\omega_{0})}{(s-r)(s-p_{1})(s-p_{2})}+\frac
+{1}{(s-r)(s-p_{1})(s-p_{2})}K_{L}\tau_{L0}
+\]</span></p>
+<p><span class="math display">\[
+e(t)=Ae^{rt}+Be^{p_{1}t}+B^{\ast}e^{p_{2}t}+(Ce^{rt}+De^{p_{1}t}+D^{\ast
+}e^{p_{2}t})K_{L}\tau_{L0}\rightarrow0\text{ as }t\rightarrow\infty.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Proportional Plus Integral Plus Derivative (PID) Control
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_018.png">
+</div>
+</div>
+<p>Proportional plus integral plus derivative (PID) controller:</p>
+<p><span class="math display">\[
+G_{c}(s)=K_{P}+\frac{K_{I}}{s}+K_{D}s=\frac{K_{D}s^{2}+K_{P}s+K_{I}}{s}.
+\]</span></p>
+<p>Time domain:</p>
+<p><span class="math display">\[
+v_{a}(t)=K_{P}e(t)+K_{I}\int_{0}^{t}e(\tau)d\tau+K_{D}\frac{de}{dt}.
+\]</span></p>
+<ul>
+<li><p>The derivative control term <span class="math inline">\(K_{D}s\)</span> usually helps to make the system more stable.</p>
+<ul>
+<li>I.e., allows one to put the closed-loop poles <em>further</em> in the left half-plane.</li>
+</ul></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Practical Problem with Derivative Controllers
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019.png">
+</div>
+</div>
+<ul>
+<li><p>Differentiation of a signal with noise amplifies the noise!!</p></li>
+<li><p>Most signals contain high-frequency low-amplitude noise.&nbsp;</p></li>
+</ul>
+<p><strong>Example</strong> &nbsp;<em>Full-Wave Rectification</em> &nbsp;</p>
+<p>A power supply takes a <span class="math inline">\(60\)</span> Hz AC signal and (full wave) rectifies it into a DC voltage.</p>
+<p>This results in a small amplitude 120 Hz signal (i.e., noise) on the DC output.</p>
+<p>The error signal <span class="math inline">\(e(t)\)</span> is actually <span class="math inline">\(e(t)+n(t)\)</span> where <span class="math inline">\(n(t)=0.01\sin
+(2\pi(120t)).\)</span></p>
+<p><span class="math inline">\(\dot{e}(t)+\dot{n}(t)=\dot{e}(t)+7.54\cos(754t)\)</span>.</p>
+<p>The noise is small, but its derivative is large!</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide multi-figure-slide diagram-sequence-slide">
+<div class="slide-title">
+Practical Implementation of Derivative Feedback
+</div>
+<p>To mitigate differentiation amplifying high frequency noise, replace <span class="math inline">\(K_{D}s\)</span> with</p>
+<p><span class="math display">\[
+\frac{K_{D}s}{\tau s+1}\approx\left\{
+\begin{array}{cc}
+K_{D}s, &amp; |s|&lt;&lt;1/\tau\\
+K_{D}/\tau, &amp; |s|&gt;&gt;1/\tau
+\end{array}
+\right.  \qquad{}\text{where }\tau&gt;0\text{ is small.}
+\]</span></p>
+<ul>
+<li><p>At low frequencies <span class="math inline">\(K_{D}s/(\tau s+1)\)</span> is a differentiator.</p></li>
+<li><p>At high frequencies <span class="math inline">\(K_{D}s/(\tau s+1)\)</span> is a proportional gain.</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_018b.png">
+</div>
+<p></p>
+</figure></li>
+<li><p><span class="math inline">\(r(t)\)</span> is often a step input, i.e., <span class="math inline">\(u_{s}(t)\)</span> which is not differentiable at <span class="math inline">\(t=0.\)</span></p></li>
+<li><p>To avoid differentiating <span class="math inline">\(r(t)\)</span> we use the feedback control architecture shown below.</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019b.png">
+</div>
+<p></p>
+</figure></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Practical Implementation of Derivative Feedback
+</div>
+<p>We do a simple block diagram manipulation on</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019b.png">
+</div>
+<p></p>
+</figure>
+<p>to obtain</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019c.png">
+</div>
+<p></p>
+</figure>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Practical Implementation of Derivative Feedback
+</div>
+<p>We then do some block diagram reduction so that</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019c.png">
+</div>
+<p></p>
+</figure>
+<p>becomes (with <span class="math inline">\(\tau=0\)</span>)</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019d.png">
+</div>
+<p></p>
+</figure>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Practical Implementation of Derivative Feedback
+</div>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019d.png">
+</div>
+<p></p>
+</figure>
+<ul>
+<li><p>In order to set the values of <span class="math inline">\(K,\alpha,\)</span> and <span class="math inline">\(K_{D},\)</span> we take <span class="math inline">\(\tau=0\)</span> as it is small.</p></li>
+<li><p>Of course, in the implementation <span class="math inline">\(K_{D}s/(\tau s+1)\)</span> must be used.</p></li>
+</ul>
+<p>Now</p>
+<p><span class="math display">\[
+E_{R}(s)=\frac{1}{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{D}}\dfrac{1}{s}
+}R(s)=\frac{s^{2}(s+1+K_{D})}{s^{3}+(1+K_{D})s^{2}+Ks+\alpha K}R(s)
+\]</span></p>
+<p>and</p>
+<p><span class="math display">\[
+E_{D}(s)=\frac{\dfrac{1}{s+1+K_{D}}\dfrac{1}{s}}{1+K\dfrac{s+\alpha}{s}
+\dfrac{1}{s+1+K_{D}}\dfrac{1}{s}}D(s)=\frac{s}{s^{3}+(1+K_{D})s^{2}+Ks+\alpha
+K}D(s).
+\]</span></p>
+<ul>
+<li><span class="math inline">\(K_{D},K\)</span> and <span class="math inline">\(\alpha\)</span> are then used to arbitrarily set the coefficients of</li>
+</ul>
+<p><span class="math display">\[
+s^{3}+(1+K_{D})s^{2}+Ks+\alpha K.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Placement of the Closed-Loop Poles
+</div>
+<p>A PID controller for a DC servomotor achieves:</p>
+<p>(1) Tracking of step and ramp inputs</p>
+<p>(2) Rejection of constant load torque disturbances</p>
+<p>(3) Placement of the closed-loop poles in any desired location.</p>
+<p>Where do we place the closed-loop poles?</p>
+<p>&nbsp;</p>
+<p>As far as possible in the left half-plane so the transients die out quickly.</p>
+<p>Consider the previous example: The error <span class="math inline">\(E_{R}(s)\)</span> is given by</p>
+<p><span class="math display">\[
+E_{R}(s)=\frac{s^{2}\left(  s+1+K_{D}\right)  }{s^{3}+(1+K_{D})s^{2}+Ks+\alpha
+K}R(s).
+\]</span></p>
+<p>Suppose it is desired to put the closed-loop poles at <span class="math inline">\(-10,-10+j10\)</span> and <span class="math inline">\(-10-j10\)</span>.</p>
+<p>Set</p>
+<p><span class="math display">\[
+\begin{aligned}
+s^{3}+(1+K_{D})s^{2}+Ks+\alpha K  &amp; =(s+10)(s-(-10+j10))(s-(-10-j10))\\
+&amp; =(s+10)(s^{2}+20s+200)\\
+&amp; =s^{3}+30s^{2}+400s+2000.
+\end{aligned}
+\]</span></p>
+<p>Choose <span class="math inline">\(1+K_{D}=30\)</span> or <span class="math inline">\(K_{D}=29,K=400\)</span>, and <span class="math inline">\(\alpha K=2000\)</span> or <span class="math inline">\(\alpha=5\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Placement of the Closed-Loop Poles
+</div>
+<ul>
+<li><p>Let <span class="math inline">\(\theta(0)=0\)</span> and <span class="math inline">\(\omega(0)=0\)</span> and <span class="math inline">\(r(t)=R_{0}u_{s}(t).\)</span></p></li>
+<li><p>At <span class="math inline">\(t=0^{+},\)</span> <span class="math inline">\(c(0^{+})=\theta(0^{+})=0,\omega(0^{+})=0\)</span> so</p></li>
+</ul>
+<p><span class="math display">\[
+e(0^{+})=r(0^{+})-c(0^{+})=R_{0}.
+\]</span></p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_019e.png">
+</div>
+<p></p>
+</figure>
+<pre><code>The voltage at $t=0^{+}$ is </code></pre>
+<p><span class="math display">\[
+v_{a}(0^{+})=400e(0^{+})+2000\int_{0}^{0^{+}}e(t)dt-29\omega(0^{+}
+    )=400e(0^{+})=400R_{0}.
+\]</span></p>
+<ul>
+<li><p>Right after <span class="math inline">\(r(t)=R_{0}u_{s}(t)\)</span> is applied, the output of the amplifier is <span class="math inline">\(400R_{0}\)</span>.</p></li>
+<li><p>In particular, if <span class="math inline">\(R_{0}=1\)</span> radian, then the amplifier is required to put out <span class="math inline">\(400\)</span> volts!</p></li>
+<li><p>The further the poles are in the left half-plane, the larger the gains <span class="math inline">\(K,K_{D},\alpha\)</span>.</p>
+<p>The larger the gains, the more likely the actuator (amplifier) saturates.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Definition
+</div>
+<div class="center">
+<p>Theory of Tracking and Disturbance Rejection</p>
+</div>
+<p>&nbsp;<em>Type Number of a Transfer Function</em></p>
+<p>Let</p>
+<p><span class="math display">\[
+G(s)=\frac{b(s)}{s^{j}\bar{a}(s)},\quad{}\bar{a}(0)\neq0.
+\]</span></p>
+<p>Then <span class="math inline">\(G(s)\)</span> is said to be a type <span class="math inline">\(j\)</span> system.</p>
+<p>That is, it has <span class="math inline">\(j\)</span> poles at the origin.</p>
+<p><strong>Example</strong> <em>Transfer Functions and Their Type Numbers</em></p>
+<p><span class="math display">\[
+\begin{array}{lcl}
+G(s)=\dfrac{1}{s^{2}} &amp; \text{Type 2} &amp; \bar{a}(s)=1\\
+&amp;  &amp; \\
+G(s)=\dfrac{1}{s(s+1)^{2}} &amp; \text{Type 1} &amp; \bar{a}(s)=(s+1)^{2}\\
+&amp;  &amp; \\
+G(s)=\dfrac{1}{s+2} &amp; \text{Type 0} &amp; \bar{a}(s)=s+2\\
+&amp;  &amp; \\
+G(s)=\dfrac{s+1}{s(s^{2}+2s+2)} &amp; \text{Type 1} &amp; \bar{a}(s)=s^{2}+2s+2
+\end{array}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Definition
+</div>
+<p><em>Type Number of Inputs</em></p>
+<p>Let the reference input <span class="math inline">\(R(s)\)</span> be given by</p>
+<p><span class="math display">\[
+R(s)=\frac{R_{0}}{s^{j}}.
+\]</span></p>
+<p>Then <span class="math inline">\(R(s)\)</span> is said to be a type <span class="math inline">\(j\)</span> reference input.</p>
+<p>Let the disturbance input <span class="math inline">\(D(s)\)</span> be given by</p>
+<p><span class="math display">\[
+D(s)=\frac{D_{0}}{s^{j}}.
+\]</span></p>
+<p>Then <span class="math inline">\(D(s)\)</span> is said to be a type <span class="math inline">\(j\)</span> disturbance input.</p>
+<p><strong>Remark</strong></p>
+<p><span class="math inline">\(R(s)\)</span> or <span class="math inline">\(D(s)\)</span> have a type number <em>only</em> if they are of the form (<a href="#/eq1" data-reference-type="ref" data-reference="eq1">[eq1]</a>) or (<a href="#/eq2" data-reference-type="ref" data-reference="eq2">[eq2]</a>), respectively.</p>
+<p>For example, the type number is <em>not</em> defined for</p>
+<p><span class="math display">\[
+R(s)=\dfrac{R_{0}}{s(s+1)}\qquad{}\text{or}\qquad{}D(s)=\dfrac{D_{0}}{s(s-2)}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Tracking with Zero Steady-State Error</em></p>
+<p>The reference input is type <span class="math inline">\(j\)</span> for some positive integer <span class="math inline">\(j.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_025.png">
+</div>
+</div>
+<p><span class="math inline">\(G(s)=\dfrac{b(s)}{a(s)}\)</span> strictly proper, <span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}
+{a_{c}(s)}\)</span> proper.</p>
+<p><span class="math display">\[
+E_{R}(s)=\frac{1}{1+G_{c}(s)G(s)}R(s)=\frac{1}{1+\dfrac{b_{c}(s)}{a_{c}
+(s)}\dfrac{b(s)}{a(s)}}R(s)=\frac{a_{c}(s)a(s)}{a_{c}(s)a(s)+b_{c}
+(s)b(s)}R(s).
+\]</span></p>
+<p><strong>If</strong></p>
+<p>(1) <span class="math inline">\(a_{c}(s)a(s)+b_{c}(s)b(s)\)</span> has all of its roots in the open LHP.</p>
+<p>(2) The type number of <span class="math inline">\(G_{c}(s)G(s)\)</span> is <span class="math inline">\(j\)</span> or greater.</p>
+<p><strong>Then</strong></p>
+<p><span class="math display">\[
+\lim_{t\rightarrow\infty}e_{R}(t)=\lim_{t\rightarrow\infty}\left(
+r(t)-c(t)\right)  =0.
+\]</span></p>
+<ul>
+<li>If <span class="math inline">\(R(s)=\dfrac{R_{0}}{s^{j}}\)</span> then <span class="math inline">\(G_{c}(s)G(s)\)</span> must contain at least a factor of <span class="math inline">\(\dfrac{1}{s^{j}}.\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Proof
+</div>
+<p>Given: The closed-loop system is stable and <span class="math inline">\(G_{c}(s)G(s)\)</span> is at least type <span class="math inline">\(j.\)</span><em>&nbsp;&nbsp;</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_025.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!E_{R}(s)=\frac{1}{1+G_{c}(s)G(s)}R(s)=\frac{1}{1+\dfrac{b_{c}(s)}
+{a_{c}(s)}\dfrac{b(s)}{a(s)}}\frac{R_{0}}{s^{j}} &amp;  =\frac{a_{c}(s)a(s)}
+{a_{c}(s)a(s)+b_{c}(s)b(s)}\frac{R_{0}}{s^{j}}\\
+&amp;  =\frac{s^{j}\bar{a}(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}\frac{R_{0}}{s^{j}}\\
+&amp;  =\frac{\bar{a}(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R_{0}\\
+&amp;  =\frac{\bar{a}(s)}{(s-p_{1})\cdots(s-p_{n})}R_{0}\\
+&amp;  =\frac{A_{1}}{s-p_{1}}+\frac{A_{2}}{s-p_{2}}+\cdots+\frac{A_{n}}{s-p_{n}}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(e_{R}(t)=A_{1}e^{p_{1}t}+\cdots+A_{n}e^{p_{n}t}\rightarrow0\)</span> as <span class="math inline">\(\operatorname{Re}(p_{i})&lt;0\)</span> for <span class="math inline">\(i=1,\ldots,n\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Disturbance Rejection with Zero Steady-State Error</em></p>
+<p>The disturbance is type <span class="math inline">\(j\)</span> for some positive integer <span class="math inline">\(j.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_026.png">
+</div>
+</div>
+<p><span class="math inline">\(G(s)=\dfrac{b(s)}{a(s)}\)</span> strictly proper and <span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}
+{a_{c}(s)}\)</span> proper.</p>
+<p><span class="math display">\[
+E_{D}(s)=\frac{G(s)}{1+G_{c}(s)G(s)}D(s)=\frac{\dfrac{b(s)}{a(s)}}
+{1+\dfrac{b_{c}(s)}{a_{c}(s)}\dfrac{b(s)}{a(s)}}D(s)=\frac{a_{c}(s)b(s)}
+{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s)
+\]</span></p>
+<p><strong>If</strong></p>
+<p>(1) <span class="math inline">\(a_{c}(s)a(s)+b_{c}(s)b(s)\)</span> has all of its roots in the open LHP.</p>
+<p>(2) The type number of <span class="math inline">\(G_{c}(s)\)</span> is <span class="math inline">\(j\)</span> or greater.</p>
+<p><strong>Then</strong></p>
+<p><span class="math display">\[
+e_{D}(t)\triangleq\mathcal{L}^{-1}\!\{E_{D}(s)\}\rightarrow0
+\]</span></p>
+<ul>
+<li><span class="math inline">\(G_{c}(s)\)</span> <em>by itself</em> must be type <span class="math inline">\(j.\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Proof
+</div>
+<p>Given: The closed-loop system is stable and <span class="math inline">\(G_{c}(s)\)</span> is at least type <span class="math inline">\(j.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/tracking_026.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+E_{D}(s)=\frac{a_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}\frac{D_{0}}{s^{j}} &amp;
+=\frac{s^{j}\bar{a}_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}\frac{D_{0}}{s^{j}
+}\\
+&amp; \\
+&amp;  =\frac{\bar{a}_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D_{0}\\
+&amp; \\
+&amp;  =\frac{\bar{a}_{c}(s)b(s)}{(s-p_{1})\cdots(s-p_{n})}D_{0}\\
+&amp; \\
+&amp;  =\frac{A_{1}}{s-p_{1}}+\frac{A_{2}}{s-p_{2}}+\cdots+\frac{A_{n}}{s-p_{n}}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(\hspace{0.25in}e_{D}(t)=A_{1}e^{p_{1}t}+\cdots+A_{n}e^{p_{n}t}\rightarrow0\)</span> &nbsp;as &nbsp;<span class="math inline">\(\operatorname{Re}(p_{i})&lt;0\)</span>&nbsp;for&nbsp;<span class="math inline">\(i=1,...,n.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Internal Model Principle
+</div>
+<p><em>&nbsp;</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_029b.png">
+</div>
+</div>
+<p><span class="math inline">\(D(s)=\dfrac{D_{0}}{s^{2}+1}\)</span> so <span class="math inline">\(d(t)=D_{0}\sin(t)\)</span>.</p>
+<p>Let <span class="math inline">\(G_{c}(s)=K\dfrac{s+\alpha}{s^{2}+1}.\)</span> &nbsp;</p>
+<p><span class="math inline">\(G_{c}(s)\)</span> was chosen so its poles contained the poles of <span class="math inline">\(D(s).\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+E_{D}(s)=\frac{G(s)}{1+G_{c}(s)G(s)}D(s)  &amp;  =\frac{\dfrac{1}{s(s+1)}
+}{1+K\dfrac{s+\alpha}{s^{2}+1}\dfrac{1}{s(s+1)}}\frac{D_{0}}{s^{2}+1}\\
+&amp;  =\frac{s^{2}+1}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}\frac{D_{0}}{s^{2}+1}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_029b.png">
+</div>
+</div>
+<p><span class="math display">\[
+E_{D}(s)=\frac{s^{2}+1}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}\frac{D_{0}}
+{s^{2}+1}=\frac{1}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}D_{0}.
+\]</span></p>
+<ul>
+<li><p>The factor of <span class="math inline">\(s^{2}+1\)</span> in <span class="math inline">\(G_{c}(s)\)</span>&nbsp;cancels the factor <span class="math inline">\(s^{2}+1\)</span> in <span class="math inline">\(D(s).\)</span></p></li>
+<li><p>For <span class="math inline">\(e_{D}(t)\rightarrow0\)</span> we must find <span class="math inline">\(K,\alpha\)</span> so <span class="math inline">\(s^{4}+s^{3}
++s^{2}+(K+1)s+\alpha K\)</span> is stable.</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{array}{clcc}
+    s^{4} &amp; 1 &amp; 1 &amp; \alpha K\\
+    &amp;  &amp;  &amp; \\
+    s^{3} &amp; 1 &amp; K+1 &amp; 0\\
+    &amp;  &amp;  &amp; \\
+    s^{2} &amp; \dfrac{1-(K+1)}{1}=-K &amp; \alpha K &amp; 0\\
+    &amp;  &amp;  &amp; \\
+    s &amp; \dfrac{-K(K+1)-\alpha K}{-K}=\dfrac{K(K+1+\alpha)}{K} &amp; 0 &amp; \\
+    &amp;  &amp;  &amp; \\
+    s^{0} &amp; \alpha K &amp;  &amp;
+    \end{array}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_029b.png">
+</div>
+</div>
+<p>Stability requires <span class="math inline">\(-K&gt;0,K+1+\alpha&gt;0\)</span> and <span class="math inline">\(\alpha K&gt;0\)</span> or</p>
+<p><span class="math display">\[
+K&lt;0,\text{ }-(K+\alpha)&lt;1,\text{ }\alpha&lt;0.
+\]</span></p>
+<p>E.g., let <span class="math inline">\(\alpha=-0.25,K=-0.6\)</span> so <span class="math inline">\(s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K\)</span> becomes</p>
+<p><span class="math display">\[
+s^{4}+s^{3}+s^{2}+0.4s+0.15
+\]</span></p>
+<p>with roots</p>
+<p><span class="math display">\[
+-0.17\pm j0.63,\text{ }-0.33\pm j0.49.
+\]</span></p>
+<p>The error response is</p>
+<p><span class="math display">\[
+e_{D}(t)=4.7e^{-0.17t}\sin(0.63t+0.37)-4.1e^{-0.33t}\sin(0.49t+0.4)\rightarrow
+0
+\]</span></p>
+<ul>
+<li>The transients die out slowly.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_029b.png">
+</div>
+</div>
+<p>We also have</p>
+<p><span class="math display">\[
+\begin{aligned}
+E_{R}(s)=\frac{1}{1+G_{c}(s)G(s)}R(s)  &amp;  =\frac{1}{1+K\dfrac{s+\alpha}
+{s^{2}+1}\dfrac{1}{s(s+1)}}\frac{R_{0}}{s}\\
+&amp;  =\frac{s(s+1)(s^{2}+1)}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}\frac{R_{0}}{s}\\
+&amp;  =\frac{(s+1)(s^{2}+1)}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}R_{0}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(E_{R}(s)\)</span> has the same denominator as <span class="math inline">\(E_{D}(s)\)</span>.</p>
+<p><span class="math inline">\(\Longrightarrow\)</span> <span class="math inline">\(E_{R}(s)\)</span> is stable for <span class="math inline">\(\alpha=-0.25,K=-0.6\)</span></p>
+<p><span class="math inline">\(\Longrightarrow\)</span> <span class="math inline">\(e_{R}(t)\rightarrow0\)</span> as well (but slowly).</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-short-slide">
+<div class="slide-title">
+Internal Model Principle
+</div>
+<p><em>Disturbance Rejection</em></p>
+<p><span class="math inline">\(\quad G_{c}(s)\)</span> must contain the unstable poles of <span class="math inline">\(D(s)\)</span></p>
+<p><span class="math inline">\(\quad\)</span>and</p>
+<p><span class="math inline">\(\quad\)</span>the closed-loop system must be stable.</p>
+<p><em>Tracking</em></p>
+<p><span class="math inline">\(\quad G(s)G_{c}(s)\)</span> must contain the unstable poles of <span class="math inline">\(R(s)\)</span></p>
+<p><span class="math inline">\(\quad\)</span>and</p>
+<p><span class="math inline">\(\quad\)</span>the closed-loop system must be stable.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Disturbance Rejection</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_030.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{c}(s)=K\dfrac{s+\alpha}{s^{2}+1},\)</span> <span class="math inline">\(R(s)=\dfrac{R_{0}}{s},\)</span> but <span class="math inline">\(D(s)=\dfrac{D_{0}}{s}.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+E_{D}(s)=\frac{G(s)}{1+G_{c}(s)G(s)}D(s)  &amp;  =\frac{\dfrac{1}{s(s+1)}
+}{1+K\dfrac{s+\alpha}{s^{2}+1}\dfrac{1}{s(s+1)}}\frac{D_{0}}{s}\\
+&amp;  =\frac{s^{2}+1}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}\frac{D_{0}}{s}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> does <em>not</em> contain a pole at <span class="math inline">\(s=0\)</span> so the pole of <span class="math inline">\(D(s)\)</span> is not cancelled!</p></li>
+<li><p><span class="math inline">\(s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K\)</span> is stable for <span class="math inline">\(\alpha=-0.25,K=-0.6\)</span>.</p></li>
+<li><p>So&nbsp;<span class="math inline">\(sE_{D}(s)\)</span> is stable and by the FVT:</p></li>
+</ul>
+<p><span class="math display">\[
+e_{D}(\infty)=\lim_{s\rightarrow0}sE_{D}(s)=\lim_{s\rightarrow0}\frac{s^{2}
+    +1}{s^{4}+s^{3}+s^{2}+(K+1)s+\alpha K}D_{0}=\frac{D_{0}}{\alpha K}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Problem 11
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance with Pole Placement</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/dio_014.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}=\underset{\bar{G}_{c}
+(s)}{\underbrace{\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}}}
+\dfrac{1}{s^{2}+1}.\)</span></p></li>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> is proper, but not strictly proper.</p></li>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> must have the factor <span class="math inline">\(\dfrac{1}{s^{2}+1}\)</span> as required by the IMP.</p></li>
+<li><p><span class="math inline">\(\bar{G}_{c}(s)\)</span> is now used to place the closed-loop poles in any desired location.</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    \!\!\!\!\!\!\!\!E_{D}(s)  &amp;  =\dfrac{G(s)}{1+G_{c}(s)G(s)}D(s)=\frac{\dfrac
+    {b}{s(s+a)}}{1+\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}\dfrac
+    {1}{s^{2}+1}\dfrac{b}{s(s+a)}}\frac{D_{0}}{s^{2}+1}\\
+    \!\!\!  &amp;  =\!\!\!\frac{(s+a_{0})(s^{2}+1)b}{(s+a_{0})s(s+a)(s^{2}
+    +1)+bb_{3}s^{3}+bb_{2}s^{2}+bb_{1}s+bb_{0}}\frac{D_{0}}{s^{2}+1}.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Problem 11
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance with Pole Placement</em> &nbsp;<strong>(cont.)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/dio_014.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!E_{D}(s)\! &amp;  =\!\frac{(s+a_{0})(s^{2}+1)b}{(s+a_{0})s(s+a)(s^{2}
++1)+bb_{3}s^{3}+bb_{2}s^{2}+bb_{1}s+bb_{0}}\frac{D_{0}}{s^{2}+1}\\
+\! &amp;  =\!\frac{(s+a_{0})b}{s^{5}+(a+a_{0})s^{4}+(aa_{0}+bb_{3}+1)s^{3}
++(a+a_{0}+bb_{2})s^{2}+(aa_{0}+bb_{1})s+bb_{0}}D_{0}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>Desired closed-loop characteristic polynomial: <span class="math inline">\(s^{5}+f_{4}s^{4}
++f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}.\)</span></p></li>
+<li><p>Equate coefficients:</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    bb_{0}  &amp;  =f_{0}\\
+    a_{0}+a  &amp;  =f_{4}\\
+    aa_{0}+bb_{1}  &amp;  =f_{1}\\
+    a+a_{0}+bb_{2}  &amp;  =f_{2}\\
+    aa_{0}+bb_{3}+1  &amp;  =f_{3}.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Problem 11
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance with Pole Placement</em> &nbsp;<strong>(cont.)</strong></p>
+<p><span class="math display">\[
+\begin{aligned}
+bb_{0} &amp;  =f_{0}\\
+a_{0}+a &amp;  =f_{4}\\
+aa_{0}+bb_{1} &amp;  =f_{1}\\
+a+a_{0}+bb_{2} &amp;  =f_{2}\\
+aa_{0}+bb_{3}+1 &amp;  =f_{3}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(\Longrightarrow\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+b_{0} &amp;  =\frac{f_{0}}{b}\\
+&amp; \\
+a_{0} &amp;  =f_{4}-a\\
+&amp; \\
+b_{1} &amp;  =\frac{f_{1}-aa_{0}}{b}=\frac{f_{1}-af_{4}+a^{2}}{b}\\
+&amp; \\
+b_{2} &amp;  =\frac{f_{2}-a-a_{0}}{b}=\frac{f_{2}-f_{4}}{b}\\
+&amp; \\
+b_{3} &amp;  =\frac{f_{3}-aa_{0}-1}{b}=\frac{f_{3}-af_{4}+a^{2}+1}{b}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Problem 11
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance with Pole Placement</em> &nbsp;<strong>(cont.)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/dio_014.png">
+</div>
+</div>
+<p>Desired closed-loop poles: <span class="math inline">\(-r_{1},-r_{2},...,-r_{5}\)</span> where <span class="math inline">\(r_{1}
+&gt;0,r_{2}&gt;0,...,r_{5}&gt;0.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;  \!\!\!\!\!\!\!\!\!(s+r_{1})(s+r_{2})(s+r_{3})(s+r_{4})(s+r_{5})=
+&amp;  s^{5}+\underset{f_{4}}{\underbrace{(r_{1}+r_{2}+r_{3}+r_{4}+r_{5})}}s^{4}\\
+\!\!\! &amp;  +\text{ }\underset{f_{3}}{\underbrace{(r_{1}r_{2}+r_{1}r_{3}
++r_{1}r_{4}+r_{1}r_{5}+r_{2}r_{3}+r_{2}r_{4}+r_{2}r_{5}+r_{3}r_{4}+r_{3}
+r_{5}+r_{4}r_{5})}}s^{3}\\
+\!\!\! &amp;  +\text{ }\underset{f_{2}}{\underbrace{(r_{1}r_{2}r_{3}+r_{1}
+r_{2}r_{4}+r_{1}r_{2}r_{5}+r_{1}r_{3}r_{4}+r_{1}r_{3}r_{5}+r_{1}r_{4}
+r_{5}+r_{2}r_{3}r_{4}+r_{2}r_{3}r_{5}+r_{2}r_{4}r_{5}+r_{3}r_{4}r_{5})}}
+s^{2}\\
+&amp;  \!+\text{ }\underset{f_{1}}{\underbrace{(r_{1}r_{2}r_{3}r_{4}+r_{1}
+r_{2}r_{3}r_{5}+r_{1}r_{2}r_{4}r_{5}+r_{1}r_{3}r_{4}r_{5}+r_{2}r_{3}r_{4}
+r_{5})}}s\\
+\!\!\! &amp;  +\text{ }\underset{f_{0}}{\underbrace{r_{1}r_{2}r_{3}r_{4}r_{5}}}
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Problem 11
+</div>
+<p><em>Rejecting a Sinusoidal Disturbance with Pole Placement</em> &nbsp;<strong>(cont.)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/dio_014.png">
+</div>
+</div>
+<p>Finally</p>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!E_{D}(s) &amp;  =\frac{(s+a_{0})b}{s^{5}+(a+a_{0})s^{4}+(aa_{0}
++bb_{3}+1)s^{3}+(a+a_{0}+bb_{2})s^{2}+(aa_{0}+bb_{1})s+bb_{0}}D_{0}\\
+&amp; \\
+&amp;  =\frac{(s+a_{0})b}{(s+r_{1})(s+r_{2})(s+r_{3})(s+r_{4})(s+r_{5})}D_{0}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(\Longrightarrow\)</span></p>
+<p><span class="math display">\[
+e_{D}(t)=A_{1}e^{-r_{1}t}+A_{2}e^{-r_{2}t}+A_{3}e^{-r_{3}t}+A_{4}e^{-r_{4}
+t}+A_{5}e^{-r_{5}t}\rightarrow0.
+\]</span></p>
+<p>We also have (why?)</p>
+<p><span class="math display">\[
+e_{R}(t)=B_{1}e^{-r_{1}t}+B_{2}e^{-r_{2}t}+B_{3}e^{-r_{3}t}+B_{4}e^{-r_{4}
+t}+B_{5}e^{-r_{5}t}\rightarrow0.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Design Example: Control of Aircraft Pitch
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/chap1_fig06.png">
+</div>
+</div>
+<p><span class="math display">\[
+\frac{\theta(s)}{\delta(s)}=G(s)=\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}
++0.921s}.
+\]</span></p>
+<p><strong>Actuator Constraint:</strong> Elevator deflection is restricted to <span class="math inline">\(-25^{\circ}\leq\delta\leq25^{\circ}.\)</span></p>
+<p><strong>Design specifications:</strong></p>
+<p>(1) Overshoot less than 10%.</p>
+<p>(2) Rise time less than 2 seconds.</p>
+<p>(3) Settling time less than 10 seconds.</p>
+<p>(4) Steady-state error less than 2%.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p><span class="math display">\[
+\frac{\theta(s)}{\delta(s)}=G(s)=\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}
++0.921s}.
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_100b.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(R(s)=R_{0}/s\)</span> with <span class="math inline">\(R_{0}=0.2\)</span> radians (<span class="math inline">\(11.\,5\)</span> degrees)</p></li>
+<li><p>Air turbulence on the aircraft body and wings causes its pitch to change.</p></li>
+<li><p>Disturbance modeled as an equivalent (unknown) deflection of the elevator angle.</p></li>
+<li><p>Use the PI-D controller (<span class="math inline">\(\tau=0\)</span> to simplify the presentation)</p></li>
+</ul>
+<p><span class="math display">\[
+\delta_{c}(t)=K_{p}e(t)+K_{I}\int_{0}^{t}e(t^{\prime})dt^{\prime}+K_{D}
+    \frac{dc(t)}{dt}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p>With</p>
+<p><span class="math display">\[
+\delta_{c}(t)=K_{p}e(t)+K_{I}\int_{0}^{t}e(t^{\prime})dt^{\prime}+K_{D}
+\frac{dc(t)}{dt}
+\]</span></p>
+<p>at <span class="math inline">\(t=0\)</span> this becomes</p>
+<p><span class="math display">\[
+\begin{aligned}
+\delta_{c}(0+)  &amp; =K_{p}e(0+)+K_{I}\int_{0}^{0^{+}}e(t^{\prime})dt^{\prime
+}+K_{D}\dot{c}(0+)\\
+&amp; \\
+&amp; =K_{p}(R_{0}-c(0+))\\
+&amp; \\
+&amp; =K_{p}R_{0.}
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(R_{0}=0.2\)</span> radians (<span class="math inline">\(11.5^{\circ})\)</span> and <span class="math inline">\(|\delta|\leq0.436\)</span> radians (<span class="math inline">\(25^{\circ})\)</span> requires</p>
+<p><span class="math display">\[
+K_{p}\leq0.436/0.2=2.18\text{.}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_100b.png">
+</div>
+</div>
+<p><span class="math display">\[
+G_{2}(s)=\frac{\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}+0.921s}}{1+K_{D}
+s\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}+0.921s}}=\dfrac{1.51s+0.1774}
+{s^{3}+(1.51K_{D}+0.739)s^{2}+(0.1774K_{D}+0.921)s}
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+G_{CL}(s) &amp;  =\frac{\left(  \dfrac{K_{p}s+K_{I}}{s}\right)  \dfrac
+{1.51s+0.1774}{s^{3}+(1.51K_{D}+0.739)s^{2}+(0.1774K_{D}+0.921)s}}{1+\left(
+\dfrac{K_{p}s+K_{I}}{s}\right)  \dfrac{1.51s+0.1774}{s^{3}+(1.51K_{D}
++0.739)s^{2}+(0.1774K_{D}+0.921)s}}\\
+&amp; \\
+&amp;  =\frac{(K_{p}s+K_{I})(1.51s+0.1774)}{s[s^{3}+(1.51K_{D}+0.739)s^{2}
++(0.1774K_{D}+0.921)s]+(K_{p}s+K_{I})(1.51s+0.1774)}
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_100b.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!\!\!G_{CL}(s) &amp;  =\frac{(K_{p}s+K_{I})(1.51s+0.1774)}{s[s^{3}
++(1.51K_{D}+0.739)s^{2}+(0.1774K_{D}+0.921)s]+(K_{p}s+K_{I})(1.51s+0.1774)}\\
+&amp; \\
+&amp;  =\frac{(K_{p}s+K_{I})(1.51s+0.1774)}{a_{CL}(s)}
+\end{aligned}
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!\!\!\!\!\!\!\!\!\!a_{CL}(s)  &amp; =s^{4}+s^{3}(1.51K_{D}+0.739)\,+s^{2}
+(1.51K_{p}+0.1774K_{D}+0.921)+\\
+&amp; s(0.1774K_{p}+1.51K_{I})+0.1774K_{I}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li>Zeros of <span class="math inline">\(G_{CL}(s)\)</span> are <span class="math inline">\(-K_{I}/K_{P}\)</span> and <span class="math inline">\(-0.1774/1.51=-0.118\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_100b.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!\!\!\!\!\!\!\!\!\!a_{CL}(s)  &amp; =s^{4}+s^{3}(1.51K_{D}+0.739)\,+s^{2}
+(1.51K_{p}+0.1774K_{D}+0.921)+\\
+&amp; s(0.1774K_{p}+1.51K_{I})+0.1774K_{I}.
+\end{aligned}
+\]</span></p>
+<p>How do we set the gains <span class="math inline">\(K_{p},K_{I},K_{D}?\)</span></p>
+<p><strong>One Possible Procedure</strong></p>
+<dl>
+<dt>(1)</dt>
+<dd>
+<p>With <span class="math inline">\(K_{I}=K_{D}=0\)</span> adjust the value of <span class="math inline">\(K_{p}\)</span> ” until the response oscillates”.</p>
+<p>(Assumes the closed-loop system is stable for small values of <span class="math inline">\(K_{p}&gt;0)\)</span>.</p>
+</dd>
+<dt>(2)</dt>
+<dd>
+<p>Next adjust the value of <span class="math inline">\(K_{I}\)</span> so that the steady-state error goes to zero.</p>
+<p>(Typically the response becomes more oscillatory as <span class="math inline">\(K_{I}\)</span> is increased.)</p>
+</dd>
+<dt>(3)</dt>
+<dd>
+<p>Finally, adjust the value of <span class="math inline">\(K_{D}\)</span> to damp out the oscillatory response.</p>
+</dd>
+</dl>
+<p>No reason to expect that this procedure will result in a satisfactory response.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p>Recall <span class="math inline">\(\delta_{c}(0)=K_{p}R_{0}\)</span> so <span class="math inline">\(K_{p}\leq\delta_{\max}/R_{0}
+=0.436/0.2=2.18\)</span> to avoid actuator saturation.</p>
+<ul>
+<li><p>Take <span class="math inline">\(K_{p}=2.18\)</span> (largest possible value avoiding saturation).</p></li>
+<li><p>With <span class="math inline">\(K_{p}\)</span> fixed at <span class="math inline">\(2.18\)</span>, <span class="math inline">\(K_{I}\)</span> is varied from <span class="math inline">\(0.2\)</span> to <span class="math inline">\(2.\)</span></p></li>
+<li><p><span class="math inline">\(K_{I}=1\)</span> is chosen.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_101__59.png">
+</div>
+</div></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p><span class="math inline">\(K_{D}\)</span> was varied from 1 to 2 (with <span class="math inline">\(\tau=0.05\)</span>). I chose <span class="math inline">\(K_{D}=1.5\)</span>.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_102__60.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(M_{p}=(0.223-0.2)/0.2=0.115\)</span> or <span class="math inline">\(11.5\%.\)</span> (NOT the specified <span class="math inline">\(10\%.\)</span>)</p></li>
+<li><p><span class="math inline">\(c(10)=0.207\)</span> or <span class="math inline">\((0.207-0.2)/0.2=0.035\,\)</span>which is <span class="math inline">\(3.5\%\)</span> of the final value.</p>
+<p>(NOT the specified <span class="math inline">\(2\%.\)</span>)</p></li>
+<li><p>The rise time is about <span class="math inline">\(1.6\)</span> seconds which is within the 2 second specification.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p>The corresponding elevator command <span class="math inline">\(\delta_{c}\)</span> does not saturate.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_103__61.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Ramp Reference Input
+</div>
+<ul>
+<li><p><span class="math inline">\(K_{p}\leq\delta_{\max}/R_{0}=2.18\)</span> makes the specifications difficult to achieve.</p></li>
+<li><p>The specs can be met by increasing the gains, but allowing saturation.</p>
+<p>However, if the pilot pitched up and then needed to immediately pitch down instead,</p>
+<p>the plane would not react to his new command until the actuator left saturation.</p></li>
+</ul>
+<p>Use a ramp reference input (Specifications are easily met!).</p>
+<p><span class="math display">\[
+r(t)=\left\{
+\begin{array}{rl}
+(0.2/1.5)t, &amp; \text{for }0\leq t\leq1.5\\
+0.2, &amp; \text{for }t&gt;0.2
+\end{array}
+\right.
+\]</span></p>
+<p>Set <span class="math inline">\(K_{P}=12,K_{I}=0.25,K_{D}=2.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_104__62.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p>Recall the closed-loop transfer function</p>
+<p><span class="math display">\[
+G_{CL}(s)=\frac{(K_{p}s+K_{I})(1.51s+0.1774)}{s^{4}+s^{3}(1.51K_{D}
++0.739)+s^{2}(1.51K_{p}+0.1774K_{D}+0.921)+s(0.1774K_{p}+1.51K_{I}
+)+0.1774K_{I}}.
+\]</span></p>
+<p>Note that <span class="math inline">\(G_{CL}(0)=1\)</span> and so</p>
+<p><span class="math display">\[
+\lim_{t\rightarrow\infty}c(t)=\lim_{s\rightarrow0}sC(s)=\lim_{s\rightarrow
+0}sG_{CL}(s)\frac{0.2}{s}=0.2.
+\]</span></p>
+<p>With <span class="math inline">\(K_{P}=12,K_{I}=0.25,K_{D}=2\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+G_{CL}(s)  &amp; =\frac{(12s+0.25)(1.51s+0.1774)}{s^{4}+3.759s^{3}+19.396s^{2}
++2.5063s+0.04435}\\
+&amp; \\
+&amp; =\frac{18.12(s+0.0208)(s+0.1175)}{(s^{2}+3.627s+18.92)(s+0.111)(s+0.0211)}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+G_{CL}(s)  &amp; =\frac{(12s+0.25)(1.51s+0.1774)}{s^{4}+3.759s^{3}+19.396s^{2}
++2.5063s+0.04435}\\
+&amp; \\
+&amp; =\frac{18.12(s+0.0208)(s+0.1175)}{(s^{2}+3.627s+18.92)(s+0.111)(s+0.0211)}.
+\end{aligned}
+\]</span></p>
+<p><strong>Observation</strong></p>
+<p>The zeros at <span class="math inline">\(-0.0208,-0.1175\)</span> (essentially) cancel the poles at <span class="math inline">\(-0.0211\)</span> and <span class="math inline">\(-0.111.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+c(t)=\mathcal{L}^{-1}\left\{  G_{CL}(s)\frac{0.2}{s}\right\}   &amp; =0.2u_{s}
+(t)+0.0029e^{-0.0211t}-0.0115e^{-0.111t}\\
+&amp; -0.191e^{-1.81t}\!\!\left(  \cos(3.95t)+0.460\sin
+(3.95t)\right)
+\end{aligned}
+\]</span></p>
+<p>The coefficients of <span class="math inline">\(e^{-0.0211t}\)</span> and <span class="math inline">\(e^{-0.111t}\)</span> are 20 times smaller&nbsp;the coefficient <span class="math inline">\(e^{-1.81t}.\)</span></p>
+<p>Though <span class="math inline">\(0.0029e^{-0.0211t},-0.0115e^{-0.111t}\)</span> die out slowly, they have small values.</p>
+<p>Maintaining <span class="math inline">\(G_{CL}(0)=1\)</span> a pretty good approximation is</p>
+<p><span class="math display">\[
+G_{CL}(s)\approx\frac{18.92}{s^{2}+3.627s+18.92}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+PI-D Control of Aircraft Pitch
+</div>
+<p><span class="math display">\[
+G_{CL}(s)=\frac{18.12(s+0.0208)(s+0.1175)}{(s^{2}
++3.627s+18.92)(s+0.111)(s+0.0211)}\approx\frac{18.92}{(s^{2}+3.627s+18.92)}.
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_106__63.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Pitch Control - Feedback and Parametric Uncertainty (Robustness)
+</div>
+<p>The PI-D gains <span class="math inline">\(K_{P},K_{I},K_{D}\)</span> gains were set based on simulations using</p>
+<p><span class="math display">\[
+\frac{\theta(s)}{\delta(s)}=G(s)=\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}
++0.921s}.
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_100b.png">
+</div>
+</div>
+<p>Suppose the Pitch Model is actually closer to</p>
+<p><span class="math display">\[
+G_{truth}(s)=\frac{\theta(s)}{\delta(s)}=\dfrac{s+0.12}{s^{3}+0.4s^{2}+s}.
+\]</span></p>
+<p>Will the response still meet specifications?</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Pitch Control - Feedback and Parametric Uncertainty (Robustness)
+</div>
+<p><span class="math display">\[
+G(s)=\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}+0.921s}\qquad{}\text{and}\qquad{}
+G_{truth}(s)=\dfrac{s+0.12}{s^{3}+0.4s^{2}+s}.
+\]</span></p>
+<ul>
+<li><p>The PI-D gains <span class="math inline">\(K_{P},K_{I},K_{D}\)</span> gains were set based on simulations using <span class="math inline">\(G(s).\)</span></p></li>
+<li><p>Response <span class="math inline">\(c(t)\)</span> using <span class="math inline">\(G(s)\)</span> and <span class="math inline">\(G_{truth}(s)\)</span> are shown.</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_107__65.png">
+</div>
+<p></p>
+</figure></li>
+<li><p>The two responses are <strong>close</strong> even though <span class="math inline">\(G(s)\)</span> &amp; <span class="math inline">\(G_{truth}(s)\)</span> are quite different.</p></li>
+<li><p>This is a <strong>fundamental advantage</strong> of using closed-loop feedback!</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Pitch Control - Feedback and Parametric Uncertainty (Robustness)
+</div>
+<p>The corresponding elevator command angles are shown below.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter09-source/figures/Tracking_108__66.png">
+</div>
+</div>
+</div>
 
 
 </section>
@@ -337,12 +2226,12 @@ John N. Chiasson and Aykut C. Satici
         // The "normal" size of the presentation, aspect ratio will be preserved
         // when the presentation is scaled to fit different resolutions. Can be
         // specified using percentage units.
-        width: 1050,
+        width: 1600,
 
-        height: 700,
+        height: 900,
 
         // Factor of the display size that should remain empty around the content
-        margin: 0.1,
+        margin: 4.0e-2,
 
         math: {
           mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
