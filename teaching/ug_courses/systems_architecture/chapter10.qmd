@@ -25,6 +25,14 @@ format:
 This chapter surveys the principal upstream and downstream influences, then shows how they combine in an iterative decision framework: the **ABCD Product Case**.
 :::
 
+::: {.notes}
+Open by reminding students where we are in Part 3. Chapter 9 introduced the architect's core responsibilities — reducing ambiguity, applying creativity, managing complexity — largely from the architect's own vantage point. This chapter turns outward: much of the ambiguity an architect has to reduce doesn't originate with the architect at all, it arrives from forces upstream (the firm's corporate strategy, marketing's view of the customer, the regulatory environment, and the availability of new technology) and forces downstream (how the system will actually be built, how it will be operated once fielded, and how it needs to evolve into future variants).
+
+The framing worth emphasizing here, since it's easy to read this chapter as "a survey of business topics" rather than an architecture chapter: the architect does not control any of these upstream or downstream factors directly — a systems architect doesn't set corporate strategy, and doesn't run the factory floor — but has to understand each of them well enough to make good architectural decisions anyway. Our intent this chapter, following the book's own framing, is not to hand you a complete framework for each of these topics (that would each be its own semester-long course); it's to stimulate you to consider the relevant coupling between these influences and the architecture itself — which influences will meaningfully reduce ambiguity, and which will help you select among candidate architectures. The fragment previews the chapter's structure: after touring the upstream and downstream influences individually, section by section, we'll show how they combine — not just added up in sequence, but genuinely interacting — in an iterative decision framework called the ABCD Product Case.
+
+It's worth mentioning the framing concept the book introduces right at the start of this chapter: *architectural decisions* specifically. Not all decisions in a project are architectural — architectural decisions are the subset that are most impactful: they relate to the form-function mapping, they determine the performance envelope, they encode the key tradeoffs in the eventual product, and they often strongly determine cost. Two architectures made from different architectural decisions are fundamentally different from each other — the number of driven wheels on a car, whether an aircraft has a tail, whether an algorithm runs in real time or not. Contrast that with a *design* decision, like choosing leather versus cloth car seats — it may affect cost, but predictably, and it's far less likely to have emergent consequences. The reason to separate these out and identify them early, Daniel Kahneman's quote in the book reminds us, is that we have no particular reason to expect our intuition to improve with the stakes of a problem — if anything the opposite, since high-stakes problems tend to involve powerful emotions and strong impulses to act. Getting architectural decisions wrong early can irrevocably hinder the eventual product, in a way that no amount of later detailed design or component optimization can fix.
+:::
+
 # 10.2 Upstream Influence: Strategy and Marketing
 
 ## Strategy Sets the Stage {.smaller}
@@ -32,6 +40,14 @@ This chapter surveys the principal upstream and downstream influences, then show
 - Corporate and business unit **strategy** frames everything: what markets to compete in, what capabilities to build, what advantage to pursue
 - The architect must interpret strategy — often incomplete or ambiguous — into concrete goals for the system
 - Strategy rarely specifies architecture directly; it specifies **intent**, and the architect must translate intent into form and function
+
+::: {.notes}
+Begin the upstream tour with the influence that sits furthest from engineering, but shapes everything below it: corporate strategy. Give students the book's working definition — in a for-profit firm, corporate strategy describes the means by which the firm achieves its corporate goals (increasing profitability, building competitive shareholder value); in a government context, an agency's strategy similarly defines the means by which it achieves its mission. A genuinely useful strategy statement differentiates *how* the firm or agency will pursue its goals — "grow revenue while maintaining product margins" conveys almost nothing about actual decisions; strategy has to define the specific activities, the mission, the scope of activities, the long-term and intermediate-term goals, resource allocation decisions, and planned initiatives.
+
+Point out that strategy actually exists at several nested levels worth distinguishing, since the book is precise about this and it matters for how an architect reads strategy documents: the *shareholder annual report* level (the publicly visible, often vague, long-term objectives — "be the largest automotive OEM by units sold" — which is by definition information the firm is comfortable sharing with competitors, and so tends not to reveal what's actually being prioritized or excluded); the *executive corporate strategy* level, which is genuinely more specific — what businesses the firm is in or should be in, and where to invest selectively for sustainable competitive advantage (the book's example: BMW's 2009 decision to exit Formula 1 racing, forgoing brand association and technology trickle-down benefits, in favor of redirecting investment toward a new small, efficient, city-driven vehicle segment, BMW i); *business unit strategy* below that, specialized to a particular sector, market, geography, or technology; and *functional strategies* within a business unit (marketing, R&D, manufacturing/sourcing, product development), each answering strategy questions specific to that function.
+
+The core message for the architect, worth stating directly: strategy at every one of these levels rarely specifies architecture directly. It specifies *intent* — priorities, exclusions, resource allocation — and it's the architect's job to translate that intent into concrete form and function for the actual system. If an architect can't interpret a compound annual growth rate target of 20% for a market-entry strategy in Asia in terms of what that implies for product development timelines, that architect will fail at communicating goals for the project. This translation work — turning ambiguous, high-level strategic intent into specific, buildable goals — is exactly the kind of ambiguity-reduction Chapter 9 described as central to the architect's role.
+:::
 
 ## Figure 10.1 · Marketing as Seen by the Architect {.smaller}
 
@@ -41,17 +57,35 @@ This chapter surveys the principal upstream and downstream influences, then show
 **Inbound marketing** creates value: identifying customers, segmenting markets, evaluating competition. **Outbound marketing** delivers value: product, price, communications, distribution. Product development is the bridge between them. Source: Crawley, Cameron & Selva (2016), Fig. 10.1.
 :::
 
+::: {.notes}
+Introduce marketing with a bit of levity before getting rigorous — the book opens this section quoting the 1999 film *Office Space*, where the marketing representative says "I deal with the customers so the engineers don't have to." In many organizations, marketing and engineering genuinely sit in tension, each claiming to have the more accurate view of customer needs — marketing based on sales and market data, engineering based on customer feedback, warranty reports, and product tests. The book's own position, worth stating plainly: the architect plays a critical role bridging this divide, and successful firms link the marketing and product-development communities closely rather than letting them work in isolation.
+
+Walk through the figure's structure, since the vocabulary here (inbound vs. outbound marketing) is used precisely throughout the rest of the section. Give the book's generic definition of marketing first: "creating, communicating, and delivering value to customers, and managing customer relationships in ways that benefit the organization and its stakeholders." That definition deliberately spans both halves of the figure. *Inbound marketing* is the process of discovering user needs — identifying customers, segmenting markets, evaluating competition — sometimes called "product development" within the marketing community itself. *Outbound marketing* is the process of satisfying those needs once a product exists — delivering value through the classic Four P's (product, price, promotion/communications, distribution/place), the term coined by Edmund McCarthy. Product development is the bridge connecting the two: inbound marketing's discovered needs flow into product development, which produces the product that outbound marketing then delivers to the market. It's worth flagging as a common misconception, which the book explicitly corrects: it would be a mistake to think of marketing as occurring only downstream of product development with no upstream interaction at all — the history of engineered products is full of individual features that were later renamed for outbound marketing campaigns (Cessna's "Land-o-Matic" tricycle landing gear and "Stabila-Tip" wingtip fuel tanks are the book's examples) — but the deeper point is that successful architects often intertwine the creation of the architecture itself with market strategy from the start, not just after the fact.
+:::
+
 ## Working with Marketing {.smaller}
 
 - Inbound marketing generates the **voice of the customer** — needs, preferences, willingness to pay — which the architect must translate into solution-neutral function (Ch. 7)
 - Outbound marketing determines how the *architecture itself* gets communicated and positioned — an elegant architecture is easier to market
 - The architect and marketing function are natural partners: marketing knows *what* customers want, the architect determines *whether and how* it can be delivered
 
+::: {.notes}
+Go one level deeper into inbound marketing specifically, since the book calls this the aspect that most concerns the architect. Of the various tasks inbound marketing performs — customer identification, needs analysis, market segmentation, competitive analysis, and sometimes even testing value propositions or helping define a business case — by far the most critical, from the architect's point of view, is identifying stakeholders, understanding their needs, and converting those needs into system requirements. Flag for students that this exact process gets an entire dedicated chapter later in the course (Chapter 11), so what's covered here is the *upstream context* for that deeper treatment, not a substitute for it.
+
+Spend a moment on market segmentation and sizing, since the book gives it real attention and it connects directly to business-case reasoning covered later in the chapter. In an established market, segmentation groups customers who have similar needs and will respond similarly to outbound marketing, letting the firm allocate effort efficiently across segments; a key attribute of any segment is its *size* — specifically the total addressable market, defined as yearly sales assuming 100% market capture — because the business case weighs the cost of product development against penetration-rate-adjusted sales volume built from that number. Be honest with students about how hard this estimation genuinely is for complex systems, since the traditional consumer-segmentation playbook doesn't transfer cleanly: for something like military attack helicopters or 200-megawatt gas turbines, there are very few potential customers, which somewhat *simplifies* the estimate, but for most complex systems competing in markets that are hard to predict, history is full of examples where the market was mis-estimated by two orders of magnitude in either direction — and in capital-intensive industries, even a factor of two can be the difference between product success and failure (the book's example: Iridium's satellite phone handset badly misjudging what the market would accept).
+
+Close by restating the natural-partnership framing on the slide, since it's the practical takeaway: marketing's job is discovering and articulating *what* customers want (and how competitors' offerings compare); the architect's job is judging *whether and how* that can actually be delivered, given technology, cost, and time constraints — and outbound marketing, in turn, depends on the architect having built something whose value proposition is genuinely easy to communicate. An elegant, well-conceived architecture, recall from earlier in the course, tends to be easier to market precisely because its value story is simpler to tell.
+:::
+
 ## Section 10.2 Summary {.smaller}
 
 - Corporate strategy and marketing are major upstream influences the architect must interpret, not just receive
 - Inbound marketing (creating value) and outbound marketing (delivering value) both interact with the architecture — inbound shapes goals, outbound shapes communication
 - The architect's job is translation: converting ambiguous strategic and market intent into concrete, solution-neutral functional goals
+
+::: {.notes}
+Use this as a checkpoint before moving to the next upstream influence. By this point students should be able to state, in their own words, why corporate strategy rarely specifies architecture directly (it specifies intent, at several nested levels — shareholder-report, executive, business-unit, functional — and the architect has to translate that intent). They should also be comfortable with the inbound/outbound marketing distinction, and be able to explain why the architect and marketing are natural partners rather than adversaries, despite the tension the *Office Space* quote pokes fun at. The unifying theme across both strategy and marketing, worth restating explicitly: the architect's core job with respect to every upstream influence in this chapter is *translation* — converting something ambiguous, high-level, and not inherently architectural (a strategy statement, a customer need) into something concrete enough to shape form and function. That's the same lens we'll apply next to regulation, then to technology.
+:::
 
 # 10.4 Upstream Influence: Regulation and Pseudo-Regulatory Influences
 
@@ -65,6 +99,12 @@ This chapter surveys the principal upstream and downstream influences, then show
 Regulation affects architecture two ways: **directly** (mandatory backup cameras, medical device material rules) and **indirectly**, through downstream factors like manufacturing location, hiring rate, or addressable markets.
 :::
 
+::: {.notes}
+Move to the second upstream influence. Open with the dual-edged framing on the slide, since it's the section's central thesis: regulation can act to *preserve* an existing architecture well past its natural useful life (protecting incumbents who've already invested in compliance), or it can *generate an opportunity* for new architectures to disrupt an otherwise-stable market. The Tier 4 Final emissions example is the book's own worked case, worth walking through carefully: these regulations imposed essentially held off-highway truck manufacturers to stricter emissions standards, which forced firms to update their entire engine portfolios — a real burden — but simultaneously it reset the competitive playing field and opened up a new axis (fuel efficiency) on which firms could newly differentiate themselves, inviting them to compete on new dimensions after the compliance deadline passed.
+
+The fragment gives students the two distinct pathways by which regulation reaches into architecture, and it's worth being precise that these are genuinely different mechanisms. The *direct* pathway is the obvious one: a regulation explicitly requires some feature or property of the product itself — mandatory backup cameras on U.S. cars, or regulation on which materials may be used in medical devices. The *indirect* pathway is subtler and easy to overlook: regulations can shape downstream factors — where manufacturing facilities can be sited, how quickly team members can be hired or fired, which markets a product may legally be sold into — and those downstream constraints feed back and affect the economic viability, and therefore the architecture, of the product just as surely as a direct technical mandate would. A good architect has to be alert to both pathways, not just the obviously visible direct one.
+:::
+
 ## Figure 10.2 · Regulation and Pseudo-Regulatory Influences {.smaller}
 
 ![](assets/chapter10/fig10_2_regulation.jpg){height=380px fig-align="center"}
@@ -73,17 +113,35 @@ Regulation affects architecture two ways: **directly** (mandatory backup cameras
 Four categories, each demanding a different level of engagement: **regulation** (compliance), **anticipated regulation** (awareness), **standards** (alignment), **liability** (compliance with enterprise procedures). Source: Crawley, Cameron & Selva (2016), Fig. 10.2.
 :::
 
+::: {.notes}
+Walk through each of the four categories in this figure individually, since each demands a genuinely different level of engagement from the architect, and that distinction is the whole point of the diagram. *Regulation* proper demands straightforward compliance — it's a matter of law, so compliance is mandatory, and the architect's job is understanding the *regulatory intent* well enough to implement it correctly (the book lists five typical regulatory intents worth mentioning as examples: protecting the consumer, as with credit-card payback disclosure rules; setting workplace-safety standards, as with OSHA ventilation requirements; protecting the environment, as with CAFE fuel-economy standards; implementing industrial policy through incentives or disincentives, as with electric-vehicle tax credits; and preventing dissemination of sensitive technology, as with ITAR munitions-data controls).
+
+*Anticipated regulation* demands only awareness, not yet compliance — proposed rules can often be tracked as they move through the government rulemaking process, and the architect can watch leading global jurisdictions as an indicator of where regulation elsewhere may eventually head (the book's examples: Switzerland's stringent noise regulations for domestic appliances, Sweden's automotive safety rules, and California's fleet emissions standards, all of which have historically been "leading indicators" later echoed by other jurisdictions).
+
+*Standards* demand alignment rather than strict compliance, since they're typically voluntary — though often the price of industry-association membership, adopted as a form of self-regulation intended to stave off stricter external government regulation. Standards can also be a competitive tool: a firm that sets and controls an industry standard (the book cites Intel's long-running role in setting semiconductor wafer-size transitions) gains real strategic leverage. Finally, *liability* demands compliance with enterprise procedures — legal risk from product-liability litigation or breach-of-contract claims (the book's example: Sun Microsystems, owner of Java, suing Microsoft for improperly implementing the Java 1.1 standard) acts as a pseudo-regulatory pressure even without any government rule requiring it directly.
+:::
+
 ## Sources and Levels of Regulation {.smaller}
 
 - Regulations occur at **federal, state, and city/county levels** in the U.S., plus international regulations — agencies like the FDA, USDA, FAA, and EPA oversee federal rules
 - **Pseudo-regulations** matter too: standards (voluntary but expected), anticipated regulation (not yet law, but coming), and litigation/liability precedent
 - The architect must decide: which elements of regulation are important enough to shape the *architecture*, and which can be addressed later in detailed design and testing?
 
+::: {.notes}
+Give students the practical, jurisdictional texture behind the four-category figure just covered. Using the United States as the reference case (while noting other major industrialized nations show broadly similar patterns), regulation occurs at multiple nested levels — federal (agencies like the FDA, USDA, FAA, and EPA), state (for instance California's CARB and various state motor-vehicle safety equipment laws), and city/county (though these tend to be too diffuse and locally variable for a complex system to comprehensively address). Point out a practical wrinkle worth mentioning: regulations aren't always hard to locate for environments requiring formal certification (aircraft type certificates being the clean example) — but in other cases they can be genuinely challenging to unearth, and it's ultimately the architect's responsibility, often working with the enterprise's legal function, to be aware of everything relevant.
+
+Close on the key architectural judgment call this section keeps returning to, and worth stating explicitly as the section's takeaway: not every element of regulation deserves to shape the *architecture* itself. Some regulatory requirements can perfectly well be addressed later, in detailed design and testing, without touching the fundamental form-function mapping — the architect's job is discriminating between the two, deciding which regulatory and pseudo-regulatory factors are consequential enough to bake into the architecture now, versus which can be deferred.
+:::
+
 ## Section 10.4 Summary {.smaller}
 
 - Regulation is a two-edged upstream influence — it can protect incumbents or create openings for disruption
 - Beyond formal regulation, the architect must track pseudo-regulatory influences: anticipated regulation, standards, and liability exposure
 - The key architectural judgment: separate regulatory elements that must shape the architecture from those addressable later, in detailed design
+
+::: {.notes}
+Checkpoint before moving to technology. Students should now be comfortable that regulation isn't purely a compliance headache — it's a genuine two-edged strategic influence that can lock in incumbents or crack open a market for disruption, exactly like the Tier 4 Final emissions example demonstrated. They should also be able to name and distinguish all four categories from Figure 10.2 (regulation, anticipated regulation, standards, liability) and the different level of engagement each demands, and articulate the core architectural judgment call: deciding which regulatory factors are consequential enough to shape the architecture now, versus deferrable to detailed design later.
+:::
 
 # 10.5 Upstream Influence: Technology
 
@@ -94,6 +152,10 @@ Four categories, each demanding a different level of engagement: **regulation** 
 
 ::: {.fragment .callout-important appearance="minimal" icon=false}
 **1.** Will the technology be ready for infusion? **2.** Will it actually create additional value for customers and stakeholders? **3.** How will it be effectively transferred into the product or system?
+:::
+
+::: {.notes}
+Introduce the third upstream influence. Frame it the way the book does: a new technology is often at the heart of a new product, and a shift in technology is often a primary motivation for developing a new architecture at all — especially true in the entrepreneurial community, where a single proprietary piece of technology is frequently the central feature of a company's very first product. Deciding whether and how to infuse a new technology into an architecture is one of the architect's pivotal roles, and the book organizes the decision around exactly the three sequential questions on this slide, so give students the logic of the ordering: readiness comes first (there's no point evaluating value or transfer mechanism for a technology that fundamentally isn't ready yet), value comes second (a ready technology that adds no real value shouldn't be infused regardless of its maturity), and transfer mechanism comes last (only once you've established that a technology is ready and valuable does "how do we actually get it into the product" become the live question). The next two slides work through the first and third of these in turn — readiness via the TRL scale, and transfer via the "know-how, not just IP" discussion.
 :::
 
 ## Table: Technology Readiness Levels (TRL) {.smaller}
@@ -110,6 +172,12 @@ Four categories, each demanding a different level of engagement: **regulation** 
 As defined by the U.S. Department of Defense. Technology development proceeds at its own pace, independent of a product's timing — it may be ready, late, or have lain fallow so long the development team has dispersed. Source: Crawley, Cameron & Selva (2016), Fig. 10.3 (Dept. of Defense, TRA Guidelines, April 2011).
 :::
 
+::: {.notes}
+Walk students through the TRL scale as the concrete tool for answering Question 1 ("will the technology be ready for infusion?"). Note this scale, developed by the U.S. Department of Defense, is widely used across industry as a common vocabulary between architects and technology developers for setting shared expectations about readiness — it's worth pointing out that we're focused primarily here on technologies early in their development "S-curve." Walk through the progression conceptually rather than memorizing every number: TRL 1–2 is pure paper-study territory — basic principles observed, a concept formulated, with speculative applications and no proof yet; TRL 3–4 moves into active R&D — analytical and experimental proof of concept, then integration of components (possibly ad hoc, "breadboard" style) in a laboratory environment; TRL 5–6 raises the fidelity — components integrated and validated in an environment that's genuinely representative of the real use case, then a full system or subsystem prototype demonstrated in that relevant environment; TRL 7–8 moves out of the lab entirely — a prototype demonstrated in an actual *operational* environment (in an aircraft, a vehicle, in space), then the actual system completed and formally qualified through test and evaluation; and TRL 9 is the technology proven through genuinely successful mission operations, real use, no longer a demonstration at all.
+
+The important qualitative point worth emphasizing, from the caption and reinforced explicitly in the book text: despite the neat, ordered impression a numbered scale like this leaves, technology development is *not* a linear process in practice — setbacks and iteration before final infusion-readiness are entirely common, not exceptions. And critically for an architect's planning purposes: technology development proceeds at its own pace, genuinely independent of the timing of your particular product or system. A new technology might happen to be ready right when you need it, it might be late, or — a scenario worth specifically flagging for students — it may have lain fallow so long, waiting for a use case, that the team that originally developed it has already dispersed elsewhere by the time you're ready to use it. Advocates of a particular technology sometimes overstate its actual readiness, which is exactly why an architect needs an independent, structured tool like TRL rather than simply trusting an enthusiastic pitch.
+:::
+
 ## Know-How, Not Just IP {.smaller}
 
 - Technology transfer discussions often jump straight to **IP ownership** — necessary, but not sufficient
@@ -120,11 +188,21 @@ As defined by the U.S. Department of Defense. Technology development proceeds at
 Modern practice often de-invests in internal technology, instead sourcing from suppliers, universities, and government labs — an inherently inefficient marketplace, since developers rarely know the architect's intended application or have the resources to reach the desired readiness level.
 :::
 
+::: {.notes}
+Address Question 3 from the "Infusing New Technology" slide — how will the technology be effectively transferred? Point out the common failure mode this slide is specifically correcting: discussions about technology transfer very often jump immediately to the question of intellectual-property ownership. IP consideration is necessary but genuinely not sufficient on its own — IP ownership or licensing covers only the "know *what*" of a transfer (who legally owns which patent or design), while the real, harder problem is transferring the "know *how*" — the tacit, experiential understanding of how to actually make the technology work reliably in practice, which is rarely fully captured in any patent filing or technical document.
+
+The book's own conclusion, worth stating as the section's clearest actionable takeaway: people are by far the most effective means of knowledge transfer. Where corporate research labs exist internally, the people who develop a technology very often move with it to the product development team — that's how "know-how," not just "know-what," actually crosses the gap. The fragment adds an important, somewhat cautionary observation about how this plays out in modern practice: many firms have shifted toward de-investing in their own internal technology development, instead sourcing technology from external suppliers, universities, and government laboratories, or by acquiring smaller companies that have already developed something promising. But be honest with students that the book flags this marketplace as inherently inefficient — the outside developers of a technology very often don't know the architect's specific intended application, and they almost never have the money or the time to bring the technology all the way to the readiness level the architect would actually prefer before committing to a final infusion decision. This is precisely why the architect, working closely with the enterprise's technology team, has to actively devise a mechanism for effective knowledge transfer rather than assuming it will happen automatically just because a license agreement got signed.
+:::
+
 ## Section 10.5 Summary {.smaller}
 
 - The architect must judge technology readiness (TRL), value creation, and transfer mechanism before infusing new technology
 - Technology development is not linear — setbacks and iteration before final readiness are the norm, despite what a TRL rating might suggest
 - Effective technology transfer requires people, not just IP ownership or licensing — "know-how" transfer is the harder, more important half
+
+::: {.notes}
+Checkpoint before turning from upstream to downstream influences. Students should be able to recite the three-question sequence for technology infusion decisions (readiness, value, transfer), explain the TRL scale's general shape and its explicit caveat about nonlinear development, and articulate why "know-how" transfer (people) matters more than pure IP ownership. This closes out the upstream half of the chapter — strategy and marketing, regulation, and technology — all three of which the architect has to interpret and translate into concrete architectural goals, without controlling any of them directly. The chapter now pivots to the mirror-image problem: downstream influences, where the architect similarly doesn't control implementation, operations, or product evolution, but must compress relevant detail from each of them back into decisions made early.
+:::
 
 # 10.6 Downstream Influence: Implementation
 
@@ -134,6 +212,12 @@ Modern practice often de-invests in internal technology, instead sourcing from s
 - An important architectural role: **compress and extract** relevant downstream details, and inject them back into decision-making up front
 - We use **implementation** rather than "manufacturing" to cover both hardware and software — designing software means choosing algorithms/abstractions, data structures, program flow; implementing means writing and testing the actual code
 
+::: {.notes}
+Pivot the lecture explicitly: we've covered the upstream influences (strategy/marketing, regulation, technology); now we turn downstream, to implementation, operations, and product evolution — three influences the architect similarly doesn't control but must anticipate. Explain the deliberate terminology choice on this slide, since it resolves a hardware/software asymmetry the book is careful about: in physical systems, the distinction between design and manufacturing is sharp (even though the process linking them may be iterative) — you design a part, then you manufacture it, and those are visibly separate activities carried out by different people, often in different locations. In software systems that boundary is blurred, because both the design and the eventual product are purely informational objects. So the book deliberately uses "implementation" rather than the hardware-flavored term "manufacturing," specifically so the same vocabulary covers both: designing software consists of choosing algorithms and abstractions, designing data structures and program flow, and writing pseudo-code, while implementing is the subsequent act of writing the actual code and testing it. This vocabulary choice matters because it lets the rest of the section make claims that genuinely apply to both hardware and software systems simultaneously, without constantly caveating "or, for software, ...".
+
+The architectural role framed here, worth restating clearly since it's the section's central thesis: given that there's a great deal of contemporary specialized expertise in coding, manufacturing, and supply-chain management, the architect's job isn't to become an expert in all of that — it's to compress and extract the relevant downstream details specifically, and inject that compressed understanding back into the upfront decision-making process, before those downstream realities get discovered the hard way, late in the program.
+:::
+
 ## Figure 10.4 · The Flow to Implementation {.smaller}
 
 ![](assets/chapter10/fig10_4_implementation_flow.jpg){height=420px fig-align="center"}
@@ -142,11 +226,21 @@ Modern practice often de-invests in internal technology, instead sourcing from s
 Conceiving and designing merge with sourcing and supplying at the implementation stage — two flows that must be carefully coordinated by the architect and the implementation team. Source: Crawley, Cameron & Selva (2016), Fig. 10.4.
 :::
 
+::: {.notes}
+Walk through this figure as a picture of two genuinely separate process flows that have to merge at exactly one point. One flow runs conceiving → designing — this is the architect's and design team's work, developing the concept and then the detailed design. The other flow runs sourcing → supplying — this is a parallel, largely independent process of identifying and engaging suppliers, negotiating supply contracts, and setting up the supply chain. Both flows converge at implementing, which then feeds operating.
+
+Emphasize why this merge point is architecturally significant, since the book spends real attention on it: implementation, like technology development, is an ongoing business process, not something that starts fresh for your particular product — whatever product you're architecting will have to fit into a queue of other projects the implementation system is simultaneously handling, so it's critical the architect actually understands the implementation process that will be used, and works with the implementers from early in development, rather than treating "implementation" as someone else's problem to solve later. The key decision the architect faces here, worth naming explicitly, is the classic make-or-buy question: will implementation happen within the enterprise, or at a supplier — which hinges on whether the firm has (or wants to develop) the core implementation competence, and whether there's actual capacity ("space" in the implementation process) to take the product on. And if suppliers are going to be involved, the architect faces a subtler, genuinely architectural question worth stating precisely: once a supplier is slated to provide a given component, that component becomes something close to a hard boundary in the architecture — a memorable phrase from the book worth repeating to students verbatim: "suppliers can define decomposition, or defy decomposition." Early supplier involvement brings real benefits (access to more technology, implementation expertise) but also real risk (suppliers will start influencing the architecture for their own benefit, once involved) — so the architect has to time the introduction of suppliers into the architecting process carefully and deliberately, not just as an afterthought once the design is otherwise "done."
+:::
+
 ## Section 10.6 Summary {.smaller}
 
 - Implementation covers both coding and manufacturing — the point where design and supply chain flows converge
 - The architect's job is to compress downstream implementation detail into decisions that can be made early, rather than discovering constraints too late
 - Coordinating the conceive/design flow with the source/supply flow is a joint responsibility of the architect and the implementation team
+
+::: {.notes}
+Checkpoint. Students should be comfortable with why "implementation" replaces "manufacturing" as the vocabulary here (to cover software as naturally as hardware), able to describe the two converging flows in Figure 10.4 (conceive/design vs. source/supply), and able to state the make/buy decision and the "suppliers can define decomposition or defy decomposition" principle as the two central architectural stakes in this section. One more downstream influence beyond a program's supply-chain dynamics is worth a final mention before moving on: the book notes that the implementation system is large, with many points of coordination — often working from incomplete information, and subject to real lags — so the architect should be prepared to understand these dynamics, because they affect major timing decisions, such as time-to-market for the first product. Next, we move from *building* the system to *operating* it once fielded.
+:::
 
 # 10.7 Downstream Influence: Operations
 
@@ -163,6 +257,14 @@ Conceiving and designing merge with sourcing and supplying at the implementation
 A generic operations framework applied to three examples. Source: Crawley, Cameron & Selva (2016), Table 10.1.
 :::
 
+::: {.notes}
+Introduce operations as the second downstream influence — system operation, the act of deploying and using the system, is an essential downstream influence precisely because the system delivers its value *during* operations, not at the moment of manufacture. When a product reaches its operational environment, it will be operated by operators exactly as they see fit, and it will encounter operational environments that are often difficult for the architect to fully predict in advance — this section gives a framework for thinking holistically through the different types of operations a system may encounter across its service lifetime.
+
+Introduce the "Get Ready, Get Set, Go" framework as a simple, deliberately generative tool for imagining necessary processes an architect might otherwise overlook. Systems don't magically appear at their final place of operation ready to execute their function — they must be moved, prepared, primed, started, oriented, warmed up, and so on; the book calls this whole family of processes *commissioning*. "Get Ready" specifically refers to getting the system installed — transporting it, retrieving it, connecting it, powering it up, initializing it (and you can trace the system's distribution and sales channels as part of getting it ready too) — the air-transport example gives ticket purchasing, IT and staff support, and aircraft scheduling, while the refrigerator example gives moving it to the point of sale and physically installing it in the home. "Get Set" refers to processes executed every time the system operates, as distinct from Get Ready processes that may happen only once — loading data or consumables, positioning the system in the right physical or logical place; for air transport this is traveler check-in and baggage/catering loading, for the refrigerator it's the initial cool-down and loading food. "Go" is nominal operation itself, split here into primary value (the system's core reason for existing — transporting the traveler, preserving the food) and secondary value (real but non-primary value the system also delivers — nourishing and entertaining the traveler, providing cold water/ice and freezing capability in the refrigerator — this connects directly back to the "secondary value-related functions" concept from Chapter 5).
+
+Flag for students that this table continues onto the next slide with the remaining phases (contingent, emergency, unset/unready, and fix) — the full framework has more categories than fit comfortably on one table, precisely because it's meant to be comprehensive enough to surface operational modes an architect might not think of unprompted.
+:::
+
 ## Table: Operations Framework — Off-Nominal and Wind-Down {.smaller}
 
 | Phase | Air Transport Service | Refrigerator |
@@ -174,6 +276,14 @@ A generic operations framework applied to three examples. Source: Crawley, Camer
 
 ::: {.side-caption}
 Continued from Table 10.1 — contingency, emergency, and end-of-cycle phases. Source: Crawley, Cameron & Selva (2016), Table 10.1.
+:::
+
+::: {.notes}
+Complete the operations framework with the remaining categories. "Go – Contingent" and "Go – Emergency" get their own dedicated, deeper treatment on the very next slide, so here just orient students to where they sit in the overall framework — contingent operations are recoverable off-normal events (informing a traveler of a flight delay, easily cleaning up a spill in a refrigerator), while emergency operations are the more serious class where primary function is abandoned entirely (positioning for a crash landing and evacuating via slides; preventing a child from being trapped inside a refrigerator).
+
+"Get Unset" and "Get Unready" mirror "Get Ready" and "Get Set" on the front end of the operational lifecycle, but running in reverse after primary value has been delivered — Get Unset involves routine post-operations steps (unloading baggage and checked bags, deplaning the traveler; unloading passengers and baggage, parking the car; cleaning out the refrigerator), while Get Unready involves the less frequent terminating steps associated with longer-term storage or retirement of the system (cleaning and storing an aircraft overnight; cleaning and storing a car for extended periods; un-installing and disposing of a refrigerator). Finally, "Fix" is associated with regular or event-driven maintenance — inspecting, calibrating, repairing, overhauling, updating — routine maintenance and system upgrades for an aircraft, regular and event-driven maintenance and repair for a car or a refrigerator.
+
+The pedagogical point worth making explicit to students: this whole nine-category framework (Get Ready, Get Set, Go-Nominal-Primary, Go-Nominal-Secondary, Go-Contingent, Go-Emergency, Go-Stand-Alone, Get Unset, Get Unready, Fix) exists specifically as a checklist to stimulate creativity — to make sure an architect systematically considers the full range of operational issues a system will confront over its service lifetime, rather than fixating only on the "Go — Primary Value" phase that's most obviously connected to the system's core function. Many of these operational issues, especially the off-nominal ones covered next, end up directly driving architectural choices.
 :::
 
 ## Contingencies, Emergencies, and Stand-Alone Operations {.smaller}
@@ -195,6 +305,14 @@ Off-normal and *outside* the contingency window. All hope of primary function is
 **Stand-alone operations**: the system must operate without connection to its normal supporting systems — common during test, but sometimes also in the field (e.g., a refrigerator keeping food cold through a power outage).
 :::
 
+::: {.notes}
+Give real precision to the contingency/emergency distinction, since it's genuinely load-bearing for architectural decisions and students should be able to classify any given off-nominal scenario into the right bucket. Contingency operations are operations, other than normal, that might reasonably be encountered, and from which recovery is necessary *without* loss of primary function and without personal or property damage. Performance may or may not degrade gracefully during a contingency, but critically, no loss of life or property is expected — a spill in a refrigerator (provisioned for with cleanable surfaces that don't let fluid leak into the rest of the unit), a skid by a car on a slippery surface (provisioned for with ABS braking), or a missed network packet in TCP/IP (provisioned for by resending the packet if it isn't acknowledged within a certain time) are the book's three parallel examples across the mechanical, and informational domains. In every case, notice the pattern: the operator or system expects to gracefully recover, and the architect has anticipated the contingency and built explicit provisions for it directly into the system.
+
+Emergency operations are a genuinely more serious category — off-normal operations *outside* the contingency window, where all hope of the primary value function is abandoned, and emphasis shifts entirely to saving life and minimizing property damage. The book's parallel examples: death of a child trapped inside a refrigerator (prevented architecturally by not allowing latches on the outside of the door); the crash of a car (in which occupants are protected by crash-worthy design, seat belts, and airbags); and loss of a communication link in TCP/IP (in which the protocol waits to retransmit or eventually times out). For something like a commercial aircraft, the book notes, loss of more than one engine is an emergency, and literally hundreds of design features — from doors and seats to emergency power sources and safety briefings — are specifically designed to minimize losses in exactly this kind of situation. The architect has a serious responsibility to address foreseeable emergency operations, not just contingencies.
+
+The fragment introduces a third, subtly different off-nominal mode: stand-alone operations, where the system must operate without any connection to its normal supporting systems. This is distinct from both contingency and emergency — it's not necessarily a failure at all. It occurs commonly during system test (testing a piece of code without embedding it in its larger context is itself a stand-alone operation), but it can also occur in the field — a refrigerator's ability to keep food cold for some period during a power outage is a stand-alone operation, as is an aircraft's ability to navigate if it temporarily loses radio communications. Ask students to identify a stand-alone-operation requirement from a system they're familiar with — most modern electronics have at least one (a laptop running on battery, a phone in airplane mode).
+:::
+
 ## Figure 10.5 · The Prevalence of "Ilities" Over Time {.smaller}
 
 ![](assets/chapter10/fig10_5_ilities.jpg){height=400px fig-align="center"}
@@ -203,11 +321,23 @@ Off-normal and *outside* the contingency window. All hope of primary function is
 15 "ilities" tracked by journal mentions since 1884 (log scale) — quality and safety dominate early; sustainability, interoperability, and scalability are recent arrivals. Not every "ility" is architecturally distinguishing, and they are not independent of one another. Source: Crawley, Cameron & Selva (2016), Fig. 10.5, after de Weck, Roos & Magee (2011), © MIT Press.
 :::
 
+::: {.notes}
+Connect "the ilities" back to Chapter 2, where they were first introduced as attributes (reliability, maintainability, safety, robustness, and similar) that emerge over a system's *lifecycle* rather than immediately — this figure gives that idea real historical texture. Design for X (DfX) is a term describing a whole family of design guidelines — Design for Manufacturing, Design for Six Sigma, Design to Cost, Design for Test (which might include something as concrete as inserting probe points on a circuit board) — and one useful way to think about the entire universe of Design for X is precisely in terms of these "ilities," attributes of the system related to its downstream implementation and operations. This particular list of 15 ilities was compiled by tracking how often each term was mentioned in journal articles over time, plotted here on a log scale — note the vertical axis carefully, since the visual gaps compress genuinely enormous differences in prevalence.
+
+Walk through the historical arc the figure reveals, since it's a nice bit of intellectual history: quality and safety dominate the earliest era shown (what the book's own annotation calls "the epoch of great inventions and artifacts"); reliability, durability, and adaptability rise through the "epoch of complex systems"; and sustainability, interoperability, and scalability are comparatively recent arrivals, prominent mainly in the "epoch of engineering systems" era from roughly 1970 onward. This mirrors a real historical shift in what engineers have needed to worry about as systems grew larger, more interconnected, and more environmentally consequential.
+
+Close with the important qualifying point from the text, which prevents students from over-applying this idea mechanically: not all ilities are *architecturally distinguishing*, and no single ility is *always* architecturally distinguishing. Reliability might genuinely help distinguish between candidate pump architectures, but might not distinguish between candidate vehicle architectures at all, if the architectural decisions in question don't define the attributes that actually drive reliability — those attributes might instead arise purely from detailed design decisions or the choice of assembly method, downstream of any architectural choice. Similarly, a tablet's maintainability may be a function of whether its case design is integral or modular (genuinely architectural) — or it may instead be a function of an individual component's coating, with no bearing on the architecture at all. And, worth flagging as a final subtlety: the ilities are not independent of one another — the book gives examples where the emphasis placed on manufacturing quality can correlate with durability, where modularity of the architecture can impact adaptability, and where robustness and flexibility can trade off inversely against each other. The architect's job is judging, case by case, which ilities are genuinely architecturally distinguishing for the system at hand, not assuming every item on this list automatically deserves architectural attention.
+:::
+
 ## Section 10.7 Summary {.smaller}
 
 - Operations can be organized into a generic framework — get ready, get set, go (nominal/contingent/emergency/stand-alone), get unset, get unready, and fix
 - Contingencies are recoverable off-normal events; emergencies abandon primary function to protect life and property — the architect must anticipate both
 - "Ilities" — quality, reliability, safety, maintainability, and more — are downstream-emergent attributes the architect must weigh, even though no single one is always architecturally distinguishing
+
+::: {.notes}
+Checkpoint before the last downstream influence, product evolution. Students should be able to recite the full operations-framework category list from memory (or at least reconstruct its logic — commissioning through nominal operation through decommissioning, with off-nominal branches for contingency, emergency, and stand-alone modes), correctly classify a novel operational scenario as contingency versus emergency versus stand-alone, and articulate why the ilities matter as downstream-emergent properties while also being careful not to claim every ility is automatically architecturally significant for every system.
+:::
 
 # 10.8 Downstream Influence: Product Evolution
 
@@ -221,12 +351,22 @@ Off-normal and *outside* the contingency window. All hope of primary function is
 - Unlike reuse (known performance, known use case), platforming means choosing constraints while living with uncertainty about future applications
 - Platforming has become a key strategy for delivering product variety across multiple markets and vertical segments
 
+::: {.notes}
+Introduce the third and final downstream influence: product and system evolution, and product families. Set the context the book uses: in modern practice, few products or systems of any complexity are built without some consideration of how they relate to other products — the vocabulary here includes reuse, legacy, product extensions, product lines, preplanned product improvements, platforms, modularity, commonality, standardization. Up to this point in the course, we've mostly focused on creating an architecture from a blank slate, but the book's own experience-based observation, worth sharing directly, is that questioning the first principles of an architecture leads to the most holistic evaluation of opportunity, even if some options considered are later eliminated as infeasible due to constraints from architectural legacy.
+
+Carefully distinguish platforming from *reuse*, since students will otherwise conflate the two, and the distinction is exactly what this slide is built around. Reuse captures the idea of a part or module that was not intentionally designed to be used beyond its original design — with reuse, there's very little uncertainty, because the part, component, or code already exists, its performance and functionality are known (at least in the context of the legacy system it came from), and it may have already passed real-world testing and validation. The genuine unknown with reuse is only how it will integrate into the *new* context. Platforming is fundamentally different: it requires the architect to invest deliberately, once, in a common part or software module, *predicting in advance* which future models will use it — meaning the architect must choose which constraints to impose on that shared component, while living with real uncertainty about future applications that haven't been designed yet. That's the opposite risk profile from reuse: reuse has known performance and a known use case; platforming has known-enough performance but an uncertain future use case. Note the book's practical framing for why this matters commercially: platforming has become an important strategy precisely because it lets firms deliver similar products to multiple markets and multiple vertical segments, dynamically entering niche markets more quickly once a need is identified, often coupled with broader strategies of mass customization.
+:::
+
 ## Figure 10.6 · GE Healthcare's LOGIQ Product Family {.smaller}
 
 ![](assets/chapter10/fig10_6_logiq_family.jpg){height=440px fig-align="center"}
 
 ::: {.side-caption}
 Eight ultrasound machine variants — from the flagship E9 down to the compact, growth-ready *e* Ultrasound — likely built on a shared architecture and shared components across the family. Source: Crawley, Cameron & Selva (2016), Fig. 10.6. Used with permission of GE Healthcare.
+:::
+
+::: {.notes}
+Use this figure as the concrete, real-world illustration of a product line/product family — linked groups of products, in the book's phrasing, such as this GE Healthcare LOGIQ family of ultrasound machines. Point out an important nuance the book is careful about: product families don't necessarily share underlying components or architecture at all — they can be grouped under similar names and stratified purely for feature-content marketing purposes, entirely separate from any objective like reducing development time that would explicitly require sharing components or architecture. So looking at a marketing family tree like this one doesn't by itself tell you whether genuine platforming is happening underneath — that's a separate, deeper architectural question. Ask students, rhetorically, to look at the range shown (from the flagship E9 down to the compact, portable *e* Ultrasound) and consider: conceiving a product family like this requires the architect to explicitly decide how much variety is demanded (will one machine serve the whole market, or are differentiated offerings required?), and conceiving a family also hints at product evolution (will the whole family launch in parallel, or will it be phased into the market over time?) — questions that matter regardless of whether the underlying platforming is extensive or minimal.
 :::
 
 ## Platforming Always Costs Something {.smaller}
@@ -242,11 +382,23 @@ Eight ultrasound machine variants — from the flagship E9 down to the compact, 
 Platforming always involves additional investment, and it often involves other drawbacks or compromises. Source: Crawley, Cameron & Selva (2016), Fig. 10.8, reproduced from Cameron (2013) in Simpson (2013).
 :::
 
+::: {.notes}
+Balance the previous slides' upbeat framing of platforming's benefits with its real costs — the book is careful to present platforming as a genuine tradeoff, not an unambiguous win, and this table is the "costs" side of that ledger (its companion, Figure 10.7 in the book, lists the corresponding benefits phase by phase — quicker variant time to market, reduced development and testing cost, shared tooling, lower sustaining engineering, and more — worth mentioning to students even though it's condensed off this particular slide, since the benefits and costs genuinely mirror each other phase by phase).
+
+Walk through each phase's costs concretely. At Conception, platforming constrains what future variants can do (since they're committed to sharing certain components), concentrates schedule risk into the shared components (a delay there delays every variant), creates brand risk from insufficient variant differentiation, and creates a real risk of sales cannibalization when a shared platform makes it too easy for customers to trade down from a high-margin variant to a lower-margin one. At Development, platforming costs real engineering effort in designing to multiple use cases simultaneously, and in building more flexible (and more expensive) test equipment able to validate every variant. At Production, lower-end products end up inheriting parts that were really sized and engineered for higher-end variants (an "overdesign" cost we'll see illustrated dramatically in the B-52/B-2 case study at the end of this chapter), and shared production lines require additional configuration-management overhead. At Operations, a single common-part failure can now affect many variants simultaneously rather than just one, and there's a possible performance shortfall relative to what a fully unique, optimized design could have achieved for any single variant.
+
+The MIT Commonality Study result worth mentioning explicitly, since it gives real numbers to this discussion: many firms invest substantially more in platforms than originally envisioned — development spending on platforms can run up to 50% higher than the cost of standalone development — yet many firms also end up realizing lower levels of actual component sharing than they originally planned, a phenomenon the study calls *divergence*. Some of that divergence, the book notes, is baked in early, when large timing offsets are planned between variant development schedules (often months, sometimes years apart) and the goals set for the variants fail to properly articulate the tradeoffs around margin and over-performance that come with sharing components. The overall lesson for students: platforming is a real strategic tool, but never a free one — the architect has to weigh its benefits against these costs deliberately, phase by phase, not assume commonality is simply good in the abstract.
+:::
+
 ## Section 10.8 Summary {.smaller}
 
 - Platforming is the deliberate, forward-looking sharing of parts and process across a product family — distinct from simple reuse
 - It's a powerful strategy for delivering variety across markets, but never free: every phase (conception through operations) carries real costs and risks
 - The architect must weigh the benefit of shared investment against the constraints it locks in for every future variant
+
+::: {.notes}
+Checkpoint. Students should be able to state the reuse/platforming distinction precisely (known-vs-predicted performance and use case), describe what a product line or product family is (and that it doesn't necessarily imply shared architecture), and name at least one cost or drawback of platforming from each of the four phases (conception, development, production, operations). This closes out the downstream half of the chapter — implementation, operations, and product evolution — mirroring the upstream half covered earlier (strategy/marketing, regulation, technology). We've now surveyed six distinct influences on the architect's decisions, three upstream and three downstream. The next section shows these don't operate independently or additively — they interact, in a genuinely iterative model the book calls the ABCD Product Case.
+:::
 
 # 10.9 Combining Influences: The ABCD Product Case
 
@@ -256,6 +408,14 @@ Platforming always involves additional investment, and it often involves other d
 - Innovation traditionally derives from one of two sources: a **new customer need**, or a **new technology** that improves the performance/cost ratio of meeting an existing need
 - This is a simplified view — it misses value-chain integration, market expansion strategies, and installed-base service strategies — but it's a useful anchor
 
+::: {.notes}
+Introduce the chapter's synthesizing framework. State plainly why a simple additive approach fails, since it's the section's opening thesis: having discussed six separate upstream and downstream influences, it's tempting to think of them as a checklist — tackle each influence in sequence, enumerate its goals and constraints, then sum them all up to produce the concept. The book explicitly rejects this as too *linear*; it's not possible to treat these influences that way in reality, because they genuinely interact with and constrain each other.
+
+Give students the book's own simplified starting point for how innovation actually gets triggered, while being honest about its limits. Traditionally, innovation in products and systems is thought to derive from one of two sources: the firm has identified a new *customer need*, or the firm has identified (or commercialized) a new *technology* that delivers a higher performance-to-cost ratio in satisfying an existing need. The book's own example pairing nicely illustrates the two: adding an icemaker to a refrigerator is responding to a customer need using existing, well-understood technology, whereas adding automatic tracking of stored food depends specifically on the development of new RFID (radio-frequency identification) technology — genuinely technology-driven, not need-driven, innovation.
+
+Be candid with students, exactly as the book is, that this two-source model is a deliberately simplified perspective on product strategy — it does not express strategies that capture new value in the value chain through backward or forward integration, strategies that leverage home markets against regional or global expansion, or strategies that leverage a firm's installed base of hardware to deliver high-margin service offerings. Despite this simplification, it's genuinely useful as an anchor around which to organize the highest-level considerations when introducing an architectural innovation into a corporation — which is exactly the role it plays in the ABCD framework diagram on the next slide.
+:::
+
 ## Figure 10.9 · The Initial ABCD Framework {.smaller}
 
 ![](assets/chapter10/fig10_9_abcd_initial.jpg){height=420px fig-align="center"}
@@ -264,11 +424,23 @@ Platforming always involves additional investment, and it often involves other d
 **A**rchitecture **B**usiness **C**ase **D**ecision: two iterative cycles. Technology and customer needs feed in; system architecture sets *goals* for the business case, which returns *solutions* back to the architecture. Source: Crawley, Cameron & Selva (2016), Fig. 10.9.
 :::
 
+::: {.notes}
+Walk through this diagram slowly, since it's the conceptual core the rest of the chapter builds on, and its central claim — two circles connected by two arrows going in opposite directions — is easy to glance past without absorbing. On the left, a "System Architecture" cycle; on the right, a "Business Case" cycle; both are fed from outside by the two innovation sources just discussed (technology feeding in from above the left circle, customer needs feeding in from above the right circle). The two circles are connected by two distinct arrows, and it's the *direction* of each arrow that carries the real content: "Goals" flows from the System Architecture circle *toward* the Business Case circle, and "Solutions" flows from the Business Case circle *back toward* the System Architecture circle.
+
+Spell out exactly what that means in practice, since the diagram alone is abstract: when a customer need has been identified, that need first sets *goals* for the system architecture — and the architect's job is to evaluate whether a solution meeting those goals is technically feasible, which in turn helps determine whether the business case actually "closes" (survives financial scrutiny) based on the cost of that solution. When, instead, product innovation derives from a new technology, the direction of the interaction reverses somewhat: the architect must evaluate whether the resulting technical solution actually addresses genuine customer needs, feeding back into the business case from the technology side. Either way — needs-driven or technology-driven — the deep point of this figure is that architecture and business case are not two independent workstreams that get combined at the end; they co-evolve, iterating against each other continuously as the "acronym" ABCD's name suggests: Architecture, Business Case, Decision.
+:::
+
 ## The Architect ↔ Business Case Interaction {.smaller}
 
 - When product innovation identifies a **customer need**, that need sets *goals* for the system architecture — the architect evaluates feasibility and helps determine whether the business case "closes" (survives financial scrutiny) based on solution cost
 - When product innovation derives from a **new technology**, the architect must evaluate whether the resulting solution actually addresses customer needs
 - Either direction, the two cycles interact tightly — architecture and business case co-evolve, not develop independently
+
+::: {.notes}
+Consolidate the two-directional interaction from the previous slide into precise, restatable language, since this is exactly the kind of thing worth being able to explain crisply on an exam or in a design review. Needs-driven path: customer need → goals for system architecture → architect evaluates technical feasibility → informs whether the business case "closes." Technology-driven path: new technology → candidate solution → architect evaluates whether that solution genuinely addresses a real customer need → informs the business case from the other direction. In both directions, notice the architect sits precisely at the hinge point between the technical and the financial — translating goals into feasibility assessments, or translating available solutions into value assessments.
+
+It's worth flagging, since it recurs throughout the whole chapter's framing: "closing" is standard business terminology worth defining precisely for students who haven't encountered it — a business case is said to "close" when the projected revenues are earning sufficient margin to merit the investment. The book draws a deliberate parallel: just as the *business case* has to close, the *technical architecture* similarly has to close — meaning the goals are actually met by the proposed technical solutions, the required technology is present or developed, and the architecture can genuinely be delivered by the planned supply chain. Both cycles have to close simultaneously — not just the financial one — before you have a genuinely viable product proposal.
+:::
 
 ## Figure 10.10 · The Full ABCD Framework {.smaller}
 
@@ -278,11 +450,23 @@ Platforming always involves additional investment, and it often involves other d
 External drivers now flow in on both sides: regulation, standards, competence, and legacy elements shape the architecture cycle; competitive environment, strategy, and channels shape the business case cycle. Platforms and product lines converge on a **proceed / do not proceed** decision. Source: Crawley, Cameron & Selva (2016), Fig. 10.10.
 :::
 
+::: {.notes}
+This is the complete version of Figure 10.9, and it's worth walking through exactly what got added, since every addition corresponds to an influence already covered earlier in the chapter — this figure is genuinely a synthesis of the whole chapter's content into one diagram. Two external drivers are added on the architecture side: the *competitive environment* and *regulation* — regulation primarily acts to constrain the available technical solutions (echoing Section 10.4 directly), though creative use of the regulatory environment, as the Tier 4 Final emissions example demonstrated, can also create strong competitive advantages baked into the business case. Two internal drivers are then added on the architecture side as well: the firm's *competence and supply chain* (echoing the implementation discussion from Section 10.6 — the architecture must absorb goals set by strategy for what the firm builds versus buys) and *legacy elements* (echoing product-evolution ideas about reuse and platforming).
+
+On the business-case side, the competitive environment appears again (impacting the business plan through barriers to entry, competitor offerings, and market timing — echoing the marketing discussion from Section 10.2), along with *strategy* (echoing Section 10.2's corporate-strategy discussion directly) and *channels* — the distribution and sales channels a product moves through, which the book notes is a genuinely interesting inclusion, since architecture can inhibit channel distribution or take advantage of it, and the relationship between platforms/product lines and channels is often surprisingly uncertain (the book gives a real example: research revealed a case where the retail channels selling a heavy-equipment product line were themselves responsible for lobbying to add five new variants to a four-variant product line, driven by a desire to match competitor price points — the channel customer didn't just identify the market opportunity, it actively pushed for architectural variety it wanted to sell).
+
+Finally, notice the two small circles added at the bottom, *Platforms* and *Product lines*, directly echoing Section 10.8, connected by a question mark and an equals sign — visually representing the book's earlier point that the relationship between platforming and product lines is genuinely uncertain business-by-business (sometimes synonymous, sometimes the product line is purely a marketing artifact with a platform underneath, sometimes not). Both of the framework's two large cycles (architecture and business case) now converge on a single decision point, labeled simply "the Decision" in the book's text — the point at which the enterprise commits to moving ahead with the product, or does not. The ABCD framework, taken as a whole, is intended to make explicit that creating the architecture is itself an inherent, ongoing process that sits alongside the more familiar "business case" deliverable — in some enterprises the combined document produced by this process is literally called "the product case."
+:::
+
 ## Section 10.9 Summary {.smaller}
 
 - The ABCD framework models architecture and business case as two coupled iterative cycles, not a linear sum of independent influences
 - Technology and customer needs are the two most common entry points — but the full framework adds regulation, competence, competitive environment, and strategy as further external drivers
 - The two cycles converge on a single decision: proceed with the product, or not
+
+::: {.notes}
+Checkpoint before the closing case study. Students should be able to draw the ABCD framework's basic two-circle shape from memory, correctly place "goals" and "solutions" as the two directional arrows connecting the circles, name the six additional influences layered onto the full version (competitive environment and regulation on the architecture side, competence/supply chain and legacy on the architecture side as internal drivers, and competitive environment, strategy, and channels on the business-case side), and explain what it means for both the architecture and the business case to "close" simultaneously at the Decision point. This entire chapter's six upstream and downstream influences are now unified into this single framework — which sets up the closing case study perfectly, since the B-52/B-2 comparison is a real historical instance of exactly these kinds of influences producing radically different architectural outcomes for what is, on paper, the same mission.
+:::
 
 # 10.10 Case Study: The B-52 and B-2 Bombers
 
@@ -299,6 +483,12 @@ External drivers now flow in on both sides: regulation, standards, competence, a
 :::
 :::
 
+::: {.notes}
+Introduce the chapter's closing case study, framed explicitly as an example of architectural decisions related to legacy, product evolution, and platforms. Pose the book's own guiding question directly to students before revealing any answer: there are many differences between the B-52 and the B-2, but which differences were decided *early* in their development, and which have the greatest impact on their eventual performance envelopes? That framing — separating architectural decisions from mere design detail — is exactly the "architectural decisions" concept introduced at the very start of this chapter, now being applied concretely.
+
+Name the two headline architectural differences the book identifies before getting into why they arose. First, tail configuration: the B-52 has a tail — specifically, horizontal and vertical control surfaces separated by a significant distance from the main lifting surface (the wing) — while the B-2 has no horizontal or vertical control surfaces at all other than those built into its main wing; this has significant consequences for the aircraft's stability in pitch (nose up and down) and yaw (nose left and right). Second, engine placement: the B-2's design uses concealed engines, embedded to help reduce the aircraft's radar signature, whereas the B-52 has clearly visible under-wing engines — the B-2's engine placement is much more *integral* to its form, whereas the B-52's under-wing arrangement visually suggests, and in fact enables, real *modularity* (the B-52 has in fact received several distinct engine upgrades over its service life, precisely because engine technology has progressed at a faster clockspeed than the aircraft's basic structure — a direct, concrete instance of the "align interfaces with differing clockspeeds" idea previewed back in the platforming discussion). Give students the architecture-style names the book uses for the two overall configurations: the B-52 is called a "tube-and-wing" architecture, while the B-2 is referred to as a "flying wing" — and the next few slides dig into exactly how those two configurations scale differently as *product families*, which is the real payoff of this case study for the chapter's downstream-influence theme.
+:::
+
 ## Figure 10.12 · Scaling a Product Family {.smaller}
 
 ![](assets/chapter10/fig10_12_a350_bwb.jpg){height=440px fig-align="center"}
@@ -307,11 +497,23 @@ External drivers now flow in on both sides: regulation, standards, competence, a
 Left: the Airbus A350 tube-and-wing family — a shared wing, stretched or shortened fuselage. Right: a proposed flying-wing civil transport family, scaling by adding center-body sections rather than stretching a tube. Source: Crawley, Cameron & Selva (2016), Fig. 10.12. (Left) © Airbus. (Right) Liebeck (2004), *Journal of Aircraft* 41(1), by permission of AIAA.
 :::
 
+::: {.notes}
+Move from the military B-52/B-2 comparison to a civilian illustration of the exact same two architecture types, which makes the "how do these scale as a family" question concrete and directly tied to the platforming discussion from earlier in the chapter. On the left, the Airbus A350 family — a conventional tube-and-wing civil transport family, where the wing is shared and the fuselage ("the tube") is stretched or shortened to produce different-capacity variants, exactly the platforming logic discussed under Section 10.8. On the right, a proposed flying-wing (Blended Wing Body) civil transport family, using a fundamentally different scaling mechanism.
+
+Set up the key architectural fact the book emphasizes before the next slide explains *why* it happens: it is common practice for tube-and-wing aircraft to be designed as product families with a variety of seating capacities, often with the explicit intent of platforming — sharing components — and the underlying logic is that the wing is sized for the longest (and heaviest) variant, since the wing produces the lift that supports the whole aircraft's weight in flight, while the fuselage is simply lengthened or shortened as needed to add or remove seating capacity. Because wings are expensive to design and optimize, they are frequently shared across the whole family with only minor changes — and the practical consequence, previewed here and explained fully on the next slide, is that the shared wing ends up "overdesigned" for the *smallest* family member: it can produce more lift than that particular aircraft actually needs. The flying-wing family instead proposes a genuinely different scaling mechanism — splitting the flying wing in half along its centerline and adding center-body sections (shown in light gray in the right-hand diagram) to increase seating capacity, rather than stretching a separate, non-lifting fuselage tube.
+:::
+
 ## Why the Architectures Scale Differently {.smaller}
 
 - For tube-and-wing aircraft, the wing is sized for the **heaviest** family member — since wings are expensive to optimize, they're shared across the family with minor changes
 - Net effect: the wing is "overdesigned" for the *smallest* family member — it can produce more lift than that aircraft needs
 - The flying-wing family instead scales by **splitting along the centerline** and inserting center-body sections — a fundamentally different scaling mechanism
+
+::: {.notes}
+Consolidate the previous slide's setup into the direct causal explanation, since this is the heart of the case study's lesson. Restate it precisely: because the shared wing has to support the heaviest variant in the family, and because that wing is expensive enough that firms want to share it with only minor changes across the whole family (exactly the platforming logic from Section 10.8, now made concrete), the wing ends up producing more lift capacity than the smaller family members actually need — a genuinely "overdesigned" wing, in the direct engineering sense, forced by the platforming decision itself. This is a beautifully clean, real-world instance of the "Platforming Always Costs Something" table from earlier: specifically the Production-phase cost that "lower-end products inherit higher-end parts."
+
+Contrast the flying wing's fundamentally different scaling mechanism directly against that: rather than stretching a non-lift-producing tube while keeping a shared, overdesigned wing constant, the flying-wing family scales by splitting the wing itself along its centerline and inserting additional center-body sections to add capacity. The critical distinction, made fully explicit on the very next slide with the lift-distribution figure, is that in the flying-wing case, the added section that provides the additional seating capacity is *also* part of the lifting surface — so lift capacity grows naturally alongside seating capacity, rather than a fixed, overdesigned wing having to carry variants that don't structurally need all of its lift.
+:::
 
 ## Figure 10.13 · Lift Distribution, Compared {.smaller}
 
@@ -319,6 +521,12 @@ Left: the Airbus A350 tube-and-wing family — a shared wing, stretched or short
 
 ::: {.side-caption}
 Dark gray shows the lift-producing region on each architecture. For tube-and-wing, the fuselage produces almost no lift — lengthening it to add capacity forces the wing to grow to support the extra weight. For the flying wing, lift scales naturally with the size of the variant. Source: Crawley, Cameron & Selva (2016), Fig. 10.13, after Liebeck (2004).
+:::
+
+::: {.notes}
+This is the visual proof of the mechanism just explained in words — walk through it directly. The dark gray shading marks which parts of each aircraft actually produce lift. For the tube-and-wing architecture, notice the fuselage itself (the "tube") produces almost no lift at all — nearly all lift comes from the wing alone. This means that to lengthen the fuselage and add seating capacity, the wing must be *enlarged* to support the resulting additional weight, precisely because the added fuselage section itself contributes essentially nothing to supporting that weight. For the flying-wing architecture, by contrast, adding a center section to increase seating capacity adds a section that is *itself* part of the lifting surface, shown here also shaded dark gray — so lift production scales up automatically and naturally alongside the added capacity, without requiring a separately-enlarged wing.
+
+State the resulting architectural conclusion plainly, since it's the case study's real payoff: the flying-wing architecture can more closely optimize its wing to the specific desired performance of *each* variant in its family individually, while the tube-and-wing architecture will always struggle with wings that are overdesigned — and therefore heavier and less efficient than strictly necessary — for the smallest variant of its product family. This is a direct, physically-grounded illustration of exactly how a downstream consideration (how a product family needs to scale across variants) can become a first-order driver of the initial architectural choice — precisely the lesson the closing slide states explicitly.
 :::
 
 ## The Architectural Lesson {.smaller}
@@ -329,6 +537,12 @@ A downstream consideration — how a family of products needs to **scale** — c
 
 - Both architectures deliver the mission function; the B-2's flying wing also buys low radar cross-section (a *different* downstream/upstream driver: stealth requirements)
 - Product-family scaling logic, manufacturing constraints, and regulatory/mission requirements all fed into architectures that look nothing alike, despite similar top-level function
+
+::: {.notes}
+State the case study's overall lesson explicitly, tying it back to the very first slide of this chapter. Both the B-52's tube-and-wing and the B-2's flying-wing architecture successfully deliver the same primary mission function — long-range strategic bombing — yet they look nothing alike, and the reasons why trace directly back to influences from this chapter, not to any difference in the primary mission requirement itself. Product-family scaling logic (just demonstrated concretely with the lift-distribution figure) is one major driver. But it's not the only one: point out explicitly that the B-2's flying-wing shape also buys it a very low radar cross-section — a genuinely different upstream/downstream driver entirely (military stealth requirements, which the book treats as its own distinct influence, related to but separate from product-family scaling logic).
+
+Use this as the closing synthesis for the whole chapter: manufacturing constraints, product-family scaling logic, and regulatory or mission requirements — several of the very influences surveyed across this entire chapter — all fed into producing two architectures that look nothing alike, despite very similar top-level function. This is exactly the chapter's opening claim, now demonstrated with a concrete, historically real pair of aircraft: architecture isn't determined by primary function alone — the upstream and downstream influences surveyed this chapter (strategy, marketing, regulation, technology, implementation, operations, and product evolution) are frequently just as consequential to the final architectural choice as the mission function itself.
+:::
 
 ## Chapter 10 Summary {.smaller}
 
@@ -341,6 +555,16 @@ A downstream consideration — how a family of products needs to **scale** — c
 **Reference**: Crawley, E., Cameron, B., & Selva, D. (2016). *System Architecture: Strategy and Product Development for Complex Systems*. Pearson. Chapter 10.
 :::
 
+::: {.notes}
+Use this final summary slide to walk the whole chapter's arc one more time, in order. We surveyed three upstream influences — strategy and marketing (Section 10.2), regulation and pseudo-regulation (10.4), and technology infusion (10.5) — each requiring the architect to *translate* something ambiguous and non-architectural (strategic intent, customer needs, regulatory requirements, technology readiness) into concrete goals. We then surveyed three downstream influences — implementation (10.6), operations (10.7), and product evolution via platforming (10.8) — each requiring the architect to *compress* detailed downstream reality and feed it back into decisions made much earlier than that reality will actually unfold. We then unified all six influences into a single framework, the ABCD Product Case (10.9), which models architecture and business case not as a linear sequence but as two genuinely coupled, co-evolving iterative cycles converging on a single proceed/no-proceed Decision. And we closed with the B-52/B-2 case study (10.10), a real historical instance where these same kinds of influences — product-family scaling logic, stealth requirements, manufacturing constraints — produced two architectures that look nothing alike, despite delivering essentially the same primary mission function.
+
+Point forward explicitly to Chapter 11: this chapter's other major theme, ambiguity reduction, has a second major lever besides understanding upstream and downstream influences — direct engagement with stakeholders — and that's the entire subject of the next chapter, which goes much deeper into identifying stakeholders, characterizing their needs, and converting those needs into prioritized, testable goals.
+:::
+
 ## Next: Translating Needs into Goals
 
 Chapter 11 returns to Part 3's synthetic process, going deeper into how the architect converts fuzzy stakeholder needs into concrete, testable goals.
+
+::: {.notes}
+Close the lecture with a clear bridge to next time. Chapter 10 has been about influences that come from *outside* the direct architecting process — strategy, marketing, regulation, technology upstream, and implementation, operations, evolution downstream. Chapter 11 turns to a complementary, and in some ways more central, source of ambiguity: the stakeholders themselves, and their needs. Where this chapter treated "marketing" and "customer needs" somewhat briefly, as one of several upstream influences to be aware of, Chapter 11 will go much deeper — systematically identifying who the relevant stakeholders and beneficiaries even are, characterizing what they actually need (which is often not what they initially say they want), and converting those characterized needs into goals that are concrete and testable enough to actually drive an architecture. This is the next major tool, alongside creativity and complexity management from Chapter 9, in the architect's kit for reducing ambiguity during the synthetic, forward-looking process of Part 3.
+:::
