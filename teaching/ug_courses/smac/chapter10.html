@@ -38,6 +38,7 @@
   </style>
   <link rel="stylesheet" href="../../../site_libs/revealjs/dist/theme/quarto-0427d8d92a431aa6a6430e53ec02a470.css">
   <link rel="stylesheet" href="revealjs-styles.css">
+  <link rel="stylesheet" href="chapter10-styles.css">
   <link href="../../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -150,8 +151,2213 @@ John N. Chiasson and Aykut C. Satici
 </div>
 
 </section>
-<section id="pole-placement" class="slide level2">
-<h2>Pole Placement</h2>
+<section id="contents" class="title-slide slide level1 contents-slide center">
+<h1>Contents</h1>
+<ul>
+<li><p>Output Pole Placement</p></li>
+<li><p>Two-Degree-of-Freedom Controllers</p></li>
+<li><p>Internal Stability</p></li>
+<li><p>Two-DOF Control of Aircraft Pitch</p></li>
+</ul>
+</section>
+
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Pole Placement
+</div>
+<ul>
+<li><p>The internal model principle:</p>
+<ul>
+<li><p>For tracking <span class="math inline">\(G_{c}(s)G(s)\)</span> must contain the unstable poles of <span class="math inline">\(R(s).\)</span></p></li>
+<li><p>For disturbance rejection <span class="math inline">\(G_{c}(s)\)</span> must contain the unstable poles of <span class="math inline">\(D(s).\)</span></p></li>
+<li><p>In either case, the closed-loop system must be stable.</p></li>
+</ul></li>
+<li><p>The hard part is how to design <span class="math inline">\(G_{c}(s)\)</span> to make the closed-loop system stable!</p></li>
+<li><p>We now show how to find <span class="math inline">\(G_{c}(s)\)</span> to place the CLPs at any desired location.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement for a Second-Order Control System</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_ex2_001b__1.png">
+</div>
+</div>
+<p>Objective: &nbsp;Track a step reference input.</p>
+<p>The open-loop system is type 1.</p>
+<p><span class="math inline">\(G_{c}(s)\)</span> must make the closed-loop system stable.</p>
+<p>Let <span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}=\dfrac{b_{1}s+b_{0}}{s+a_{0}}.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)=\frac{1}{1+\dfrac{b_{1}s+b_{0}}{s+a_{0}}\dfrac{b}{s(s+a)}}\frac{R_{0}
+}{s}  &amp; =\frac{(s+a_{0})s(s+a)}{s(s+a)(s+a_{0})+(b_{1}s+b_{0})b}\frac{R_{0}
+}{s}\\
+&amp; =\frac{(s+a_{0})(s+a)}{s^{3}+\underset{f_{2}}{\underbrace{(a+a_{0})}}
+s^{2}+\underset{f_{1}}{\underbrace{(aa_{0}+bb_{1})}}s+\underset{f_{0}
+}{\underbrace{bb_{0}}}}R_{0}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><span class="math inline">\(s^{3}+f_{2}s^{2}+f_{1}s+f_{0}\)</span> is the desired denominator of <span class="math inline">\(E(s).\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement for a Second-Order Control System</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_ex2_004b__2.png">
+</div>
+</div>
+<p>Set <span class="math inline">\(s^{3}+(a+a_{0})s^{2}+(aa_{0}+bb_{1})s+bb_{0}=s^{3}+f_{2}s^{2}
++f_{1}s+f_{0}.\)</span></p>
+<p>Equate powers of <span class="math inline">\(s\)</span>:</p>
+<p><span class="math display">\[
+\begin{aligned}
+bb_{0}  &amp; =f_{0}\\
+aa_{0}+bb_{1}  &amp; =f_{1}\\
+a+a_{0}  &amp; =f_{2}
+\end{aligned}
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+\begin{aligned}
+b_{0}  &amp; =f_{0}/b\\
+a_{0}  &amp; =f_{2}-a\\
+b_{1}  &amp; =\frac{f_{1}-aa_{0}}{b}=\frac{f_{1}-af_{2}+a^{2}}{b}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement for a Second-Order Control System</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_ex2_004b__3.png">
+</div>
+</div>
+<p>To put the closed-loop poles at <span class="math inline">\(-r_{1},-r_{2},-r_{3}\)</span> set</p>
+<p><span class="math display">\[
+\begin{aligned}
+s^{3}+f_{2}s^{2}+f_{1}s+f_{0}  &amp; =(s+r_{1})(s+r_{2})(s+r_{3})\\
+&amp; \\
+&amp; =s^{3}+\underset{f_{2}}{\underbrace{(r_{1}+r_{2}+r_{3})}}s^{2}
++\underset{f_{1}}{\underbrace{(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})}
+}s+\underset{f_{0}}{\underbrace{r_{1}r_{2}r_{3}}}.
+\end{aligned}
+\]</span></p>
+<p>That is,</p>
+<p><span class="math display">\[
+\begin{aligned}
+f_{2}  &amp; =r_{1}+r_{2}+r_{3}\\
+&amp; \\
+f_{1}  &amp; =r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}\\
+&amp; \\
+f_{0}  &amp; =r_{1}r_{2}r_{3}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Disturbance Rejection for a Second-Order Control System</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_ex2_001__4.png">
+</div>
+</div>
+<p>Set <span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}=\underset{\bar{G}_{c}
+(s)}{\underbrace{\dfrac{b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}}}\dfrac{1}{s}.\)</span></p>
+<ul>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> must have the factor <span class="math inline">\(1/s\)</span> to satisfy the internal model principle.</p></li>
+<li><p>The denominator of <span class="math inline">\(\bar{G}_{c}(s)\)</span> has degree one less than the denominator of <span class="math inline">\(G(s).\)</span></p></li>
+<li><p>The numerator of <span class="math inline">\(G_{c}(s)\)</span> has the same degree as its denominator.</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    E_{D}(s)=\frac{G(s)}{1+G_{c}(s)G(s)}\frac{D_{0}}{s}  &amp; =\frac{\dfrac
+    {b}{s(s+a)}}{1+\dfrac{b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}\dfrac{1}{s}\dfrac
+    {b}{s(s+a)}}\frac{D_{0}}{s}\\
+    &amp; =\frac{s(s+a_{0})b}{s^{2}(s+a_{0})(s+a)+bb_{2}s^{2}+bb_{1}s+bb_{0}}
+    \frac{D_{0}}{s}\\
+    &amp; =\frac{(s+a_{0})b}{s^{4}+(a+a_{0})s^{3}+(aa_{0}+bb_{2})s^{2}+bb_{1}s+bb_{0}
+    }D_{0}.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Disturbance Rejection for a Second-Order Control System</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_ex2_001__5.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(E_{D}(s)=\dfrac{(s+a_{0})b}{s^{4}+\underset{f_{3}}{\underbrace{(a+a_{0}
+)}}s^{3}+\underset{f_{2}}{\underbrace{(aa_{0}+bb_{2})}}s^{2}+\underset{f_{1}
+}{\underbrace{bb_{1}}}s+\underset{f_{0}}{\underbrace{bb_{0}}}}D_{0}.\)</span></p></li>
+<li><p><span class="math inline">\(s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}\)</span> is the desired denominator of <span class="math inline">\(E_{D}(s).\)</span></p></li>
+<li><p>Solve <span class="math inline">\(s^{4}+(a+a_{0})s^{3}+(aa_{0}+bb_{2})s^{2}+bb_{1}s+bb_{0}
+=s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}\)</span>:</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    b_{0}  &amp; =f_{0}/b\\
+    b_{1}  &amp; =f_{1}/b\\
+    a_{0}  &amp; =f_{3}-a\\
+    b_{2}  &amp; =\frac{f_{2}-aa_{0}}{b}=\frac{f_{2}-af_{3}+a^{2}}{b}.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Tracking a Sinusoid</em></p>
+<p><span class="math inline">\(r(t)=R_{0}\sin(t)\)</span> or <span class="math inline">\(R(s)=\dfrac{R_{0}}{s^{2}+1}\)</span>.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_005b__6.png">
+</div>
+</div>
+<p><span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}=\underset{\bar{G}_{c}
+(s)}{\underbrace{\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}}}
+\dfrac{1}{s^{2}+1}.\)</span></p>
+<ul>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> must have factor <span class="math inline">\(\dfrac{1}{s^{2}+1}\)</span> to satisfy the internal model principle.</p></li>
+<li><p>The denominator of <span class="math inline">\(\bar{G}_{c}(s)\)</span> has degree one less than the denominator of <span class="math inline">\(G(s).\)</span></p></li>
+<li><p>The numerator of <span class="math inline">\(G_{c}(s)\)</span> has the same degree as its denominator.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Tracking a Sinusoid</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_005b__7.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!E(s)\!\!\!  &amp; =\!\!\!\frac{1}{1+G_{c}(s)G(s)}R(s)\\
+&amp; \\
+\!\!\!  &amp; =\!\!\!\frac{1}{1+\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}
+{s+a_{0}}\dfrac{1}{s^{2}+1}\dfrac{b}{s(s+a)}}\frac{R_{0}}{s^{2}+1}\\
+&amp; \\
+\!\!\!  &amp; =\!\!\!\frac{(s+a_{0})s(s+a)(s^{2}+1)}{(s+a_{0})s(s+a)(s^{2}
++1)+bb_{3}s^{3}+bb_{2}s^{2}+bb_{1}s+bb_{0}}\frac{R_{0}}{s^{2}+1}\\
+&amp; \\
+\!\!\!  &amp; =\!\!\!\frac{(s+a_{0})s(s+a)}{s^{5}+(a+a_{0})s^{4}+(aa_{0}
++bb_{3}+1)s^{3}+(a+a_{0}+bb_{2})s^{2}+(aa_{0}+bb_{1})s+bb_{0}}R_{0}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}\)</span> is the desired denominator of <span class="math inline">\(E(s).\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Tracking a Sinusoid</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_005b__8.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;
+\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!s^{5}
++(a+a_{0})s^{4}+(aa_{0}+bb_{3}+1)s^{3}+(a+a_{0}+bb_{2})s^{2}+(aa_{0}
++bb_{1})s+bb_{0}\\
+&amp; \\
+&amp; \quad\qquad\qquad=\quad s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}.
+\end{aligned}
+\]</span></p>
+<p>This requires setting</p>
+<p><span class="math display">\[
+\begin{aligned}
+b_{0}  &amp; =\frac{f_{0}}{b}\\
+a_{0}  &amp; =f_{4}-a\\
+b_{1}  &amp; =\frac{f_{1}-aa_{0}}{b}=\frac{f_{1}-af_{4}+a^{2}}{b}\\
+b_{2}  &amp; =\frac{f_{2}-a-a_{0}}{b}=\frac{f_{2}-f_{4}}{b}\\
+b_{3}  &amp; =\frac{f_{3}-aa_{0}-1}{b}=\frac{f_{3}-af_{4}+a^{2}+1}{b}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__9.png">
+</div>
+</div>
+<p><span class="math inline">\(R(s)=\dfrac{R_{0}}{s},D(s)=\dfrac{D_{0}}{s}\)</span> &nbsp;and <span class="math inline">\(G_{c}(s)=\underset{\bar
+{G}_{c}(s)}{\underbrace{\dfrac{b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}}}\dfrac{1}
+{s}.\)</span></p>
+<ul>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> must have factor <span class="math inline">\(\dfrac{1}{s}\)</span> to satisfy the internal model principle.</p></li>
+<li><p>The denominator of <span class="math inline">\(\bar{G}_{c}(s)\)</span> has degree one less than the denominator of <span class="math inline">\(G(s).\)</span></p></li>
+<li><p>The numerator of <span class="math inline">\(G_{c}(s)\)</span> has the same degree as its denominator.</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!E_{R}(s)=\frac{1}{1+G_{c}(s)G(s)}R(s)  &amp; =\!\!\!\frac{1}{1+\dfrac
+{b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}\dfrac{1}{s}\dfrac{s-2}{(s-1)(s-3)}}
+\frac{R_{0}}{s}\\
+&amp; \\
+&amp; =\!\!\!\frac{s(s+a_{0})(s-1)(s-3)}{s(s+a_{0})(s-1)(s-3)+(b_{2}s^{2}
++b_{1}s+b_{0})(s-2)}\frac{R_{0}}{s}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__10.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+E_{R}(s)  &amp; =\frac{s(s+a_{0})(s-1)(s-3)}{s(s+a_{0})(s-1)(s-3)+(b_{2}
+s^{2}+b_{1}s+b_{0})(s-2)}\frac{R_{0}}{s}\\
+&amp; \\
+&amp; =\frac{(s+a_{0})(s-1)(s-3)}{s^{4}+(b_{2}+a_{0}-4)s^{3}+(b_{1}-2b_{2}
+-4a_{0}+3)s^{2}+(3a_{0}+b_{0}-2b_{1})s-2b_{0}}R_{0}.
+\end{aligned}
+\]</span></p>
+<p>Set</p>
+<p><span class="math display">\[
+s^{4}+(b_{2}+a_{0}-4)s^{3}+(b_{1}-2b_{2}-4a_{0}+3)s^{2}+(3a_{0}+b_{0}
+-2b_{1})s-2b_{0}=
+\]</span></p>
+<p><span class="math inline">\(\quad\quad\quad\!\!\!s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}.\)</span></p>
+<p>In matrix form: <span class="math inline">\(\left[
+\begin{array}{c}
+f_{3}\\
+f_{2}\\
+f_{1}\\
+f_{0}
+\end{array}
+\right]  =\left[
+\begin{array}{rrrr}
+1 &amp; 0 &amp; 0 &amp; 1\\
+-2 &amp; 1 &amp; 0 &amp; -4\\
+0 &amp; -2 &amp; 1 &amp; 3\\
+0 &amp; 0 &amp; -2 &amp; 0
+\end{array}
+\right]  \!\left[
+\begin{array}{c}
+b_{2}\\
+b_{1}\\
+b_{0}\\
+a_{0}
+\end{array}
+\right]  +\left[
+\begin{array}{r}
+-4\\
+3\\
+0\\
+0
+\end{array}
+\right]  .\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__11.png">
+</div>
+</div>
+<p>Solve to obtain</p>
+<p><span class="math display">\[
+\begin{aligned}
+\left[
+\begin{array}{c}
+b_{2}\\
+b_{1}\\
+b_{0}\\
+a_{0}
+\end{array}
+\right]   &amp; =\left[
+\begin{array}{rrrr}
+1 &amp; 0 &amp; 0 &amp; 1\\
+-2 &amp; 1 &amp; 0 &amp; -4\\
+0 &amp; -2 &amp; 1 &amp; 3\\
+0 &amp; 0 &amp; -2 &amp; 0
+\end{array}
+\right]  ^{-1}\left(  \left[
+\begin{array}{c}
+f_{3}\\
+f_{2}\\
+f_{1}\\
+f_{0}
+\end{array}
+\right]  -\left[
+\begin{array}{r}
+-4\\
+3\\
+0\\
+0
+\end{array}
+\right]  \right) \\
+&amp; =\left[
+\begin{array}{rrrr}
+5 &amp; 2 &amp; 1 &amp; 1/2\\
+-6 &amp; -3 &amp; -2 &amp; -1\\
+0 &amp; 0 &amp; 0 &amp; -1/2\\
+-4 &amp; -2 &amp; -1 &amp; -1/2
+\end{array}
+\right]  \left(  \left[
+\begin{array}{c}
+f_{3}\\
+f_{2}\\
+f_{1}\\
+f_{0}
+\end{array}
+\right]  -\left[
+\begin{array}{r}
+-4\\
+3\\
+0\\
+0
+\end{array}
+\right]  \right) \\
+&amp; =\left[
+\begin{array}{l}
+f_{0}/2+f_{1}+2f_{2}+5f_{3}+14\\
+-f_{0}-2f_{1}-3f_{2}-6f_{3}-15\\
+-f_{0}/2\\
+-f_{0}/2-f_{1}-2f_{2}-4f_{3}-10
+\end{array}
+\right]  .
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__12.png">
+</div>
+</div>
+<p>To put the closed-loop poles at <span class="math inline">\(-r_{1},-r_{2},-r_{3},-r_{4}\)</span> we simply set</p>
+<p><span class="math display">\[
+\begin{aligned}
+s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}  &amp; =(s+r_{1})(s+r_{2})(s+r_{3}
+)(s+r_{4})\\
+&amp; \\
+&amp; =s^{4}+\underset{f_{3}}{\underbrace{(r_{1}+r_{2}+r_{3}+r_{4})}}s^{3}+\\
+&amp; \underset{f_{2}}{\underbrace{(r_{1}r_{2}+r_{1}r_{3}+r_{1}r_{4}+r_{2}
+r_{3}+r_{2}r_{4}+r_{3}r_{4})}}s^{2}+\\
+&amp; \underset{f_{1}}{\underbrace{\left(  r_{1}r_{2}r_{3}+r_{1}r_{2}r_{4}
++r_{1}r_{3}r_{4}+r_{2}r_{3}r_{4}\right)  }}s+\underset{f_{0}
+}{\underbrace{r_{1}r_{2}r_{3}r_{4}}}
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Pole Placement</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__13.png">
+</div>
+</div>
+<p><span class="math inline">\(\!\!\!\!\!\!\)</span>Closed-loop response <span class="math inline">\(C_{R}(s)=\dfrac{G_{c}
+(s)G(s)}{1+G_{c}(s)G(s)}R(s).\)</span></p>
+<p>Let <span class="math inline">\(R(s)=1/s\)</span> with the closed-loop poles placed at <span class="math inline">\(-1.\)</span></p>
+<p>Too much overshoot in the step response!</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087c__14.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Effect of the Initial Conditions on the Control Design
+</div>
+<ul>
+<li><p>We have always taken the initial conditions to be zero!</p></li>
+<li><p>What happens if they are not zero?</p>
+<p>Consider</p></li>
+</ul>
+<p><span class="math display">\[
+\ddot{y}-2\dot{y}+2y=\dot{u}-u
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+s^{2}Y(s)-sy(0)-\dot{y}(0)-2sY(s)+2y(0)+2Y(s)=sU(s)-u(0)-U(s)
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+Y(s)=\underset{G(s)}{\underbrace{\frac{s-1}{s^{2}-2s+2}}}U(s)+\frac
+    {sy(0)+\dot{y}(0)-2y(0)-u(0)}{s^{2}-2s+2}.
+\]</span></p>
+<ul>
+<li><p><strong>Key observation</strong></p>
+<p><span class="math inline">\(G(s)\)</span> and the initial condition term always have the <em>same</em> denominator.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_081__15.png">
+</div>
+</div></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Effect of the Initial Conditions on the Control Design
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_082__16.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{c}(s)=\dfrac{-2s+13}{s+7}\)</span> to put all 3 closed-loop poles at <span class="math inline">\(-1.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+Y(s)  &amp; =G(s)U(s)+\frac{sy(0)+\dot{y}(0)-2y(0)-u(0)}{s^{2}-2s+2}\\
+&amp; \\
+&amp; =G(s)G_{c}(s)\!\left(  R(s)-Y(s)\right)  +\frac{sy(0)+\dot
+{y}(0)-2y(0)-u(0)}{s^{2}-2s+2}
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp; \Longrightarrow\left(  1+G(s)G_{c}(s)\right)
+\!\!Y(s)=G(s)G_{c}(s)R(s)+\frac{sy(0)+\dot{y}(0)-2y(0)-u(0)}{s^{2}-2s+2}\\
+&amp; \\
+&amp; \Longrightarrow Y(s)=\frac{G(s)G_{c}(s)}{1+G(s)G_{c}(s)}
+R(s)+\underset{Y_{IC}(s)}{\underbrace{\frac{1}{1+G(s)G_{c}(s)}\frac
+{sy(0)+\dot{y}(0)-2y(0)-u(0)}{s^{2}-2s+2}}}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Effect of the Initial Conditions on the Control Design
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_082__17.png">
+</div>
+</div>
+<p>As <span class="math inline">\(G_{c}(s)=\dfrac{-2s+13}{s+7}\)</span>, the initial condition response <span class="math inline">\(Y_{IC}(s)\)</span> simplifies to</p>
+<p><span class="math display">\[
+\begin{aligned}
+Y_{IC}(s)  &amp; \triangleq\frac{1}{1+\dfrac{s-1}{s^{2}-2s+2}\dfrac{-2s+13}{s+7}
+}\frac{sy(0)+\dot{y}(0)-2y(0)-u(0)}{s^{2}-2s+2}\\
+&amp; \\
+&amp; \\
+&amp; =\frac{(s^{2}-2s+2)(s+7)}{s^{3}+3s^{2}+3s+1}\frac{sy(0)+\dot{y}
+(0)-2y(0)-u(0)}{s^{2}-2s+2}\\
+&amp; \\
+&amp; \\
+&amp; =\frac{(s+7)(sy(0)+\dot{y}(0)-2y(0)-u(0))}{(s+1)(s+1)(s+1)}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Effect of the Initial Conditions on the Control Design
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_082__18.png">
+</div>
+</div>
+<p><span class="math display">\[
+y_{IC}(t)=\mathcal{L}^{-1}\{Y_{IC}(s)\}=\mathcal{L}^{-1}\left\{  \frac{(s+7)(sy(0)+\dot{y}(0)-2y(0)-u(0))}{(s+1)(s+1)(s+1)}
+\right\}  \rightarrow0.
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+Y_{R}(s)=\underset{G_{CL}(s)}{\underbrace{\frac{G(s)G_{c}(s)}{1+G(s)G_{c}(s)}
+}}R(s)  &amp; =\frac{\dfrac{s-1}{s^{2}-2s+2}\dfrac{-2s+13}{s+7}}{1+\dfrac
+{s-1}{s^{2}-2s+2}\dfrac{-2s+13}{s+7}}R(s)\\
+&amp; =\frac{(s-1)(-2s+13)}{s^{3}+3s^{2}+3s+1}R(s)\\
+&amp; =\frac{(s-1)(-2s+13)}{(s+1)(s+1)(s+1)}R(s)
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(Y_{IC}(s)\)</span> and <span class="math inline">\(Y_{R}(s)/R(s)=G_{CL}(s)\)</span> always have the <strong>same</strong> denominator.</p></li>
+<li><p>As long as the closed-loop system is stable, the initial condition response asymptotically goes to zero.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverted Pendulum</em></p>
+<ul>
+<li><p>The <em>center of mass</em> of the rod is at <span class="math inline">\((x+\ell\sin(\theta
+),y)\approx(x+\ell\theta,y)\)</span> for <span class="math inline">\(\theta\)</span> small.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Models_fig_01_new2__19.png">
+</div>
+</div></li>
+<li><p>With an abuse of notation we also let <span class="math inline">\(y\triangleq x+\left(  \ell
++\dfrac{J}{m\ell}\right)  \theta.\)</span></p></li>
+<li><p>Then</p></li>
+</ul>
+<p><span class="math display">\[
+Y(s)=X(s)+\left(  \ell+\frac{J}{m\ell}\right)  \theta(s)=\text{ }
+    \underset{G_{Y}(s)}{\underbrace{-\kappa\frac{mg\ell}{s^{2}(s^{2}-\alpha^{2})}
+    }}U(s)+\frac{p_{Y}(s)}{s^{2}(s^{2}-\alpha^{2})}
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\begin{aligned}
+    p_{Y}(s)  &amp; \triangleq(J/(m\ell)+\ell)s^{2}-\kappa g(m\ell)^{2})(s\theta
+    (0)+\dot{\theta}(0))+(s^{2}-\alpha^{2})(sx(0)+\dot{x}(0)),\\
+    \alpha^{2}  &amp; =\frac{mg\ell(M+m)}{Mm\ell^{2}+J(M+m)},\\
+    \kappa &amp; =\frac{1}{Mm\ell^{2}+J(M+m)}.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverted Pendulum</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/models_fig_01_e11__20.png">
+</div>
+</div>
+<ul>
+<li><p>Stabilize <span class="math inline">\(y\triangleq x+\left(  \ell+\dfrac{J}{m\ell}\right)
+\theta\rightarrow0.\)</span></p></li>
+<li><p>Find <span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}\)</span> so <span class="math inline">\(U(s)=-G_{c}(s)Y(s)\)</span> stabilizes the pendulum to <span class="math inline">\(y=0\)</span>.</p></li>
+<li><p>This <em>linear</em> model is only valid for <span class="math inline">\((x,\dot{x},\theta
+,\dot{\theta})\)</span> close to <span class="math inline">\((0,0,0,0).\)</span></p>
+<p><span class="math inline">\(\qquad\Longrightarrow\)</span> <span class="math inline">\(\ \ (x(0),\dot{x}(0),\theta(0),\dot{\theta}(0))\)</span> must be close to <span class="math inline">\((0,0,0,0)\)</span>.</p></li>
+<li><p>With <span class="math inline">\(U(s)=-G_{c}(s)Y(s)\)</span> we have</p></li>
+</ul>
+<p><span class="math display">\[
+Y(s)=-G_{Y}(s)G_{c}(s)Y(s)+\frac{p(s)}{s^{2}(s^{2}-\alpha^{2})}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverted Pendulum</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/models_fig_01_e11__21.png">
+</div>
+</div>
+<p>Previous slide:</p>
+<p><span class="math display">\[
+Y(s)=-G_{Y}(s)G_{c}(s)Y(s)+\frac{p_{Y}(s)}{s^{2}(s^{2}-\alpha^{2})}.
+\]</span></p>
+<p>Solve for <span class="math inline">\(Y(s)\)</span> to obtain</p>
+<p><span class="math display">\[
+\begin{aligned}
+Y(s)  &amp; =\frac{1}{1+G_{Y}(s)G_{c}(s)}\frac{p_{Y}(s)}{s^{2}(s^{2}-\alpha^{2}
+)}\\
+&amp; =\frac{1}{1+\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}{s^{3}+a_{2}
+s^{2}+a_{1}s+a_{0}}\dfrac{-\kappa mg\ell}{s^{2}(s^{2}-\alpha^{2})}}\frac
+{p_{Y}(s)}{s^{2}(s^{2}-\alpha^{2})}\\
+&amp; =\frac{(s^{3}+a_{2}s^{2}+a_{1}s+a_{0})p_{Y}(s)}{(s^{3}+a_{2}s^{2}
++a_{1}s+a_{0})s^{2}(s^{2}-\alpha^{2})+\left(  -\kappa mg\ell\right)
+(b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0})}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverted Pendulum</em> &nbsp;<strong>(continued)</strong></p>
+<p>Collecting terms in <span class="math inline">\(s\)</span> the denominator of <span class="math inline">\(Y(s)\)</span> is rewritten as</p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;
+\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!s^{7}
++a_{2}s^{6}+\left(  a_{1}-\alpha^{2}\right)  s^{5}+\left(  a_{0}-\alpha
+^{2}a_{2}\right)  s^{4}+\left(  -a_{1}\alpha^{2}-\kappa mg\ell b_{3}\right)
+s^{3}+\\
+&amp; \left(  -a_{0}\alpha^{2}-\kappa mg\ell b_{2}\right)  s^{2}-\kappa mg\ell
+b_{1}s-\kappa mg\ell b_{0}
+\end{aligned}
+\]</span></p>
+<p>Let the desired denominator polynomial of <span class="math inline">\(Y(s)\)</span> be</p>
+<p><span class="math display">\[
+s^{7}+f_{6}s^{6}+f_{5}s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}.
+\]</span></p>
+<p>Set</p>
+<p><span class="math display">\[
+\begin{aligned}
+-\kappa mg\ell b_{0}  &amp; =f_{0}\\
+-\kappa mg\ell b_{1}  &amp; =f_{1}\\
+-a_{0}\alpha^{2}-\kappa mg\ell b_{2}  &amp; =f_{2}\\
+-a_{1}\alpha^{2}-\kappa mg\ell b_{3}  &amp; =f_{3}\\
+a_{0}-a_{2}\alpha^{2}  &amp; =f_{4}\\
+a_{1}-\alpha^{2}  &amp; =f_{5}\\
+a_{2}  &amp; =f_{6}
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverted Pendulum</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/models_fig_01_e11__22.png">
+</div>
+</div>
+<p>In matrix form we have</p>
+<p><span class="math display">\[
+\left[
+\begin{array}{ccccccc}
+-\kappa mg\ell &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; -\kappa mg\ell &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; -\kappa mg\ell &amp; 0 &amp; -\alpha^{2} &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; -\kappa mg\ell &amp; 0 &amp; -\alpha^{2} &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 &amp; -\alpha^{2}\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 1
+\end{array}
+\right]  \left[
+\begin{array}{c}
+b_{0}\\
+b_{1}\\
+b_{2}\\
+b_{3}\\
+a_{0}\\
+a_{1}\\
+a_{2}
+\end{array}
+\right]  =\left[
+\begin{array}{c}
+f_{0}\\
+f_{1}\\
+f_{2}\\
+f_{3}\\
+f_{4}\\
+f_{5}+\alpha^{2}\\
+f_{6}
+\end{array}
+\right]  .
+\]</span></p>
+<p>This matrix is invertible so we can solve for <span class="math inline">\(a_{0},a_{1},a_{2},b_{0}
+,b_{1},b_{2},b_{3}.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverted Pendulum</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/models_fig_01_e11__23.png">
+</div>
+</div>
+<p><span class="smallcaps">Quanser</span> inverted pendulum: <span class="math inline">\(\kappa mg\ell=36.5705,\alpha^{2}=29.256\)</span> so</p>
+<p><span class="math display">\[
+G_{Y}(s)=\frac{-36.5705}{s^{2}(s^{2}-29.256)}=\frac{-36.5705}{s^{2}
+(s+5.4089)(s-5.4089)}.
+\]</span></p>
+<p>Choosing the seven closed-loop poles to be at <span class="math inline">\(-5\)</span> results in</p>
+<p><span class="math display">\[
+\begin{aligned}
+G_{c}(s)  &amp; =-\frac{1041.6s^{3}+6113.7s^{2}+2990.8s+2136.3}{s^{3}
++35s^{2}+554.3s+5399}\\
+&amp; \\
+&amp; =-\frac{1041.6(s+5.4088)(s^{2}+0.4308s+0.3792)}{(s+20.833)(s^{2}
++14.1672s+259.1533)}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>This controller has small <em>stability margins</em> making it very <em>sensitve</em> to disturbances.</p>
+<ul>
+<li><p>Small disturbances can cause <span class="math inline">\(\theta(t)\)</span> to go far from <span class="math inline">\(0.\)</span></p></li>
+<li><p><span class="math inline">\(G_{Y}(s)\)</span> is then no longer a valid approximation of the nonlinear IP model.</p></li>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> will not be able to bring <span class="math inline">\(\theta(t)\)</span> back to <span class="math inline">\(0.\)</span></p></li>
+</ul></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Example
+</div>
+<div class="center">
+<p>Two Degrees of Freedom (2 DOF) Controllers</p>
+</div>
+<ul>
+<li><p>A PI controller typically results in the closed-loop TF having a left half-plane zero.</p></li>
+<li><p>Zeros can cause or increase the amount of overshoot.</p></li>
+<li><p>A <em>two degrees of freedom</em> controller can often be used to eliminate overshoot.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Two Degrees of Freedom Controllers
+</div>
+<p>Consider the PID control system.</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_066__24.png">
+</div>
+</div>
+<p>Block diagram reduction:</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_067__25.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Two Degrees of Freedom Controllers
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_067__26.png">
+</div>
+</div>
+<ul>
+<li>Let’s first look at making the closed-loop system stable.</li>
+</ul>
+<p><span class="math display">\[
+E_{R}(s)=\frac{1}{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}
+    }R(s)=\frac{s^{2}(s+1+K_{t})}{s^{3}+(1+K_{t})s^{2}+Ks+\alpha K}R(s)
+\]</span></p>
+<p>Choose the closed-loop poles to be <span class="math inline">\(-r_{1},-r_{2},-r_{3}\)</span> &nbsp;with &nbsp;<span class="math inline">\(r_{1}&gt;0,r_{2}&gt;0,r_{3}&gt;0.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+    s^{3}+(1+K_{t})s^{2}+Ks+\alpha K\!\!\!  &amp; =\!\!\!(s+r_{1})(s+r_{2})(s+r_{3})\\
+    \!\!\!  &amp; =\!\!\!s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}
+    +r_{2}r_{3})s+r_{1}r_{2}r_{3}.
+    \end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+\Longrightarrow\quad{}K_{t}=r_{1}+r_{2}+r_{3}-1,\quad{}K=r_{1}
+    r_{2}+r_{1}r_{3}+r_{2}r_{3},\text{ }\alpha=\frac{r_{1}r_{2}r_{3}}{K}
+    =\frac{r_{1}r_{2}r_{3}}{r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Two Degrees of Freedom Controllers
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_067__27.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+C_{R}(s)=\frac{K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}}
+{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}}\frac{R_{0}}{s}  &amp;
+=\frac{K(s+\alpha)}{s^{3}+(1+K_{t})s^{2}+Ks+\alpha K}\frac{R_{0}}{s}\\
+&amp; =\frac{K(s+\alpha)}{(s+r_{1})(s+r_{2})(s+r_{3})}\frac{R_{0}}{s}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(sC_{R}(s)\)</span> is stable so by the FVT</p>
+<p><span class="math display">\[
+c_{R}(\infty)=\lim_{s\rightarrow0}sC_{R}(s)=\lim_{s\rightarrow0}
+s\frac{K(s+\alpha)}{s^{3}+(1+K_{t})s^{2}+Ks+\alpha K}\frac{R_{0}}{s}=R_{0}.
+\]</span></p>
+<ul>
+<li>Problem: &nbsp;<span class="math inline">\(c_{R}(t)\)</span> will exhibit <em>overshoot</em>.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Two Degrees of Freedom Controllers
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_067__28.png">
+</div>
+</div>
+<p><span class="math display">\[
+C_{R}(s)=\frac{K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}}
+{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}}\frac{R_{0}}{s}
+=\frac{K(s+\alpha)}{(s+r_{1})(s+r_{2})(s+r_{3})}\frac{R_{0}}{s}.
+\]</span></p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_20__29.png">
+</div>
+<p></p>
+</figure>
+<ul>
+<li>With this control architecture, there will always be <em>overshoot</em> as we explain next.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Stable Type 2 Systems Have Overshoot
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_055__30.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(L(s)\triangleq K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}\)</span> &nbsp;is a type 2 system.</p></li>
+<li><p>The closed-loop system is <span class="math inline">\(G_{CL}(s)=\dfrac{L(s)}{1+L(s)}\)</span> is stable.</p></li>
+<li><p>We chose the gains <span class="math inline">\(\alpha,K,K_{t}\)</span> to put the poles at <span class="math inline">\(-r_{1}
+,-r_{2},-r_{3}.\)</span></p></li>
+</ul>
+<p><strong>Theorem</strong> &nbsp;<em>Stable Type 2 Systems Have Overshoot</em></p>
+<p>The step response of any stable type 2 system has overshoot.</p>
+<p><strong>Proof:</strong> &nbsp;See Appendix.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide ch10-tight-slide">
+<div class="slide-title">
+Stable Systems with Real Poles and No Zeros Do Not Have Overshoot
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_055__31.png">
+</div>
+</div>
+<p><strong>Theorem</strong> &nbsp;<em>Stable Systems with Real Poles and No Zeros Do Not Have Overshoot</em></p>
+<p>Let a system satisfy the following conditions:</p>
+<p>(1) The closed-loop transfer function is <em>stable</em>.</p>
+<p>(2) The closed-loop transfer function has <em>real</em> poles.</p>
+<p>(3) The closed-loop transfer function has <em>no</em> zeros.</p>
+<p>Then its step response has no overshoot.</p>
+<p><strong>Proof:</strong> &nbsp;See Appendix.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Stable Systems with Real Poles and No Zeros Do Not Have Overshoot
+</div>
+<p><span class="math display">\[
+C_{R}(s)=\frac{K(s+\alpha)}{s^{3}+(1+K_{t})s^{2}+Ks+\alpha K}\frac{R_{0}}
+{s}=\underset{\text{closed-loop transfer function}}{\underbrace{\frac
+{K(s+\alpha)}{(s+r_{1})(s+r_{2})(s+r_{3})}}}\frac{R_{0}}{s}.
+\]</span></p>
+<p>The poles <span class="math inline">\(-r_{1},-r_{2},-r_{3}\)</span> are real and in the open LHP.</p>
+<p>Need to get rid of the zero at <span class="math inline">\(-\alpha\)</span> where <span class="math inline">\(\alpha=\dfrac{r_{1}r_{2}r_{3}
+}{r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}}.\)</span></p>
+<p><span class="math inline">\(\alpha&gt;0\)</span> so the transfer function <span class="math inline">\(\dfrac{\alpha}{s+\alpha}\)</span> is <em>stable</em>.</p>
+<p>2 DOF controller:</p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_068__32.png">
+</div>
+</div>
+<p><span class="math inline">\(\dfrac{\alpha}{s+\alpha}\)</span> is the <em>reference input filter</em>.</p>
+<p><span class="math display">\[
+C_{R}(s)=\frac{K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}}
+{1+K\dfrac{s+\alpha}{s}\dfrac{1}{s+1+K_{t}}\dfrac{1}{s}}\frac{\alpha}
+{s+\alpha}\frac{R_{0}}{s}=\frac{K(s+\alpha)}{s^{3}+(1+K_{t})s^{2}+Ks+\alpha
+K}\frac{\alpha}{s+\alpha}\frac{R_{0}}{s}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Stable Systems with Real Poles and No Zeros Do Not Have Overshoot
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_068__33.png">
+</div>
+</div>
+<ul>
+<li><p><span class="math inline">\(c_{R}(\infty)=\lim_{s\rightarrow0}sC_{R}(s)=\lim_{s\rightarrow
+0}\underset{\rightarrow1}{\underbrace{\dfrac{K(s+\alpha)}{s^{3}+(1+K_{t}
+)s^{2}+Ks+\alpha K}}}\underset{\rightarrow1}{\underbrace{\dfrac{\alpha
+}{s+\alpha}}}R_{0}=R_{0}.\)</span></p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_21__34.png">
+</div>
+<p></p>
+</figure></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Right Half-Plane Zeros
+</div>
+<p><strong>Example</strong> &nbsp;<em>Right Half-Plane Zero</em></p>
+<p><span class="math inline">\(R(s)=\dfrac{R_{0}}{s},G(s)=-\dfrac{s-1}{s(s+2)}\)</span> and <span class="math inline">\(G_{c}
+(s)=\dfrac{b_{1}s+b_{0}}{s+a_{0}}.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_060b__35.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)=\frac{1}{1+G(s)G_{c}(s)}R(s)  &amp; =\frac{1}{1-\dfrac{s-1}{s(s+2)}
+\dfrac{b_{1}s+b_{0}}{s+a_{0}}}\frac{R_{0}}{s}\\
+&amp; =\frac{s(s+2)(s+a_{0})}{s(s+2)(s+a_{0})-(s-1)(b_{1}s+b_{0})}\frac{R_{0}}
+{s}\\
+&amp; =\frac{s(s+2)(s+a_{0})}{s^{3}+(a_{0}-b_{1}+2)s^{2}+(2a_{0}-b_{0}
++b_{1})s+b_{0}}\frac{R_{0}}{s}\\
+&amp; =\frac{(s+2)(s+a_{0})}{s^{3}+(a_{0}-b_{1}+2)s^{2}+(2a_{0}-b_{0}
++b_{1})s+b_{0}}R_{0}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Right Half-Plane Zero</em> <strong>(continued)</strong></p>
+<p><span class="math inline">\(R(s)=\dfrac{R_{0}}{s},G_{c}(s)=\dfrac{b_{1}s+b_{0}}{s+a_{0}}.\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_060b__36.png">
+</div>
+</div>
+<p><span class="math inline">\(E(s)=\dfrac{(s+2)(s+a_{0})}{s^{3}+(a_{0}-b_{1}+2)s^{2}+(2a_{0}-b_{0}
++b_{1})s+b_{0}}R_{0}.\)</span></p>
+<p>Let the desired closed-loop poles be at <span class="math inline">\(-r_{1},-r_{2},-r_{3}.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;
+\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!s^{3}
++(a_{0}-b_{1}+2)s^{2}+(2a_{0}-b_{0}+b_{1})s+b_{0}\\
+&amp; =(s+r_{1})(s+r_{2})(s+r_{3})\\
+&amp; =s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}
+)s+r_{1}r_{2}r_{3}.
+\end{aligned}
+\]</span></p>
+<p>Solve:</p>
+<p><span class="math display">\[
+\begin{aligned}
+a_{0}-b_{1}+2  &amp; =r_{1}+r_{2}+r_{3}\\
+2a_{0}+b_{1}-b_{0}  &amp; =r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}\\
+b_{0}  &amp; =r_{1}r_{2}r_{3}
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Right Half-Plane Zero</em> <strong>(continued)</strong></p>
+<p><span class="math display">\[
+\begin{aligned}
+b_{1}  &amp; =\frac{-2(r_{1}+r_{2}+r_{3})+r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}
++r_{1}r_{2}r_{3}+4}{3}\\
+a_{0}  &amp; =\frac{r_{1}+r_{2}+r_{3}+r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}+r_{1}
+r_{2}r_{3}-2}{3}\\
+b_{0}  &amp; =r_{1}r_{2}r_{3}.
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+C(s)=\frac{G(s)G_{c}(s)}{1+G(s)G_{c}(s)}R(s)=\frac{-\dfrac{s-1}{s(s+2)}
+\dfrac{b_{1}s+b_{0}}{s+a_{0}}}{1-\dfrac{s-1}{s(s+2)}\dfrac{b_{1}s+b_{0}
+}{s+a_{0}}}\frac{R_{0}}{s}=\frac{-(s-1)b_{1}(s+b_{0}/b_{1})}{(s+r_{1}
+)(s+r_{2})(s+r_{3})}\frac{R_{0}}{s}.
+\]</span></p>
+<ul>
+<li><p>Suppose the zero at <span class="math inline">\(-b_{0}/b_{1}\)</span> is in the open LHP so that <span class="math inline">\(\dfrac{b_{0}/b_{1}}{s+b_{0}/b_{1}}\)</span> is a stable filter.</p>
+<p>Put <span class="math inline">\(R(s)\)</span> through this filter as shown.</p></li>
+</ul>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_060c__37.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Right Half-Plane Zero</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_060c__38.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!C(s)  &amp; =\!\!\!\!\frac{-\dfrac{s-1}{s(s+2)}\dfrac{b_{1}s+b_{0}
+}{s+a_{0}}}{1-\dfrac{s-1}{s(s+2)}\dfrac{b_{1}s+b_{0}}{s+a_{0}}}\frac
+{b_{0}/b_{1}}{s+b_{0}/b_{1}}R(s)\\
+&amp; \\
+&amp; =\!\!\!\!\frac{-(s-1)b_{1}(s+b_{0}/b_{1})}{s^{3}+(a_{0}-b_{1}+2)s^{2}
++(2a_{0}+b_{1}-b_{0})s+b_{0}}\frac{b_{0}/b_{1}}{s+b_{0}/b_{1}}\frac{R_{0}}
+{s}\\
+&amp; \\
+&amp; =\!\!\!\!\underset{G_{CL}(s)}{\underbrace{-\frac{(s-1)b_{0}}{(s+r_{1}
+)(s+r_{2})(s+r_{3})}}\frac{R_{0}}{s}}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(G_{CL}(s)\)</span> is stable with all <em>real</em> poles and only one <em>right half-plane</em> zero.</p></li>
+<li><p>A theorem guarantees the step response will not have overshoot.</p></li>
+<li><p>However, recall that the system will have <em>undershoot</em>.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Two Right Half-Plane Zeros</em></p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__1__39.png">
+</div>
+<p></p>
+</figure>
+<p>With <span class="math inline">\(\dfrac{b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}\dfrac{1}{s}\)</span> we previously showed that</p>
+<p><span class="math display">\[
+\begin{aligned}
+C(s)  &amp; =\frac{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}R(s)\\
+&amp; =\frac{(b_{2}s^{2}+b_{1}s+b_{0})(s-2)}{s^{4}+(a_{0}+b_{2}-4)s^{3}
++(b_{1}-4a_{0}-2b_{2}+3)s^{2}+(3a_{0}+b_{0}-2b_{1})s-2b_{0}}\frac{R_{0}}{s}\\
+&amp; =\frac{(b_{2}s^{2}+b_{1}s+b_{0})(s-2)}{s^{4}+f_{3}s^{3}+f_{2}s^{2}
++f_{1}s+f_{0}}\frac{R_{0}}{s}.
+\end{aligned}
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\left[
+\begin{array}{c}
+b_{2}\\
+b_{1}\\
+b_{0}\\
+a_{0}
+\end{array}
+\right]  =\left[
+\begin{array}{l}
+f_{0}/2+f_{1}+2f_{2}+5f_{3}+14\\
+-f_{0}-2f_{1}-3f_{2}-6f_{3}-15\\
+-f_{0}/2\\
+-f_{0}/2-f_{1}-2f_{2}-4f_{3}-10
+\end{array}
+\right]  .
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Two Right Half-Plane Zeros</em> <strong>(continued)</strong></p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__1__40.png">
+</div>
+<p></p>
+</figure>
+<p><span class="math display">\[
+C(s)=\frac{(b_{2}s^{2}+b_{1}s+b_{0})(s-2)}{s^{4}+f_{3}s^{3}+f_{2}s^{2}
++f_{1}s+f_{0}}\frac{R_{0}}{s}=\frac{(b_{2}s^{2}+b_{1}s+b_{0})(s-2)}{(s+r)^{4}
+}\frac{R_{0}}{s}
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\begin{aligned}
+f_{3}  &amp; =r_{1}+r_{2}+r_{3}+r_{4}\\
+f_{2}  &amp; =r_{1}r_{2}+r_{1}r_{3}+r_{1}r_{4}+r_{2}r_{3}+r_{2}r_{4}+r_{3}r_{4}\\
+f_{1}  &amp; =r_{1}r_{2}r_{3}+r_{1}r_{2}r_{4}+r_{1}r_{3}r_{4}+r_{2}r_{3}r_{4}\\
+f_{0}  &amp; =r_{1}r_{2}r_{3}r_{4}
+\end{aligned}
+\]</span></p>
+<p>and <span class="math inline">\(r_{1}=r_{2}=r_{3}=r_{4}=r.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Two Right Half-Plane Zeros</em> <strong>(continued)</strong></p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_009__1__41.png">
+</div>
+<p></p>
+</figure>
+<p><span class="math display">\[
+C(s)=\frac{(b_{2}s^{2}+b_{1}s+b_{0})(s-2)}{(s+r)^{4}}\frac{R_{0}}{s}.
+\]</span></p>
+<p>With <span class="math inline">\(r=1\)</span> it turns out that</p>
+<p><span class="math display">\[
+b_{2}=50.5,\quad{}b_{1}=-66,\quad{}b_{0}=-0.5.
+\]</span></p>
+<p>The zeros of the controller are the solutions to</p>
+<p><span class="math display">\[
+b_{2}s^{2}+b_{1}s+b_{0}=50.5s^{2}-66s-0.5=0
+\]</span></p>
+<p>or</p>
+<p><span class="math display">\[
+1.3145,\quad{}-0.0075.
+\]</span></p>
+<p>So</p>
+<p><span class="math display">\[
+C(s)=\frac{50.5(s-1.3145)(s+0.0075)(s-2)}{(s+1)^{4}}\frac{R_{0}}{s}.
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Two Right Half-Plane Zeros</em> <strong>(continued)</strong></p>
+<p><span class="math display">\[
+C(s)=\frac{50.5(s-1.3145)(s+0.0075)(s-2)}{(s+1)^{4}}\frac{R_{0}}{s}.
+\]</span></p>
+<p><strong>Reference filter for the two RHP&nbsp;zeros:</strong></p>
+<p>Two right half-plane zeros at <span class="math inline">\(z_{1}=2\)</span> and <span class="math inline">\(z_{2}=1.3145.\)</span> &nbsp;Form the polynomial</p>
+<p><span class="math display">\[
+\begin{aligned}
+(s-z_{1})(s-z_{2})  &amp; =(s-1.3145)(s-2)=s^{2}-3.3145s+\underset{\omega_{0}
+^{2}}{\underbrace{2.629}}\\
+&amp; \Longrightarrow G_{fz_{1}z_{2}}=\left(  \frac{\omega_{0}}{s+\omega_{0}
+}\right)  ^{2}\!\text{ where }\omega_{0}^{2}=2.629.
+\end{aligned}
+\]</span></p>
+<p><strong>Reference filter for the one LHP&nbsp;zero:</strong></p>
+<p>One left half-plane zero at <span class="math inline">\(z_{3}=-0.0075.\)</span> Set <span class="math inline">\(\alpha=-z_{3}=0.0075.\)</span></p>
+<p><span class="math display">\[
+G_{fz_{3}}=\frac{\alpha}{s+\alpha}=\frac{0.0075}{s+0.0075}.
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087b__42.png">
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Two Right Half-Plane Zeros</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087b__43.png">
+</div>
+</div>
+<p>Step response with closed-loop poles set at <span class="math inline">\(-1\)</span> and using an input reference filter.</p>
+<figure>
+<p>
+</p><div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087d__44.png">
+</div>
+<p></p>
+</figure>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Two Right Half-Plane Zeros</em> <strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087b__45.png">
+</div>
+</div>
+<ul>
+<li><p>The transfer function <span class="math inline">\(G(s)=\dfrac{s-2}{(s-1)(s-3)}\)</span> is a toy example!</p></li>
+<li><p>The poles and zeros of a physical system are never known exactly.</p></li>
+<li><p>If the TF was really <span class="math inline">\(G(s)=\dfrac{s-2}{(s-0.9)(s-3)}\)</span> then, using the above controller,</p>
+<p>the closed-loop system would be <strong>unstable</strong>!</p></li>
+<li><p>If small changes in the model result in the CL&nbsp;system being unstable,</p>
+<p>we say it is <strong>not</strong> robust.</p></li>
+<li><p>When a system has poles in the <strong>open</strong> <strong>right half-plane</strong>,</p>
+<p>it may not be possible to find a robust controller!</p></li>
+<li><p><strong>Nyquist theory</strong> provides the insight into this problem.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Eliminating Overshoot with a 2 DOF Controller
+</div>
+<div class="center">
+
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087__46.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{c}(s)G(s)\)</span> be at least type 1 and</p>
+<p><span class="math display">\[
+G_{CL}(s)=\frac{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}=\frac{n(s)}{d(s)}\quad{}\text{stable with real poles}
+\]</span></p>
+<p><strong>(a)</strong> <strong>No right half-plane zeros</strong></p>
+<ul>
+<li><span class="math inline">\(n(s)\)</span> has all of its roots in the open left half-plane.</li>
+</ul>
+<p><span class="math display">\[
+G_{f}(s)\triangleq\frac{n(0)}{n(s)}.
+\]</span></p>
+<p>Then the inverse Laplace transform of</p>
+<p><span class="math display">\[
+C(s)=G_{f}(s)G_{CL}(s)\frac{R_{0}}{s}
+\]</span></p>
+<p>will <em>not</em> have overshoot and <span class="math inline">\(c(\infty)=R_{0}\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Eliminating Overshoot with a 2 DOF Controller
+</div>
+<div class="center">
+
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087__47.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{c}(s)G(s)\)</span> be at least type 1 and</p>
+<p><span class="math display">\[
+G_{CL}(s)=\frac{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}=\frac{n(s)}{d(s)}\quad{}\text{stable with real poles}
+\]</span></p>
+<p><strong>(b) One right half-plane zero</strong></p>
+<ul>
+<li><p><span class="math inline">\(n(s)=\bar{n}(s)(s-z).\)</span></p></li>
+<li><p><span class="math inline">\(\bar{n}(s)\)</span> has all its roots in the open left half-plane.</p></li>
+<li><p><span class="math inline">\(z&gt;0\)</span>.</p></li>
+</ul>
+<p><span class="math display">\[
+G_{f}(s)\triangleq\frac{\bar{n}(0)}{\bar{n}(s)}.
+\]</span></p>
+<p>Then the inverse Laplace transform of</p>
+<p><span class="math display">\[
+C(s)=G_{f}(s)G_{CL}(s)\frac{R_{0}}{s}
+\]</span></p>
+<p>will <em>not</em> have overshoot and <span class="math inline">\(c(\infty)=R_{0}\)</span> (It will have undershoot).</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Eliminating Overshoot with a 2 DOF Controller
+</div>
+<div class="center">
+
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_087__48.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{c}(s)G(s)\)</span> be at least type 1 and</p>
+<p><span class="math display">\[
+G_{CL}(s)=\frac{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}=\frac{n(s)}{d(s)}\quad{}\text{stable with real poles}
+\]</span></p>
+<p><strong>(c)</strong> <strong>Two right half-plane zeros</strong></p>
+<ul>
+<li><p><span class="math inline">\(n(s)=\bar{n}(s)(s-z_{1})(s-z_{2})=\bar{n}(s)(s^{2}-(z_{1}+z_{2}
+)s+z_{1}z_{2}).\)</span></p></li>
+<li><p><span class="math inline">\(\bar{n}(s)\)</span> has all of its roots in the open left half-plane.</p></li>
+<li><p><span class="math inline">\(\operatorname{Re}\{z_{1}\}&gt;0,\operatorname{Re}\{z_{2}\}&gt;0\)</span> and <span class="math inline">\(\omega_{0}\triangleq\sqrt{z_{1}z_{2}}.\)</span></p></li>
+</ul>
+<p><span class="math display">\[
+G_{f}(s)\triangleq\frac{\bar{n}(0)}{\bar{n}(s)}\left(  \frac{\omega_{0}
+    }{s+\omega_{0}}\right)  ^{2}.
+\]</span></p>
+<p>Then the inverse Laplace transform of</p>
+<p><span class="math display">\[
+C(s)=G_{f}(s)G_{CL}(s)\frac{R_{0}}{s}
+\]</span></p>
+<p>will <em>not</em> have overshoot and <span class="math inline">\(c(\infty)=R_{0}\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Definition
+</div>
+<div class="center">
+<p>Internal Stability</p>
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_053__49.png">
+</div>
+</div>
+<p>Two external inputs: <span class="math inline">\(R(s)\)</span> and <span class="math inline">\(D(s)\)</span>.</p>
+<p>We are interested in the responses <span class="math inline">\(E(s),U(s),C(s).\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)  &amp; =\frac{1}{1+G_{c}(s)G(s)}R(s)+\frac{G(s)}{1+G_{c}(s)G(s)}D(s)\\
+C(s)  &amp; =\frac{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}R(s)-\frac{G(s)}{1+G_{c}
+(s)G(s)}D(s)\\
+U(s)  &amp; =\frac{G_{c}(s)}{1+G_{c}(s)G(s)}R(s)+\frac{G_{c}(s)G(s)}
+{1+G_{c}(s)G(s)}D(s).
+\end{aligned}
+\]</span></p>
+<p><em>Internal Stability</em></p>
+<p>The system is said to be <em>internally stable</em> if these six transfer functions are stable.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Closed-Loop Characteristic Polynomial
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)  &amp; =\frac{1}{1+G_{c}(s)G(s)}R(s)+\frac{G(s)}{1+G_{c}(s)G(s)}D(s)\\
+C(s)  &amp; =\frac{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}R(s)-\frac{G(s)}{1+G_{c}
+(s)G(s)}D(s)\\
+U(s)  &amp; =\frac{G_{c}(s)}{1+G_{c}(s)G(s)}R(s)+\frac{G_{c}(s)G(s)}
+{1+G_{c}(s)G(s)}D(s).
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(G(s)=\dfrac{b(s)}{a(s)}\)</span> is strictly proper<span class="math inline">\(,\)</span> &nbsp;<span class="math inline">\(G_{c}(s)=\dfrac{b_{c}
+(s)}{a_{c}(s)}\)</span> is proper.</p>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)  &amp; =\frac{a_{c}(s)a(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R(s)+\frac
+{a_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s)\\
+&amp; \\
+C(s)  &amp; =\frac{b_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R(s)-\frac
+{a_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s)\\
+&amp; \\
+U(s)  &amp; =\frac{a(s)b_{c}(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R(s)+\frac
+{b_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s).
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>The <em>closed-loop characteristic polynomial</em> is <span class="math inline">\(a_{CL}(s)\triangleq
+a_{c}(s)a(s)+b_{c}(s)b(s)\)</span>.</p></li>
+<li><p>The six transfer functions are stable iff <span class="math inline">\(a_{CL}(s)\neq0\)</span> for <span class="math inline">\(\operatorname{Re}\{s\}\geq0.\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Polynomials
+</div>
+<p><strong>Definition</strong> &nbsp;<em>Coprime Polynomials</em></p>
+<p><span class="math inline">\(a(s),b(s)\)</span> are <em>coprime</em> if there is no <span class="math inline">\(s_{0}\)</span> such that <span class="math inline">\(a(s_{0}
+)=b(s_{0})=0.\)</span></p>
+<p><strong>Example</strong> <span class="math inline">\(a(s)=(s+1)(s-1)\)</span> &nbsp;and <span class="math inline">\(b(s)=s-1\)</span></p>
+<p>Not coprime as <span class="math inline">\(a(1)=b(1)=0.\)</span></p>
+<p>They both have the factor <span class="math inline">\(s-1.\)</span></p>
+<p><strong>Example &nbsp;</strong><span class="math inline">\(a(s)=(s+1)(s^{2}+1)\)</span> and<span class="math inline">\(\ b(s)=s-1.\)</span></p>
+<p><span class="math inline">\(a(s)\)</span> and <span class="math inline">\(b(s)\)</span> are coprime as <span class="math inline">\(b(s)=0\)</span> only if <span class="math inline">\(s=1\)</span> and <span class="math inline">\(a(1)\neq
+0.\)</span></p>
+<p><span class="math inline">\(a(s)\)</span> and <span class="math inline">\(b(s)\)</span> do <em>not</em> have a factor in common.</p>
+<ul>
+<li><span class="math inline">\(a(s)\)</span> and <span class="math inline">\(b(s)\)</span> are coprime if and only if they do <em>not</em> have a common factor.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide ch10-tight-slide">
+<div class="slide-title">
+Definition
+</div>
+<p><em>Coprime Transfer Functions</em></p>
+<p>A transfer function <span class="math inline">\(G(s)=\dfrac{b(s)}{a(s)}\)</span> is <em>coprime</em> if <span class="math inline">\(a(s)\)</span> and <span class="math inline">\(b(s)\)</span> are coprime.</p>
+<ul>
+<li>We will always assume <span class="math inline">\(G(s)\)</span> and <span class="math inline">\(G_{c}(s)\)</span> are each coprime transfer functions.</li>
+</ul>
+<p><strong>Remark</strong> &nbsp;Suppose the transfer function of a physical system is</p>
+<p><span class="math display">\[
+G(s)=\frac{s+3}{s(s+1)(s+2)}.
+\]</span></p>
+<p>There is no sense in writing this as</p>
+<p><span class="math display">\[
+G(s)=\frac{(s+3)(s+4)}{s(s+1)(s+2)(s+4)}
+\]</span></p>
+<p>Similarly for <span class="math inline">\(G_{c}(s)\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Unstable Pole-Zero Cancellation
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)  &amp; =\frac{a_{c}(s)a(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R(s)+\frac
+{a_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s)\\
+&amp; \\
+C(s)  &amp; =\frac{b_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R(s)-\frac
+{a_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s)\\
+&amp; \\
+U(s)  &amp; =\frac{a(s)b_{c}(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}R(s)+\frac
+{b_{c}(s)b(s)}{a_{c}(s)a(s)+b_{c}(s)b(s)}D(s).
+\end{aligned}
+\]</span></p>
+<p>All six transfer functions of the control system are stable if</p>
+<p><span class="math display">\[
+a_{c}(s)a(s)+b_{c}(s)b(s)\neq0\qquad{}\text{for}\qquad{}\operatorname{Re}\{s\}\geq0.
+\]</span></p>
+<ul>
+<li><p>However, this can be tricky!</p></li>
+<li><p>Don’t just look at the denominator of one of the six transfer functions.</p></li>
+<li><p>The problem is pole-zero cancellation between <span class="math inline">\(G(s)\)</span> and <span class="math inline">\(G_{c}(s).\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation &nbsp;</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_051__50.png">
+</div>
+</div>
+<p><span class="math inline">\(E(s)=\dfrac{1}{1+G_{c}(s)G(s)}R(s)+\dfrac{G(s)}{1+G_{c}(s)G(s)}D(s).\)</span></p>
+<p>Let <span class="math inline">\(G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}=\dfrac{s-1}{s(s+1)}.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+E_{R}(s)  &amp; =\frac{1}{1+\dfrac{s-1}{s(s+1)}\dfrac{1}{s-1}}R(s)\\
+&amp; \\
+&amp; =\frac{s(s+1)(s-1)}{s(s+1)(s-1)+(s-1)}R(s)\\
+&amp; \\
+&amp; =\frac{s(s+1)(s-1)}{(s^{2}+s+1)(s-1)}R(s)\\
+&amp; \\
+&amp; =\frac{s(s+1)}{s^{2}+s+1}R(s).
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation</em> <strong>(continued)</strong><em>&nbsp;</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_051__51.png">
+</div>
+</div>
+<p><span class="math inline">\(G_{c}(s)=\dfrac{s-1}{s(s+1)},G(s)=\dfrac{1}{s-1}\)</span> &nbsp;and</p>
+<p><span class="math display">\[
+a_{c}(s)a(s)+b_{c}(s)b(s)=s(s+1)(s-1)+(s-1)=(s^{2}+s+1)(s-1)
+\]</span></p>
+<p>From the previous slide:</p>
+<p><span class="math display">\[
+E_{R}(s)=\frac{1}{1+\underset{G_{c}(s)}{\underbrace{\dfrac{s-1}{s(s+1)}}
+}\underset{G(s)}{\underbrace{\dfrac{1}{s-1}}}}R(s)=\frac{s(s+1)(s-1)}
+{(s^{2}+s+1)(s-1)}\frac{R_{0}}{s}=\frac{s+1}{s^{2}+s+1}R_{0}
+\]</span></p>
+<ul>
+<li><p>The transfer function <span class="math inline">\(\dfrac{E_{R}(s)}{R(s)}=\dfrac{s(s+1)}{s^{2}+s+1}\)</span> is stable <em>after</em> the cancellation.</p></li>
+<li><p>Note this was an <em>unstable&nbsp;</em>pole-zero cancellation.</p></li>
+<li><p>Such <em>unstable</em> pole-zero cancellations will <em>not</em> work in physical systems.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation</em> <strong>(continued)</strong><em>&nbsp;</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_051__52.png">
+</div>
+</div>
+<p><span class="math display">\[
+\!\!\!\!\!E_{D}(s)=\frac{\dfrac{1}{s-1}}{1+\dfrac{s-1}{s(s+1)}\dfrac{1}{s-1}
+}D(s)=\frac{s(s+1)}{s(s+1)(s-1)+(s-1)}\frac{D_{0}}{s}=\frac{s(s+1)}
+{(s^{2}+s+1)(s-1)}\frac{D_{0}}{s}.
+\]</span></p>
+<ul>
+<li><p>The TF <span class="math inline">\(\dfrac{E_{D}(s)}{D(s)}=\dfrac{s(s+1)}{(s^{2}+s+1)(s-1)}\)</span> is <em>unstable</em> due to the pole at <span class="math inline">\(s=1.\)</span></p></li>
+<li><p>This results in <span class="math inline">\(|e_{D}(t)|\rightarrow\infty.\)</span></p></li>
+<li><p>This system is <em>not</em> internally stable.</p></li>
+<li><p><span class="math inline">\(\dfrac{E_{R}(s)}{R(s)}\)</span> is stable (due to unstable pole-zero cancellation), but <span class="math inline">\(\dfrac{E_{D}(s)}{D(s)}\)</span> is <em>not</em> stable.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_051__53.png">
+</div>
+</div>
+<p>Let <span class="math inline">\(G_{c}(s)=\dfrac{s-1}{s(s+1)}\)</span>. &nbsp;Even with <span class="math inline">\(D(s)=0\)</span> this controller will not work.</p>
+<p>Any model is an <em>approximation</em> of the physical system.</p>
+<p>Though we write <span class="math inline">\(G(s)\triangleq\dfrac{1}{s-1}\)</span> it is really <span class="math inline">\(G(s)\triangleq
+\dfrac{1}{s-p}\)</span> where <span class="math inline">\(p\approx1.\)</span></p>
+<p><span class="math display">\[
+E_{R}(s)=\frac{1}{1+\dfrac{s-1}{s(s+1)}\dfrac{1}{s-p}}R(s)=\frac{s(s+1)\left(
+s-p\right)  }{s^{3}+(1-p)s^{2}+(1-p)s-1}\frac{R_{0}}{s}.
+\]</span></p>
+<ul>
+<li><p>For <span class="math inline">\(p\neq1\)</span> there is no cancellation!</p></li>
+<li><p><span class="math inline">\(s^{3}+(1-p)s^{2}+(1-p)s-1\)</span> is unstable for all <span class="math inline">\(p\)</span>!</p></li>
+<li><p><span class="math inline">\(\left.  s^{3}+(1-p)s^{2}+(1-p)s-1\right\vert _{p=1}=(s^{2}
++s+1)(s-1)\)</span></p></li>
+</ul>
+<p><span class="math inline">\(\qquad\blacktriangleright\)</span> &nbsp;Only if <span class="math inline">\(p\)</span> is <em>exactly</em> <span class="math inline">\(1\)</span> is there cancellation. &nbsp;This won’t happen!</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_052__54.png">
+</div>
+</div>
+<p><span class="math inline">\(G_{c}(s)=\dfrac{K}{s-1}\)</span> and suppose we have (unrealistic) exact cancellation.</p>
+<p><span class="math display">\[
+\begin{aligned}
+E(s)  &amp; =\frac{1}{1+\dfrac{K}{s-1}\dfrac{s-1}{s(s+1)}}R(s)+\frac{\dfrac
+{s-1}{s(s+1)}}{1+\dfrac{K}{s-1}\dfrac{s-1}{s(s+1)}}D(s)\\
+&amp; \\
+&amp; =\frac{s(s+1)(s-1)}{(s^{2}+s+K)(s-1)}\frac{R_{0}}{s}+\frac{(s-1)^{2}}
+{(s^{2}+s+K)(s-1)}\frac{D_{0}}{s}\\
+&amp; \\
+&amp; =\frac{s+1}{s^{2}+s+K}R_{0}+\frac{s-1}{s^{2}+s+K}\frac{D_{0}}{s}.
+\end{aligned}
+\]</span></p>
+<p>With this ” perfect”&nbsp;unstable pole-zero cancellation and <span class="math inline">\(K&gt;0,\)</span> <span class="math inline">\(sE(s)\)</span> is stable.</p>
+<p><span class="math inline">\(\Longrightarrow\)</span> <span class="math inline">\(e(\infty)=-\dfrac{D_{0}}{K}.\)</span> &nbsp;Won’t work! (See next slide.)</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation</em> &nbsp;<strong>(continued)</strong></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_052__55.png">
+</div>
+</div>
+<p><span class="math inline">\(G_{c}(s)=\dfrac{K}{s-1}.\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+U(s)  &amp; =\frac{G_{c}(s)}{1+G_{c}(s)G(s)}R(s)+\frac{G_{c}(s)G(s)}
+{1+G_{c}(s)G(s)}D(s)\\
+&amp; =\frac{\dfrac{K}{s-1}}{1+\dfrac{K}{s-1}\dfrac{s-1}{s(s+1)}}R(s)+\frac
+{\dfrac{K}{s-1}\dfrac{s-1}{s(s+1)}}{1+\dfrac{K}{s-1}\dfrac{s-1}{s(s+1)}}D(s)\\
+&amp; =\frac{s(s+1)K}{(s^{2}+s+K)(s-1)}\frac{R_{0}}{s}+\frac{K}{s^{2}+s+K}
+\frac{D_{0}}{s}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p><span class="math inline">\(R(s)=R_{0}/s\)</span> will cause the input <span class="math inline">\(u(t)\)</span> to the physical system to be unbounded.</p></li>
+<li><p>Even with perfect (impossible) pole-zero cancellation, <span class="math inline">\(G_{c}
+(s)=\dfrac{K}{s-1}\)</span> is not viable.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Unstable Pole-Zero Cancellation</em></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_052__56.png">
+</div>
+</div>
+<p><em>More Realistic View</em></p>
+<p>In reality <span class="math inline">\(G(s)=\dfrac{b(s)}{a(s)}=\dfrac{s-z}{s(s+1)}\)</span> with <span class="math inline">\(z\approx1,\)</span> but <span class="math inline">\(z\neq1.\)</span></p>
+<p><span class="math display">\[
+E_{R}(s)=\frac{1}{1+\dfrac{1}{s-1}\dfrac{s-z}{s(s+1)}}R(s)=\frac
+{s(s+1)(s-1)}{s^{3}-z}R_{0}
+\]</span></p>
+<ul>
+<li>Only if <span class="math inline">\(z=1\)</span> does <span class="math inline">\(s^{3}-z\)</span> equal <span class="math inline">\((s-1)(s^{2}+s+1)\)</span>.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Pole–Zero Cancellation Between <span class="math inline">\(G_{CL}(s)\)</span> and <span class="math inline">\(R(s),D(s)\)</span>
+</div>
+<p><span class="math inline">\(G_{CL}(s)\)</span><strong>&nbsp;and</strong> <span class="math inline">\(R(s),D(s)\)</span></p>
+<ul>
+<li><p>Unstable pole-zero cancellation between <span class="math inline">\(G(s)\)</span> and <span class="math inline">\(G_{c}(s)\)</span> never works.</p></li>
+<li><p>We do unstable pole-zero cancellations between <span class="math inline">\(G_{CL}(s)=\dfrac
+{G_{c}(s)G(s)}{1+G_{c}(s)G(s)}\)</span> and <span class="math inline">\(R(s),D(s)!\)</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/dio_016b__57.png">
+</div>
+</div></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    \!\!\!\!\!\!\!\!\!\!\!\!\!\!E_{D}(s)  &amp; =\!\!\!\frac{G(s)}{1+G_{c}
+    (s)G(s)}D(s)=\frac{\dfrac{b}{s(s+a)}}{1+\underset{G_{c}(s)}{\underbrace{\dfrac
+    {b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}{s+a_{0}}\dfrac{1}{s^{2}+1}}}\dfrac
+    {b}{s(s+a)}}\frac{D_{0}}{s^{2}+1}\\
+    &amp; \\
+    \!\!\!\!\!\!\!\!\!\!\!\!\!\!  &amp; =\!\!\!\underset{G_{CL}(s)}{\underbrace{\frac
+    {(s+a_{0})(s^{2}+1)b}{s^{5}+(a+a_{0})s^{4}+(aa_{0}+bb_{3}+1)s^{3}
+    +(a+a_{0}+bb_{2})s^{2}+(aa_{0}+bb_{1})s+bb_{0}}}}\frac{D_{0}}{s^{2}+1}\\
+    &amp; \\
+    \!\!\!\!\!\!\!\!\!\!\!\!\!\!  &amp; =\!\!\!\frac{(s+a_{0})b}{s^{5}+f_{4}
+    s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}}D_{0}.
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide ch10-tight-slide">
+<div class="slide-title">
+Pole–Zero Cancellation Between <span class="math inline">\(G_{CL}(s)\)</span> and <span class="math inline">\(R(s),D(s)\)</span>
+</div>
+<p><span class="math inline">\(G_{CL}(s)\)</span><strong>&nbsp;and</strong> <span class="math inline">\(R(s)\)</span><strong>&nbsp;&amp;</strong> <span class="math inline">\(D(s)\)</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+\!\!\!\!\!E_{D}(s)  &amp; =\underset{G_{CL}(s)}{\underbrace{\frac{(s+a_{0}
+)(s^{2}+1)b}{s^{5}+(a+a_{0})s^{4}+(aa_{0}+bb_{3}+1)s^{3}+(a+a_{0}+bb_{2}
+)s^{2}+(aa_{0}+bb_{1})s+bb_{0}}}}\frac{D_{0}}{s^{2}+1}\\
+&amp; \\
+&amp; =\frac{(s+a_{0})b}{s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}}
+D_{0}.
+\end{aligned}
+\]</span></p>
+<p>Cancelled the <span class="math inline">\(1/(s^{2}+1)\)</span> of <span class="math inline">\(D(s)\)</span> with the <span class="math inline">\(s^{2}+1\)</span> in the numerator of <span class="math inline">\(E_{D}(s)/D(s)=G_{CL}(s).\)</span></p>
+<p>Now suppose the disturbance is really</p>
+<p><span class="math display">\[
+D(s)=\frac{D_{0}}{s^{2}+1+\epsilon}.
+\]</span></p>
+<p>Then</p>
+<p><span class="math display">\[
+\begin{aligned}
+E_{D}(s)  &amp; =\frac{(s+a_{0})(s^{2}+1)b}{s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}
+s^{2}+f_{1}s+f_{0}}\frac{D_{0}}{s^{2}+1+\epsilon}\\
+&amp; =\frac{(s+a_{0})(s^{2}+1+\epsilon-\epsilon)b}{s^{5}+f_{4}s^{4}+f_{3}
+s^{3}+f_{2}s^{2}+f_{1}s+f_{0}}\frac{D_{0}}{s^{2}+1+\epsilon}\\
+&amp; =\frac{(s+a_{0})b}{s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}}
+D_{0}-\underset{H(s)}{\underbrace{\frac{(s+a_{0})b}{s^{5}+f_{4}s^{4}
++f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}}}}\frac{\epsilon D_{0}}{s^{2}+1+\epsilon}.
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Pole–Zero Cancellation Between <span class="math inline">\(G_{CL}(s)\)</span> and <span class="math inline">\(R(s),D(s)\)</span>
+</div>
+<p><span class="math inline">\(G_{CL}(s)\)</span><strong>&nbsp;and</strong> <span class="math inline">\(R(s),D(s)\)</span></p>
+<p><span class="math display">\[
+E_{D}(s)=\frac{(s+a_{0})b}{s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}
+s+f_{0}}D_{0}-\underset{H(s)}{\underbrace{\frac{(s+a_{0})b}{s^{5}+f_{4}
+s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}}}}\frac{\epsilon D_{0}}
+{s^{2}+1+\epsilon}.
+\]</span></p>
+<p>As <span class="math inline">\(H(s)\)</span> is stable</p>
+<p><span class="math display">\[
+e_{D}(t)\rightarrow-\epsilon D_{0}|H(j\sqrt{1+\epsilon})|\sin\!\left(
+(\sqrt{1+\epsilon})t+
+\angle H(j\sqrt{1+\epsilon})\right)  \!.
+\]</span></p>
+<ul>
+<li><p>The error <span class="math inline">\(e_{D}(t)\nrightarrow0\)</span>, but does remain <em>bounded</em> and small (assuming <span class="math inline">\(\epsilon\)</span> is small).</p></li>
+<li><p>The six closed-loop system transfer functions are stable with closed-loop characteristic polynomial</p></li>
+</ul>
+<p><span class="math display">\[
+\begin{aligned}
+    &amp; \!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!s^{5}+(a+a_{0})s^{4}+(aa_{0}
+    +bb_{3}+1)s^{3}+(a+a_{0}+bb_{2})s^{2}+(aa_{0}+bb_{1})s+bb_{0}\\
+    &amp; \\
+    &amp; =s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}
+    \end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Pole–Zero Cancellation Between <span class="math inline">\(G_{CL}(s)\)</span> and <span class="math inline">\(R(s),D(s)\)</span>
+</div>
+<p><span class="math inline">\(G_{CL}(s)\)</span><strong>&nbsp;and</strong> <span class="math inline">\(R(s),D(s)\)</span></p>
+<ul>
+<li><p>No physical system can handle unbounded reference or disturbance inputs.</p>
+<p>We take them to be bounded in applications.</p></li>
+<li><p>Bounded disturbances <span class="math inline">\(D(s)\)</span> have simple poles on the <span class="math inline">\(j\omega\)</span> axis.</p>
+<p>E.g., <span class="math inline">\(D(s)=D_{0}/s,D(s)=D_{0}/(s^{2}+\omega^{2}).\)</span></p></li>
+<li><p>An inexact cancellation between <span class="math inline">\(\dfrac{E_{D}(s)}{D(s)}=\dfrac
+{G(s)}{1+G_{c}(s)G(s)}\)</span> and <span class="math inline">\(D(s)\)</span></p>
+<p>still results in a bounded error signal.</p></li>
+<li><p>Bounded reference inputs also have simple poles on the <span class="math inline">\(j\omega\)</span> axis.</p>
+<p>E.g., <span class="math inline">\(R(s)=R_{0}/s,R(s)=R_{0}/(s^{2}+\omega^{2}).\)</span></p></li>
+<li><p>An inexact cancellation between <span class="math inline">\(\dfrac{E_{R}(s)}{R(s)}=\dfrac
+{1}{1+G_{c}(s)G(s)}\)</span> and <span class="math inline">\(R(s)\)</span></p>
+<p>results in bounded error signal.</p></li>
+</ul>
+<p><strong>Remark</strong> &nbsp;Ramp reference inputs are unbounded, i.e., <span class="math inline">\(R(s)=\omega
+_{0}/s^{2}\)</span> or <span class="math inline">\(r(t)=tu_{s}(t).\)</span></p>
+<p>In any application the ramp will only be applied for a finite time. For example</p>
+<p><span class="math display">\[
+r(t)=\left\{
+\begin{array}{ll}
+\omega_{0}t, &amp; 0\leq t\leq\theta_{0}/\omega_{0},\\
+\theta_{0}, &amp; \theta_{0}/\omega_{0}&lt;t.
+\end{array}
+\right.
+\]</span></p>
+<p>This is a bounded reference signal.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<p><span class="math display">\[
+\frac{\theta(s)}{\delta(s)}=G(s)=\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}
++0.921s}.
+\]</span></p>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/chap1_fig06__58.png">
+</div>
+</div>
+<p><strong>Reference Step Input</strong>: <span class="math inline">\(r(t)=0.2u_{s}(t)\)</span> radians (<span class="math inline">\(11\)</span> degrees) to pitch up.</p>
+<p><strong>Actuator Constraint:</strong> Elevator deflection is restricted to <span class="math inline">\(-25^{\circ}\leq\delta\leq25^{\circ}.\)</span></p>
+<p><strong>Design Specifications:</strong></p>
+<p>(1) Overshoot less than 10%.</p>
+<p>(2) Rise time less than 2 seconds.</p>
+<p>(3) Settling time less than 10 seconds.</p>
+<p>(4) Steady-state error less than 2%.</p>
+<p><strong>Disturbances</strong> due to wind gusts are modeled as an equivalent input to the elevator.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_118__59.png">
+</div>
+</div>
+<p><span class="math display">\[
+\frac{\theta(s)}{\delta(s)}=G(s)=\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}
++0.921s}\qquad{}\text{and}\qquad{}G_{c}(s)=\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}
+}{s^{2}+a_{1}s+a_{0}}\dfrac{1}{s}.
+\]</span></p>
+<p><span class="math display">\[
+\begin{aligned}
+\frac{C(s)}{R(s)}\!\!\!\!\!  &amp; =\!\!\!\!\!\!\frac{\dfrac{b_{3}s^{3}+b_{2}
+s^{2}+b_{1}s+b_{0}}{s^{2}+a_{1}s+a_{0}}\dfrac{1}{s}\dfrac{1.51s+0.1774}
+{s^{3}+0.739s^{2}+0.921s}}{1+\dfrac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}
+{s^{2}+a_{1}s+a_{0}}\dfrac{1}{s}\dfrac{1.51s+0.1774}{s^{3}+0.739s^{2}+0.921s}
+}\\
+&amp; \\
+\!\!\!\!\!  &amp; =\!\!\!\!\!\!\!\frac{(b_{2}s^{2}+b_{1}s+b_{0})(1.51s+0.1774)}
+{s(s^{2}+a_{1}s+a_{0})(s^{3}+0.739s^{2}+0.921s)+(b_{3}s^{3}+b_{2}s^{2}
++b_{1}s+b_{0})(1.51s+0.1774)}\\
+&amp; \\
+\!\!\!\!\!  &amp; =\!\!\!\!\!\!\frac{(b_{2}s^{2}+b_{1}s+b_{0})(1.51s+0.1774)}
+{a_{CL}(s)}
+\end{aligned}
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_118__60.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+\frac{C(s)}{R(s)}  &amp; =\frac{(b_{2}s^{2}+b_{1}s+b_{0})(1.51s+0.1774)}
+{a_{CL}(s)}\\
+a_{CL}(s)\!\!\!  &amp; =\!\!\!s^{6}+(a_{1}+\!0.739)s^{5}+(a_{0}+\!0.739a_{1}
++\!1.51b_{3}+\!0.921)s^{4}+\\
+&amp; \!\!(0.739a_{0}+\!0.921a_{1}+\!1.51b_{2}+\!0.1774b_{3})s^{3}\!+(0.921a_{0}
++1.51b_{1}+0.1774b_{2})s^{2}+\\
+&amp; (1.51b_{0}+0.1774b_{1})s+0.1774b_{0}.\\
+a_{CL}(s)  &amp; =s^{6}+f_{5}s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}s^{2}+f_{1}s+f_{0}
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+\left[
+\begin{array}{c}
+f_{5}\\
+f_{4}\\
+f_{3}\\
+f_{2}\\
+f_{1}\\
+f_{0}
+\end{array}
+\right]  =\left[
+\begin{array}{cccccc}
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0\\
+1.51 &amp; 0 &amp; 0 &amp; 0 &amp; 0.739 &amp; 1\\
+0.1774 &amp; 1.51 &amp; 0 &amp; 0 &amp; 0.921 &amp; 0.739\\
+0 &amp; 0.1774 &amp; 1.51 &amp; 0 &amp; 0 &amp; 0.921\\
+0 &amp; 0 &amp; 0.1774 &amp; 1.51 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0.1774 &amp; 0 &amp; 0
+\end{array}
+\right]  \left[
+\begin{array}{c}
+b_{3}\\
+b_{2}\\
+b_{1}\\
+b_{0}\\
+a_{1}\\
+a_{0}
+\end{array}
+\right]  +\left[
+\begin{array}{c}
+0.739\\
+0.921\\
+0\\
+0\\
+0\\
+0
+\end{array}
+\right]
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide ch10-ultra-tight-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<p>How do we choose <span class="math inline">\(a_{CL}(s)=s^{6}+f_{5}s^{5}+f_{4}s^{4}+f_{3}s^{3}+f_{2}
+s^{2}+f_{1}s+f_{0}?\)</span></p>
+<p><span class="math display">\[
+\left[
+\begin{array}{c}
+b_{3}\\
+b_{2}\\
+b_{1}\\
+b_{0}\\
+a_{1}\\
+a_{0}
+\end{array}
+\right]  \!\!=\!\!\left[  \!\!
+\begin{array}{cccccc}
+0 &amp; 0 &amp; 0 &amp; 0 &amp; 1 &amp; 0\\
+1.51 &amp; 0 &amp; 0 &amp; 0 &amp; 0.739 &amp; 1\\
+0.1774 &amp; 1.51 &amp; 0 &amp; 0 &amp; 0.921 &amp; 0.739\\
+0 &amp; 0.1774 &amp; 1.51 &amp; 0 &amp; 0 &amp; 0.921\\
+0 &amp; 0 &amp; 0.1774 &amp; 1.51 &amp; 0 &amp; 0\\
+0 &amp; 0 &amp; 0 &amp; 0.1774 &amp; 0 &amp; 0
+\end{array}
+\!\!\right]  ^{-1}\!\!\left(  \!\!\left[
+\begin{array}{c}
+f_{5}\\
+f_{4}\\
+f_{3}\\
+f_{2}\\
+f_{1}\\
+f_{0}
+\end{array}
+\right]  \!\!-\!\!\left[
+\begin{array}{c}
+0.739\\
+0.921\\
+0\\
+0\\
+0\\
+0
+\end{array}
+\right]  \!\!\right)
+\]</span></p>
+<p><strong>Important Comments on Pole Placement</strong></p>
+<ul>
+<li><p>The choice of location for the closed-loop poles is crucial for good performance.</p></li>
+<li><p>Want the closed-loop poles far in the left half-plane for a fast response.</p></li>
+<li><p>The zeros of the controller <em>cannot</em> be chosen.</p></li>
+<li><p>If possible, avoid controllers with zeros in the right half-plane (undershoot).</p></li>
+<li><p>Zeros in the LHP can be eliminated by <span class="math inline">\(G_{f}(s).\)</span></p></li>
+<li><p>Do not saturate the actuator.</p></li>
+</ul>
+<p>Typically not any easy task to choose the location of the closed-loop poles.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<ul>
+<li><p>Put one of the closed-loop poles at <span class="math inline">\(-0.1774/1.51=-0.1175\)</span></p>
+<p>to cancel the zero of <span class="math inline">\(G(s)\)</span> at this location.</p></li>
+<li><p>Then <span class="math inline">\(a_{CL}(s)\)</span> has the form</p></li>
+</ul>
+<p><span class="math display">\[
+a_{CL}(s)=(s+0.1175)(s+r)(s^{2}+2\zeta_{1}\omega_{n1}s+\omega_{n1}^{2}
+    )(s^{2}+2\zeta_{2}\omega_{n2}s+\omega_{n2}^{2}).
+\]</span></p>
+<ul>
+<li><p>The ” tuning”&nbsp;process now consists of varying <span class="math inline">\(r,\zeta_{1},\omega_{n1},\zeta_{2},\omega_{n2}.\)</span></p></li>
+<li><p>After each choice check if the zeros of <span class="math inline">\(G_{c}(s)\)</span> are in the open LHP.</p>
+<ul>
+<li>If not, then a new set of values for <span class="math inline">\(r,\zeta_{1},\omega_{n1},\zeta
+_{2},\omega_{n2}\)</span> are chosen.</li>
+</ul></li>
+<li><p>With the zeros of <span class="math inline">\(G_{c}(s)\)</span> in the open LHP check:</p>
+<ul>
+<li><p>If the specifications are met.</p></li>
+<li><p>If the actuator does not saturate.</p></li>
+</ul></li>
+<li><p>Tried choosing all the CLP to be real and negative.</p>
+<ul>
+<li>Kept resulting in zeros of <span class="math inline">\(G_{c}(s)\)</span> in the open <em>right-half</em> plane.</li>
+</ul></li>
+<li><p>After quite a bit of trial and error <span class="math inline">\(a_{CL}(s)\)</span> was chosen to be</p></li>
+</ul>
+<p><span class="math display">\[
+a_{CL}(s)=(s+0.1175)(s+1.6)(s^{2}+5s+25)(s^{2}+5s+25).
+\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_118__61.png">
+</div>
+</div>
+<p><span class="math display">\[
+\begin{aligned}
+G_{c}(s)  &amp; =\frac{54.34s^{3}+238.4s^{2}+678.8s+662.3}{s^{2}+10.98s+1.28}
+\frac{1}{s}\\
+&amp; \\
+&amp; =\frac{54.34(s+1.49)(s-[-1.45+j2.47])(s-[-1.45-j2.47])}{(s+0.1175)(s+10.86)}
+\frac{1}{s}.
+\end{aligned}
+\]</span></p>
+<ul>
+<li><p>The zeros of <span class="math inline">\(G_{c}(s)\)</span> are all in the open <em>left-half</em> plane.</p></li>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> has one pole at <span class="math inline">\(-0.1175\)</span> to cancel the zero of <span class="math inline">\(G(s)\)</span> at <span class="math inline">\(-0.1175.\)</span></p></li>
+<li><p><span class="math inline">\(G_{f}(s)\triangleq\dfrac{b_{0}}{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}
+}=\dfrac{662.3}{54.34s^{3}+238.4s^{2}+678.8s+662.3}\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Control of Aircraft Pitch - 2 DOF Approach
+</div>
+<div class="center">
+<div class="center figure-block">
+<img src="assets/chapter10-source/figures/Tracking_120b__62.png">
+</div>
+</div>
+<ul>
+<li><p>The rise time is about <span class="math inline">\(1.5\)</span> seconds.</p></li>
+<li><p>The overshoot is zero.</p></li>
+<li><p>The <span class="math inline">\(2\%\)</span> settling time is <span class="math inline">\(3.1\)</span> seconds with zero steady-state error.</p></li>
+</ul>
+</div>
 
 
 </section>
@@ -337,12 +2543,12 @@ John N. Chiasson and Aykut C. Satici
         // The "normal" size of the presentation, aspect ratio will be preserved
         // when the presentation is scaled to fit different resolutions. Can be
         // specified using percentage units.
-        width: 1050,
+        width: 1600,
 
-        height: 700,
+        height: 900,
 
         // Factor of the display size that should remain empty around the content
-        margin: 0.1,
+        margin: 4.0e-2,
 
         math: {
           mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
