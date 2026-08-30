@@ -38,6 +38,7 @@
   </style>
   <link rel="stylesheet" href="../../../site_libs/revealjs/dist/theme/quarto-0427d8d92a431aa6a6430e53ec02a470.css">
   <link rel="stylesheet" href="revealjs-styles.css">
+  <link rel="stylesheet" href="chapter17-styles.css">
   <link href="../../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -150,8 +151,1069 @@ John N. Chiasson and Aykut C. Satici
 </div>
 
 </section>
-<section id="robustness-and-sensitivity" class="slide level2">
-<h2>Robustness and Sensitivity</h2>
+<section id="contents" class="title-slide slide level1 contents-slide center">
+<h1>Contents</h1>
+<ul>
+<li><p>Output Feedback of the Cart Position</p></li>
+<li><p>Robustness, Sensitivity, and Disturbance Rejection</p></li>
+<li><p>Right-Half-Plane Poles and Zeros</p></li>
+<li><p>Bode and Poisson Sensitivity Integrals</p></li>
+<li><p>State Feedback, Integral Action, and State Estimation</p></li>
+</ul>
+</section>
+
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Chapter 17 Robustness &amp; Sensitivity of Feedback
+</div>
+<ul>
+<li><p>Robustness - Small changes in the model parameters make the CL&nbsp;system unstable.</p></li>
+<li><p>Sensitivity - Small disturbances cause the outputs to vary far from their final values.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Models_fig_01_new2__1.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+X(s) &amp;=\text{}\underset{G_{X}(s)}{\underbrace{\frac{\kappa (J+m\ell
+^{2})s^{2}-\kappa mg\ell }{s^{2}(s^{2}-\alpha ^{2})}}}U(s)+\frac{-\kappa
+g(m\ell )^{2}(s\theta (0)+\dot{\theta}(0))+(s^{2}-\alpha
+^{2})(sx(0)+\dot{x}(0))}{s^{2}(s^{2}-\alpha ^{2})} \\
+\theta (s) &amp;=\text{}\underset{G_{\theta }(s)}{\underbrace{-\frac{\kappa
+m\ell }{s^{2}-\alpha ^{2}}}}U(s)+\frac{s\theta (0)+\dot{\theta}(0)}{
+s^{2}-\alpha ^{2}} \\
+\alpha ^{2} &amp;=\frac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)},\kappa =
+\frac{1}{Mm\ell ^{2}+J(M+m)}.
+\end{aligned}\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p>Feedback of only the cart position <span class="math inline">\(x\)</span>.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/models_fig_01_e10__2.png">
+</div>
+<p>The inverted pendulum has an open-loop pole <span class="math inline">\(p\)</span> and an open-loop zero <span class="math inline">\(z.\)</span> <span class="math display">\[p=\alpha =\sqrt{\frac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)}},z=\sqrt{
+\frac{mg\ell }{J+m\ell ^{2}}}.\]</span> With <span class="math inline">\(J=m\ell ^{2}/3\)</span> these become <span class="math display">\[\begin{aligned}
+p &amp;=\sqrt{\frac{mg\ell (M+m)}{Mm\ell ^{2}+(m\ell ^{2}/3)(M+m)}}=\sqrt{\frac{
+3}{4}\frac{g}{\ell }}\sqrt{\frac{M+m}{M+m/4}} \\
+z &amp;=\sqrt{\frac{mg\ell }{m\ell ^{2}/3+m\ell ^{2}}}=\sqrt{\frac{3}{4}\frac{g
+}{\ell }}.
+\end{aligned}\]</span></p>
+<ul>
+<li>The <span class="smallcaps">Quanser</span> values <span class="math inline">\(M=0.57,m=0.23,\ell =0.3207. \Longrightarrow \sqrt{\dfrac{M+m}{M+m/4}}=\sqrt{\dfrac{0.57+0.23}{ 0.57+0.23/4}}=1.129\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/models_fig_01_e10__3.png">
+</div>
+<p><strong>Open-Loop Model</strong> <span class="math display">\[G_{X}(s)=\frac{\kappa (J+m\ell ^{2})s^{2}-\kappa mg\ell }{s^{2}(s^{2}-\alpha
+^{2})}=\frac{1.59s^{2}-36.57}{s^{2}(s^{2}-29.25)}=1.59\frac{
+(s-4.7958)(s+4.7958)}{s^{2}(s-5.408)(s+5.408)}\]</span></p>
+<p><strong>Pole Placement Controller</strong> <span class="math display">\[G_{c}(s)=\frac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}}{
+s^{3}+a_{2}s^{2}+a_{1}s+a_{0}}\]</span></p>
+<p>Placing the seven closed-loop poles at <span class="math inline">\(-5\)</span> results in <span class="math display">\[\begin{aligned}
+G_{c}(s) &amp;=\frac{4262s^{3}+22579s^{2}-2991s-2137}{s^{3}+35s^{2}-6240s-30583}
+=4262\frac{(s+5.4086)(s-0.3668)(s+0.2533)}{(s+96.4235)(s-66.2137)(s+4.7902)
+}.
+\end{aligned}\]</span></p>
+<ul>
+<li><span class="math inline">\(G_{c}(re^{j\theta })G_{X}(re^{j\theta })\approx \dfrac{-2137}{-30583} \dfrac{-36.57}{-29.25}\dfrac{e^{-j2\theta }}{r^{2}}=0.087\dfrac{e^{-j2\theta }}{r^{2}}\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><span class="math display">\[G_{c}(s)G_{X}(s)=4262\frac{(s+5.4086)(s-0.3668)(s+0.2533)}{
+(s+96.4235)(s-66.2137)(s+4.7902)}1.59\frac{(s-4.7958)(s+4.7958)}{
+s^{2}(s-5.408)(s+5.408)}.\]</span></p>
+<p><strong>Nyquist Plot</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_106b_slide__4.png">
+</div>
+<ul>
+<li><p><span class="math inline">\(P=2\)</span> &nbsp;and &nbsp;<span class="math inline">\(N=-2\Longrightarrow Z=N+P=-2+2=0.\)</span></p></li>
+<li><p>The closed-loop system is stable (We already knew this!).</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>Gain and Phase Margins</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_106b_slide__5.png">
+</div>
+<p>The closed-loop system <span class="math inline">\(\dfrac{KG_{c}(s)G_{X}(s)}{1+KG_{c}(s)G_{X}(s)}\)</span> is stable only for <span class="math display">\[-1.02&lt;-1/K&lt;-0.981 \; \text{ or } \; \frac{1}{1.02}=0.980\,&lt;K&lt;1.019=
+\frac{1}{0.981}!\]</span> The phase margin is only of the order <span class="math inline">\(\tan ^{-1}(0.02/1)=0.02\)</span> radians <strong>or</strong> <span class="math inline">\(1.15\)</span> degrees!</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>Robustness</strong></p>
+<ul>
+<li><p>The controller can be implemented accurately using a microprocessor.</p></li>
+<li><p>Is our model <span class="math inline">\(G_{X}(s)\)</span> accurate enough?</p></li>
+<li><p>E.g., the approximate linearized model might be closer to <span class="math inline">\(0.98G_{X}(s).\)</span></p>
+<ul>
+<li>If so, our controller <span class="math inline">\(G_{c}(s)\)</span> will result in an <strong>unstable</strong> CL system!</li>
+</ul></li>
+<li><p>This controller is <strong>not</strong> robust to small uncertainty in the IP model.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>Sensitivity</strong></p>
+<ul>
+<li><p>Suppose the model <span class="math inline">\(G_{X}(s)\)</span> is very accurate around the (pendulum up) operating point.</p></li>
+<li><p>The controller <span class="math inline">\(G_{c}(s)\)</span> would (in all likelihood) still <strong>not</strong> work in practice!</p>
+<p>Zoom in on the Nyquist plot to understand why.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_107__6.png">
+</div></li>
+<li><p><span class="math inline">\(1+G_{c}(j\omega )G_{X}(j\omega )\)</span> is a vector (complex number) from <span class="math inline">\(-1+j0\)</span> to <span class="math inline">\(G_{c}(j\omega )G_{X}(j\omega ).\)</span></p></li>
+<li><p>For some frequencies the length of this vector is very small (about <span class="math inline">\(0.02\)</span>).</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p>Bode diagram for <span class="math inline">\(G_{c}(j\omega )G_{X}(j\omega )\)</span>.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_108b__7.png">
+</div>
+<ul>
+<li><p><span class="math inline">\(G_{c}(j\omega )G_{X}(j\omega )\)</span> is very close to <span class="math inline">\(-1+j0\)</span> for the frequency range <span class="math inline">\(0.8\leq \omega \leq 12\)</span>.</p></li>
+<li><p>Equivalently, <span class="math inline">\(|1+G_{c}(j\omega )G_{X}(j\omega )|\)</span> is quite small for the frequency range <span class="math inline">\(0.8\leq \omega \leq 12\)</span>.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p>The <strong>sensitivity</strong> is defined to be <span class="math display">\[S(j\omega )\triangleq \frac{1}{1+G_{c}(j\omega )G_{X}(j\omega )}.\]</span></p>
+<p><strong>Bode diagram</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_109__8.png">
+</div>
+<p><span class="math display">\[\begin{array}{ll}
+|S(j\omega )|&gt;1\text{ (0 dB)} &amp; \text{for } \; \omega &gt;0.25\text{} \\
+|S(j\omega )|&gt;10\text{ (20 dB)} &amp; \text{for } \; 1&lt;\omega &lt;25 \\
+\max\limits_{\omega }|S(j\omega )|=66.8\text{ (}36.5\text{dB)} &amp; \text{for } \; \omega =5.
+\end{array}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>Sensitivity of the Cart Position</strong> <span class="math inline">\(\mathbf{x}\)</span> <span class="math display">\[X(s)=\underset{G_{CL}(s)}{\underbrace{\frac{G_{c}(s)G_{X}(s)}{
+1+G_{c}(s)G_{X}(s)}}}X_{ref}(s).\]</span></p>
+<ul>
+<li><p>In the frequency range <span class="math inline">\(0.8&lt;\omega &lt;12\)</span> <span class="math display">\[|S(j\omega )|=\left\vert \dfrac{1}{1+G_{c}(j\omega )G_{X}(j\omega )}
+\right\vert &gt;10.\]</span></p></li>
+<li><p>Thus <span class="math inline">\(\left\vert 1+G_{c}(j\omega )G_{X}(j\omega )\right\vert &lt;0.1\)</span> &nbsp;and <span class="math inline">\(\ 0.9&lt;|G_{c}(j\omega )G_{X}(j\omega )|&lt;1.1\)</span> &nbsp;<span class="math inline">\(\Longrightarrow\)</span></p>
+<p><span class="math display">\[\left\vert \dfrac{G_{c}(j\omega )G_{X}(j\omega )}{1+G_{c}(j\omega
+)G_{X}(j\omega )}\right\vert &gt;(10)(0.9)=9.\]</span></p></li>
+<li><p>With <span class="math inline">\(R_{0}=0.1\)</span> and <span class="math inline">\(\omega =0.8\)</span> (<span class="math inline">\(0.13\)</span> Hz) set <span class="math inline">\(r(t)=R_{0}\sin (\omega t)\)</span>.</p></li>
+<li><p>Then <span class="math display">\[x(t)\rightarrow x_{ss}(t)=0.1\underset{9}{\underbrace{|G_{CL}(j0.8)|}}\sin
+(0.8t+\angle G_{CL}(j0.8))=0.9\sin (0.8t+\angle G_{CL}(j0.8)).\]</span></p></li>
+<li><p>In the freq range where <span class="math inline">\(|S(j\omega )|\)</span> is large, the steady-state response will be large.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>Sensitivity of the Pendulum Rod Angle</strong> <span class="math inline">\(\mathbf{\theta }\)</span></p>
+<p><span class="math display">\[X(s)=\text{}\underset{G_{X}(s)}{\underbrace{\frac{\kappa (J+m\ell
+^{2})s^{2}-\kappa mg\ell }{s^{2}(s^{2}-\alpha ^{2})}}}U(s),\qquad
+\theta (s)=\text{}\underset{G_{\theta }(s)}{\underbrace{-\frac{\kappa m\ell
+}{s^{2}-\alpha ^{2}}}}U(s)\]</span></p>
+<p>The transfer function from <span class="math inline">\(\theta (s)\)</span> to <span class="math inline">\(X(s)\)</span> is <span class="math display">\[\begin{aligned}
+X(s)=G_{X}(s)U(s)=G_{X}(s)\frac{1}{G_{\theta }(s)}\theta (s) &amp;=\frac{\dfrac{
+\kappa (J+m\ell ^{2})s^{2}-\kappa mg\ell }{s^{2}(s^{2}-\alpha ^{2})}}{-
+\dfrac{\kappa m\ell }{s^{2}-\alpha ^{2}}}\theta (s) \\
+&amp;=-\frac{(J+m\ell ^{2})s^{2}-mg\ell }{m\ell s^{2}}\theta (s).
+\end{aligned}\]</span></p>
+<p>Solve for <span class="math inline">\(\theta (s)\)</span> and use <span class="math inline">\(X(s)=\dfrac{G_{c}(s)G_{X}(s)}{ 1+G_{c}(s)G_{X}(s)}X_{ref}(s)\)</span> to obtain <span class="math display">\[\theta (s)=\underset{G_{\theta X}(s)}{\text{}\underbrace{-\frac{m\ell
+s^{2}}{\left( J+m\ell ^{2}\right) s^{2}-mg\ell }}}X(s)=\text{}\underset{
+G_{\theta X_{ref}}(s)}{\underbrace{G_{\theta X}(s)\frac{G_{c}(s)G_{X}(s)}{
+1+G_{c}(s)G_{X}(s)}}}X_{ref}(s).\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><span class="math display">\[\theta (s)=\text{}\underset{G_{\theta X_{ref}}(s)}{\underbrace{G_{\theta
+X}(s)\frac{G_{c}(s)G_{X}(s)}{1+G_{c}(s)G_{X}(s)}}}X_{ref}(s).\]</span></p>
+<p><strong>Bode Magnitude Plot &nbsp;</strong>(closed-loop poles at -5)</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_110__9.png">
+</div>
+<ul>
+<li><p>For <span class="math inline">\(1.9&lt;\omega &lt;39\)</span> the Bode diagram shows <span class="math inline">\(|G_{\theta X_{ref}}(j\omega )|&gt;10.\)</span></p></li>
+<li><p><span class="math inline">\(\max\limits_{\omega }|G_{\theta X_{ref}}(j\omega )|=96.7\)</span> (<span class="math inline">\(39.7\)</span> dB) for <span class="math inline">\(\omega =7.\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><span class="math display">\[\theta (s)=\text{}\underset{G_{\theta X_{ref}}(s)}{\underbrace{G_{\theta
+X}(s)\frac{G_{c}(s)G_{X}(s)}{1+G_{c}(s)G_{X}(s)}}}X_{ref}(s).\]</span></p>
+<ul>
+<li><p><span class="math inline">\(X_{ref}(t)=R_{0}\sin (\omega t)\)</span> results in <span class="math display">\[\theta (t)\rightarrow \theta _{ss}(t)=R_{0}|G_{\theta X_{ref}}(j\omega
+)|\sin (\omega t+\angle G_{\theta X_{ref}}(j\omega )).\]</span></p></li>
+<li><p>E.g., <span class="math inline">\(R_{0}=0.02\)</span> meter &amp; <span class="math inline">\(\omega =7\)</span> (<span class="math inline">\(1.1\)</span> Hz) <span class="math display">\[\theta _{ss}(t)=R_{0}\underset{96.7}{\underbrace{|G_{\theta X_{ref}}(j7)|}}
+\sin (7t+\angle G_{\theta X_{ref}}(j7))=1.93\sin (7t+\angle G_{\theta
+X_{ref}}(j7)).\]</span></p></li>
+<li><p><span class="math inline">\(\theta _{ss}(t)\)</span> is oscillating between <span class="math inline">\(\pm 1.93\)</span> rads or <span class="math inline">\(\pm 111^{\circ }!\)</span></p></li>
+<li><p>The&nbsp;linear models <span class="math inline">\(G_{X}(s),G_{\theta }(s)\)</span> are valid for a variation in <span class="math inline">\(\theta\)</span> of perhaps <span class="math inline">\(\pm 20^{\circ }\)</span>.</p></li>
+<li><p>If <span class="math inline">\(\theta (t)\)</span> varies too far from <span class="math inline">\(0\)</span> then the linear models <span class="math inline">\(G_{X}(s),G_{\theta }(s)\)</span></p>
+<p>no longer accurately represent the nonlinear model of the pendulum.</p></li>
+<li><p><span class="math inline">\(G_{c}(s)\)</span> in all likelihood won’t stabilize the actual (nonlinear) inverted pendulum.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>&nbsp;- Disturbances</strong></p>
+<p>The small gear wheel is powered by a DC motor and interacts with the track.</p>
+<p>Let <span class="math inline">\(D(s)\)</span> denote any disturbance due to slippage/backlash between the gear teeth.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/CartOnTrack2__10.png">
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/models_fig_01_e10__11.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+X(s) &amp;=\text{}\underset{G_{XD}(s)}{\underbrace{-\frac{G_{X}(s)}{
+1+G_{c}(s)G_{X}(s)}}}D(s) \\
+\theta _{D}(s) &amp;=\underset{G_{\theta X}(s)}{\text{}\underbrace{-\frac{
+m\ell s^{2}}{\left( J+m\ell ^{2}\right) s^{2}-mg\ell }}}X(s)=\text{}
+\underset{G_{\theta D}(s)}{\underbrace{-\frac{G_{\theta X}G_{X}(s)}{
+1+G_{c}(s)G_{X}(s)}}}D(s).
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Inverted Pendulum with Output Feedback of <span class="math inline">\(\mathbf{x}\)</span>
+</div>
+<p><strong>&nbsp;- Disturbances</strong></p>
+<ul>
+<li><p><span class="math inline">\(G_{XD}(s)=X(s)/D(s)\)</span> &amp; <span class="math inline">\(G_{\theta D}(s)=\theta (s)/D(s)\)</span> are stable by design.</p></li>
+<li><p>The sensitivity <span class="math inline">\(S(s)\triangleq \dfrac{1}{1+G_{c}(s)G_{X}(s)}\)</span> is a factor of both.</p></li>
+<li><p>Bode diagram shows for <span class="math inline">\(0\leq \omega &lt;1\)</span> (<span class="math inline">\(0\leq f\leq 0.16\)</span>) that <span class="math inline">\(|G_{XD}(j\omega )|=14\)</span> (<span class="math inline">\(23\)</span> dB<span class="math inline">\().\)</span>&nbsp;</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_111__12.png">
+</div></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Output Feedback of the Cart Position - Disturbances
+</div>
+<p>For <span class="math inline">\(2.8&lt;\omega &lt;4.6\)</span> (<span class="math inline">\(0.45&lt;f&lt;0.73\)</span>), <span class="math inline">\(|G_{\theta D}(j\omega )|&gt;5\)</span> (14 dB).</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_112__13.png">
+</div>
+<p>If <span class="math inline">\(d(t)=0.05\sin (2.8t)\)</span> then <span class="math display">\[\theta _{ss}(t)=|G_{\theta D}(j2.8)|(0.05)\sin (2.8t+\angle G_{\theta
+D}(j2.8))\]</span></p>
+<ul>
+<li><p><span class="math inline">\(|G_{\theta D}(j2.8)|(0.05)&gt;5(0.05)=0.25\)</span> radians or <span class="math inline">\(14.8^{\circ }.\)</span></p></li>
+<li><p>A small disturbance can cause the pendulum angle to swing far from <span class="math inline">\(\theta =0.\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Right Half-Plane Poles &amp; Zeros and the Control Problem
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/models_fig_01_e10__14.png">
+</div>
+<ul>
+<li><p>Surprisingly, as shown below, <strong>no</strong> <span class="math inline">\(G_{c}(s)\)</span> can fix this sensitivity problem!</p></li>
+<li><p>The fundamental problem is trying to control the inverted pendulum using only <span class="math inline">\(x.\)</span></p>
+<p>With <span class="math inline">\(x\)</span> as output, the transfer function model is <span class="math display">\[\frac{X(s)}{U(s)}=G_{X}(s)=\frac{1.59s^{2}-36.57}{s^{2}(s^{2}-29.25)}=1.59
+\frac{(s-4.7958)(s+4.7958)}{s^{2}(s-5.408)(s+5.408)}.\]</span></p></li>
+<li><p>The inverted pendulum has a&nbsp;pole at <span class="math inline">\(5.408\)</span> and a zero at <span class="math inline">\(4.7958\)</span> .</p></li>
+<li><p>These are in the <strong>open right-half plane</strong> and are <strong>close together</strong> in value.</p></li>
+<li><p><strong>Any</strong> stabilizing controller will result in the closed-loop system being</p>
+<p>very sensitive to modeling errors, disturbance inputs, reference inputs, etc.</p></li>
+<li><p>We explain all this in what follows.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide expanded-short-slide">
+<div class="slide-title">
+Right Half-Plane Poles &amp; Zeros and the Control Problem
+</div>
+<ul>
+<li>We need to present some theorems on sensitivity.</li>
+</ul>
+<p><strong>Theorem</strong> <span class="math inline">\(\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =0\)</span> <em>&nbsp;&nbsp;&nbsp;(Bode)</em></p>
+<p>Let <span class="math display">\[S(j\omega )=\frac{1}{1+G_{c}(j\omega )G(j\omega )}.\]</span> If</p>
+<p>(a) <span class="math inline">\(S(j\omega )\)</span> is stable</p>
+<p>(b) <span class="math inline">\(G_{c}(j\omega )G(j\omega )\)</span> has no poles in the <em>open</em> right half-plane.</p>
+<p>(c) <span class="math inline">\(G_{c}(j\omega )G(j\omega )=\dfrac{b_{c}(j\omega )b(j\omega )}{ a_{c}(j\omega )a(j\omega )}\)</span> has relative degree of at least 2, i.e., <span class="math display">\[\deg \{a_{c}(s)a(s)\}-\deg \{b_{c}(s)b(s)\}\geq 2.\]</span></p>
+<p>Then <span class="math display">\[\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =0.\]</span></p>
+<p>We work a simple example to illustrate this theorem.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Example
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist113__15.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Example
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist114__16.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum
+</div>
+<p><em>&nbsp;</em><span class="math inline">\(G_{X}(s)=\dfrac{1.59s^{2}-36.57}{ s^{2}(s^{2}-29.25)}\)</span></p>
+<p>With <span class="math inline">\(G_{c}(s)\)</span> designed to place the closed-loop poles at <span class="math inline">\(-5, G_{c}(s)G(s)\)</span> is <span class="math display">\[G_{c}(s)G(s)=4262\frac{(s+5.4086)(s-0.3668)(s+0.2533)}{
+(s+96.4235)(s-66.2137)(s+4.7902)}1.59\frac{(s-4.7958)(s+4.7958)}{
+s^{2}(s-5.408)(s+5.408)}.\]</span></p>
+<ul>
+<li><p>The relative degree of <span class="math inline">\(G_{c}(s)G(s)\)</span> is two.</p></li>
+<li><p><span class="math inline">\(S(s)=\dfrac{1}{1+G_{c}(s)G_{X}(s)}\)</span> is stable by our choice <span class="math inline">\(G_{c}(s).\)</span></p></li>
+<li><p><span class="math inline">\(G_{c}(s)G(s)\)</span> has <strong>right half-plane</strong> poles at <span class="math inline">\(s=5.408\)</span> and <span class="math inline">\(66.2137.\)</span></p></li>
+</ul>
+<p><strong>Theorem</strong> <span class="math inline">\(\ \int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =\pi \log _{10}(e)\sum_{i=1}^{N_{p}}\operatorname{Re}\{p_{i}\}\)</span> &nbsp;&nbsp;&nbsp;(<em>Freudenberg and Looze)</em></p>
+<p>Let <span class="math display">\[S(j\omega )=\frac{1}{1+\underset{L(j\omega )}{\underbrace{G_{c}(j\omega
+)G(j\omega )}}}.\]</span></p>
+<p>(a) <span class="math inline">\(S(j\omega )\)</span> is stable</p>
+<p>(b) <span class="math inline">\(G_{c}(j\omega )G(j\omega )\)</span> has <span class="math inline">\(n_{p}\)</span> poles in the open right half-plane at <span class="math inline">\(p_{1},p_{2},...,p_{n_{p}}\)</span>.</p>
+<p>(c) <span class="math inline">\(G_{c}(j\omega )G(j\omega )=\dfrac{b_{c}(j\omega )b(j\omega )}{ a_{c}(j\omega )a(j\omega )}\)</span> has relative degree of at least 2, i.e., <span class="math display">\[\deg \{a_{c}(s)a(s)\}-\deg \{b_{c}(s)b(s)\}\geq 2.\]</span></p>
+<p>Then <span class="math display">\[\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =\pi \underset{0.434}{
+\underbrace{\log _{10}(e)}}\sum_{i=1}^{n_{p}}\operatorname{Re}\{p_{i}\}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Inverted Pendulum
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_115__17.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum
+</div>
+<p><em>&nbsp;</em><span class="math inline">\(S(j\omega )=\dfrac{1}{1+G_{c}(j\omega )G_{X}(j\omega )}\)</span></p>
+<ul>
+<li><p><span class="math inline">\(S(j\omega )=\dfrac{1}{1+G_{c}(j\omega )G_{X}(j\omega )}\)</span></p></li>
+<li><p><span class="math inline">\(G_{c}(j\omega )\)</span> proper &amp; <span class="math inline">\(G_{X}(j\omega )\)</span> strictly proper <span class="math inline">\(\implies \lim_{\omega \rightarrow \infty }|G_{c}(j\omega )G_{X}(j\omega )|=0\)</span> and so <span class="math display">\[\lim_{\omega \rightarrow \infty }\log _{10}|S(j\omega )|=\lim_{\omega
+\rightarrow \infty }\log _{10}\left\vert \dfrac{1}{1+G_{c}(j\omega
+)G_{X}(j\omega )}\right\vert =0.\]</span></p></li>
+<li><p><span class="math inline">\(\lim_{\omega \rightarrow 0}|G_{X}(j\omega )|=\infty \implies \lim_{\omega \rightarrow 0}|G_{c}(j\omega )G_{X}(j\omega )|=\infty\)</span> and so <span class="math display">\[\lim_{\omega \rightarrow 0}\log _{10}|S(j\omega )|=\lim_{\omega \rightarrow
+0}\log _{10}\left\vert \dfrac{1}{1+G_{c}(j\omega )G_{X}(j\omega )}
+\right\vert =-\infty .\]</span></p></li>
+<li><p>The theorem tells us that <span class="math inline">\(|S(j\omega )|=\left\vert \dfrac{1}{ 1+G_{c}(j\omega )G_{X}(j\omega )}\right\vert\)</span> has more positive area than negative area.</p></li>
+<li><p>This positive area must be at lower frequencies&nbsp;as <span class="math inline">\(\lim_{\omega \rightarrow \infty }\log _{10}|S(j\omega )|=0\)</span>.</p></li>
+<li><p><strong>Any</strong> stabilizing controller <span class="math inline">\(G_{c}(s)\)</span> must result in <span class="math display">\[\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega \geq \pi \log
+_{10}(e)(5.408)=7.38.\]</span></p></li>
+<li><p>The sensitivity integral gives a <strong>fundamental limitation</strong> to design a <span class="math inline">\(G_{c}(s)\)</span> to reduce <span class="math inline">\(|S(j\omega )|.\)</span></p></li>
+</ul>
+<p><strong>Summary</strong></p>
+<p>Any unity feedback controller (slide the earlier derivation) for <span class="math inline">\(G_{X}(s)=\dfrac{ 1.59s^{2}-36.57}{s^{2}(s^{2}-29.25)}\)</span> will result in a large sensitivity. In practice this system is impossible to control!</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Poisson Integral for Sensitivity
+</div>
+<ul>
+<li><p>Right half-plane poles result in the closed-loop sensitivity being large.</p></li>
+<li><p>Right half-plane zeros <strong>close</strong> to right half-plane poles demonstrate this as well.</p></li>
+</ul>
+<p>Recall <span class="math inline">\(G_{c}(s)G_{X}(s)\)</span> for the inverted pendulum is <span class="math display">\[G_{c}(s)G_{X}(s)=4262\frac{(s+5.4086)(s-0.3668)(s+0.2533)}{
+(s+96.4235)(s-66.2137)(s+4.7902)}1.59\frac{(s-4.7958)(s+4.7958)}{
+s^{2}(s-5.408)(s+5.408)}.\]</span></p>
+<ul>
+<li><p><span class="math inline">\(G_{c}(s)G_{X}(s)\)</span> has an open RHP pole at <span class="math inline">\(p_{1}=5.408\)</span> from <span class="math inline">\(G_{X}(s)\)</span> and</p>
+<p>an open RHP&nbsp;pole at <span class="math inline">\(p_{2}=66.2137\)</span> from <span class="math inline">\(G_{c}(s)\)</span>.</p></li>
+<li><p><span class="math inline">\(G_{c}(s)G_{X}(s)\)</span> has an open RHP zero at <span class="math inline">\(z_{1}=4.7958\)</span> from <span class="math inline">\(G_{X}(s)\)</span> and</p>
+<p>an open RHP&nbsp;zero at <span class="math inline">\(z_{2}=0.3668\)</span> from <span class="math inline">\(G_{c}(s)\)</span>.</p></li>
+</ul>
+<p>There is a <strong>Poisson integral</strong> for each zero in the open RHP:</p>
+<p><span class="math display">\[\begin{aligned}
+I(z_1)&amp;\triangleq \int_{0}^{\infty }\log _{10}|S(j\omega )|
+\frac{z_{1}}{z_{1}^{2}+\omega ^{2}}\,d\omega \\
+&amp;=-\pi \log _{10}(e)\left[
+\log _{10}\left\vert \frac{z_{1}-p_{1}}{z_{1}+p_{1}}\right\vert
++\log _{10}\left\vert \frac{z_{1}-p_{2}}{z_{1}+p_{2}}\right\vert
+\right],\\[0.35em]
+I(z_2)&amp;\triangleq \int_{0}^{\infty }\log _{10}|S(j\omega )|
+\frac{z_{2}}{z_{2}^{2}+\omega ^{2}}\,d\omega \\
+&amp;=-\pi \log _{10}(e)\left[
+\log _{10}\left\vert \frac{z_{2}-p_{1}}{z_{2}+p_{1}}\right\vert
++\log _{10}\left\vert \frac{z_{2}-p_{2}}{z_{2}+p_{2}}\right\vert
+\right].
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide expanded-short-slide">
+<div class="slide-title">
+Poisson Integral for Sensitivity
+</div>
+<p>Evaluating the Poisson integral for <span class="math inline">\(z_{1}\)</span> gives <span class="math display">\[\begin{aligned}
+\int_{0}^{\infty }\log _{10}|S(j\omega )|\frac{4.7958}{
+(4.7958)^{2}+\omega ^{2}}d\omega  &amp;=-\pi \log
+_{10}(e)\left( \log _{10}\left\vert \frac{4.7958-5.408}{4.7958+5.408}
+\right\vert +\log _{10}\left\vert \frac{4.7958-66.2137}{4.7958+66.2137}
+\right\vert \right) \\
+&amp;=-\pi \log _{10}(e)\left( -1.222-0.063\right)
+=1.753.
+\end{aligned}\]</span></p>
+<p>Multiplying both sides by <span class="math inline">\(z_{1}=4.7958\)</span> to obtain <span class="math display">\[\int_{0}^{\infty }\log _{10}|S(j\omega )|\frac{1}{1+(\omega /4.7958)^{2}}
+d\omega =(1.753)(4.7958)=8.41.\]</span></p>
+<ul>
+<li><p>No matter what (stabilizing) controller is designed we have <span class="math display">\[\int_{0}^{\infty }\log _{10}|S(j\omega )|\frac{1}{1+(\omega /4.7958)^{2}}
+d\omega \geq -\pi \log _{10}(e)\left( -1.222\right) (4.7958)=7.996.\]</span></p>
+<p>due to the RHP&nbsp;pole and zero of <span class="math inline">\(G_{X}(s).\)</span></p></li>
+<li><p>Further, as <span class="math inline">\(\dfrac{1}{1+(\omega /4.7958)^{2}}\)</span> drops off rapidly towards <span class="math inline">\(0\)</span> for <span class="math inline">\(\omega &gt;z_{1}=4.7958,|S(j\omega )|\)</span> must be large at the lower frequencies in order to satisfy the inequality.</p></li>
+<li><p>A different scheme (i.e., not just feedback of <span class="math inline">\(x\)</span>) is needed to control the inverted pendulum.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide expanded-figure-slide">
+<div class="slide-title">
+Inverted Pendulum with Output
+</div>
+<p><span class="math inline">\(y(t)=x(t)+\left( \ell +\frac{J}{ m\ell }\right) \theta (t)\)</span></p>
+<p><span class="math display">\[\begin{aligned}
+Y(s) &amp;=X(s)+\left( \ell +\frac{J}{m\ell }\right) \theta (s) \\
+&amp;=\frac{\kappa (J+m\ell ^{2})s^{2}-\kappa mg\ell }{s^{2}(s^{2}-\alpha ^{2})}U(s)
+-\kappa \left( \ell +\frac{J}{m\ell }\right)
+\frac{m\ell s^{2}}{s^{2}(s^{2}-\alpha ^{2})}U(s) \\
+&amp;\quad+\frac{\left( (J/(m\ell )+\ell )s^{2}-\kappa g(m\ell )^{2}\right)
+(s\theta (0)+\dot{\theta}(0))+(s^{2}-\alpha ^{2})(sx(0)+\dot{x}(0))}
+{s^{2}(s^{2}-\alpha ^{2})} \\
+&amp;=\underset{G_{Y}(s)}{\underbrace{-\frac{\kappa mg\ell }{s^{2}(s^{2}-\alpha
+^{2})}}}U(s)+\frac{p_{Y}(s)}{s^{2}(s^{2}-\alpha ^{2})}.
+\end{aligned}\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/models_fig_01_e11__18.png">
+</div>
+<ul>
+<li>Note that <span class="math inline">\(G_{Y}(s)\)</span> has no right half-plane zeros.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with Output
+</div>
+<p><span class="math inline">\(y(t)=x(t)+\left( \ell +\frac{J}{ m\ell }\right) \theta (t)\)</span></p>
+<p>Using the <span class="smallcaps">Quanser</span> parameter values (<span class="math inline">\(\kappa mg\ell =36.57,\alpha ^{2}=29.26\)</span>) <span class="math display">\[G_{Y}(s)=\frac{-36.57}{s^{2}(s^{2}-29.26)}=\frac{-36.57}{
+s^{2}(s+5.409)(s-5.409)}.\]</span></p>
+<p>To arbitrarily place the closed-loop poles let <span class="math inline">\(G_{c}(s)\)</span> have the form <span class="math display">\[G_{c}(s)=\dfrac{b_{c}(s)}{a_{c}(s)}=\frac{b_{3}s^{3}+b_{2}s^{2}+b_{1}s+b_{0}
+}{s^{3}+a_{2}s^{2}+a_{1}s+a_{0}}.\]</span></p>
+<p>Choosing the closed-loop poles to be at <span class="math inline">\(-5\)</span> results in <span class="math display">\[\begin{aligned}
+G_{c}(s) &amp;=-\frac{1041.6s^{3}+6113.7s^{2}+2990.8s+2136.3}{
+s^{3}+35s^{2}+554.3s+5399} \\
+&amp;=-1041.6\frac{(s+5.409)(s^{2}+0.46s+0.3792)}{
+(s+20.835)(s^{2}+14.17s+259.13)}.
+\end{aligned}\]</span></p>
+<ul>
+<li>Note that <span class="math inline">\(G_{c}(s)\)</span> also has no RHP&nbsp;poles or zeros.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with Output
+</div>
+<p><span class="math inline">\(y(t)=x(t)+\left( \ell +\frac{J}{ m\ell }\right) \theta (t)\)</span></p>
+<p><span class="math display">\[G_{c}(s)G_{Y}(s)=-1041.6\frac{(s+5.409)(s^{2}+0.46s+0.3792)}{
+(s+20.835)(s^{2}+14.17s+259.13)}\frac{-36.57}{s^{2}(s+5.409)(s-5.409)}.\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_117b_slide__19.png">
+</div>
+<p>The closed-loop transfer function <span class="math inline">\(\dfrac{KG_{c}(s)G_{Y}(s)}{ 1+KG_{c}(s)G_{Y}(s)}\)</span> is stable for <span class="math display">\[-1.135&lt;-\dfrac{1}{K}&lt;-0.78\qquad\text{or}\qquad 0.881=\frac{1}{1.135}&lt;K&lt;\frac{1}{
+0.78}=1.282,\]</span></p>
+<p>Gain margin is still small (compare with <span class="math inline">\(0.980\,&lt;K&lt;1.019\)</span> using <span class="math inline">\(x\)</span> as output).</p>
+<p>The phase margin turns out to be about <span class="math inline">\(7^{\circ }\)</span> (<span class="math inline">\(1.15^{\circ }\)</span> using <span class="math inline">\(x\)</span> as output).</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with Output
+</div>
+<p><span class="math inline">\(y(t)=x(t)+\left( \ell +\frac{J}{ m\ell }\right) \theta (t)\)</span></p>
+<p><span class="math display">\[G_{c}(s)G_{Y}(s)=-1041.6\frac{(s+5.409)(s^{2}+0.46s+0.3792)}{
+(s+20.835)(s^{2}+14.17s+259.13)}\frac{-36.57}{s^{2}(s+5.409)(s-5.409)}.\]</span></p>
+<ul>
+<li><p>Only one pole in the open RHP.&nbsp;</p></li>
+<li><p>No zeros in the open RHP.</p></li>
+<li><p><span class="math inline">\(\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =\pi \log _{10}(e)\left( 5.409\right) =\pi \log _{10}(e)\left( 5.409\right) =7.38.\)</span></p></li>
+<li><p><span class="math inline">\(\max\limits_{\omega \geq 0}\{\log _{10}|S(j\omega )|\}=0.94\)</span>, or <span class="math inline">\(\max\limits_{\omega \geq 0}\{|S(j\omega )|\}=8.7.\)</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_119__20.png">
+</div></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<p><span class="math display">\[\begin{aligned}
+\underset{dz/dt}{\underbrace{\left[
+\begin{array}{c}
+dx/dt \\
+dv/dt \\
+d\theta /dt \\
+d\omega /dt
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\kappa gm^{2}\ell ^{2} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \kappa mg\ell (M+m) &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+\kappa (J+m\ell ^{2}) \\
+0 \\
+-\kappa m\ell
+\end{array}
+\right] }}u \\
+u(t) &amp;=-\left[
+\begin{array}{cccc}
+k_{1} &amp; k_{2} &amp; k_{3} &amp; k_{4}
+\end{array}
+\right] \underset{z(t)}{\underbrace{\left[
+\begin{array}{c}
+x(t) \\
+v(t) \\
+\theta (t) \\
+\omega (t)
+\end{array}
+\right] }}
+\end{aligned}\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig12e__21.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig12e__22.png">
+</div>
+<ul>
+<li><p>Let <span class="math inline">\(y=kz\)</span> and <span class="math inline">\(G_{k}(s)\triangleq k(sI-A)^{-1}b.\)</span></p></li>
+<li><p>Choose <span class="math inline">\(k\in \mathbb{R} ^{1\times 5}\)</span> to place the closed-loop poles at <span class="math inline">\(-5.\)</span> <span class="math display">\[\begin{aligned}
+k &amp;=\left[
+\begin{array}{cccc}
+-29.0255 &amp; -23.2204 &amp; -56.4917 &amp; -12.0901
+\end{array}
+\right] \\
+G_{k}(s)=k(sI-A)^{-1}b &amp;=\frac{20s^{3}+179.3s^{2}+500s+625}{s^{4}-29.3s^{2}}
+&amp;=\frac{20(s+5.41)(s^{2}+3.55s+5.777)}{s^{2}(s+5.409)(s-5.409)}.
+\end{aligned}\]</span></p></li>
+<li><p>Note that <span class="math inline">\(G_{k}(s)\)</span> has no right half-plane zeros.</p></li>
+<li><p><span class="math inline">\(G_{k}(s)\)</span> has a single pole in the <em>open</em> right-half plane at <span class="math inline">\(5.409\)</span>.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<p><span class="math display">\[G_{k}(s)=k(sI-A)^{-1}b=\frac{20(s+5.41)(s^{2}+3.55s+5.777)}{
+s^{2}(s+5.409)(s-5.409)}.\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_118_slide__23.png">
+</div>
+<ul>
+<li><p>The pole at <span class="math inline">\(5.409\)</span> of <span class="math inline">\(G_{c}(s)G_{k}(s)\)</span> is inside the Nyquist contour so <span class="math inline">\(P=1.\)</span></p></li>
+<li><p>The Nyquist plot goes around <span class="math inline">\(-1+j0\)</span> once in the CCW direction so <span class="math inline">\(N=-1.\)</span></p></li>
+<li><p><span class="math inline">\(Z=N+P=0\)</span> showing the closed-loop system is stable (as we already knew!).</p></li>
+<li><p><span class="math inline">\(\dfrac{K_{gain}G_{k}(s)}{1+K_{gain}G_{k}(s)}\)</span> is stable for <span class="math inline">\(-2.83&lt;-1/K_{gain}&lt;0\)</span> &nbsp;or &nbsp;<span class="math inline">\(K_{gain}&gt;1/2.83=0.353.\)</span></p></li>
+<li><p>Using <span class="smallcaps">Matlab</span> the phase margin is <span class="math inline">\(64^{\circ }.\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<p><span class="math display">\[G_{k}(s)=k(sI-A)^{-1}b=\frac{20(s+5.41)(s^{2}+3.55s+5.777)}{
+s^{2}(s+5.409)(s-5.409)}.\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_118_slide__24.png">
+</div>
+<ul>
+<li><p>The sensitivity function is <span class="math inline">\(S_{k}(j\omega )=\dfrac{1}{1+G_{k}(j\omega )}.\)</span></p></li>
+<li><p><span class="math inline">\(G_{k}(s)\)</span> has one right half-plane pole and no right half-plane zeros.</p></li>
+<li><p>However <span class="math inline">\(G_{k}(s)\)</span> has relative degree 1 so the previous sensitivity theorems do not apply!</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<p><strong>Theorem</strong> <span class="math inline">\(\ \int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =\log _{10}(e)\left( -\eta \dfrac{\pi }{2}+\pi \sum\nolimits_{i=1}^{N_{p}}\operatorname{Re} \{p_{i}\}\right)\)</span> &nbsp;</p>
+<p>Define <span class="math display">\[\begin{aligned}
+S(j\omega ) &amp;\triangleq &amp;\frac{1}{1+\underset{L(j\omega )}{\underbrace{
+G_{c}(j\omega )G(j\omega )}}} \\
+\eta &amp;\triangleq &amp;\lim_{s\rightarrow \infty }sG_{c}(s)G(s).
+\end{aligned}\]</span> Suppose</p>
+<p>(a) <span class="math inline">\(S(j\omega )\)</span> is stable,</p>
+<p>(b) <span class="math inline">\(L(j\omega )=G_{c}(j\omega )G(j\omega )\)</span> has <span class="math inline">\(n_{p}\)</span> poles in the open RHP at <span class="math inline">\(p_{1},p_{2},...,p_{n_{p}}\)</span> and</p>
+<p>(c) <span class="math inline">\(L(j\omega )=G_{c}(j\omega )G(j\omega )=\dfrac{b_{c}(j\omega )b(j\omega ) }{a_{c}(j\omega )a(j\omega )}\)</span> has relative degree 1 or greater.</p>
+<p>Then <span class="math display">\[\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega =\log _{10}(e)\left( -\eta
+\dfrac{\pi }{2}+\pi \sum\limits_{i=1}^{N_{p}}\operatorname{Re}\{p_{i}\}\right) .\]</span> Note <span class="math inline">\(\log _{10}(e)=0.434\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<p><span class="math display">\[G_{k}(s)=\frac{20s^{3}+179.3s^{2}+500s+625}{s^{4}-29.3s^{2}}=\frac{
+20(s+5.41)(s^{2}+3.55s+5.777)}{s^{2}(s+5.409)(s-5.409)}.\]</span></p>
+<ul>
+<li><p>The sensitivity function is <span class="math inline">\(S_{k}(j\omega )=\dfrac{1}{1+G_{k}(j\omega )}.\)</span></p></li>
+<li><p><span class="math inline">\(G_{k}(s)\)</span> has one right half-plane pole and no right half-plane zeros.</p></li>
+<li><p><span class="math inline">\(G_{k}(s)\)</span> has relative degree 1.</p></li>
+<li><p><span class="math inline">\(\eta \triangleq \lim_{s\rightarrow \infty }sG_{k}(s)=20\)</span>. <span class="math display">\[\int_{0}^{\infty }\log _{10}|S_{k}(j\omega )|d\omega =\log _{10}(e)\left( -20
+\dfrac{\pi }{2}+\pi (5.409)\right) =-6.264.\]</span></p></li>
+<li><p>The integral of the logarithm of the sensitivity is <em>negative</em>!</p></li>
+<li><p>We do not expect <span class="math inline">\(|S_{k}(j\omega )|\)</span> to be large. If fact, <span class="math inline">\(\max\limits_{\omega \geq 0}|S_{k}(j\omega )|\leq 1!\)</span></p></li>
+<li><p>However this is the sensitivity of the output <span class="math display">\[y=kz=k_{1}x+k_{2}v+k_{3}\theta +k_{4}\omega .\]</span></p></li>
+<li><p>We are really interested in the sensitivity of the output <span class="math inline">\(\theta !\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig12d__25.png">
+</div>
+<p><span class="math display">\[\frac{dz}{dt}=Az+bu,u=-kz+r,y_{\theta }=\underset{
+c_{\theta }}{\underbrace{\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; 1 &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right] }}\]</span> <span class="math display">\[\frac{\theta (s)}{R(s)}=G_{\theta }(s)=c_{\theta }\left( sI-
+(A-bk)\right) ^{-1}b=-\frac{m\kappa \ell s^{2}}{(s+5)^{4}}.\]</span></p>
+<ul>
+<li><p>With the <span class="smallcaps">Quanser</span> values for <span class="math inline">\(m,\kappa ,\ell\)</span> it turns out that <span class="math inline">\(\max\limits_{\omega \geq 0}|G_{\theta }(j\omega )|\leq 0.032.\)</span></p></li>
+<li><p>Disturbances <span class="math inline">\(d(t)\)</span> acting at the input <span class="math inline">\(u(t)\)</span> result in small changes in <span class="math inline">\(\theta (t).\)</span></p></li>
+<li><p>If there is a step disturbance <span class="math inline">\(d(t)=D_{0}u_{s}(t)\)</span> at the input then <span class="math display">\[\lim_{t\rightarrow \infty }\theta (t)=\lim_{s\rightarrow 0}sG_{\theta }(s)
+\frac{D_{0}}{s}=\lim_{s\rightarrow 0}-\frac{m\kappa \ell s}{(s+5)^{4}}
+D_{0}=0.\]</span></p></li>
+<li><p>The pendulum rod angle is still kept at <span class="math inline">\(\theta =0!\)</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Inverted Pendulum with an Integrator and State Feedback
+</div>
+<p>Let’s look at the sensitivity of adding an integrator to the state feedback scheme.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig19d__26.png">
+</div>
+<p>With <span class="math inline">\(c=\left[ \begin{array}{cccc} 1 &amp; 0 &amp; 0 &amp; 0 \end{array} \right]\)</span> and <span class="math inline">\(G_{k}(s)\triangleq c(sI-(A-bk))^{-1}b\)</span> we have</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig19c__27.png">
+</div>
+<p><span class="math inline">\(k_{a}=\left[ \begin{array}{cc} k &amp; k_{0} \end{array} \right] =\left[ \begin{array}{ccccc} -85.4514 &amp; -37.9043 &amp; -111.4406 &amp; -22.9103 &amp; 85.4514 \end{array} \right]\)</span></p>
+<p>puts all of the CL poles at <span class="math inline">\(-5\)</span> and <span class="math display">\[\begin{aligned}
+G_{k}(s)=c(sI-(A-bk))^{-1}b &amp;=\frac{1.59s^{2}-36.57}{
+s^{4}+25s^{3}+250s^{2}+1386s+3125} \\
+&amp;=1.59\frac{(s+4.7958)(s-4.7958)}{
+(s+13.5367)(s+1.2474)(s^{2}+10.216s+9.0599)}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Inverted Pendulum with an Integrator and State Feedback
+</div>
+<p>With <span class="math inline">\(G_{k_{0}}(s)\triangleq -\dfrac{k_{0}}{s},\)</span> the sensitivity function is <span class="math display">\[S(s)=\frac{1}{1+G_{k_{0}}(s)G_{k}(s)}=\frac{1}{1+\dfrac{-k_{0}}{s}G_{k}(s)}.\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/Nyquist_124__28.png">
+</div>
+<ul>
+<li><span class="math inline">\(\max_{\omega }|S(j\omega )|=1.6092\)</span> &nbsp;(<span class="math inline">\(0.2066\)</span> dB) at <span class="math inline">\(\omega =2.88.\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with an Integrator and State Feedback
+</div>
+<p>Let’s compute the closed-loop transfer function from <span class="math inline">\(R(s)\)</span> to <span class="math inline">\(\theta (s)\)</span>.</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig19d__29.png">
+</div>
+<p>The statespace setup is <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{z_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }} &amp;=\underset{A_{a}\in
+\mathbb{R}
+^{5\times 5}}{\underbrace{\left[
+\begin{array}{rl}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] }}\underset{z_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}+\underset{b_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] }}u \\
+u &amp;=-\underset{k_{a}\in
+\mathbb{R}
+^{1\times 5}}{\underbrace{\left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] }}\underset{z_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}+r. \\
+y_{\theta } &amp;=\theta =\underset{c_{\theta a}\in
+\mathbb{R}
+^{1\times 5}}{\underbrace{\left[
+\begin{array}{ccccc}
+0 &amp; 0 &amp; 1 &amp; 0 &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide expanded-short-slide">
+<div class="slide-title">
+Inverted Pendulum with an Integrator and State Feedback
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig19d__30.png">
+</div>
+<p>The CL TF from <span class="math inline">\(R(s)\)</span> to <span class="math inline">\(\theta (s)\)</span> is (<span class="math inline">\(m\kappa \ell =3.728\)</span>) <span class="math display">\[G_{\theta }(s)=\frac{Y_{\theta }(s)}{R(s)}=c_{\theta a}\left(
+sI_{5\times 5}-(A_{a}-b_{a}k_{a})\right) ^{-1}b_{a}=
+\frac{-m\kappa \ell s^{3}}{\left( s+5\right) ^{5}}.\]</span></p>
+<ul>
+<li><p>Using <span class="smallcaps">Matlab</span> one finds <span class="math inline">\(\max_{\omega \geq 0}|G_{\theta }(j\omega )|\leq 0.028.\)</span></p></li>
+<li><p>The pendulum rod angle <span class="math inline">\(\theta\)</span> is <em>not</em> sensitive to step reference inputs.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback via State Estimation
+</div>
+<p>The output is <span class="math inline">\(y=x+\left( \ell +\dfrac{J}{m\ell }\right) \theta .\)</span> &nbsp;&nbsp;An observer estimates <span class="math inline">\(z=\left[ \begin{array}{cccc} x &amp; v &amp; \theta &amp; \omega \end{array} \right] ^{T}.\)</span></p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig41__31.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+\underset{dz/dt}{\underbrace{\left[
+\begin{array}{c}
+dx/dt \\
+dv/dt \\
+d\theta /dt \\
+d\omega /dt
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+\dfrac{J+m\ell ^{2}}{Mm\ell ^{2}+J(M+m)} \\
+0 \\
+-\dfrac{m\ell }{Mm\ell ^{2}+J(M+m)}
+\end{array}
+\right] }}u \\
+y &amp;=\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell } &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback via State Estimation
+</div>
+<p>In the Laplace domain the block diagram becomes</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig42__32.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+G(s) &amp;=\frac{b(s)}{a(s)}=c(sI-A)^{-1}b, \\
+G_{c1}(s) &amp;=\frac{n(s)}{\delta (s)}=k(sI-(A-\ell c))^{-1}b, \\
+G_{c2}(s) &amp;=\frac{m(s)}{\delta (s)}=k(sI-(A-\ell c))^{-1}\ell .
+\end{aligned}\]</span></p>
+<p>Choose <span class="math inline">\(k\)</span> to place all four poles of <span class="math inline">\(A-bk\)</span> at <span class="math inline">\(-5.\)</span></p>
+<p>Choose <span class="math inline">\(\ell\)</span> to place the four poles of <span class="math inline">\(A-\ell c\)</span> at <span class="math inline">\(-10.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide multi-figure-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback via State Estimation
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig42__33.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+G(s) &amp;=c(sI-A)^{-1}b=\frac{b(s)}{a(s)}=\frac{-36.5705}{s^{4}-29.2564s^{2}}, \\[0.35em]
+G_{c1}(s) &amp;=k(sI-(A-\ell c))^{-1}b=\frac{n(s)}{\delta (s)}=\frac{
+20s^{3}+979.2564s^{2}+2.0255+236830}{s^{4}+40s^{3}+600s^{2}+4000s+10000} \\
+G_{c2}(s) &amp;=k(sI-(A-\ell c))^{-1}\ell =\frac{m(s)}{\delta (s)}=\frac{
+-50167s^{3}-303420s^{2}-205080s-170900}{s^{4}+40s^{3}+600s^{2}+4000s+10000}.
+\end{aligned}\]</span> Block diagram reduction gives</p>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig44__34.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback via State Estimation
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig44__35.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+G_{c}(s)&amp;=\frac{\delta (s)}{\delta (s)+n(s)} \\
+&amp;=\frac{s^{4}+40s^{3}+600s^{2}+4000s+10000}
+{s^{4}+60s^{3}+1579.3s^{2}+4000s+246830} \\
+&amp;=\frac{s^{4}+40s^{3}+600s^{2}+4000s+10000}
+{(s^{2}+63.3642s+1642.2)(s^{2}-3.364s+150.31)}.
+\end{aligned}\]</span></p>
+<p>The transfer function from <span class="math inline">\(D(s)\)</span> to <span class="math inline">\(Y(s)\)</span> is</p>
+<p><span class="math display">\[\begin{aligned}
+\frac{Y(s)}{D(s)}
+&amp;=-\frac{G(s)}{1+G_{c}(s)G_{c2}(s)G(s)} \\
+&amp;=-\frac{b(s)/a(s)}{1+\dfrac{m(s)}{\delta (s)+n(s)}\dfrac{b(s)}{a(s)}}
+=S(s)\frac{b(s)}{a(s)}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inverted Pendulum with State Feedback via State Estimation
+</div>
+<div class="center figure-block">
+<img src="assets/chapter17-source/statefdbk_fig44__36.png">
+</div>
+<p>The sensitivity function is</p>
+<p><span class="math display">\[\begin{aligned}
+S(s)&amp;\triangleq \frac{1}{1+\dfrac{m(s)}{\delta (s)+n(s)}\dfrac{b(s)}{a(s)}} \\
+&amp;=\frac{1}{1+
+\dfrac{(s+5.408854)(s^{2}+0.63934s+0.62982)}
+{(s^{2}+63.3642s+1642.2)(s^{2}-3.364s+150.31)}
+\dfrac{36.5705}{s^{2}(s^{2}-29.2564)}}, \\[0.4em]
+\int_{0}^{\infty }\log _{10}|S(j\omega )|d\omega
+&amp;=\pi \log _{10}(e)\left(
+3.364+\sqrt{29.2564}\right) =16.6.
+\end{aligned}\]</span></p>
+<ul>
+<li><p>The output <span class="math inline">\(y=x+\left( \ell +\dfrac{J}{m\ell }\right) \theta\)</span> is very sensitive to input disturbances.</p></li>
+<li><p>Using an observer to estimate the state is still an output feedback controller.</p></li>
+<li><p>The RHP poles of <span class="math inline">\(G_{c}(s)G_{c2}(s)=\dfrac{m(s)}{\delta (s)+n(s)}\)</span> and <span class="math inline">\(G(s)=\dfrac{b(s)}{a(s)}\)</span> tell us to expect the sensitivity to be large.</p></li>
+</ul>
+</div>
 
 
 </section>
@@ -337,12 +1399,12 @@ John N. Chiasson and Aykut C. Satici
         // The "normal" size of the presentation, aspect ratio will be preserved
         // when the presentation is scaled to fit different resolutions. Can be
         // specified using percentage units.
-        width: 1050,
+        width: 1600,
 
-        height: 700,
+        height: 900,
 
         // Factor of the display size that should remain empty around the content
-        margin: 0.1,
+        margin: 4.0e-2,
 
         math: {
           mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
