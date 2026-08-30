@@ -11,7 +11,7 @@
   <meta name="generator" content="quarto-1.10.18">
 
   <meta name="author" content="John N. Chiasson and Aykut C. Satici">
-  <title>Satici Lab – State Estimators and Parameter Identification</title>
+  <title>Satici Lab – State Feedback</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -38,6 +38,7 @@
   </style>
   <link rel="stylesheet" href="../../../site_libs/revealjs/dist/theme/quarto-0427d8d92a431aa6a6430e53ec02a470.css">
   <link rel="stylesheet" href="revealjs-styles.css">
+  <link rel="stylesheet" href="chapter15-styles.css">
   <link href="../../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -129,7 +130,7 @@
       margin-right: 0; 
     }
   </style>
-<meta property="og:title" content="State Estimators and Parameter Identification – Satici Lab">
+<meta property="og:title" content="State Feedback – Satici Lab">
 <meta property="og:description" content="Research website for the Satici Lab">
 <meta property="og:site_name" content="Satici Lab">
 </head>
@@ -138,8 +139,8 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">State Estimators and Parameter Identification</h1>
-  <p class="subtitle">System Modeling and Control · Chapter 16</p>
+  <h1 class="title">State Feedback</h1>
+  <p class="subtitle">System Modeling and Control · Chapter 15</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -150,8 +151,3745 @@ John N. Chiasson and Aykut C. Satici
 </div>
 
 </section>
-<section id="state-estimators" class="slide level2">
-<h2>State Estimators</h2>
+<section id="contents" class="title-slide slide level1 contents-slide center">
+<h1>Contents</h1>
+<ul>
+<li><p>Two Examples and Trajectory Tracking</p></li>
+<li><p>General State Feedback Trajectory Tracking</p></li>
+<li><p>Matrix Inverses and the Cayley–Hamilton Theorem</p></li>
+<li><p>Stabilization, Disturbance Rejection, and Similarity Transformations</p></li>
+<li><p>Pole Placement and Equilibrium-Point Tracking</p></li>
+</ul>
+</section>
+
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Two Examples
+</div>
+<p><strong>Stabilization of an Inverted Pendulum</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/Models_fig_01_new2__1.png">
+</div>
+<p><span class="math display">\[\theta (s)=-\frac{\kappa m\ell }{s^{2}-\alpha ^{2}}U(s).\]</span> where <span class="math display">\[\alpha ^{2}\triangleq \frac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)},
+\kappa \triangleq \frac{1}{Mm\ell ^{2}+J(M+m)}.\]</span></p>
+<p>With <span class="math inline">\(x_{1}=\theta ,\)</span> &nbsp;<span class="math inline">\(x_{2}=\dot{\theta}\)</span>: <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] =\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+\alpha ^{2} &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] +\left[
+\begin{array}{c}
+\text{}0 \\
+-\kappa m\ell
+\end{array}
+\right] u.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Stabilization of an Inverted Pendulum
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/Models_fig_01_new2__2.png">
+</div>
+<p><span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+\alpha ^{2} &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+-\kappa m\ell
+\end{array}
+\right] }}u.\]</span></p>
+<p>Objective: Keep <span class="math inline">\(\theta =0\)</span> and <span class="math inline">\(\dot{\theta}=0\)</span> using the input <span class="math inline">\(u.\)</span></p>
+<p>Try a <em>state feedback</em> controller given by <span class="math display">\[u=-\underset{k}{\underbrace{\left[
+\begin{array}{cc}
+k_{1} &amp; k_{2}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\theta (t) \\
+\dot{\theta}(t)
+\end{array}
+\right] =-\left[
+\begin{array}{cc}
+k_{1} &amp; k_{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] .\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Stabilization of an Inverted Pendulum
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/Models_fig_01_new2__3.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+\alpha ^{2} &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+0 \\
+-\kappa m\ell
+\end{array}
+\right] \left[
+\begin{array}{cc}
+k_{1} &amp; k_{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] \\
+&amp;=\underset{A-bk}{\underbrace{\left( \left[
+\begin{array}{cc}
+0 &amp; 1 \\
+\alpha ^{2} &amp; 0
+\end{array}
+\right] -\left[
+\begin{array}{cc}
+0 &amp; 0 \\
+-\kappa m\ell k_{1} &amp; -\kappa m\ell k_{2}
+\end{array}
+\right] \right) }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+\alpha ^{2}+\kappa m\ell k_{1} &amp; \kappa m\ell k_{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<p><span class="math inline">\(\qquad \qquad \qquad \mathbf{\Longrightarrow }\)</span> <span class="math display">\[\left[
+\begin{array}{c}
+x_{1}(t) \\
+x_{2}(t)
+\end{array}
+\right] =e^{(A-bk)t}\left[
+\begin{array}{c}
+x_{1}(0) \\
+x_{2}(0)
+\end{array}
+\right] .\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Stabilization of an Inverted Pendulum
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/Models_fig_01_new2__4.png">
+</div>
+<p>For&nbsp;<em>any</em> initial conditions we want <span class="math display">\[\left[
+\begin{array}{c}
+x_{1}(t) \\
+x_{2}(t)
+\end{array}
+\right] =e^{(A-bk)t}\left[
+\begin{array}{c}
+x_{1}(0) \\
+x_{2}(0)
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{c}
+0 \\
+0
+\end{array}
+\right] .\]</span> Equivalently, we require <span class="math display">\[e^{(A-bk)t}\rightarrow \left[
+\begin{array}{cc}
+0 &amp; 0 \\
+0 &amp; 0
+\end{array}
+\right] .\]</span> Must choose <span class="math inline">\(k\)</span> to make this happen!</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Stabilization of an Inverted Pendulum
+</div>
+<p>Recall <span class="math display">\[\begin{aligned}
+e^{(A-bk)t} &amp;=\mathcal{L}^{-1}\left\{ \left( sI-
+(A-bk)\right) ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \left( s\left[
+\begin{array}{cc}
+1 &amp; 0 \\
+0 &amp; 1
+\end{array}
+\right] -\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+\alpha ^{2}+\kappa m\ell k_{1} &amp; \kappa m\ell k_{2}
+\end{array}
+\right] \right) ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \left[
+\begin{array}{cc}
+s &amp; -1 \\
+-(\alpha ^{2}+\kappa m\ell k_{1}) &amp; s-\kappa m\ell k_{2}
+\end{array}
+\right] ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \frac{1}{\det \left( sI-
+(A-bk)\right) }\left[
+\begin{array}{cc}
+s-\kappa m\ell k_{2} &amp; 1 \\
+\alpha ^{2}+\kappa m\ell k_{1} &amp; s
+\end{array}
+\right] \right\} .
+\end{aligned}\]</span> and <span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right) &amp;=\det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+-(\alpha ^{2}+\kappa m\ell k_{1}) &amp; s-\kappa m\ell k_{2}
+\end{array}
+\right] \\
+&amp;=s(s-\kappa m\ell k_{2})-(\alpha ^{2}+\kappa m\ell k_{1}) \\
+&amp;=s^{2}-\kappa m\ell k_{2}s-(\alpha ^{2}+\kappa m\ell k_{1}).
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Stabilization of an Inverted Pendulum
+</div>
+<p><span class="math display">\[e^{(A-bk)t}=\mathcal{L}^{-1}\left\{ \frac{1}{s^{2}-\kappa m\ell
+k_{2}s-(\alpha ^{2}+\kappa m\ell k_{1})}\left[
+\begin{array}{cc}
+s-\kappa m\ell k_{2} &amp; 1 \\
+\alpha ^{2}+\kappa m\ell k_{1} &amp; s
+\end{array}
+\right] \right\}\]</span> With <span class="math inline">\(r_{1}&gt;0,r_{2}&gt;0\)</span>, choose <span class="math inline">\(k_{1},k_{2}\)</span> so that <span class="math display">\[s^{2}-\kappa m\ell k_{2}s-\alpha ^{2}-\kappa m\ell
+k_{1}=(s+r_{1})(s+r_{2})=s^{2}+(r_{1}+r_{2})s+r_{1}r_{2}.\]</span> That is, <span class="math display">\[\begin{aligned}
+k_{1} &amp;=-\frac{\alpha ^{2}+r_{1}r_{2}}{\kappa m\ell } \\
+k_{2} &amp;=-\frac{r_{1}+r_{2}}{\kappa m\ell }.
+\end{aligned}\]</span></p>
+<p>Then <span class="math display">\[\begin{aligned}
+\left. e^{(A-bk)t}\right\vert _{\substack{ k_{1}=-(r_{1}r_{2}+
+\alpha ^{2})/\kappa m\ell  \\ k_{2}=-(r_{1}+r_{2})/\kappa
+m\ell }} &amp;=\mathcal{L}^{-1}\left\{ \frac{1}{(s+r_{1})(s+r_{2})}\left[
+\begin{array}{cc}
+s-\kappa m\ell k_{2} &amp; 1 \\
+\alpha ^{2}+\kappa m\ell k_{1} &amp; s
+\end{array}
+\right] \right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \left[
+\begin{array}{cc}
+\dfrac{s-\kappa m\ell k_{2}}{(s+r_{1})(s+r_{2})} &amp; \dfrac{1}{
+(s+r_{1})(s+r_{2})} \\
+&amp;  \\
+\dfrac{\alpha ^{2}+\kappa m\ell k_{1}}{(s+r_{1})(s+r_{2})} &amp; \dfrac{s}{
+(s+r_{1})(s+r_{2})}
+\end{array}
+\right] \right\}
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Stabilization of an Inverted Pendulum
+</div>
+<p><span class="math display">\[\left. e^{(A-bk)t}\right\vert _{\substack{ k_{1}=-(r_{1}r_{2}+
+\alpha ^{2})/\kappa m\ell  \\ k_{2}=-(r_{1}+r_{2})/\kappa
+m\ell }}=\mathcal{L}^{-1}\left\{ \left[
+\begin{array}{cc}
+\dfrac{s-\kappa m\ell k_{2}}{(s+r_{1})(s+r_{2})} &amp; \dfrac{1}{
+(s+r_{1})(s+r_{2})} \\
+&amp;  \\
+\dfrac{\alpha ^{2}+\kappa m\ell k_{1}}{(s+r_{1})(s+r_{2})} &amp; \dfrac{s}{
+(s+r_{1})(s+r_{2})}
+\end{array}
+\right] \right\}\]</span></p>
+<p>Do a partial fraction expansion to obtain <span class="math display">\[\left. e^{(A-bk)t}\right\vert _{\substack{ k_{1}=-(r_{1}r_{2}+
+\alpha ^{2})/\kappa m\ell  \\ k_{2}=-(r_{1}+r_{2})/\kappa
+m\ell }}=\left[
+\begin{array}{cc}
+A_{11}e^{-r_{1}t}+B_{11}e^{-r_{2}t} &amp; A_{12}e^{-r_{1}t}+B_{12}e^{-r_{2}t} \\
+A_{21}e^{-r_{1}t}+B_{21}e^{-r_{2}t} &amp; A_{22}e^{-r_{1}t}+B_{22}e^{-r_{2}t}
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{cc}
+0 &amp; 0 \\
+0 &amp; 0
+\end{array}
+\right] .\]</span> <strong>Key Observation</strong>: Chose <span class="math inline">\(k_{1}\)</span> and <span class="math inline">\(k_{2}\)</span> so that <span class="math display">\[\left. \det \left( sI-(A-bk)\right) \right\vert _{\substack{
+k_{1}=-(r_{1}r_{2}+\alpha ^{2})/\kappa m\ell  \\
+k_{2}=-(r_{1}+r_{2})/\kappa m\ell }}=(s+r_{1})(s+r_{2}).\]</span></p>
+<ul>
+<li><p>Every component of the <span class="math inline">\(2\times 2\)</span> matrix <span class="math inline">\(\left( sI- (A-bk)\right) ^{-1}\)</span> has its poles at <span class="math inline">\(-r_{1},-r_{2}\)</span>.</p></li>
+<li><p><span class="math inline">\(\Longrightarrow \ e^{(A-bk)t}=\mathcal{L}^{-1}\{\left( sI-\frac{{} }{{}}(A-bk)\right) ^{-1}\}\rightarrow 0_{2\times 2}.\)</span></p></li>
+<li><p><span class="math inline">\(A-bk\)</span> is called a <em>stable</em> matrix if its poles are in the <em>open</em> left half-plane.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Trajectory Tracking of a Cart on a Track
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig6__5.png">
+</div>
+<p><strong>Motor Parameters</strong></p>
+<ul>
+<li><p><span class="math inline">\(K_{T}=K_{b}\)</span> the torque constant (back-emf constant).</p></li>
+<li><p><span class="math inline">\(R\)</span> the armature resistance of the DC&nbsp;motor.</p></li>
+<li><p><span class="math inline">\(n_{2}/n_{1}\)</span> is the gear ratio.</p></li>
+<li><p>Etc.</p></li>
+</ul>
+<p><strong>Motor Variables</strong></p>
+<ul>
+<li><p><span class="math inline">\(V(t)\)</span> is the voltage applied to the DC motor of the cart’s powered wheel.</p></li>
+<li><p><span class="math inline">\(x\)</span> is the cart position along the track.</p></li>
+<li><p><span class="math inline">\(v=dx/dt\)</span> is the cart’s velocity.</p></li>
+<li><p><span class="math inline">\(F_{d}(t)=Mg\sin (\phi )\)</span> is the force (disturbance) on the cart due to gravity.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Trajectory Tracking of a Cart on a Track
+</div>
+<p><strong>Transfer Function Model</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig1__6.png">
+</div>
+<p><span class="math display">\[a_{0}\triangleq \frac{K_{b}K_{T}\left( \dfrac{n_{2}}{n_{1}}\dfrac{1}{r_{m}}
+\right) ^{2}}{RJ/r_{m}^{2}+RM},b_{0}\triangleq \frac{K_{T}\dfrac{
+n_{2}}{n_{1}}\dfrac{1}{r_{m}}}{RJ/r_{m}^{2}+RM},K_{D}\triangleq
+\frac{R}{K_{T}\dfrac{n_{2}}{n_{1}}\dfrac{1}{r_{m}}},\text{}b_{0}K_{D}=
+\dfrac{1}{J/r_{m}^{2}+M}\]</span></p>
+<ul>
+<li><p><span class="math inline">\(K_{D}F_{d}=K_{D}Mg\sin (\phi )\)</span> is an input voltage.</p>
+<p>It produces the same effect on the cart’s position <span class="math inline">\(x(t)\)</span> and speed <span class="math inline">\(v(t)\)</span> as <span class="math inline">\(F_{d}.\)</span></p></li>
+<li><p><span class="math inline">\(b_{0}K_{D}F_{d}=\dfrac{Mg\sin (\phi )}{J/r_{m}^{2}+M}\)</span> is the acceleration of the cart due to gravity.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide cart-model-slide">
+<div class="slide-title">
+Trajectory Tracking of a Cart on a Track
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig1__7.png">
+</div>
+<p><strong>Statespace Model</strong> <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=v \\
+\frac{dv}{dt} &amp;=-a_{0}v+b_{0}V(t)-\underset{d}{\underbrace{b_{0}K_{D}F_{d}}}
+.
+\end{aligned}\]</span> where <span class="math display">\[d\triangleq b_{0}K_{D}F_{d}=\frac{Mg\sin (\phi )}{J/r_{m}^{2}+M}.\]</span></p>
+<p>With <span class="math inline">\(u\triangleq V(t)\)</span> and <span class="math inline">\(F_{d}=0\)</span> this becomes <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=v \\
+\frac{dv}{dt} &amp;=-a_{0}v+b_{0}u.
+\end{aligned}\]</span></p>
+<p><strong>Objective:</strong> &nbsp;Have the cart follow (track) a specified trajectory <span class="math inline">\((x_{ref}(t),v_{ref}(t))\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Trajectory for <span class="math inline">\(x_{ref}(t),v_{ref}(t)\)</span>
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig4__8.png">
+</div>
+<p><strong>Trajectory Specifications:</strong> <span class="math display">\[\begin{array}{lcl}
+v_{ref}(0)\;=0 &amp;  &amp; \dot{v}_{ref}(0)\;=0 \\
+v_{ref}(t_{1})=v_{\max } &amp;  &amp; \dot{v}_{ref}(t_{1})=0 \\
+v_{ref}(t)\;\,=v_{\max } &amp;  &amp; t_{1}\leq t\leq t_{2} \\
+v_{ref}(t_{2})=v_{\max } &amp;  &amp; \dot{v}_{ref}(t_{2})=0 \\
+v_{ref}(t_{3})=0 &amp;  &amp; \dot{v}_{ref}(t_{3})=0.
+\end{array}\]</span> and <span class="math display">\[\begin{aligned}
+v_{ref}(t) &amp;=v_{ref}(t_{3}-t)\text{for}t_{2}\leq t\leq t_{3} \\
+\int_{0}^{t_{3}}v_{ref}(\tau )d\tau &amp;=x_{f}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Trajectory for <span class="math inline">\(x_{ref}(t),v_{ref}(t)\)</span>
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig4__9.png">
+</div>
+<p>Try <span class="math display">\[\begin{aligned}
+v_{ref}(t) &amp;=c_{1}t^{2}+c_{2}t^{3}\text{for}0\leq t\leq t_{1} \\
+v_{ref}(0) &amp;=0 \\
+\dot{v}_{ref}(0) &amp;=0.
+\end{aligned}\]</span> At <span class="math inline">\(t_{1}\)</span> <span class="math display">\[\begin{aligned}
+v_{ref}(t_{1}) &amp;=c_{1}t_{1}^{2}+c_{2}t_{1}^{3}=v_{\max } \\
+\dot{v}_{ref}(t_{1}) &amp;=2c_{1}t_{1}+3c_{2}t_{1}^{2}=0\text{}
+\end{aligned}\]</span> or <span class="math display">\[\left[
+\begin{array}{cc}
+t_{1}^{2} &amp; t_{1}^{3} \\
+2t_{1} &amp; 3t_{1}^{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+c_{1} \\
+c_{2}
+\end{array}
+\right] =\left[
+\begin{array}{c}
+v_{\max } \\
+0
+\end{array}
+\right] .\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Trajectory for <span class="math inline">\(x_{ref}(t),v_{ref}(t)\)</span>
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig4__10.png">
+</div>
+<p>From previous slide: <span class="math display">\[\left[
+\begin{array}{cc}
+t_{1}^{2} &amp; t_{1}^{3} \\
+2t_{1} &amp; 3t_{1}^{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+c_{1} \\
+c_{2}
+\end{array}
+\right] =\left[
+\begin{array}{c}
+v_{\max } \\
+0
+\end{array}
+\right] .\]</span> <span class="math inline">\(\Longrightarrow\)</span> <span class="math display">\[\left[
+\begin{array}{c}
+c_{1} \\
+c_{2}
+\end{array}
+\right] =\frac{1}{t_{1}^{4}}\left[
+\begin{array}{rr}
+3t_{1}^{2} &amp; -t_{1}^{3} \\
+-2t_{1} &amp; t_{1}^{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+v_{\max } \\
+0
+\end{array}
+\right] =\left[
+\begin{array}{c}
++3v_{\max }/t_{1}^{2} \\
+-2v_{\max }/t_{1}^{3}
+\end{array}
+\right] .\]</span> <span class="math inline">\(v_{ref}(t):\)</span> <span class="math display">\[v_{ref}(t)=\left\{
+\begin{array}{lcl}
+c_{1}t^{2}+c_{2}t^{3}\text{,} &amp;  &amp; 0\leq t\leq t_{1} \\
+v_{\text{max}}, &amp;  &amp; t_{1}\leq t\leq t_{2} \\
+c_{1}(t_{3}-t)^{2}+c_{2}(t_{3}-t)^{3}, &amp;  &amp; t_{2}\leq t\leq t_{3}
+\end{array}
+\right.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Trajectory for <span class="math inline">\(x_{ref}(t),v_{ref}(t)\)</span>
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig4__11.png">
+</div>
+<p><strong>At time</strong> <span class="math inline">\(t_{1}\)</span><strong>:</strong> <span class="math display">\[x_{ref}(t_{1})=\int_{0}^{t_{1}}v_{ref}(\tau )d\tau =c_{1}\frac{t_{1}^{3}}{3}
++c_{2}\frac{t_{1}^{4}}{4}=\frac{3v_{\max }}{t_{1}^{2}}\frac{t_{1}^{3}}{3}-
+\frac{2v_{\max }}{t_{1}^{3}}\frac{t_{1}^{4}}{4}=\frac{v_{\max }t_{1}}{2}.\]</span> <strong>Total distance traveled:</strong> <span class="math display">\[x_{f}=\int_{0}^{t_{3}}v_{ref}(\tau )d\tau =2x_{ref}(t_{1})+v_{\max
+}(t_{2}-t_{1})=2\frac{v_{\max }t_{1}}{2}+v_{\max }(t_{2}-t_{1})=v_{\max
+}t_{2}.\]</span></p>
+<p><span class="math inline">\(\mathbf{x}_{\mathbf{ref}}\mathbf{(t):}\)</span> <span class="math display">\[x_{ref}(t)=\left\{
+\begin{array}{lcl}
+c_{1}t^{3}/3+c_{2}t^{4}/4, &amp;  &amp; 0\leq t\leq t_{1} \\
+v_{\text{max}}t_{1}/2+v_{\text{max}}(t-t_{1}), &amp;  &amp; t_{1}\leq t\leq t_{2} \\
+v_{\text{max}}t_{2}-c_{1}(t_{3}-t)^{3}/3-c_{2}(t_{3}-t)^{4}/4, &amp;  &amp;
+t_{2}\leq t\leq t_{3}.
+\end{array}
+\right.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide multi-figure-slide">
+<div class="slide-title">
+Trajectory for <span class="math inline">\(\alpha _{ref}(t),j_{ref}(t)\)</span>
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig4__12.png">
+</div>
+<p><span class="math display">\[\alpha _{ref}(t)=\left\{
+\begin{array}{lcl}
+2c_{1}t+3c_{2}t^{2}, &amp;  &amp; 0\leq t\leq t_{1} \\
+0, &amp;  &amp; t_{1}\leq t\leq t_{2} \\
+-2c_{1}(t_{3}-t)-3c_{2}(t_{3}-t)^{2}, &amp;  &amp; t_{2}\leq t\leq t_{3}.
+\end{array}
+\right.\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig5__13.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Full Trajectory for the Cart
+</div>
+<p>The equations for the cart are <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=v \\
+\frac{dv}{dt} &amp;=-a_{0}v+b_{0}u.
+\end{aligned}\]</span> The trajectory <span class="math inline">\(x_{ref}(t),v_{ref}(t)\)</span> along with the input reference <span class="math inline">\(u_{ref}(t)\)</span> must satisfy <span class="math display">\[\begin{aligned}
+\frac{dx_{ref}}{dt} &amp;=v_{ref} \\
+\underset{\alpha _{ref}}{\underbrace{\frac{dv_{ref}}{dt}}}
+&amp;=-a_{0}v_{ref}+b_{0}u_{ref}.
+\end{aligned}\]</span> Choose <span class="math inline">\(u_{ref}\)</span> as <span class="math display">\[u_{ref}(t)\triangleq \frac{\alpha _{ref}(t)+a_{0}v_{ref}(t)}{b_{0}}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Design of a State Feedback Tracking Controller
+</div>
+<p><strong>Cart Model:</strong> <span class="math inline">\(d\triangleq b_{0}K_{D}F_{d}=Mg\sin (\phi )/(J/r_{m}^{2}+M)\)</span>. <span class="math display">\[\begin{aligned}
+dx/dt &amp;=v \\
+dv/dt &amp;=-a_{0}v+b_{0}u(t)-d
+\end{aligned}\]</span></p>
+<p><strong>Reference trajectory and input:</strong> <span class="math display">\[\begin{aligned}
+dx_{ref}/dt &amp;=v_{ref} \\
+dv_{ref}/dt &amp;=-a_{0}v_{ref}+b_{0}u_{ref}(t)
+\end{aligned}\]</span></p>
+<p><strong>Error State Model:</strong> <span class="math display">\[\begin{aligned}
+\epsilon _{1}(t) &amp;\triangleq &amp;x_{ref}(t)-x(t) \\
+\epsilon _{2}(t) &amp;\triangleq &amp;v_{ref}(t)-v(t) \\
+d\epsilon _{1}/dt &amp;=\epsilon _{2} \\
+d\epsilon _{2}/dt &amp;=-a_{0}\epsilon _{2}+b_{0}w+d
+\end{aligned}\]</span> where <span class="math display">\[w(t)\triangleq u_{ref}(t)-u(t).\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Design of a State Feedback Tracking Controller
+</div>
+<p><span class="math display">\[\begin{aligned}
+\epsilon _{1}(t) &amp;\triangleq &amp;x_{ref}(t)-x(t) \\
+\epsilon _{2}(t) &amp;\triangleq &amp;v_{ref}(t)-v(t) \\
+d\epsilon _{1}/dt &amp;=\epsilon _{2} \\
+d\epsilon _{2}/dt &amp;=-a_{0}\epsilon _{2}+b_{0}w+d
+\end{aligned}\]</span></p>
+<p>In matrix form: <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] }}w+\left[
+\begin{array}{c}
+0 \\
+1
+\end{array}
+\right] d.\]</span></p>
+<p>With <span class="math inline">\(d=0\)</span>: <span class="math display">\[\frac{d\epsilon }{dt}=A\epsilon +bw\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Design of a State Feedback Tracking Controller
+</div>
+<p><strong>Control Problem:</strong> With <span class="math display">\[\frac{d\epsilon }{dt}=A\epsilon +bw\]</span> find <span class="math inline">\(k\)</span> such that <span class="math display">\[w=-\left[
+\begin{array}{cc}
+k_{1} &amp; k_{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right]\]</span> results in <span class="math display">\[\frac{d\epsilon }{dt}=(A-bk)\epsilon\]</span> being <em>stable</em>, i.e., <span class="math display">\[\epsilon (t)=e^{(A-bk)t}\left[
+\begin{array}{c}
+\epsilon _{1}(0) \\
+\epsilon _{2}(0)
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{c}
+0 \\
+0
+\end{array}
+\right] .\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig2b__14.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Design of a State Feedback Tracking Controller
+</div>
+<p><strong>Choosing</strong> <span class="math inline">\(k\)</span> <span class="math display">\[\begin{aligned}
+e^{(A-bk)t} &amp;=\mathcal{L}^{-1}\left\{ \left( sI-
+(A-bk)\right) ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \left( s\left[
+\begin{array}{cc}
+1 &amp; 0 \\
+0 &amp; 1
+\end{array}
+\right] -\left( \left[
+\begin{array}{cc}
+0 &amp; 1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] \left[
+\begin{array}{cc}
+k_{1} &amp; k_{2}
+\end{array}
+\right] \right) \right) ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \left[
+\begin{array}{cc}
+s &amp; -1 \\
+b_{0}k_{1} &amp; s+a_{0}+b_{0}k_{2}
+\end{array}
+\right] ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \frac{1}{\det \left( sI-
+(A-bk)\right) }\left[
+\begin{array}{cc}
+s+a_{0}+b_{0}k_{2} &amp; 1 \\
+-b_{0}k_{1} &amp; s
+\end{array}
+\right] \right\} .
+\end{aligned}\]</span> Now <span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right) =\det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+b_{0}k_{1} &amp; s+a_{0}+b_{0}k_{2}
+\end{array}
+\right] &amp;=s(s+a_{0}+b_{0}k_{2})+b_{0}k_{1} \\
+&amp;=s^{2}+(a_{0}+b_{0}k_{2})s+b_{0}k_{1}.
+\end{aligned}\]</span> With <span class="math inline">\(r_{1}&gt;0,r_{2}&gt;0\)</span>, choose <span class="math inline">\(k_{1},k_{2}\)</span> so that <span class="math display">\[s^{2}+(a_{0}+b_{0}k_{2})s+b_{0}k_{1}=(s+r_{1})(s+r_{2})=s^{2}+(r_{1}+r_{2})s+r_{1}r_{2}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Design of a State Feedback Tracking Controller
+</div>
+<p><strong>Choosing</strong> <span class="math inline">\(k\)</span></p>
+<p>Then <span class="math display">\[s^{2}+(a_{0}+b_{0}k_{2})s+b_{0}k_{1}=(s+r_{1})(s+r_{2})=s^{2}+(r_{1}+r_{2})s+r_{1}r_{2}.\]</span></p>
+<p>requires <span class="math display">\[k_{1}=\frac{r_{1}r_{2}}{b_{0}},k_{2}=\frac{r_{1}+r_{2}-a_{0}}{b_{0}
+}.\]</span> We have <span class="math display">\[\begin{aligned}
+\left. e^{(A-bk)t}\right\vert _{\substack{
+k_{1}=r_{1}r_{2}/b_{0}  \\
+k_{2}=(r_{1}+r_{2}-a_{0})/b_{0} }} &amp;=\mathcal{L}^{-1}\left\{ \frac{1}{
+(s+r_{1})(s+r_{2})}\left[
+\begin{array}{cc}
+s+a_{0}+b_{0}k_{2} &amp; 1 \\
+-b_{0}k_{1} &amp; s
+\end{array}
+\right] \right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \left[
+\begin{array}{cc}
+\dfrac{s+a_{0}+b_{0}k_{2}}{(s+r_{1})(s+r_{2})} &amp; \dfrac{1}{(s+r_{1})(s+r_{2})
+} \\
+&amp;  \\
+\dfrac{-b_{0}k_{1}}{(s+r_{1})(s+r_{2})} &amp; \dfrac{s}{(s+r_{1})(s+r_{2})}
+\end{array}
+\right] \right\}
+\end{aligned}\]</span> <span class="math inline">\(\Longrightarrow\)</span> <span class="math display">\[\begin{aligned}
+\left. e^{(A-bk)t}\right\vert _{\substack{
+k_{1}=r_{1}r_{2}/b_{0}  \\
+k_{2}=(r_{1}+r_{2}-a_{0})/b_{0} }} &amp;=\left[
+\begin{array}{cc}
+A_{11}e^{-r_{1}t}+B_{11}e^{-r_{2}t} &amp; A_{12}e^{-r_{1}t}+B_{12}e^{-r_{2}t} \\
+A_{21}e^{-r_{1}t}+B_{21}e^{-r_{2}t} &amp; A_{22}e^{-r_{1}t}+B_{22}e^{-r_{2}t}
+\end{array}
+\right] \\
+&amp;\rightarrow 0_{2\times 2}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Design of a State Feedback Tracking Controller
+</div>
+<p><strong>Key observation</strong></p>
+<p>Chose <span class="math inline">\(k_{1}\)</span> and <span class="math inline">\(k_{2}\)</span> so that <span class="math display">\[\left. \det \left( sI-(A-bk)\right) \right\vert _{\substack{
+k_{1}=r_{1}r_{2}/b_{0}  \\
+k_{2}=(r_{1}+r_{2}-a_{0})/b_{0}}}=(s+r_{1})(s+r_{2}).\]</span></p>
+<p><span class="math inline">\(\Longrightarrow\)</span> Every component of the <span class="math inline">\(2\times 2\)</span> matrix <span class="math display">\[\left( sI-(A-bk)\right) ^{-1}=\frac{1}{(s+r_{1})(s+r_{2})}\left[
+\begin{array}{cc}
+s+a_{0}+b_{0}k_{2} &amp; 1 \\
+-b_{0}k_{1} &amp; s
+\end{array}
+\right]\]</span></p>
+<p>has its poles at <span class="math inline">\(-r_{1},-r_{2}\)</span>.</p>
+<p><span class="math inline">\(\Longrightarrow\)</span> <span class="math display">\[e^{(A-bk)t}=\mathcal{L}^{-1}\left\{ \frac{1}{(s+r_{1})(s+r_{2})}\left[
+\begin{array}{cc}
+s+a_{0}+b_{0}k_{2} &amp; 1 \\
+-b_{0}k_{1} &amp; s
+\end{array}
+\right] \right\} \rightarrow 0_{2\times 2}.\]</span></p>
+<ul>
+<li>The row vector <span class="math inline">\(k\)</span> must be chosen so that the roots of <span class="math display">\[\det \left( sI-(A-bk)\right) =0\]</span> are in the <em>open</em> left half-plane resulting in <span class="math inline">\(A-bk\in \mathbb{R} ^{2\times 2}\)</span> being a <em>stable</em> matrix.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+General State Feedback Trajectory Tracking
+</div>
+<p><strong>Model</strong> <span class="math display">\[\frac{dx}{dt}=Ax+bu,A\in
+\mathbb{R}
+^{n\times n},b\in
+\mathbb{R}
+^{n}.\]</span></p>
+<p><strong>Trajectory</strong> <span class="math inline">\(x_{d}\)</span><strong>&nbsp;and reference input</strong> <span class="math inline">\(u_{d}\)</span><strong>&nbsp;satisfy</strong> <span class="math display">\[\frac{dx_{d}}{dt}=Ax_{d}+bu_{d}.\]</span></p>
+<p><strong>Error State</strong> <span class="math display">\[\epsilon \triangleq x_{d}-x\]</span></p>
+<p><strong>Input Error</strong> <span class="math display">\[w\triangleq u_{d}-u\]</span></p>
+<p><strong>Error Dynamics</strong> <span class="math display">\[\frac{d}{dt}(x_{d}-x)=A(x_{d}-x)+b(u_{d}-u)\]</span> or <span class="math display">\[\frac{d}{dt}\epsilon =A\epsilon +bw.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+General State Feedback Trajectory Tracking
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig9__15.png">
+</div>
+<p>With <span class="math inline">\(\epsilon \triangleq x_{d}-x\)</span> and <span class="math inline">\(w\triangleq u_{d}-u\)</span> <span class="math display">\[\frac{d}{dt}\epsilon =A\epsilon +bw.\]</span></p>
+<p>Choose <span class="math inline">\(w=-k\epsilon\)</span> to obtain <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\epsilon &amp;=(A-bk)\epsilon  \\
+\Longrightarrow \left[
+\begin{array}{c}
+\epsilon (t) \\
+\end{array}
+\right] &amp;=\left[
+\begin{array}{ccc}
+&amp;  &amp;  \\
+&amp; e^{(A-bk)t} &amp;  \\
+&amp;  &amp;
+\end{array}
+\right] \left[
+\begin{array}{c}
+\epsilon (0) \\
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<p>Need to find <span class="math inline">\(k\)</span> such that <span class="math display">\[e^{(A-bk)t}\rightarrow 0_{n\times n}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+General State Feedback Trajectory Tracking
+</div>
+<p>Recall that <span class="math display">\[e^{(A-bk)t}\rightarrow 0_{n\times n}\]</span></p>
+<p>if and only if the roots of <span class="math display">\[\det (sI-(A-bk))=0\]</span> are in the <em>open left half-plane</em>.</p>
+<p><strong>Equivalent Formulation</strong> &nbsp;With <span class="math display">\[r(t)\triangleq u_{d}(t)+kx_{d}(t)\]</span> the block diagram</p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig12__16.png">
+</div>
+<p>is equivalent to the block diagram on the previous slide.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Matrix Inverse
+</div>
+<p>Define <span class="math inline">\(A\in \mathbb{R} ^{3\times 3}\)</span> <span class="math display">\[A\triangleq \left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right]\]</span></p>
+<p>Define the <em>sign</em> matrix <span class="math inline">\(S\)</span> as <span class="math display">\[S\triangleq \left[
+\begin{array}{rrr}
+1 &amp; -1 &amp; 1 \\
+-1 &amp; 1 &amp; -1 \\
+1 &amp; -1 &amp; 1
+\end{array}
+\right] .\]</span></p>
+<p>That is, the <span class="math inline">\((i,j)\)</span> component <span class="math inline">\(s_{ij}\)</span> of <span class="math inline">\(S\)</span> is given by <span class="math inline">\(s_{ij}=(-1)^{i+j}\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Cofactor Matrix
+</div>
+<p><span class="math display">\[A\triangleq \left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right] \text{define}cof(A)\triangleq \left[
+\begin{array}{ccc}
+b_{11} &amp; b_{12} &amp; b_{13} \\
+b_{21} &amp; b_{22} &amp; b_{23} \\
+b_{31} &amp; b_{32} &amp; b_{33}
+\end{array}
+\right] \in
+\mathbb{R}
+^{3\times 3}\]</span> <span class="math display">\[\begin{aligned}
+b_{11} &amp;=\underset{s_{11}}{\underbrace{1}}\cdot \det \left[
+\begin{array}{cc}
+a_{22} &amp; a_{23} \\
+a_{32} &amp; a_{33}
+\end{array}
+\right] ,b_{12}=\underset{s_{12}}{\underbrace{-1}}\cdot \det
+\left[
+\begin{array}{cc}
+a_{21} &amp; a_{23} \\
+a_{31} &amp; a_{33}
+\end{array}
+\right] , \\
+b_{13} &amp;=\underset{s_{13}}{\underbrace{1}}\cdot \det \left[
+\begin{array}{cc}
+a_{21} &amp; a_{22} \\
+a_{31} &amp; a_{32}
+\end{array}
+\right] \\
+b_{21} &amp;=\underset{s_{21}}{\underbrace{-1}}\cdot \det \left[
+\begin{array}{cc}
+a_{12} &amp; a_{13} \\
+a_{32} &amp; a_{33}
+\end{array}
+\right] ,b_{22}=\underset{s_{22}}{\underbrace{1}}\cdot \det
+\left[
+\begin{array}{cc}
+a_{11} &amp; a_{13} \\
+a_{31} &amp; a_{33}
+\end{array}
+\right] , \\
+b_{23} &amp;=\underset{s_{23}}{\underbrace{-1}}\cdot \det \left[
+\begin{array}{cc}
+a_{11} &amp; a_{12} \\
+a_{31} &amp; a_{32}
+\end{array}
+\right] \\
+b_{31} &amp;=\underset{s31}{\underbrace{1}}\cdot \det \left[
+\begin{array}{cc}
+a_{12} &amp; a_{13} \\
+a_{22} &amp; a_{23}
+\end{array}
+\right] ,b_{32}=\underset{s_{32}}{\underbrace{-1}}\cdot \det
+\left[
+\begin{array}{cc}
+a_{11} &amp; a_{13} \\
+a_{21} &amp; a_{23}
+\end{array}
+\right] , \\
+b_{33} &amp;=\underset{s_{33}}{\underbrace{1}}\cdot \det \left[
+\begin{array}{cc}
+a_{11} &amp; a_{12} \\
+a_{21} &amp; a_{22}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Adjoint Matrix
+</div>
+<p><span class="math display">\[adj(A)\triangleq cof^{T}(A)\in
+\mathbb{R}
+^{3\times 3}\]</span></p>
+<p><strong>Inverse Matrix</strong></p>
+<p><span class="math display">\[A\triangleq \left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right]\]</span></p>
+<p><span class="math display">\[\det A=\underset{s_{11}}{\underbrace{1}}\cdot a_{11}\det \left[
+\begin{array}{cc}
+a_{22} &amp; a_{23} \\
+a_{32} &amp; a_{33}
+\end{array}
+\right] +\underset{s_{12}}{\underbrace{-1}}\cdot a_{12}\det \left[
+\begin{array}{cc}
+a_{21} &amp; a_{23} \\
+a_{31} &amp; a_{33}
+\end{array}
+\right] +\underset{s_{13}}{\underbrace{1}}\cdot a_{13}\det \left[
+\begin{array}{cc}
+a_{21} &amp; a_{22} \\
+a_{31} &amp; a_{32}
+\end{array}
+\right]\]</span> <span class="math display">\[\begin{aligned}
+A^{-1} &amp;=\frac{1}{\det A}adj(A). \\
+&amp;&amp;
+\end{aligned}\]</span></p>
+<ul>
+<li><p>We are assuming that <span class="math inline">\(\det (A)\neq 0\)</span>.</p>
+<p>If <span class="math inline">\(\det (A)=0\)</span> then <span class="math inline">\(A\)</span> does <em>not</em> have an inverse.</p></li>
+<li><p>This computation of <span class="math inline">\(A^{-1}\)</span> <em>not</em> numerically efficient. It is for <em>theoretical</em> purposes.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverse of a Matrix</em></p>
+<p><span class="math display">\[A=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] \qquad{}S\triangleq \left[
+\begin{array}{rrr}
+1 &amp; -1 &amp; 1 \\
+-1 &amp; 1 &amp; -1 \\
+1 &amp; -1 &amp; 1
+\end{array}
+\right]\]</span></p>
+<p>Compute <span class="math inline">\((sI-A)^{-1}.\)</span> <span class="math display">\[sI-A=s\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] -\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] =\left[
+\begin{array}{ccc}
+s &amp; -1 &amp; 0 \\
+0 &amp; s &amp; -1 \\
+\alpha _{0} &amp; \alpha _{1} &amp; s+\alpha _{2}
+\end{array}
+\right] .\]</span></p>
+<p>Evaluate <span class="math inline">\(\det (sI-A)\)</span> via the <span class="math inline">\(1^{st}\)</span> column: <span class="math display">\[\begin{aligned}
+\det (sI-A) &amp;=\underset{s_{11}}{\underbrace{(1)}}(s)\det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+\alpha _{1} &amp; s+\alpha _{2}
+\end{array}
+\right] +\underset{s_{21}}{\underbrace{(-1)}}(0)\det \left[
+\begin{array}{cc}
+-1 &amp; 0 \\
+\alpha _{1} &amp; s+\alpha _{2}
+\end{array}
+\right] \\
+&amp;&amp;+\underset{s_{31}}{\underbrace{(1)}}(\alpha _{0})\det \left[
+\begin{array}{cc}
+-1 &amp; 0 \\
+s &amp; -1
+\end{array}
+\right] \\
+&amp;=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverse of a Matrix</em> &nbsp;<strong>(continued)</strong></p>
+<p>Adjoint of <span class="math inline">\(sI-A=\left[ \begin{array}{ccc} s &amp; -1 &amp; 0 \\ 0 &amp; s &amp; -1 \\ \alpha _{0} &amp; \alpha _{1} &amp; s+\alpha _{2} \end{array} \right] .\qquad{}S\triangleq \left[ \begin{array}{rrr} 1 &amp; -1 &amp; 1 \\ -1 &amp; 1 &amp; -1 \\ 1 &amp; -1 &amp; 1 \end{array} \right] .\)</span> <span class="math display">\[\begin{aligned}
+&amp;&amp;b_{11}=1\cdot \det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+\alpha _{1} &amp; s+\alpha _{2}
+\end{array}
+\right] ,\text{}b_{12}=-1\cdot \det \left[
+\begin{array}{cc}
+0 &amp; -1 \\
+\alpha _{0} &amp; s+\alpha _{2}
+\end{array}
+\right] ,\text{}b_{13}=1\cdot \det \left[
+\begin{array}{cc}
+0 &amp; s \\
+\alpha _{0} &amp; \alpha _{1}
+\end{array}
+\right] \\
+&amp;&amp;b_{21}=-1\cdot \det \left[
+\begin{array}{cc}
+-1 &amp; 0 \\
+\alpha _{1} &amp; s+\alpha _{2}
+\end{array}
+\right] ,\text{}b_{22}=1\cdot \det \left[
+\begin{array}{cc}
+s &amp; 0 \\
+\alpha _{0} &amp; s+\alpha _{2}
+\end{array}
+\right] ,\text{}b_{23}=-1\cdot \det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+\alpha _{0} &amp; \alpha _{1}
+\end{array}
+\right] \\
+&amp;&amp;b_{31}=1\cdot \det \left[
+\begin{array}{cc}
+-1 &amp; 0 \\
+s &amp; -1
+\end{array}
+\right] ,b_{32}=-1\cdot \det \left[
+\begin{array}{cc}
+s &amp; 0 \\
+0 &amp; -1
+\end{array}
+\right] ,b_{33}=1\cdot \det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+0 &amp; s
+\end{array}
+\right] .
+\end{aligned}\]</span> <span class="math display">\[\begin{aligned}
+\Longrightarrow cof(sI-A) &amp;=\left[
+\begin{array}{ccc}
+s^{2}+\alpha _{2}s+\alpha _{1} &amp; -\alpha _{0} &amp; -\alpha _{0}s \\
+s+\alpha _{2} &amp; s^{2}+\alpha _{2}s &amp; -\alpha _{1}s-\alpha _{0} \\
+1 &amp; s &amp; s^{2}
+\end{array}
+\right] \\
+\Longrightarrow adj(sI-A)=cof^{T}(sI-A) &amp;=\left[
+\begin{array}{ccc}
+s^{2}+\alpha _{2}s+\alpha _{1} &amp; s+\alpha _{2} &amp; 1 \\
+-\alpha _{0} &amp; s^{2}+\alpha _{2}s &amp; s \\
+-\alpha _{0}s &amp; -\alpha _{1}s-\alpha _{0} &amp; s^{2}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Inverse of a Matrix</em> &nbsp;<strong>(continued)</strong></p>
+<p><span class="math display">\[\begin{aligned}
+(sI-A)^{-1} &amp;=\frac{1}{\det (sI-A)}adj(sI-A) \\
+&amp;=\frac{1}{s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}}\left[
+\begin{array}{ccc}
+s^{2}+\alpha _{2}s+\alpha _{1} &amp; s+\alpha _{2} &amp; 1 \\
+-\alpha _{0} &amp; s^{2}+\alpha _{2}s &amp; s \\
+-\alpha _{0}s &amp; -\alpha _{1}s-\alpha _{0} &amp; s^{2}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<p><strong>Alternative Expression</strong> <span class="math display">\[\begin{aligned}
+(sI-A)^{-1} &amp;=\frac{1}{s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}}
+\times \\
+&amp;&amp;\left( \underset{N_{2}}{\underbrace{\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] }}s^{2}+\underset{N_{1}}{\underbrace{\left[
+\begin{array}{ccc}
+\alpha _{2} &amp; 1 &amp; 0 \\
+0 &amp; \alpha _{2} &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; 0
+\end{array}
+\right] }}s+\underset{N_{0}}{\underbrace{\left[
+\begin{array}{ccc}
+\alpha _{1} &amp; \alpha _{2} &amp; 1 \\
+-\alpha _{0} &amp; 0 &amp; 0 \\
+0 &amp; -\alpha _{0} &amp; 0
+\end{array}
+\right] }}\right) \\
+&amp;=\frac{1}{\det (sI-A)}(N_{2}s^{2}+N_{1}s+N_{0}).
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Properties of Matrix Inverses
+</div>
+<p><strong>(1)</strong> Let <span class="math inline">\(A\in \mathbb{R} ^{n\times n},B\in \mathbb{R} ^{n\times n}\)</span> be two matrices. Then <span class="math display">\[\det (AB)=\det (A)\det (B).\]</span></p>
+<p><strong>Proof omitted</strong></p>
+<p><strong>(2)</strong> Let <span class="math inline">\(A\in \mathbb{R} ^{n\times n},B\in \mathbb{R} ^{n\times n}\)</span> be invertible, that is, <span class="math inline">\(\det (A)\neq 0,\det (B)\neq 0\)</span>. Then <span class="math display">\[(AB)^{-1}=B^{-1}A^{-1}.\]</span></p>
+<p>This is because <span class="math display">\[(AB)(B^{-1}A^{-1})=A(BB^{-1})A^{-1}=AIA^{-1}=AA^{-1}=I\]</span></p>
+<p><strong>(3)</strong> Let <span class="math inline">\(A\in \mathbb{R} ^{n\times n}\)</span> with <span class="math inline">\(\det (A)\neq 0\)</span>. Then <span class="math display">\[\det (A^{-1})=\frac{1}{\det A}.\]</span></p>
+<p>As <span class="math inline">\(AA^{-1}=I\Longrightarrow (\det A)(\det A^{-1})=\det I=1\Longrightarrow \det (A^{-1})=1/\det A\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Cayley-Hamilton Theorem
+</div>
+<p>Let <span class="math inline">\(A\in \mathbb{R} ^{3\times 3}\)</span> with <span class="math display">\[\det (sI-A)=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}\]</span> write <span class="math display">\[(sI-A)^{-1}=\frac{1}{\det (sI-A)}adj(sI-A)=\frac{1}{\det (sI-A)}
+(N_{2}s^{2}+N_{1}s+N_{0})\]</span> or <span class="math display">\[\det (sI-A)I=(sI-A)(N_{2}s^{2}+N_{1}s+N_{0})\]</span> or <span class="math display">\[\begin{aligned}
+(s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0})I
+&amp;=(sI-A)(N_{2}s^{2}+N_{1}s+N_{0}) \\
+&amp;=s^{3}N_{2}+(N_{1}-AN_{2})s^{2}+(N_{0}-AN_{1})s-AN_{0}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Cayley-Hamilton Theorem
+</div>
+<p>From previous slide: <span class="math display">\[(s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha
+_{0})I=s^{3}N_{2}+(N_{1}-AN_{2})s^{2}+(N_{0}-AN_{1})s-AN_{0}.\]</span></p>
+<p>Equate powers of <span class="math inline">\(s\)</span> <span class="math display">\[\begin{aligned}
+I &amp;\mathbf{=}&amp;N_{2} \\
+\alpha _{2}I &amp;\mathbf{=}&amp;N_{1}-AN_{2} \\
+\alpha _{1}I &amp;\mathbf{=}&amp;N_{0}-AN_{1} \\
+\alpha _{0}I &amp;=-AN_{0}.
+\end{aligned}\]</span> Then <span class="math display">\[\begin{aligned}
+\alpha _{0}I=-AN_{0}=-A\left( \alpha _{1}I\mathbf{+}AN_{1}\right) =-\alpha
+_{1}A\mathbf{-}A^{2}N_{1} &amp;=-\alpha _{1}A-A^{2}\left( \alpha _{2}I\mathbf{+}
+AN_{2}\right) \\
+&amp;=-\alpha _{1}A-\alpha _{2}A^{2}-A^{3}
+\end{aligned}\]</span> or <span class="math display">\[A^{3}+\alpha _{2}A^{2}+\alpha _{1}A+\alpha _{0}I=0_{3\times 3}.\]</span></p>
+<ul>
+<li>This is the <em>Cayley-Hamilton</em> Theorem.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide cayley-example-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Cayley-Hamilton Theorem</em></p>
+<p><span class="math display">\[A=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right].\]</span></p>
+<p><span class="math display">\[\det(sI-A)=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.\]</span></p>
+<p><span class="math display">\[\begin{aligned}
+p(A)&amp;=A^{3}+\alpha _{2}A^{2}+\alpha _{1}A+\alpha _{0}I \\
+&amp;=\left[
+\begin{array}{ccc}
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2} \\
+\alpha _{0}\alpha _{2} &amp; \alpha _{1}\alpha _{2}-\alpha _{0} &amp; \alpha
+_{2}^{2}-\alpha _{1} \\
+\alpha _{0}\alpha _{1}-\alpha _{0}\alpha _{2}^{2} &amp; \alpha _{1}^{2}-\alpha
+_{1}\alpha _{2}^{2}+\alpha _{0}\alpha _{2} &amp; -\alpha _{2}^{3}+2\alpha
+_{1}\alpha _{2}-\alpha _{0}
+\end{array}
+\right] \\
+&amp;\quad+\alpha _{2}\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2} \\
+\alpha _{0}\alpha _{2} &amp; \alpha _{1}\alpha _{2}-\alpha _{0} &amp; \alpha
+_{2}^{2}-\alpha _{1}
+\end{array}
+\right] +\alpha _{1}\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] +\alpha _{0}\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide definition-slide">
+<div class="slide-title">
+Characteristic Polynomial and Eigenvalues
+</div>
+<div class="definition-stack">
+<p>Let <span class="math inline">\(A\in \mathbb{R}^{n\times n}\)</span>.</p>
+<p><strong>Definition</strong> <em>Characteristic Polynomial</em></p>
+<p>The polynomial <span class="math display">\[p_A(s)=\det(sI-A)\]</span> is the <em>characteristic polynomial</em> of <span class="math inline">\(A\)</span>.</p>
+<p><strong>Definition</strong> <em>Eigenvalues</em></p>
+<p>The roots of <span class="math display">\[p_A(s)=0\]</span> are the <em>characteristic values</em>, or <em>eigenvalues</em>, of <span class="math inline">\(A\)</span>.</p>
+<p><strong>Remark</strong> The word “eigen”&nbsp;is German for “characteristic”.</p>
+<p><strong>Definition</strong> <em>Stable Matrix</em></p>
+<p>If every eigenvalue of <span class="math inline">\(A\)</span> lies in the open left half-plane, then <span class="math inline">\(A\)</span> is a <em>stable matrix</em>.</p>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Stabilization and State Feedback
+</div>
+<p><span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+b_{1} \\
+b_{2} \\
+b_{3}
+\end{array}
+\right] }}u\]</span></p>
+<p>Let <span class="math display">\[u=-\underset{k}{\underbrace{\left[
+\begin{array}{ccc}
+k_{1} &amp; k_{2} &amp; k_{3}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] .\]</span></p>
+<p>Then <span class="math display">\[\frac{dx}{dt}=(A-bk)x\Longrightarrow
+x(t)=e^{(A-bk)t}x(0).\]</span></p>
+<p>Note that <span class="math display">\[\begin{aligned}
+\left( sI-(A-bk)\right) ^{-1} &amp;=\frac{1}{\det \left( sI-
+(A-bk)\right) }adj\left( sI-(A-bk)\right) \in
+\mathbb{R}
+^{3\times 3} \\
+e^{(A-bk)t} &amp;=\mathcal{L}^{-1}\left\{ \frac{1}{\det \left( sI-\frac{{}}{
+{}}(A-bk)\right) }adj\left( sI-(A-bk)\right) \right\} .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Stabilization and State Feedback
+</div>
+<p><span class="math display">\[e^{(A-bk)t}=\mathcal{L}^{-1}\left\{ \frac{1}{\det \left( sI-
+(A-bk)\right) }adj\left( sI-(A-bk)\right) \right\} .\]</span> Then <span class="math display">\[e^{(A-bk)t}\rightarrow \left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0
+\end{array}
+\right]\]</span></p>
+<p>if and only if the roots of&nbsp;<span class="math display">\[\det \left( sI-(A-bk)\right) =0\]</span></p>
+<p>are in the <em>open left-half</em> plane, i.e., <span class="math inline">\(A-bk\)</span> is a stable matrix.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Control Canonical Form</em></p>
+<p><span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u\]</span></p>
+<p>Recall that <span class="math display">\[\det (sI-A)=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.\]</span> Let <span class="math display">\[u=-kx=-\left[
+\begin{array}{ccc}
+k_{1} &amp; k_{2} &amp; k_{3}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] .\]</span></p>
+<p>Then <span class="math display">\[\frac{dx}{dt}=(A-bk)x\Longrightarrow
+x(t)=e^{(A-bk)t}x(0).\]</span></p>
+<ul>
+<li><p>Choose <span class="math inline">\(k\)</span> so that eigenvalues of <span class="math inline">\(A-bk\)</span> are in the open left-half plane.</p>
+<p>Then <span class="math display">\[e^{(A-bk)t}\rightarrow 0_{3\times 3}.\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Control Canonical Form</em> &nbsp;<strong>(continued)</strong></p>
+<ul>
+<li>Choose <span class="math inline">\(k\)</span> so that eigenvalues of <span class="math inline">\(A-bk\)</span> are in the open left-half plane.</li>
+</ul>
+<p><span class="math display">\[\begin{aligned}
+sI-(A-bk) &amp;=s\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] -\left( \left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] \left[
+\begin{array}{ccc}
+k_{1} &amp; k_{2} &amp; k_{3}
+\end{array}
+\right] \right) \\
+&amp;=s\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] +\left[
+\begin{array}{ccc}
+0 &amp; -1 &amp; 0 \\
+0 &amp; 0 &amp; -1 \\
+\alpha _{0} &amp; \alpha _{1} &amp; \alpha _{2}
+\end{array}
+\right] +\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0 \\
+k_{1} &amp; k_{2} &amp; k_{3}
+\end{array}
+\right] \\
+&amp;=s\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] +\left[
+\begin{array}{ccc}
+0 &amp; -1 &amp; 0 \\
+0 &amp; 0 &amp; -1 \\
+k_{1}+\alpha _{0} &amp; k_{2}+\alpha _{1} &amp; k_{3}+\alpha _{2}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{ccc}
+s &amp; -1 &amp; 0 \\
+0 &amp; s &amp; -1 \\
+k_{1}+\alpha _{0} &amp; k_{2}+\alpha _{1} &amp; s+k_{3}+\alpha _{2}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Control Canonical Form</em> &nbsp;<strong>(continued)</strong></p>
+<p><span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right)  &amp;=\det
+\left[
+\begin{array}{ccc}
+s &amp; -1 &amp; 0 \\
+0 &amp; s &amp; -1 \\
+k_{1}+\alpha _{0} &amp; k_{2}+\alpha _{1} &amp; s+k_{3}+\alpha _{2}
+\end{array}
+\right] \\
+&amp;=s\det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+k_{2}+\alpha _{1} &amp; s+k_{3}+\alpha _{2}
+\end{array}
+\right] -(-1)\det \left[
+\begin{array}{cc}
+0 &amp; -1 \\
+k_{1}+\alpha _{0} &amp; s+k_{3}+\alpha _{2}
+\end{array}
+\right] \\
+&amp;=s\left( s(s+k_{3}+\alpha _{2})+k_{2}+\alpha _{1}\right)
++k_{1}+\alpha _{0} \\
+&amp;=s^{3}+(k_{3}+\alpha _{2})s^{2}+(k_{2}+\alpha _{1})s+k_{1}+\alpha _{0}.
+\end{aligned}\]</span></p>
+<p>With <span class="math inline">\(r_{1}&gt;0,r_{2}&gt;0,r_{3}&gt;0\)</span> choose <span class="math inline">\(k\)</span> so that <span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right) &amp;=(s+r_{1})(s+r_{2})(s+r_{3}) \\
+&amp;=s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})s+r_{1}r_{2}r_{3}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Control Canonical Form</em> &nbsp;<strong>(continued)</strong></p>
+<p><span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right) &amp;=s^{3}+(k_{3}+\alpha
+_{2})s^{2}+(k_{2}+\alpha _{1})s+k_{1}+\alpha _{0} \\
+&amp;=s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})s+r_{1}r_{2}r_{3}
+\end{aligned}\]</span></p>
+<p>Set <span class="math display">\[\begin{aligned}
+k_{3}+\alpha _{2} &amp;=r_{1}+r_{2}+r_{3} \\
+k_{2}+\alpha _{1} &amp;=r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3} \\
+k_{1}+\alpha _{0} &amp;=r_{1}r_{2}r_{3}
+\end{aligned}\]</span> or <span class="math display">\[\begin{aligned}
+k_{3} &amp;=r_{1}+r_{2}+r_{3}-\alpha _{2} \\
+k_{2} &amp;=r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}-\alpha _{1} \\
+k_{1} &amp;=r_{1}r_{2}r_{3}-\alpha _{0}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Control Canonical Form</em> &nbsp;<strong>(continued)</strong></p>
+<p>Tedious calculations give</p>
+<p><span class="math inline">\(\left( sI-(A-bk)\right) ^{-1}\)</span> <span class="math display">\[\begin{aligned}
+&amp;=\frac{1}{\det (sI-(A-bk))}\left[
+\begin{array}{ccc}
+s^{2}+s(\alpha _{2}+k_{3})+\alpha _{1}+k_{2} &amp; s+\alpha _{2}+k_{3} &amp; 1 \\
+-\alpha _{0}-k_{1} &amp; s^{2}+s(\alpha _{2}+k_{3}) &amp; s \\
+-s\alpha _{0}-sk_{1} &amp; -s(\alpha _{1}+k_{2})-\alpha _{0}-k_{1} &amp; s^{2}
+\end{array}
+\right] \\
+&amp;=\frac{1}{(s+r_{1})(s+r_{2})(s+r_{3})}\left[
+\begin{array}{ccc}
+s^{2}+s(\alpha _{2}+k_{3})+\alpha _{1}+k_{2} &amp; s+\alpha _{2}+k_{3} &amp; 1 \\
+-\alpha _{0}-k_{1} &amp; s^{2}+s(\alpha _{2}+k_{3}) &amp; s \\
+-s\alpha _{0}-sk_{1} &amp; -s(\alpha _{1}+k_{2})-\alpha _{0}-k_{1} &amp; s^{2}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<ul>
+<li><p>Each <em>component</em> of <span class="math inline">\(\mathcal{L} ^{-1}\{\left( sI- (A-bk)\right) ^{-1}\}\)</span> will be of the form <span class="math display">\[Ae^{-r_{1}t}+Be^{-r_{2}t}+Ce^{-r_{3}t}.\]</span></p></li>
+<li><p>Therefore <span class="math display">\[e^{(A-bk)t}=\mathcal{L}^{-1}\left\{ \left( sI-(A-bk)\right)
+^{-1}\right\} \rightarrow 0_{3\times 3}\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/models_fig_02__17.png">
+</div>
+<p><strong>Linear statespace model</strong> <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+i-i_{eq} \\
+x-x_{eq} \\
+v-v_{eq}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+-\dfrac{R}{L_{0}} &amp; 0 &amp; \dfrac{rL_{1}}{L_{0}}\dfrac{i_{eq}}{x_{eq}^{2}} \\
+0 &amp; 0 &amp; 1 \\
+-\dfrac{2g}{i_{eq}} &amp; \dfrac{2g}{x_{eq}} &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+i-i_{eq} \\
+x-x_{eq} \\
+v-v_{eq}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+\dfrac{1}{L_{0}} \\
+0 \\
+0
+\end{array}
+\right] }}(u-u_{eq})\]</span></p>
+<p>Set <span class="math display">\[\left[
+\begin{array}{c}
+z_{1} \\
+z_{2} \\
+z_{3}
+\end{array}
+\right] \triangleq \left[
+\begin{array}{c}
+i-i_{eq} \\
+x-x_{eq} \\
+v-v_{eq}
+\end{array}
+\right] ,w=u-u_{eq}\text{and}A=\left[
+\begin{array}{ccc}
+a_{11} &amp; 0 &amp; a_{13} \\
+0 &amp; 0 &amp; 1 \\
+a_{31} &amp; a_{32} &amp; 0
+\end{array}
+\right] ,b=\left[
+\begin{array}{c}
+b_{1} \\
+0 \\
+0
+\end{array}
+\right]\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em> &nbsp;<em>&nbsp;</em><strong>(continued)</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/models_fig_02__18.png">
+</div>
+<p><span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+z_{1} \\
+z_{2} \\
+z_{3}
+\end{array}
+\right] =\left[
+\begin{array}{ccc}
+a_{11} &amp; 0 &amp; a_{13} \\
+0 &amp; 0 &amp; 1 \\
+a_{31} &amp; a_{32} &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+z_{1} \\
+z_{2} \\
+z_{3}
+\end{array}
+\right] +\left[
+\begin{array}{c}
+b_{1} \\
+0 \\
+0
+\end{array}
+\right] w\]</span></p>
+<p>With <span class="math display">\[w=-\left[
+\begin{array}{ccc}
+k_{1} &amp; k_{2} &amp; k_{3}
+\end{array}
+\right] \left[
+\begin{array}{c}
+z_{1} \\
+z_{2} \\
+z_{3}
+\end{array}
+\right]\]</span> the closed-loop system is <span class="math display">\[\frac{dz}{dt}=(A-bk)z\Longrightarrow
+z(t)=e^{(A-bk)t}z(0).\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em> &nbsp;<em>&nbsp;</em><strong>(continued)</strong></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/models_fig_02__19.png">
+</div>
+<p><span class="math display">\[A-bk=\left[
+\begin{array}{ccc}
+a_{11} &amp; 0 &amp; a_{13} \\
+0 &amp; 0 &amp; 1 \\
+a_{31} &amp; a_{32} &amp; 0
+\end{array}
+\right] -\left[
+\begin{array}{c}
+b_{1} \\
+0 \\
+0
+\end{array}
+\right] \left[
+\begin{array}{ccc}
+k_{1} &amp; k_{2} &amp; k_{3}
+\end{array}
+\right] =\left[
+\begin{array}{ccc}
+a_{11}-b_{1}k_{1} &amp; -b_{1}k_{2} &amp; a_{13}-b_{1}k_{3} \\
+0 &amp; 0 &amp; 1 \\
+a_{31} &amp; a_{32} &amp; 0
+\end{array}
+\right]\]</span> <span class="math display">\[sI-(A-bk)=\left[
+\begin{array}{ccc}
+s-(a_{11}-b_{1}k_{1}) &amp; b_{1}k_{2} &amp; -(a_{13}-b_{1}k_{3}) \\
+0 &amp; s &amp; -1 \\
+-a_{31} &amp; -a_{32} &amp; s
+\end{array}
+\right]\]</span> Find <span class="math inline">\(k\)</span> so that <span class="math display">\[z(t)=\left[
+\begin{array}{c}
+z_{1}(t) \\
+z_{2}(t) \\
+z_{3}(t)
+\end{array}
+\right] \triangleq \left[
+\begin{array}{c}
+i(t)-i_{eq} \\
+x(t)-x_{eq} \\
+v(t)-v_{eq}
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{c}
+0 \\
+0 \\
+0
+\end{array}
+\right]\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation &nbsp;</em><strong>(continued)</strong></p>
+<p><span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right)  &amp;=\det
+\left[
+\begin{array}{ccc}
+s+b_{1}k_{1}-a_{11} &amp; b_{1}k_{2} &amp; b_{1}k_{3}-a_{13} \\
+0 &amp; s &amp; -1 \\
+-a_{31} &amp; -a_{32} &amp; s
+\end{array}
+\right] \\
+&amp;=(s+b_{1}k_{1}-a_{11})\det \left[
+\begin{array}{cc}
+s &amp; -1 \\
+-a_{32} &amp; s
+\end{array}
+\right] +(-a_{31})\det \left[
+\begin{array}{cc}
+b_{1}k_{2} &amp; b_{1}k_{3}-a_{13} \\
+s &amp; -1
+\end{array}
+\right] \\
+&amp;=(s+b_{1}k_{1}-a_{11})(s^{2}-a_{32})-a_{31}\left(
+-b_{1}k_{2}-s(b_{1}k_{3}-a_{13})\right) \\
+&amp;=
+s^{3}+(b_{1}k_{1}-a_{11})s^{2}+(b_{1}k_{3}a_{31}-a_{13}a_{31}-a_{32})s+ \\
+&amp;&amp;a_{11}a_{32}-b_{1}k_{1}a_{32}+b_{1}k_{2}a_{31}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation &nbsp;</em><strong>(continued)</strong></p>
+<p><span class="math display">\[\begin{aligned}
+\det \left( sI-(A-bk)\right)
+&amp;=s^{3}+(b_{1}k_{1}-a_{11})s^{2}+(b_{1}k_{3}a_{31}-a_{13}a_{31}-a_{32})s+ \\
+&amp;&amp;\left( a_{11}a_{32}-b_{1}k_{1}a_{32}+b_{1}k_{2}a_{31}\right) .
+\end{aligned}\]</span></p>
+<p>Choose <span class="math inline">\(k\)</span> so that <span class="math display">\[\begin{aligned}
+\det (sI-(A-bk)) &amp;=(s+r_{1})(s+r_{2})(s+r_{3}) \\
+&amp;=s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})s+r_{1}r_{2}r_{3}.
+\end{aligned}\]</span> That is, <span class="math display">\[\begin{aligned}
+b_{1}k_{1}-a_{11} &amp;=r_{1}+r_{2}+r_{3} \\
+b_{1}k_{3}a_{31}-a_{13}a_{31}-a_{32} &amp;=r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3} \\
+a_{11}a_{32}-b_{1}k_{1}a_{32}+b_{1}k_{2}a_{31} &amp;=r_{1}r_{2}r_{3}
+\end{aligned}\]</span> or <span class="math display">\[\begin{aligned}
+k_{1} &amp;=\frac{r_{1}+r_{2}+r_{3}+a_{11}}{b_{1}} \\
+k_{3} &amp;=\frac{r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}+a_{13}a_{31}+a_{32}}{
+b_{1}a_{31}} \\
+k_{2} &amp;=\frac{r_{1}r_{2}r_{3}-a_{11}a_{32}+b_{1}k_{1}a_{32}}{b_{1}a_{31}}=
+\frac{r_{1}r_{2}r_{3}-a_{11}a_{32}+(r_{1}+r_{2}+r_{3}+a_{11})a_{32}}{
+b_{1}a_{31}}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation &nbsp;</em><strong>(continued)</strong></p>
+<p>With these values of the gains <span class="math inline">\(k_{i}\)</span> we have <span class="math display">\[\begin{aligned}
+e^{(A-bk)t} &amp;=\mathcal{L}^{-1}\left\{ \left( sI-
+(A-bk)\right) ^{-1}\right\} \\
+&amp;=\mathcal{L}^{-1}\left\{ \frac{1}{(s+r_{1})(s+r_{2})(s+r_{3})}
+adj\left( sI-(A-bk)\right) \right\} \\
+&amp;\rightarrow &amp;0_{3\times 3}.
+\end{aligned}\]</span> I.e., <span class="math display">\[z(t)=\left[
+\begin{array}{c}
+i(t)-i_{eq} \\
+x(t)-x_{eq} \\
+v(t)-v_{eq}
+\end{array}
+\right] =e^{(A-bk)t}\left[
+\begin{array}{c}
+i(0)-i_{eq} \\
+x(0)-x_{eq} \\
+v(0)-v_{eq}
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{c}
+0 \\
+0 \\
+0
+\end{array}
+\right] .\]</span> As <span class="math display">\[w=u-u_{eq}=-kz\]</span></p>
+<p>the actual voltage applied to the coil is <span class="math display">\[u(t)=-kz(t)+u_{eq}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><strong>Cart on track system</strong> $&nbsp;$ <span class="math display">\[\begin{aligned}
+dx/dt &amp;=v \\
+dv/dt &amp;=-a_{0}v+b_{0}u(t)-\underset{d}{\underbrace{b_{0}K_{D}F_{d}}}
+\end{aligned}\]</span></p>
+<p>where <span class="math inline">\(d=b_{0}K_{D}F_{d}=Mg\sin (\phi )/(J/r_{m}^{2}+M).\)</span></p>
+<p><strong>Reference Trajectory &nbsp;</strong><span class="math inline">\(x_{ref}(t),v_{ref}(t),u_{ref}(t)\)</span> <span class="math display">\[\begin{aligned}
+dx_{ref}/dt &amp;=v_{ref} \\
+dv_{ref}/dt &amp;=-a_{0}v_{ref}+b_{0}u_{ref}.
+\end{aligned}\]</span></p>
+<p><strong>Error state variables</strong> <span class="math display">\[\begin{aligned}
+\epsilon _{1}(t) &amp;=x_{ref}(t)-x(t) \\
+\epsilon _{2}(t) &amp;=v_{ref}(t)-v(t)
+\end{aligned}\]</span></p>
+<p><strong>Error state model</strong> <span class="math display">\[\begin{aligned}
+d\epsilon _{1}/dt &amp;=\epsilon _{2} \\
+d\epsilon _{2}/dt &amp;=-a_{0}\epsilon _{2}+b_{0}w+d
+\end{aligned}\]</span> where <span class="math inline">\(w(t)\triangleq u_{ref}(t)-u(t).\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p>Matrix form <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] }}\underset{\epsilon }{\underbrace{\left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] }}w+\underset{p}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+1
+\end{array}
+\right] }}d.\]</span></p>
+<p>Define <span class="math display">\[\epsilon _{0}(t)\triangleq \int_{0}^{t}\epsilon _{1}(\tau )d\tau .\]</span></p>
+<p>to obtain <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+\epsilon _{0} \\
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] =\underset{A_{a}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; -a_{0}
+\end{array}
+\right] }}\underset{\epsilon _{a}}{\underbrace{\left[
+\begin{array}{c}
+\epsilon _{0} \\
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] }}+\underset{b_{a}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+b_{0}
+\end{array}
+\right] }}w+\underset{p_{a}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}d.\]</span> <span class="math display">\[\text{Set}w(t)=-\left( k_{0}\int_{0}^{t}\epsilon _{1}(\tau )d\tau
++k_{1}\epsilon _{1}(t)+k_{2}\epsilon _{2}(t)\right) =-\underset{k_{a}}{
+\underbrace{\left[
+\begin{array}{ccc}
+k_{0} &amp; k_{1} &amp; k_{2}
+\end{array}
+\right] }}\underset{\epsilon _{a}}{\underbrace{\left[
+\begin{array}{c}
+\epsilon _{0} \\
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] }}.\]</span> <strong>Closed-Loop System</strong> <span class="math display">\[\frac{d\epsilon _{a}}{dt}=A_{a}\epsilon _{a}-b_{a}k_{a}\epsilon
+_{a}+p_{a}d=(A_{a}-b_{a}k_{a})\epsilon _{a}+p_{a}d.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><strong>Closed-Loop System</strong> <span class="math display">\[\frac{d\epsilon _{a}}{dt}=A_{a}\epsilon _{a}-b_{a}k_{a}\epsilon
+_{a}+p_{a}d=(A_{a}-b_{a}k_{a})\epsilon _{a}+p_{a}d.\]</span> With <span class="math display">\[E(s)=\left[
+\begin{array}{c}
+E_{0}(s) \\
+E_{1}(s) \\
+E_{2}(s)
+\end{array}
+\right] \triangleq \left[
+\begin{array}{c}
+\mathcal{L}\{\epsilon _{0}(t)\} \\
+\mathcal{L}\{\epsilon _{1}(t)\} \\
+\mathcal{L}\{\epsilon _{2}(t)\}
+\end{array}
+\right] =\mathcal{L}\{\epsilon _{a}(t)\}\]</span> we have <span class="math display">\[E(s)=\left( sI-(A_{a}-b_{a}k_{a})\right) ^{-1}\epsilon
+_{a}(0)+\left( sI-(A_{a}-b_{a}k_{a})\right) ^{-1}p_{a}\frac{
+d}{s}.\]</span> Find <span class="math inline">\(k_{a}\)</span> such that <span class="math display">\[\det \left( sI-(A_{a}-b_{a}k_{a})\right) =(s+r_{1})(s+r_{2})(s+r_{3})\text{with}r_{1}&gt;0,r_{2}&gt;0,r_{3}&gt;0.\]</span> Then <span class="math display">\[\begin{aligned}
+sE(s) &amp;=s\left( sI-(A_{a}-b_{a}k_{a})\right)
+^{-1}\epsilon _{a}(0)+s\left( sI-(A_{a}-b_{a}k_{a})
+\right) ^{-1}p_{a}\frac{d}{s} \\
+&amp;=s\left( sI-(A_{a}-b_{a}k_{a})\right) ^{-1}\epsilon
+_{a}(0)+\left( sI-(A_{a}-b_{a}k_{a})\right) ^{-1}p_{a}d
+\end{aligned}\]</span> is <em>stable</em>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><span class="math display">\[\begin{aligned}
+\epsilon _{a}(\infty )=\lim_{s\rightarrow 0}sE(s) &amp;=\lim_{s\rightarrow
+0}s\left( sI-(A_{a}-b_{a}k_{a})\right)
+^{-1}\epsilon _{a}(0)+\left( sI-
+(A_{a}-b_{a}k_{a})\right) ^{-1}p_{a}d \\
+&amp;=-\left( A_{a}-b_{a}k_{a}\right) ^{-1}p_{a}d.
+\end{aligned}\]</span></p>
+<p>It is shown below that <span class="math display">\[\epsilon _{1}(\infty )=x_{ref}(\infty )-x(\infty )=0,\epsilon
+_{2}(\infty )=v_{ref}(\infty )-v(\infty )=0,\text{\ and}\epsilon
+_{0}(\infty )=\dfrac{d}{b_{0}k_{0}}.\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig3__20.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p>As <span class="math display">\[\underset{sI-(A_{a}-b_{a}k_{a})}{\underbrace{\left[
+\begin{array}{ccc}
+s &amp; -1 &amp; 0 \\
+0 &amp; s &amp; -1 \\
+b_{0}k_{0} &amp; b_{0}k_{1} &amp; s+a_{0}+b_{0}k_{2}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+E_{0}(s) \\
+E_{1}(s) \\
+E_{2}(s)
+\end{array}
+\right] =\left[
+\begin{array}{c}
+\epsilon _{0}(0) \\
+\epsilon _{1}(0) \\
+\epsilon _{2}(0)
+\end{array}
+\right] +\left[
+\begin{array}{c}
+0 \\
+0 \\
+\dfrac{d}{s}
+\end{array}
+\right] .\]</span> Then <span class="math display">\[\begin{aligned}
+\left( sI-(A_{a}-b_{a}k_{a})\right) ^{-1} &amp;=\frac{1}{\underset{
+\det \left( sI-(A_{a}-b_{a}k_{a})\right) }{\underbrace{
+s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}}}}\times \\
+&amp;&amp;\underset{adj\left( sI-(A_{a}-b_{a}k_{a})\right) }{\underbrace{
+\left[
+\begin{array}{ccc}
+s^{2}+(b_{0}k_{2}+a_{0})s+b_{0}k_{1} &amp; s+b_{0}k_{2}+a_{0} &amp; 1 \\
+-b_{0}k_{0} &amp; s^{2}+(b_{0}k_{2}+a_{0})s &amp; s \\
+-b_{0}k_{0}s &amp; -\left( b_{0}k_{1}s+b_{0}k_{0}\right) &amp; s^{2}
+\end{array}
+\right] }}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><span class="math display">\[\begin{aligned}
+E_{0}(s) &amp;=\frac{(s^{2}+(b_{0}k_{2}+a_{0})s+b_{0}k_{1})\epsilon
+_{0}(0)+(s+b_{0}k_{2}+a_{0})\epsilon _{1}(0)+\epsilon _{2}(0)+
+\mathbf{d/s}
+}{s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}} \\
+E_{1}(s) &amp;=\frac{-b_{0}k_{0}\epsilon
+_{0}(0)+(s^{2}+(b_{0}k_{2}+a_{0})s)\epsilon _{1}(0)+s\epsilon _{2}(0)+s
+\mathbf{(d/s)}
+}{s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}} \\
+E_{2}(s) &amp;=\frac{-b_{0}k_{0}s\epsilon
+_{0}(0)-(b_{0}k_{1}s+b_{0}k_{0})\epsilon _{1}(0)+s^{2}\epsilon _{2}(0)+s^{2}
+\mathbf{(d/s)}
+}{\underset{\det \left( sI-(A_{a}-b_{a}k_{a})\right) }{\underbrace{
+s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}}}}
+\end{aligned}\]</span></p>
+<p>Choose <span class="math inline">\(k\)</span> so that <span class="math display">\[\begin{aligned}
+\det \left( sI-(A_{a}-b_{a}k_{a})\right) &amp;=(s+r_{1})(s+r_{2})(s+r_{3}) \\
+&amp;=s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})s+r_{1}r_{2}r_{3}.
+\end{aligned}\]</span> That is, <span class="math display">\[\begin{aligned}
+k_{2} &amp;=\frac{r_{1}+r_{2}+r_{3}-a_{0}}{b_{0}} \\
+k_{1} &amp;=\frac{r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}}{b_{0}} \\
+k_{0} &amp;=\frac{r_{1}r_{2}r_{3}}{b_{0}}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><span class="math display">\[\begin{aligned}
+E_{1}(s) &amp;=\frac{-b_{0}k_{0}\epsilon _{0}(0)+\left(
+s^{2}+(b_{0}k_{2}+a_{0})s\right) \epsilon _{1}(0)+s\epsilon _{2}(0)+d}{
+s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}} \\
+&amp;=\frac{A_{1}}{s+r_{1}}+\frac{B_{1}}{s+r_{2}}+\frac{C_{1}}{s+r_{3}} \\
+\Longrightarrow x_{ref}(t)-x(t) &amp;=\epsilon
+_{1}(t)=A_{1}e^{-r_{1}t}+B_{1}e^{-r_{2}t}+C_{1}e^{-r_{3}t}\rightarrow 0.
+\end{aligned}\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig3__21.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><span class="math display">\[\begin{aligned}
+E_{2}(s) &amp;=\frac{-b_{0}k_{0}s\epsilon
+_{0}(0)-(b_{0}k_{1}s+b_{0}k_{0})\epsilon _{1}(0)+s^{2}\epsilon _{2}(0)+sd}{
+s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}} \\
+&amp;=\frac{A_{2}}{s+r_{1}}+\frac{B_{2}}{s+r_{2}}+\frac{C_{2}}{s+r_{3}} \\
+\Longrightarrow v_{ref}(t)-v(t) &amp;=\epsilon
+_{2}(t)=A_{2}e^{-r_{1}t}+B_{2}e^{-r_{2}t}+C_{2}e^{-r_{3}t}\rightarrow 0. \\
+&amp;&amp;
+\end{aligned}\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig3__22.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+State Feedback and Disturbance Rejection
+</div>
+<p><span class="math display">\[\begin{aligned}
+\lim_{s\rightarrow 0}sE_{0}(s)
+&amp;=\lim_{s\rightarrow 0}s\frac{
+(s^{2}+(b_{0}k_{2}+a_{0})s+b_{0}k_{1})\epsilon
+_{0}(0)+(s+b_{0}k_{2}+a_{0})\epsilon _{1}(0)+\epsilon _{2}(0)+
+\mathbf{(d/s)}
+}{s^{3}+(b_{0}k_{2}+a_{0})s^{2}+b_{0}k_{1}s+b_{0}k_{0}} \\
+&amp;=\frac{d}{b_{0}k_{0}}.
+\end{aligned}\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig3__23.png">
+</div>
+<p><span class="math display">\[V(t)=u(t)=u_{ref}(t)+\left( k_{0}\int_{0}^{t}\epsilon _{1}(\tau )d\tau
++k_{1}\epsilon _{1}(t)+k_{2}\epsilon _{2}(t)\right)\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Similarity Transformations
+</div>
+<p><strong>Motivation</strong></p>
+<p>Consider a general <span class="math inline">\(3^{rd}\)</span> statespace system: <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+b_{1} \\
+b_{2} \\
+b_{3}
+\end{array}
+\right] }}u\]</span></p>
+<p>We want to transform it into the <em>control canonical</em> form <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] =\underset{A_{c}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] +\underset{b_{c}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u\]</span></p>
+<p>using a statespace transformation <span class="math display">\[x_{c}=Tx,\text{}T\in
+\mathbb{R}
+^{3\times 3},\det T\neq 0.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Similarity Transformations
+</div>
+<p><span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+b_{1} \\
+b_{2} \\
+b_{3}
+\end{array}
+\right] }}u.\]</span></p>
+<p>Consider a general transformation given by <span class="math display">\[x^{\prime }=Tx,\det T\neq 0.\]</span></p>
+<p>Then <span class="math display">\[\frac{d}{dt}x^{\prime }=T\frac{d}{dt}x=T(Ax+bu)=TAx+Tbu.\]</span></p>
+<p>As <span class="math inline">\(\det T\neq 0\)</span>, we have <span class="math inline">\(x=T^{-1}x^{\prime }\)</span> and <span class="math display">\[\frac{d}{dt}x^{\prime }=\underset{A^{\prime }}{\underbrace{TAT}}
+^{-1}x^{\prime }+\underset{b^{\prime }}{\underbrace{Tb}}u.\]</span></p>
+<ul>
+<li><span class="math inline">\(T\)</span> is an example of a <em>similarity</em> transformation.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Similarity Transformation</em></p>
+<p>Let <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+b_{1} \\
+b_{2} \\
+b_{3}
+\end{array}
+\right] }}u.\]</span></p>
+<p>Define the <em>controllability</em> matrix by <span class="math display">\[\mathcal{C}\triangleq \left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] \in
+\mathbb{R}
+^{3\times 3}.\]</span></p>
+<p>Suppose that <span class="math inline">\(\det \mathcal{C}\neq 0\)</span> so that <span class="math inline">\(\mathcal{C}\)</span> has an inverse.</p>
+<p>Define the transformation <span class="math inline">\(T_{1}\)</span> by <span class="math display">\[T_{1}\triangleq \mathcal{C}^{-1}=\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] ^{-1}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Similarity Transformation</em> &nbsp;<strong>(continued)</strong></p>
+<p>The transformation <span class="math display">\[T_{1}\triangleq \mathcal{C}^{-1}=\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] ^{-1}\]</span></p>
+<p>with <span class="math inline">\(x^{\prime }\triangleq T_{1}x\)</span> transforms <span class="math display">\[\frac{d}{dt}x=Ax+bu\]</span></p>
+<p>to <span class="math display">\[\frac{d}{dt}x^{\prime }=\underset{A^{\prime }}{\underbrace{T_{1}AT_{1}^{-1}}}
+x^{\prime }+\underset{b^{\prime }}{\underbrace{T_{1}b}}u.\]</span></p>
+<p>That is, <span class="math display">\[A^{\prime }=T_{1}AT_{1}^{-1}\text{and}b^{\prime }=T_{1}b\]</span> or <span class="math display">\[T_{1}^{-1}A^{\prime }=AT_{1}^{-1}\text{\ and}T_{1}^{-1}b^{\prime }=b.\]</span> Finally, <span class="math display">\[\begin{aligned}
+&amp;&amp;\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] A^{\prime }=A\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] =\left[
+\begin{array}{ccc}
+Ab &amp; A^{2}b &amp; A^{3}b
+\end{array}
+\right] \\
+&amp;&amp;\text{and} \\
+&amp;&amp;\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] b^{\prime }=b.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Similarity Transformation</em> &nbsp;<strong>(continued)</strong></p>
+<p>From previous slide: <span class="math display">\[\begin{aligned}
+\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] A^{\prime } &amp;=\left[
+\begin{array}{ccc}
+Ab &amp; A^{2}b &amp; A^{3}b
+\end{array}
+\right] \\
+\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] b^{\prime } &amp;=b.
+\end{aligned}\]</span></p>
+<p>By inspection <span class="math inline">\(A^{\prime }\)</span> and <span class="math inline">\(b^{\prime }\)</span> have the forms <span class="math display">\[A^{\prime }=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; a_{13}^{\prime } \\
+1 &amp; 0 &amp; a_{23}^{\prime } \\
+0 &amp; 1 &amp; a_{33}^{\prime }
+\end{array}
+\right] ,b^{\prime }=\left[
+\begin{array}{c}
+1 \\
+0 \\
+0
+\end{array}
+\right] .\]</span> Inserting <span class="math inline">\(A^{\prime }\)</span> into the top equation above shows <span class="math inline">\(a_{13}^{\prime },a_{23}^{\prime },a_{33}^{\prime }\)</span> must satisfy <span class="math display">\[a_{13}^{\prime }b+a_{23}^{\prime }Ab+a_{33}^{\prime }A^{2}b=A^{3}b.\]</span> Denote the characteristic polynomial as <span class="math display">\[\det (sI-A)=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.\]</span> We have by the Cayley-Hamilton theorem <span class="math display">\[A^{3}+\alpha _{2}A^{2}+\alpha _{1}A+\alpha _{0}I=0_{3\times 3}
+\Longrightarrow A^{3}b=-\alpha _{0}b-\alpha _{1}Ab-\alpha
+_{2}A^{2}b.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Similarity Transformation</em> &nbsp;<strong>(continued)</strong></p>
+<p>We have shown that the transformation&nbsp;<span class="math display">\[T_{1}\triangleq \mathcal{C}^{-1}=\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] ^{-1}\]</span> takes <span class="math display">\[\frac{d}{dt}x=Ax+bu\]</span> to <span class="math display">\[\frac{d}{dt}x^{\prime }=A^{\prime }x^{\prime }+b^{\prime }u\]</span> where <span class="math display">\[A^{\prime }=T_{1}AT_{1}^{-1}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\alpha _{0} \\
+1 &amp; 0 &amp; -\alpha _{1} \\
+0 &amp; 1 &amp; -\alpha _{2}
+\end{array}
+\right] ,\text{}b^{\prime }=T_{1}b=\left[
+\begin{array}{c}
+1 \\
+0 \\
+0
+\end{array}
+\right] .\]</span></p>
+<ul>
+<li><p>This is <em>not</em> control canonical form.</p></li>
+<li><p>Note that <span class="math inline">\(A_{c}=(A^{\prime })^{T}\)</span>.</p></li>
+<li><p>A direct calculation shows (or see theorem below) <span class="math display">\[\det (sI-A^{\prime })=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}=\det
+(sI-A).\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Similarity Transformation</em></p>
+<p>Now suppose the system starts in <em>control canonical</em> form, i.e., <span class="math display">\[\frac{d}{dt}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}=\underset{A_{c}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}+\underset{b_{c}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u\]</span> We know that <span class="math display">\[\det (sI-A_{c})=\det \left[
+\begin{array}{ccc}
+s &amp; -1 &amp; 0 \\
+0 &amp; s &amp; -1 \\
+\alpha _{0} &amp; \alpha _{1} &amp; s+\alpha _{2}
+\end{array}
+\right] =s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.\]</span> The <em>controllability</em> matrix is <span class="math display">\[\mathcal{C}_{c}\triangleq \left[
+\begin{array}{ccc}
+b_{c} &amp; A_{c}b_{c} &amp; A_{c}^{2}b_{c}
+\end{array}
+\right] \in
+\mathbb{R}
+^{3\times 3}.\]</span></p>
+<p>By the previous example with <span class="math inline">\(T_{2}\triangleq \mathcal{C}_{c}^{-1}\)</span> and <span class="math inline">\(x^{\prime }=T_{2}x_{c}\)</span>: <span class="math display">\[\frac{d}{dt}x^{\prime }=\underset{A^{\prime }}{\underbrace{
+T_{2}A_{c}T_{2}^{-1}}}x^{\prime }+\underset{b^{\prime }}{\underbrace{
+T_{2}b_{c}}}u=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\alpha _{0} \\
+1 &amp; 0 &amp; -\alpha _{1} \\
+0 &amp; 1 &amp; -\alpha _{2}
+\end{array}
+\right] x^{\prime }+\left[
+\begin{array}{c}
+1 \\
+0 \\
+0
+\end{array}
+\right] u.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Similarity Transformation &nbsp;</em><strong>(continued)</strong></p>
+<p>From the previous slide with <span class="math inline">\(T_{2}=\mathcal{C}_{c}^{-1}=\left[ \begin{array}{ccc} b_{c} &amp; A_{c}b_{c} &amp; A_{c}^{2}b_{c} \end{array} \right] ^{-1},\)</span> <span class="math display">\[\frac{d}{dt}x^{\prime }=\underset{A^{\prime }}{\underbrace{
+T_{2}A_{c}T_{2}^{-1}}}x^{\prime }+\underset{b^{\prime }}{\underbrace{
+T_{2}b_{c}}}u=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\alpha _{0} \\
+1 &amp; 0 &amp; -\alpha _{1} \\
+0 &amp; 1 &amp; -\alpha _{2}
+\end{array}
+\right] x^{\prime }+\left[
+\begin{array}{c}
+1 \\
+0 \\
+0
+\end{array}
+\right] u.\]</span></p>
+<p>The inverse transformation <span class="math inline">\(x_{c}=T_{2}^{-1}x^{\prime }=\mathcal{C} _{c}x^{\prime }\)</span>&nbsp;gives back the original system, i.e., <span class="math display">\[\frac{d}{dt}x_{c}=T_{2}^{-1}\frac{d}{dt}x^{\prime }=T_{2}^{-1}(A^{\prime
+}x^{\prime }+b^{\prime }u)=T_{2}^{-1}(T_{2}A_{c}T_{2}^{-1}x^{\prime
+}+T_{2}b_{c}u)=A_{c}x_{c}+b_{c}u.\]</span> That is, if a system is in the form <span class="math display">\[\frac{d}{dt}x^{\prime }=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\alpha _{0} \\
+1 &amp; 0 &amp; -\alpha _{1} \\
+0 &amp; 1 &amp; -\alpha _{2}
+\end{array}
+\right] x^{\prime }+\left[
+\begin{array}{c}
+1 \\
+0 \\
+0
+\end{array}
+\right] u\]</span> then <span class="math inline">\(x_{c}=T_{2}^{-1}x^{\prime }=\mathcal{C}_{c}x^{\prime }\)</span> takes it into the <em>control canonical</em> form <span class="math display">\[\frac{d}{dt}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}=\underset{A_{c}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}+\underset{b_{c}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Transformation to Control Canonical Form</em></p>
+<p>Let a system be given by <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+a_{11} &amp; a_{12} &amp; a_{13} \\
+a_{21} &amp; a_{22} &amp; a_{23} \\
+a_{31} &amp; a_{32} &amp; a_{33}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{1} \\
+x_{2} \\
+x_{3}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+b_{1} \\
+b_{2} \\
+b_{3}
+\end{array}
+\right] }}u.\]</span></p>
+<p><em>Controllability Matrix: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</em><span class="math inline">\(\mathcal{C}\triangleq \left[ \begin{array}{ccc} b &amp; Ab &amp; A^{2}b \end{array} \right] .\)</span></p>
+<p><em>Characteristic Polynomial: &nbsp;&nbsp;</em><span class="math inline">\(\det (sI-A)=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.\)</span></p>
+<p>If <span class="math inline">\(\det \mathcal{C}\neq 0\)</span> then the above system is transformed to the control canonical form <span class="math display">\[\frac{d}{dt}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}=\underset{A_{c}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}+\underset{b_{c}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u\]</span> by the transformation <span class="math display">\[x_{c}=\mathcal{C}_{c}\mathcal{C}^{-1}x\]</span> where <span class="math display">\[\mathcal{C}_{c}\triangleq \left[
+\begin{array}{ccc}
+b_{c} &amp; A_{c}b_{c} &amp; A_{c}^{2}b_{c}
+\end{array}
+\right] .\]</span></p>
+<p><strong>Proof</strong> &nbsp;By the previous two examples.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Definition
+</div>
+<p><em>Similarity Transformation</em></p>
+<p>Consider a linear statespace system <span class="math display">\[\frac{dx}{dt}=Ax+bu,A\in
+\mathbb{R}
+^{n\times n},b\in
+\mathbb{R}
+^{n}\]</span> and an invertible matrix <span class="math inline">\(T\in \mathbb{R} ^{n\times n},\)</span> i.e., <span class="math inline">\(\det (T)\neq 0\)</span>.</p>
+<p>Then <span class="math display">\[x^{\prime }=Tx\]</span> gives <span class="math display">\[\frac{dx^{\prime }}{dt}=TAT^{-1}x^{\prime }+Tbu.\]</span> The transformation <span class="math display">\[\begin{aligned}
+A &amp;\rightarrow &amp;TAT^{-1} \\
+b &amp;\rightarrow &amp;Tb
+\end{aligned}\]</span> is called a <strong>similarity</strong> transformation.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Characteristic Function is Invariant Under a Similarity Transformation</em></p>
+<p>Let <span class="math display">\[A^{\prime }=TAT^{-1}.\]</span> Then <span class="math display">\[\det (sI-A^{\prime })=\det (sI-A).\]</span> <strong>Proof</strong> &nbsp;We have <span class="math display">\[sI-A^{\prime }=TsT^{-1}-TAT^{-1}=T(sI-A)T^{-1}\]</span> so <span class="math display">\[\begin{aligned}
+\det (sI-A^{\prime }) &amp;=\det (T(sI-A)T^{-1}) \\
+&amp;=\det T\det (sI-A)\det T^{-1} \\
+&amp;=\det (sI-A)
+\end{aligned}\]</span> as <span class="math inline">\((\det T)(\det T^{-1})=1\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Pole Placement
+</div>
+<p>Let <span class="math display">\[\frac{dx_{c}}{dt}=A_{c}x_{c}+b_{c}u\]</span> with <span class="math inline">\(A_{c},b_{c}\)</span> in <em>control canonical</em> form, i.e., <span class="math display">\[A_{c}=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] ,b_{c}=\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] .\]</span> We know that the characteristic polynomial of <span class="math inline">\(A_{c}\)</span> is <span class="math display">\[\det (sI-A_{c})=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.\]</span> With <span class="math display">\[k_{c}=\left[
+\begin{array}{ccc}
+k_{c1} &amp; k_{c2} &amp; k_{c3}
+\end{array}
+\right] ,\]</span> use the state feedback <span class="math display">\[u=-k_{c}x_{c}=-\left[
+\begin{array}{ccc}
+k_{c1} &amp; k_{c2} &amp; k_{c3}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] .\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Pole Placement
+</div>
+<p>Closed-Loop System: <span class="math display">\[\frac{dx_{c}}{dt}=(A_{c}-b_{c}k_{c})x_{c}\]</span> <span class="math display">\[\begin{aligned}
+A_{c}-b_{c}k_{c} &amp;=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] \left[
+\begin{array}{ccc}
+k_{c1} &amp; k_{c2} &amp; k_{c3}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0}-k_{c1} &amp; -\alpha _{1}-k_{c2} &amp; -\alpha _{2}-k_{c3}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<p>The <em>closed-loop</em> characteristic polynomial is <span class="math display">\[\begin{aligned}
+\det \left( sI-(A_{c}-b_{c}k_{c})\right) &amp; =\det
+\left( s\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1
+\end{array}
+\right] -\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0}-k_{c1} &amp; -\alpha _{1}-k_{c2} &amp; -\alpha _{2}-k_{c3}
+\end{array}
+\right] \right) \\
+&amp; \\
+&amp; =s^{3}+(\alpha _{2}+k_{c3})s^{2}+(\alpha _{1}+k_{c2})s+\alpha _{0}+k_{c1}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Pole Placement
+</div>
+<p>Pole Placement</p>
+<p>Choose <span class="math display">\[k_{c1}=\alpha _{d0}-\alpha _{0},k_{c2}=\alpha _{d1}-\alpha _{1},
+k_{c3}=\alpha _{d2}-\alpha _{2}\]</span> so <span class="math display">\[\begin{aligned}
+\det \left( sI-(A_{c}-b_{c}k_{c})\right) &amp;=s^{3}+(\alpha
+_{2}+k_{c3})s^{2}+s(\alpha _{1}+k_{c2})+\alpha _{0}+k_{c1} \\
+&amp;=s^{3}+\alpha _{d2}s^{2}+\alpha _{d1}s+\alpha _{d0}.
+\end{aligned}\]</span></p>
+<p>E.g. with <span class="math inline">\(r_{1}&gt;0,r_{2}&gt;0,r_{3}&gt;0\)</span>, set <span class="math display">\[\begin{aligned}
+s^{3}+\alpha _{d2}s^{2}+\alpha _{d1}s+\alpha _{d0}
+&amp;=(s+r_{1})(s+r_{2})(s+r_{3}) \\
+&amp;&amp;s^{3}+\underset{\alpha _{d2}}{\underbrace{(r_{1}+r_{2}+r_{3})}}s^{2}+
+\underset{\alpha _{d1}}{\underbrace{(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})}}s+
+\underset{\alpha _{d0}}{\underbrace{r_{1}r_{2}r_{3}}}
+\end{aligned}\]</span></p>
+<ul>
+<li>If the system is in control canonical form then pole placement is easy.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Pole Placement
+</div>
+<p>Consider the system&nbsp;<span class="math display">\[\frac{d}{dt}x=Ax+bu,A\in
+\mathbb{R}
+^{3\times 3},b\in
+\mathbb{R}
+^{3}\]</span></p>
+<p>with <span class="math display">\[\det (sI-A)=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}\]</span></p>
+<p>and <span class="math display">\[\det \mathcal{C}=\det \left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] \neq 0.\]</span></p>
+<p>Then <span class="math display">\[x_{c}=\mathcal{C}_{c}\mathcal{C}^{-1}x\]</span> results in <span class="math display">\[\frac{d}{dt}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}=\underset{A_{c}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}+\underset{b_{c}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Pole Placement
+</div>
+<p><span class="math display">\[\frac{d}{dt}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}=\underset{A_{c}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] }}\underset{x_{c}}{\underbrace{\left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right] }}+\underset{b_{c}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right] }}u.\]</span> The feedback <span class="math display">\[u=-k_{c}x_{c}=-\left[
+\begin{array}{ccc}
+\alpha _{d0}-\alpha _{0} &amp; \alpha _{d1}-\alpha _{1} &amp; \alpha _{d2}-\alpha
+_{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{c1} \\
+x_{c2} \\
+x_{c3}
+\end{array}
+\right]\]</span> results in&nbsp;<span class="math display">\[\det (sI-(A_{c}-b_{c}k_{c}))=s^{3}+\alpha _{d2}s^{2}+\alpha _{d1}s+\alpha
+_{d0}.\]</span></p>
+<p>In the original coordinate system the feedback <span class="math display">\[u=-k_{c}x_{c}=-\underset{k}{\underbrace{k_{c}\mathcal{C}_{c}\mathcal{C}^{-1}}
+}x\]</span> results in <span class="math display">\[\det (sI-(A-bk))=s^{3}+\alpha _{d2}s^{2}+\alpha _{d1}s+\alpha _{d0}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Cart on the Track System</em> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\epsilon _{1} \\
+\epsilon _{2}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] }}w+\left[
+\begin{array}{c}
+0 \\
+1
+\end{array}
+\right] d \\
+\det (sI-A) &amp;=s(s+a_{0})=s^{2}+a_{0}s=s^{2}+\alpha _{1}s+\alpha _{0}
+\end{aligned}\]</span> We compute <span class="math display">\[\begin{aligned}
+\mathcal{C} &amp;\mathcal{=}&amp;\left[
+\begin{array}{cc}
+b &amp; Ab
+\end{array}
+\right] =\left[
+\begin{array}{cr}
+0 &amp; b_{0} \\
+b_{0} &amp; -a_{0}b_{0}
+\end{array}
+\right] \\
+\mathcal{C}^{-1} &amp;=-\frac{1}{b_{0}^{2}}\left[
+\begin{array}{cr}
+-a_{0}b_{0} &amp; -b_{0} \\
+-b_{0} &amp; 0
+\end{array}
+\right] =\frac{1}{b_{0}}\left[
+\begin{array}{cr}
+a_{0} &amp; 1 \\
+1 &amp; 0
+\end{array}
+\right] .
+\end{aligned}\]</span> and <span class="math display">\[\begin{aligned}
+A_{c} &amp;=\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1}
+\end{array}
+\right] =\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] ,b_{c}=\left[
+\begin{array}{c}
+0 \\
+1
+\end{array}
+\right] \\
+\mathcal{C}_{c} &amp;=\left[
+\begin{array}{cc}
+b_{c} &amp; A_{c}b_{c}
+\end{array}
+\right] =\left[
+\begin{array}{cc}
+0 &amp; 1 \\
+1 &amp; -a_{0}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Cart on the Track System</em> &nbsp; <strong>(continued)</strong></p>
+<p>Desired closed-loop characteristic polynomial: <span class="math display">\[(s+r_{1})(s+r_{2})=s^{2}+\underset{\alpha _{d1}}{\underbrace{(r_{1}+r_{2})}}
+s+\underset{\alpha _{d0}}{\underbrace{r_{1}r_{2}}}\]</span></p>
+<p>Feedback gain: <span class="math display">\[\begin{aligned}
+k &amp;=k_{c}\mathcal{C}_{c}\mathcal{C}^{-1} \\
+&amp;=\left[
+\begin{array}{cc}
+r_{1}r_{2}-0 &amp; r_{1}+r_{2}-a_{0}
+\end{array}
+\right] \left[
+\begin{array}{cc}
+0 &amp; 1 \\
+1 &amp; -a_{0}
+\end{array}
+\right] \frac{1}{b_{0}}\left[
+\begin{array}{cr}
+a_{0} &amp; 1 \\
+1 &amp; 0
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{cc}
+\dfrac{r_{1}r_{2}}{b_{0}} &amp; \dfrac{r_{1}+r_{2}-a_{0}}{b_{0}}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<p>Same result as previously found! <strong>See slide the earlier derivation.</strong></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em> <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+i-i_{eq} \\
+x-x_{eq} \\
+v-v_{eq}
+\end{array}
+\right] =\underset{A}{\underbrace{\left[
+\begin{array}{ccc}
+-\dfrac{R}{L_{0}} &amp; 0 &amp; \dfrac{rL_{1}}{L_{0}}\dfrac{i_{eq}}{x_{eq}^{2}} \\
+0 &amp; 0 &amp; 1 \\
+-\dfrac{2g}{i_{eq}} &amp; \dfrac{2g}{x_{eq}} &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+i-i_{eq} \\
+x-x_{eq} \\
+v-v_{eq}
+\end{array}
+\right] +\underset{b}{\underbrace{\left[
+\begin{array}{c}
+\dfrac{1}{L_{0}} \\
+0 \\
+0
+\end{array}
+\right] }}(u-u_{eq})\]</span> Set <span class="math display">\[A=\left[
+\begin{array}{ccc}
+a_{11} &amp; 0 &amp; a_{13} \\
+0 &amp; 0 &amp; 1 \\
+a_{31} &amp; a_{32} &amp; 0
+\end{array}
+\right] ,b=\left[
+\begin{array}{c}
+b_{1} \\
+0 \\
+0
+\end{array}
+\right]\]</span> so that <span class="math display">\[\begin{aligned}
+\det \left( sI-A\right) &amp;=\det \left[
+\begin{array}{ccc}
+s-a_{11} &amp; 0 &amp; -a_{13} \\
+0 &amp; s &amp; -1 \\
+-a_{31} &amp; -a_{32} &amp; s
+\end{array}
+\right] \\
+&amp;=s^{3}-a_{11}s^{2}-(a_{13}a_{31}+a_{32})s+a_{11}a_{32} \\
+&amp;=s^{3}+\alpha _{2}s^{2}+\alpha _{1}s+\alpha _{0}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide matrix-layout-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em> &nbsp;<strong>(continued)</strong></p>
+<p><em>Controllability Matrix</em></p>
+<p><span class="math display">\[\begin{aligned}
+\mathcal{C}
+&amp;=\left[
+\begin{array}{ccc}
+b &amp; Ab &amp; A^{2}b
+\end{array}
+\right] =\left[
+\begin{array}{crr}
+b_{1} &amp; a_{11}b_{1} &amp; b_{1}a_{11}^{2}+b_{1}a_{13}a_{31} \\
+0 &amp; 0 &amp; b_{1}a_{31} \\
+0 &amp; a_{31}b_{1} &amp; b_{1}a_{11}a_{31}
+\end{array}
+\right].
+\end{aligned}\]</span></p>
+<p><span class="math display">\[\begin{aligned}
+\mathcal{C}^{-1}
+&amp;=-\frac{1}{b_{1}^{3}a_{31}^{2}}\left[
+\begin{array}{ccc}
+-b_{1}^{2}a_{31}^{2} &amp; b_{1}^{2}a_{13}a_{31}^{2} &amp; b_{1}^{2}a_{11}a_{31} \\
+0 &amp; b_{1}^{2}a_{11}a_{31} &amp; -b_{1}^{2}a_{31} \\
+0 &amp; -b_{1}^{2}a_{31} &amp; 0
+\end{array}
+\right], \\
+&amp;=\left[
+\begin{array}{ccc}
+\dfrac{1}{b_{1}} &amp; -\dfrac{a_{13}}{b_{1}} &amp; -\dfrac{a_{11}}{b_{1}a_{31}} \\
+0 &amp; -\dfrac{a_{11}}{b_{1}a_{31}} &amp; \dfrac{1}{b_{1}a_{31}} \\
+0 &amp; \dfrac{1}{b_{1}a_{31}} &amp; 0
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em> &nbsp;<strong>(continued)</strong></p>
+<p>We showed <span class="math inline">\(\det \left( sI-A\right) =s^{3}-a_{11}s^{2}-(a_{13}a_{31}+a_{32})s+a_{11}a_{32}.\)</span></p>
+<p><em>Control Canonical Form</em> <span class="math display">\[A_{c}=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\alpha _{0} &amp; -\alpha _{1} &amp; -\alpha _{2}
+\end{array}
+\right] ,b_{c}=\left[
+\begin{array}{c}
+0 \\
+0 \\
+1
+\end{array}
+\right]\]</span> <span class="math display">\[\begin{aligned}
+\mathcal{C}_{c}\mathcal{=}\left[
+\begin{array}{ccc}
+b_{c} &amp; A_{c}b_{c} &amp; A_{c}^{2}b_{c}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1 \\
+0 &amp; 1 &amp; -\alpha _{2} \\
+1 &amp; -\alpha _{2} &amp; \alpha _{2}^{2}-\alpha _{1}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1 \\
+0 &amp; 1 &amp; a_{11} \\
+1 &amp; a_{11} &amp; a_{11}^{2}+a_{13}a_{31}+a_{32}
+\end{array}
+\right] .
+\end{aligned}\]</span> Set <span class="math display">\[\begin{aligned}
+s^{3}+\alpha _{d2}s^{2}+\alpha _{d1}s+\alpha _{d0} &amp;=s^{3}+\underset
+{\alpha _{d2}}{\underbrace{(r_{1}+r_{2}+r_{3})}}s^{2}+\underset{\alpha
+_{d1}}{\underbrace{(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})}}s+\underset{\alpha
+_{d0}}{\underbrace{r_{1}r_{2}r_{3}}} \\
+&amp;=(s+r_{1})(s+r_{2})(s+r_{3}).
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide gain-layout-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Magnetic Levitation</em> &nbsp;<strong>(continued)</strong></p>
+<p>Write</p>
+<p><span class="math display">\[\begin{aligned}
+\gamma _0&amp;=r_{1}r_{2}r_{3}-a_{11}a_{32}, \\
+\gamma _1&amp;=r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3}+a_{13}a_{31}+a_{32}, \\
+\gamma _2&amp;=r_{1}+r_{2}+r_{3}+a_{11}.
+\end{aligned}\]</span></p>
+<p>Then</p>
+<p><span class="math display">\[\begin{aligned}
+k&amp;=k_{c}\mathcal{C}_{c}\mathcal{C}^{-1} \\
+&amp;=\left[\begin{array}{ccc}\gamma _0&amp;\gamma _1&amp;\gamma _2\end{array}\right]
+\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1 \\
+0 &amp; 1 &amp; a_{11} \\
+1 &amp; a_{11} &amp; a_{11}^{2}+a_{13}a_{31}+a_{32}
+\end{array}
+\right]\mathcal{C}^{-1}.
+\end{aligned}\]</span></p>
+<p>Using the inverse from the previous slide gives <span class="math inline">\(k=[\,k_1\;k_2\;k_3\,]\)</span>, where</p>
+<p><span class="math display">\[\begin{aligned}
+k_1&amp;=\frac{r_1+r_2+r_3+a_{11}}{b_1}, \\
+k_2&amp;=\frac{r_1r_2r_3+(r_1+r_2+r_3)a_{32}}{b_1a_{31}}, \\
+k_3&amp;=\frac{r_1r_2+r_1r_3+r_2r_3+a_{13}a_{31}+a_{32}}{b_1a_{31}}.
+\end{aligned}\]</span></p>
+<p>This is the same gain row vector obtained in the earlier derivation.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Asymptotic Tracking of Equilibrium Points
+</div>
+<p>We are given the linear system <span class="math display">\[\frac{dx}{dt}=Ax+bu.\]</span> Let <span class="math inline">\(x_{eq}\)</span> be an eq pt with corresponding input <span class="math inline">\(u_{eq}\)</span>, i.e., <span class="math display">\[0=\frac{dx_{eq}}{dt}=Ax_{eq}+bu_{eq}.\]</span> Use state feedback to force <span class="math inline">\(x(t)\rightarrow x_{eq}.\)</span></p>
+<p><strong>Error Dynamics</strong> <span class="math display">\[\frac{d}{dt}(x-x_{eq})=Ax+bu-(Ax_{eq}+bu_{eq})=A(x-x_{eq})+b(u-u_{eq}).\]</span></p>
+<p>The <strong>state feedback &nbsp;</strong> <span class="math display">\[u-u_{eq}=-k(x-x_{eq})\]</span> results in <span class="math display">\[\frac{d}{dt}(x-x_{eq})=(A-bk)(x-x_{eq}).\]</span> With <span class="math inline">\((A,b)\)</span> controllable, <span class="math inline">\(k\)</span> can be (and is) chosen so <span class="math inline">\((A-bk)\)</span> is stable. Then <span class="math display">\[x(t)-x_{eq}=e^{(A-bk)t}(x(0)-x_{eq})\rightarrow 0.\]</span> The input <span class="math inline">\(u\)</span> is given by <span class="math inline">\(u(t)=-k(x(t)-x_{eq})+u_{eq}\rightarrow u_{eq}.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide pendulum-equilibrium-slide">
+<div class="slide-title">
+Example Inverted Pendulum
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/Models_fig_01_new2__24.png">
+</div>
+<p><strong>Statespace Model and Equilibrium Points</strong></p>
+<p><span class="math display">\[\dot z=Az+bu,
+\qquad
+z=\left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right].\]</span></p>
+<p><span class="math display">\[A=\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right],
+\qquad
+b=\left[
+\begin{array}{c}
+0 \\
+\dfrac{J+m\ell ^{2}}{Mm\ell ^{2}+J(M+m)} \\
+0 \\
+-\dfrac{m\ell }{Mm\ell ^{2}+J(M+m)}
+\end{array}
+\right].\]</span></p>
+<p><span class="math display">\[z_{eq}=\left[
+\begin{array}{c}
+x_{0} \\
+0 \\
+0 \\
+0
+\end{array}
+\right],
+\qquad u_{eq}=0,
+\qquad (A,b)\text{ is controllable}.\]</span></p>
+<p>We can find <span class="math inline">\(k\in \mathbb{R} ^{1\times 4}\)</span> so <span class="math inline">\(u=u_{eq}-k(z-z_{eq})=-k(z-z_{eq})\)</span> gives</p>
+<p><span class="math inline">\(\dfrac{d}{dt}(z-z_{eq})=(A-bk)(z-z_{eq})\)</span> with <span class="math inline">\(A-bk\)</span> stable so <span class="math inline">\(z(t)\rightarrow z_{eq}.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><strong>Can we make the cart position</strong> <span class="math inline">\(x(t)\rightarrow x_{ref}\)</span><strong>&nbsp;where</strong> <span class="math inline">\(x_{ref}\)</span><strong>&nbsp;is arbitrary?</strong> <span class="math display">\[\begin{aligned}
+\underset{dz/dt}{\underbrace{\left[
+\begin{array}{c}
+dx/dt \\
+dv/dt \\
+d\theta /dt \\
+d\omega /dt
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+\dfrac{J+m\ell ^{2}}{Mm\ell ^{2}+J(M+m)} \\
+0 \\
+-\dfrac{m\ell }{Mm\ell ^{2}+J(M+m)}
+\end{array}
+\right] }}u \\
+y &amp;=\underset{c}{\underbrace{\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; 0 &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta \\
+\omega
+\end{array}
+\right] }}.
+\end{aligned}\]</span> <strong>Transfer Function</strong> <span class="math display">\[G(s)=\frac{X(s)}{U(s)}=\frac{\kappa (J+m\ell ^{2})s^{2}-\kappa mg\ell }{
+s^{2}(s^{2}-\alpha ^{2})}\]</span> <span class="math display">\[\alpha ^{2}=\frac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)},\kappa =\frac{1
+}{Mm\ell ^{2}+J(M+m)}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide multi-figure-slide dense-multi-slide four-diagram-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p>Choose <span class="math inline">\(u=-kz\)</span> to place the closed-loop poles.</p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19__25.png">
+</div>
+<p><em>Equivalent block diagram</em></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19a__26.png">
+</div>
+<p><em>Transfer function representation</em></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19b__27.png">
+</div>
+<p><em>Add integrator to track step inputs</em></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19c__28.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19d__29.png">
+</div>
+<p>If <span class="math inline">\(k_{0}\)</span> can be chosen so that the closed-loop system is stable then <span class="math inline">\(x(t)\rightarrow x_{ref}.\)</span> <span class="math display">\[\begin{aligned}
+\frac{dz}{dt} &amp;=Az+bu \\
+u &amp;=-kz-k_{0}z_{0} \\
+y &amp;=cz=x \\
+\frac{dz_{0}}{dt} &amp;=x_{ref}-x
+\end{aligned}\]</span> or <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }} &amp;=\underset{A_{a}\in
+\mathbb{R}
+^{5\times 5}}{\underbrace{\left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] }}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}+\underset{b_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] }}u+\underset{p\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+0_{4\times 1} \\
+1
+\end{array}
+\right] }}x_{ref} \\
+u &amp;=-\underset{\in
+\mathbb{R}
+^{1\times 5}}{\underbrace{\left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }} &amp;=\underset{A_{a}\in
+\mathbb{R}
+^{5\times 5}}{\underbrace{\left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] }}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}+\underset{b_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] }}u+\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+0_{4\times 1} \\
+1
+\end{array}
+\right] }}x_{ref} \\
+u &amp;=-\underset{\in
+\mathbb{R}
+^{1\times 5}}{\underbrace{\left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] }}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}.
+\end{aligned}\]</span> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] \left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] +\left[
+\begin{array}{c}
+0_{4\times 1} \\
+1
+\end{array}
+\right] x_{ref} \\
+&amp;=\left( \left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] -\left[
+\begin{array}{lc}
+bk &amp; bk_{0} \\
+0_{4\times 1} &amp; 0
+\end{array}
+\right] \right) \left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] +\left[
+\begin{array}{c}
+0_{4\times 1} \\
+1
+\end{array}
+\right] x_{ref} \\
+&amp;=\left[
+\begin{array}{cc}
+A-bk &amp; -bk_{0} \\
+-c &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] +\left[
+\begin{array}{c}
+0_{4\times 1} \\
+1
+\end{array}
+\right] x_{ref}
+\end{aligned}\]</span> Find <span class="math inline">\(k\in \mathbb{R} ^{1\times 4},k_{0}\in \mathbb{R}\)</span> such that <span class="math display">\[\left[
+\begin{array}{cc}
+A-bk &amp; -bk_{0} \\
+-c &amp; 0
+\end{array}
+\right]\]</span> is a <em>stable</em> matrix.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><strong>Theorem</strong> <em>Controllability of the Augmented System</em></p>
+<p>Let <span class="math inline">\((A,b)\)</span> be controllable. Further, suppose <span class="math display">\[G(s)=\frac{n(s)}{d(s)}\triangleq c(sI-A)^{-1}b\]</span> is such that <span class="math inline">\(n(0)\neq 0.\)</span> Then the augmented system <span class="math inline">\((A_{a},b_{a})\)</span> defined as <span class="math display">\[A_{a}\triangleq \left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] \in
+\mathbb{R}
+^{5\times 5},b_{a}\triangleq \left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] \in
+\mathbb{R}
+^{5}\]</span> is <em>controllable</em>.</p>
+<p><strong>Proof</strong>&nbsp;&nbsp;See Appendix.</p>
+<p>In the case of the inverted pendulum <span class="math inline">\((A,b)\)</span> is controllable and <span class="math display">\[G(s)=\frac{n(s)}{d(s)}=\frac{\kappa (J+m\ell ^{2})s^{2}-\kappa mg\ell }{
+s^{2}(s^{2}-\alpha ^{2})}\text{\ satisfies}n(0)=-\kappa mg\ell \neq 0.\]</span> <span class="math inline">\(\Longrightarrow\)</span> Can choose <span class="math inline">\(\left[ \begin{array}{cc} k &amp; k_{0} \end{array} \right] \in \mathbb{R} ^{1\times 5}\)</span> to place the eigenvalues of <span class="math display">\[\left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] -\left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] \left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] =\left[
+\begin{array}{cc}
+A-bk &amp; -bk_{0} \\
+-c &amp; 0
+\end{array}
+\right] .\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><span class="math inline">\(x(t)\rightarrow x_{ref},\)</span> <strong>but do</strong> <span class="math inline">\(v(t),\theta (t)\mathbf{,}\)</span> <strong>&nbsp;and</strong> <span class="math inline">\(\omega (t)\)</span><strong>&nbsp;go to zero?</strong> <span class="math display">\[\frac{d}{dt}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}=\underset{A_{a}\in
+\mathbb{R}
+^{5\times 5}}{\underbrace{\left[
+\begin{array}{cc}
+A &amp; 0_{4\times 1} \\
+-c &amp; 0
+\end{array}
+\right] }}\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] }}+\underset{b_{a}\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+b \\
+0
+\end{array}
+\right] }}u+\underset{\in
+\mathbb{R}
+^{5}}{\underbrace{\left[
+\begin{array}{c}
+0_{4\times 1} \\
+1
+\end{array}
+\right] }}x_{ref}\]</span> In compact form <span class="math display">\[\frac{dz_{a}}{dt}=A_{a}z_{a}+b_{a}u+p_{a}x_{ref}.\]</span> <strong>Equilibrium points</strong> <span class="math display">\[0_{5\times 1}=\frac{dz_{a_eq}}{dt}=A_{a}z_{a_eq}+b_{a}u_{eq}+p_{a}x_{ref}\]</span> Equilibrium points have the form (see next slide) <span class="math display">\[z_{a_eq}=\left[
+\begin{array}{c}
+z_{eq} \\
+z_{0_eq}
+\end{array}
+\right] =\left[
+\begin{array}{c}
+x_{ref} \\
+0 \\
+0 \\
+0 \\
+z_{0_eq}
+\end{array}
+\right] ,u_{eq}=0\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><strong>Equilibrium points</strong> <span class="math display">\[z_{a_eq}=\left[
+\begin{array}{c}
+z_{eq} \\
+z_{0_eq}
+\end{array}
+\right] =\left[
+\begin{array}{c}
+x_{ref} \\
+0 \\
+0 \\
+0 \\
+z_{0_eq}
+\end{array}
+\right] ,u_{eq}=0\]</span> <strong>Verification</strong> <span class="math display">\[\begin{aligned}
+\left[
+\begin{array}{c}
+0 \\
+0 \\
+0 \\
+0 \\
+0
+\end{array}
+\right]  &amp;=\underset{A_{a}}{\underbrace{\left[
+\begin{array}{ccccc}
+0 &amp; 1 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0 &amp; 0 \\
+-1 &amp; 0 &amp; 0 &amp; 0 &amp; 0
+\end{array}
+\right] }}\underset{z_{a_eq}}{\underbrace{\left[
+\begin{array}{c}
+x_{ref} \\
+0 \\
+0 \\
+0 \\
+z_{0_eq}
+\end{array}
+\right] }}+\underset{b_{a}}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+\dfrac{J+m\ell ^{2}}{Mm\ell ^{2}+J(M+m)} \\
+0 \\
+-\dfrac{m\ell }{Mm\ell ^{2}+J(M+m)} \\
+0
+\end{array}
+\right] }}u_{eq} \\
+&amp;&amp;+\left[
+\begin{array}{c}
+0 \\
+0 \\
+0 \\
+0 \\
+1
+\end{array}
+\right] x_{ref}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><strong>Error System</strong> &nbsp;&nbsp;</p>
+<p>Subtract the equilibrium equations <span class="math display">\[0_{5\times 1}=A_{a}z_{a_eq}+b_{a}u_{eq}+p_{a}x_{ref}\]</span> from the system model <span class="math display">\[\frac{dz_{a}}{dt}=A_{a}z_{a}+b_{a}u+p_{a}x_{ref}\]</span> to obtain <span class="math display">\[\begin{aligned}
+\frac{d}{dt}(z_{a}-z_{a_eq})
+&amp;=A_{a}z_{a}+b_{a}u+p_{a}x_{ref}-(A_{a}z_{a_eq}+bu_{eq}+p_{a}x_{ref}) \\
+&amp;=A_{a}(z_{a}-z_{a_eq})+b_{a}(u-u_{eq}).
+\end{aligned}\]</span></p>
+<p>As the pair <span class="math inline">\((A_{a},b_{a})\)</span> is <strong>controllable</strong>, <span class="math inline">\(k_{a}\)</span> can then be chosen so that <span class="math inline">\(A_{a}-b_{a}k_{a}\)</span> is stable.</p>
+<p>The feedback <span class="math display">\[u-u_{eq}=u=-k_{a}(z_{a}-z_{a_eq})\]</span> results in <span class="math display">\[\frac{d}{dt}(z_{a}-z_{a_eq})=(A_{a}-b_{a}k_{a})(z_{a}-z_{a_eq})\]</span> so <span class="math display">\[z_{a}(t)-z_{a_eq}=e^{(A_{a}-b_{a}k_{a})t}(z_{a}(0)-z_{a_eq})\rightarrow 0.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><strong>What about the value of</strong> <span class="math inline">\(z_{0_eq}\mathbf{?}\)</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19d__30.png">
+</div>
+<p>In the figure <span class="math display">\[u=-\left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right]\]</span> <strong>not</strong> <span class="math display">\[u=-\left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] \left( \left[
+\begin{array}{c}
+z \\
+z_{0}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+z_{eq} \\
+z_{0_eq}
+\end{array}
+\right] \right) .\]</span> These are the same if <span class="math display">\[\begin{aligned}
+\left[
+\begin{array}{cc}
+k &amp; k_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+z_{eq} \\
+z_{0_eq}
+\end{array}
+\right] &amp;=\underset{k_{a}}{\underbrace{\left[
+\begin{array}{ccccc}
+k_{1} &amp; k_{2} &amp; k_{3} &amp; k_{4} &amp; k_{0}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x_{ref} \\
+0 \\
+0 \\
+0 \\
+z_{0_eq}
+\end{array}
+\right] =0 \\
+\text{or}z_{0_eq} &amp;=-(k_{1}/k_{0})x_{ref}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Inv Pendulum: Tracking Step Inputs via State Feedback
+</div>
+<p><strong>The value of</strong> <span class="math inline">\(z_{0_eq}\mathbf{.}\)</span></p>
+<div class="center figure-block">
+<img src="assets/chapter15-source/statefdbk_fig19d__31.png">
+</div>
+<p>That is, the feedback <span class="math inline">\(u=-k_{a}z_{a}\)</span> applied to <span class="math display">\[\frac{dz_{a}}{dt}=A_{a}z_{a}+b_{a}u+p_{a}x_{ref}\]</span></p>
+<p>results in <span class="math display">\[z_{a}(t)\rightarrow z_{a_eq}=\left[
+\begin{array}{c}
+x_{ref} \\
+0 \\
+0 \\
+0 \\
+-(k_{1}/k_{0})x_{ref}
+\end{array}
+\right] \text{and so}k_{a}z_{a_eq}=0.\]</span></p>
+</div>
 
 
 </section>
@@ -159,7 +3897,7 @@ John N. Chiasson and Aykut C. Satici
   <div class="quarto-auto-generated-content" style="display: none;">
 <p><img src="../../../images/monogram_solid-blk.png" class="slide-logo"></p>
 <div class="footer footer-default">
-<p><a href="../../../teaching/ug_courses/smac/index.html">← Course Home</a> · System Modeling and Control · Chapter 16</p>
+<p><a href="../../../teaching/ug_courses/smac/index.html">← Course Home</a> · System Modeling and Control · Chapter 15</p>
 </div>
 </div></div>
 
@@ -337,12 +4075,12 @@ John N. Chiasson and Aykut C. Satici
         // The "normal" size of the presentation, aspect ratio will be preserved
         // when the presentation is scaled to fit different resolutions. Can be
         // specified using percentage units.
-        width: 1050,
+        width: 1600,
 
-        height: 700,
+        height: 900,
 
         // Factor of the display size that should remain empty around the content
-        margin: 0.1,
+        margin: 4.0e-2,
 
         math: {
           mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',

@@ -11,7 +11,7 @@
   <meta name="generator" content="quarto-1.10.18">
 
   <meta name="author" content="John N. Chiasson and Aykut C. Satici">
-  <title>Satici Lab – State Feedback</title>
+  <title>Satici Lab – State Estimators and Parameter Identification</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -38,6 +38,7 @@
   </style>
   <link rel="stylesheet" href="../../../site_libs/revealjs/dist/theme/quarto-0427d8d92a431aa6a6430e53ec02a470.css">
   <link rel="stylesheet" href="revealjs-styles.css">
+  <link rel="stylesheet" href="chapter16-styles.css">
   <link href="../../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -129,7 +130,7 @@
       margin-right: 0; 
     }
   </style>
-<meta property="og:title" content="State Feedback – Satici Lab">
+<meta property="og:title" content="State Estimators and Parameter Identification – Satici Lab">
 <meta property="og:description" content="Research website for the Satici Lab">
 <meta property="og:site_name" content="Satici Lab">
 </head>
@@ -138,8 +139,8 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">State Feedback</h1>
-  <p class="subtitle">System Modeling and Control · Chapter 15</p>
+  <h1 class="title">State Estimators and Parameter Identification</h1>
+  <p class="subtitle">System Modeling and Control · Chapter 16</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -150,8 +151,2588 @@ John N. Chiasson and Aykut C. Satici
 </div>
 
 </section>
-<section id="two-examples" class="slide level2">
-<h2>Two Examples</h2>
+<section id="contents" class="title-slide slide level1 contents-slide center">
+<h1>Contents</h1>
+<ul>
+<li><p>State Estimators and Observer Design</p></li>
+<li><p>Observability, Duality, and Canonical Forms</p></li>
+<li><p>Multi-Output Observers and State Feedback</p></li>
+<li><p>Least-Squares Parameter Identification</p></li>
+<li><p>Matrix Facts and the Least-Squares Solution</p></li>
+</ul>
+</section>
+
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+State Estimators
+</div>
+<ul>
+<li><p>Typically all of the state variables are not available for feedback.</p></li>
+<li><p>A way to estimate the state variables is needed.</p></li>
+</ul>
+<p><strong>Example</strong> &nbsp;<em>Speed Estimator for the Cart System</em> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}x(t) &amp;=v \\
+\frac{d}{dt}v(t) &amp;=-a_{0}v(t)+b_{0}u(t).
+\end{aligned}\]</span> or <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] }}\text{}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] }}u \\
+y &amp;=\underset{c}{\underbrace{\left[
+\begin{array}{cc}
+1 &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x \\
+v
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed Estimator for the Cart System</em> <strong>&nbsp;(continued)</strong></p>
+<p>A speed and disturbance <em>observer</em> is defined by <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{\hat{z}}{\underbrace{\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v}
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] }}\text{}\underset{\hat{z}}{\underbrace{\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v}
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] }}u+\underset{\ell }{\underbrace{\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] }}(y-\hat{y}) \\
+\hat{y} &amp;=\underset{c}{\underbrace{\left[
+\begin{array}{cc}
+1 &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<ul>
+<li><p>Sample the output <span class="math inline">\(y=x\)</span> and the input <span class="math inline">\(u\)</span>.</p></li>
+<li><p>Integrate the above set of equations in real-time.</p></li>
+<li><p>If <span class="math inline">\(\ell\)</span> is the zero vector, then the observer is simply a real-time simulation.</p></li>
+<li><p>Choosing <span class="math inline">\(\ell \neq 0\)</span> appropriately can result in an accurate estimate of the state.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Example
+</div>
+<div class="center figure-block">
+<img src="assets/chapter16-source/statefdbk_fig8c__1.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed Estimator for the Cart System</em> <strong>&nbsp;(continued)</strong> <span class="math display">\[\begin{aligned}
+\frac{dz}{dt} &amp;=Az+bu \\
+\frac{d\hat{z}}{dt} &amp;=A\hat{z}+bu+\ell (y-\hat{y})
+\end{aligned}\]</span> Define <span class="math inline">\(\varepsilon \triangleq z-\hat{z}\)</span> to obtain <span class="math display">\[\frac{d}{dt}(z-\hat{z})=A(z-\hat{z})-\ell (y-\hat{y})=A(z-\hat{z})-\ell c(z-
+\hat{z})\]</span> or <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] (y-\hat{y}) \\
+&amp;=\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] \left[
+\begin{array}{cc}
+1 &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{rc}
+-\ell _{1} &amp; \text{}1 \\
+-\ell _{2} &amp; -a_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed Estimator for the Cart System</em> <strong>&nbsp;(continued)</strong> <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] =\underset{A-\ell c}{\underbrace{\left[
+\begin{array}{rc}
+-\ell _{1} &amp; \text{}1 \\
+-\ell _{2} &amp; -a_{0}
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] .\]</span></p>
+<ul>
+<li><p>Choose the gains <span class="math inline">\(\ell _{1},\ell _{2}\)</span>&nbsp;so that <span class="math display">\[\begin{aligned}
+\varepsilon _{1} &amp;=x-\hat{x}\rightarrow 0 \\
+\varepsilon _{2} &amp;=v-\hat{v}\rightarrow 0.
+\end{aligned}\]</span></p></li>
+<li><p>We need to choose <span class="math inline">\(\ell\)</span> so that <span class="math inline">\(A-\ell c\)</span> is stable which gives <span class="math display">\[\left[
+\begin{array}{c}
+\varepsilon _{1}(t) \\
+\varepsilon _{2}(t)
+\end{array}
+\right] =e^{(A-\ell c)t}\left[
+\begin{array}{c}
+\varepsilon _{1}(0) \\
+\varepsilon _{2}(0)
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{c}
+0 \\
+0
+\end{array}
+\right] .\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed and Disturbance Estimate <strong>&nbsp;(continued)</strong></em></p>
+<p>A direct way to determine the observer gains <span class="math inline">\(\ell _{1},\ell _{2}\)</span> is to simply compute <span class="math display">\[\begin{aligned}
+\det (sI-(A-\ell c)) &amp;=\det \left( \left[
+\begin{array}{rr}
+s &amp; 0 \\
+0 &amp; s
+\end{array}
+\right] -\left[
+\begin{array}{rc}
+-\ell _{1} &amp; \text{}1 \\
+-\ell _{2} &amp; -a_{0}
+\end{array}
+\right] \right) \\
+&amp;=\det \left[
+\begin{array}{cc}
+s+\ell _{1} &amp; -1 \\
+\ell _{2} &amp; s+a_{0}
+\end{array}
+\right] \\
+&amp;=s^{2}+(\ell _{1}+a_{0})s+\ell _{2}.
+\end{aligned}\]</span> Set the poles at <span class="math inline">\(-r_{1},-r_{2}\)</span>: <span class="math display">\[s^{2}+(\ell _{1}+a_{0})s+\ell
+_{2}=(s+r_{1})(s+r_{2})=s^{2}+(r_{1}+r_{2})s+r_{1}r_{2}\]</span> which requires <span class="math display">\[\begin{aligned}
+\ell _{1} &amp;=-a_{0}+r_{1}+r_{2} \\
+\ell _{2} &amp;=r_{1}r_{2}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Position Cannot be Estimated from Speed</em></p>
+<p>Suppose we can measure speed, but not position. Position is calculated as <span class="math display">\[x(t)=\underset{\text{unknown}}{\underbrace{x(0)}}+\int_{0}^{t}v(\tau )d\tau ,\]</span> but <span class="math display">\[\dfrac{d}{dt}\left( c+\int_{0}^{t}v(\tau )d\tau \right) =v(t)\]</span></p>
+<ul>
+<li>There are an infinite number of position signals with the same speed signal.</li>
+</ul>
+<p><strong>Model:</strong> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+x \\
+v
+\end{array}
+\right] &amp;=\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+x \\
+v
+\end{array}
+\right] +\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] u \\
+y &amp;=\left[
+\begin{array}{cc}
+0 &amp; 1
+\end{array}
+\right] \left[
+\begin{array}{c}
+x \\
+v
+\end{array}
+\right]
+\end{aligned}\]</span></p>
+<p><strong>Observer:</strong> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v}
+\end{array}
+\right] +\left[
+\begin{array}{c}
+0 \\
+b_{0}
+\end{array}
+\right] u+\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] (y-\hat{y}) \\
+\hat{y} &amp;=\left[
+\begin{array}{cc}
+0 &amp; 1
+\end{array}
+\right] \left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Position Cannot be Estimated from Speed</em></p>
+<p>With <span class="math inline">\(\varepsilon _{1}=x-\hat{x},\varepsilon _{2}=v-\hat{v}\)</span> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] (y-\hat{y}) \\
+&amp;=\left( \left[
+\begin{array}{rc}
+0 &amp; \text{}1 \\
+0 &amp; -a_{0}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] \left[
+\begin{array}{cc}
+0 &amp; 1
+\end{array}
+\right] \right) \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{cc}
+0 &amp; -\ell _{1} \\
+0 &amp; -a_{0}-\ell _{2}
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2}
+\end{array}
+\right]
+\end{aligned}\]</span> Then <span class="math display">\[\det \left( sI-(A-\ell c)\right) =\det \left[
+\begin{array}{cc}
+s &amp; \ell _{1} \\
+0 &amp; s+a_{0}+\ell _{2}
+\end{array}
+\right] =s^{2}+(a_{0}+\ell _{2})s\]</span></p>
+<ul>
+<li>Not stable for any choice of the observer gains <span class="math inline">\(\ell _{1},\ell _{2}.\)</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+State Estimators
+</div>
+<p><strong>Example</strong> &nbsp;<em>Speed and Disturbance Estimator for the Cart System</em> <span class="math display">\[\begin{aligned}
+\frac{d}{dt}x(t) &amp;=v \\
+\frac{d}{dt}v(t) &amp;=-a_{0}v(t)+b_{0}u(t)-\underset{d}{\underbrace{
+b_{0}K_{D}F_{d}}} \\
+\frac{d}{dt}d(t) &amp;=0.
+\end{aligned}\]</span> or <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+d
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{rcr}
+0 &amp; \text{}1 &amp; 0 \\
+0 &amp; -a_{0} &amp; -1 \\
+0 &amp; \text{}0 &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+d
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0} \\
+0
+\end{array}
+\right] }}u \\
+y &amp;=\underset{c}{\underbrace{\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+x \\
+v \\
+d
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed and Disturbance Estimator for the Cart System</em> <strong>&nbsp;(continued)</strong></p>
+<p>A speed and disturbance <em>observer</em> is defined by <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\underset{\hat{z}}{\underbrace{\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v} \\
+\hat{d}
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{rcr}
+0 &amp; \text{}1 &amp; 0 \\
+0 &amp; -a_{0} &amp; -1 \\
+0 &amp; \text{}0 &amp; 0
+\end{array}
+\right] }}\text{}\underset{\hat{z}}{\underbrace{\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v} \\
+\hat{d}
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+b_{0} \\
+0
+\end{array}
+\right] }}u+\underset{\ell }{\underbrace{\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2} \\
+\ell _{3}
+\end{array}
+\right] }}(y-\hat{y}) \\
+\hat{y} &amp;=\underset{c}{\underbrace{\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\hat{x} \\
+\hat{v} \\
+\hat{d}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+<ul>
+<li><p>Sample the output <span class="math inline">\(y=x\)</span> and the input <span class="math inline">\(u\)</span> into the computer.</p></li>
+<li><p>Integrate this set of equations in real-time.</p></li>
+<li><p>If <span class="math inline">\(\ell\)</span> is the zero vector, then the observer is simply a real-time simulation.</p></li>
+<li><p>Choosing <span class="math inline">\(\ell \neq 0\)</span> appropriately can result in an accurate estimate of the state.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide expanded-figure-slide">
+<div class="slide-title">
+Example
+</div>
+<div class="center figure-block">
+<img src="assets/chapter16-source/statefdbk_fig8__2.png">
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed and Disturbance Estimator for the Cart System</em> <strong>&nbsp;(continued)</strong> <span class="math display">\[\begin{aligned}
+\frac{dz}{dt} &amp;=Az+bu \\
+\frac{d\hat{z}}{dt} &amp;=A\hat{z}+bu+\ell (y-\hat{y}).
+\end{aligned}\]</span> Define <span class="math inline">\(\varepsilon \triangleq z-\hat{z}\)</span> to obtain <span class="math display">\[\frac{d}{dt}(z-\hat{z})=A(z-\hat{z})-\ell (y-\hat{y})=A(z-\hat{z})-\ell c(z-
+\hat{z})\]</span> or <span class="math display">\[\begin{aligned}
+\frac{d}{dt}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] &amp;=\left[
+\begin{array}{rcr}
+0 &amp; \text{}1 &amp; 0 \\
+0 &amp; -a_{0} &amp; -1 \\
+0 &amp; \text{}0 &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2} \\
+\ell _{3}
+\end{array}
+\right] (y-\hat{y}) \\
+&amp;=\left[
+\begin{array}{rcr}
+0 &amp; \text{}1 &amp; 0 \\
+0 &amp; -a_{0} &amp; -1 \\
+0 &amp; \text{}0 &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{1} \\
+\ell _{2} \\
+\ell _{3}
+\end{array}
+\right] \left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{rcr}
+-\ell _{1} &amp; \text{}1 &amp; 0 \\
+-\ell _{2} &amp; -a_{0} &amp; -1 \\
+-\ell _{3} &amp; \text{}0 &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed and Disturbance Estimator for the Cart System</em> <strong>&nbsp;(continued)</strong> <span class="math display">\[\frac{d}{dt}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] =\underset{A-\ell c}{\underbrace{\left[
+\begin{array}{rcr}
+-\ell _{1} &amp; \text{}1 &amp; 0 \\
+-\ell _{2} &amp; -a_{0} &amp; -1 \\
+-\ell _{3} &amp; \text{}0 &amp; 0
+\end{array}
+\right] }}\left[
+\begin{array}{c}
+\varepsilon _{1} \\
+\varepsilon _{2} \\
+\varepsilon _{3}
+\end{array}
+\right] .\]</span></p>
+<ul>
+<li><p>Choose the gains <span class="math inline">\(\ell _{1},\ell _{2},\ell _{3}\)</span>&nbsp;so that <span class="math display">\[\begin{aligned}
+\varepsilon _{1} &amp;=x-\hat{x}\rightarrow 0 \\
+\varepsilon _{2} &amp;=v-\hat{v}\rightarrow 0 \\
+\varepsilon _{3} &amp;=d-\hat{d}\rightarrow 0.
+\end{aligned}\]</span></p></li>
+<li><p>We need to choose <span class="math inline">\(\ell\)</span> so that <span class="math inline">\(A-\ell c\)</span> is stable which gives <span class="math display">\[\left[
+\begin{array}{c}
+\varepsilon _{1}(t) \\
+\varepsilon _{2}(t) \\
+\varepsilon _{3}(t)
+\end{array}
+\right] =e^{(A-\ell c)t}\left[
+\begin{array}{c}
+\varepsilon _{1}(0) \\
+\varepsilon _{2}(0) \\
+\varepsilon _{3}(0)
+\end{array}
+\right] \rightarrow \left[
+\begin{array}{c}
+0 \\
+0 \\
+0
+\end{array}
+\right] .\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Speed and Disturbance Estimate</em></p>
+<p>A direct way to determine the observer gains <span class="math inline">\(\ell _{1},\ell _{2},\ell _{3}\)</span> is to simply compute <span class="math display">\[\begin{aligned}
+\det (sI-(A-\ell c)) &amp;=\det \left( \left[
+\begin{array}{rrr}
+s &amp; 0 &amp; 0 \\
+0 &amp; s &amp; 0 \\
+0 &amp; 0 &amp; s
+\end{array}
+\right] -\left[
+\begin{array}{rcr}
+-\ell _{1} &amp; 1 &amp; 0 \\
+-\ell _{2} &amp; -a_{0} &amp; -1 \\
+-\ell _{3} &amp; 0 &amp; 0
+\end{array}
+\right] \right) \\
+&amp;=\det \left[
+\begin{array}{ccc}
+s+\ell _{1} &amp; -1 &amp; 0 \\
+\ell _{2} &amp; s+a_{0} &amp; 1 \\
+\ell _{3} &amp; 0 &amp; s
+\end{array}
+\right] \\
+&amp;=s^{3}+(\ell _{1}+a_{0})s^{2}+(\ell _{2}+a_{0}\ell _{1})s-\ell _{3}.
+\end{aligned}\]</span> Set the poles at <span class="math inline">\(-r_{1},-r_{2},-r_{3}\)</span>: <span class="math display">\[\begin{aligned}
+&amp;&amp;
+s^{3}+(\ell _{1}+a_{0})s^{2}+(\ell _{2}+a_{0}\ell _{1})s-\ell
+_{3} \\
+&amp;=(s+r_{1})(s+r_{2})(s+r_{3}) \\
+&amp;=s^{3}+(r_{1}+r_{2}+r_{3})s^{2}+(r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3})s+r_{1}r_{2}r_{3}
+\end{aligned}\]</span> which requires <span class="math display">\[\begin{aligned}
+\ell _{1} &amp;=-a_{0}+r_{1}+r_{2}+r_{3} \\
+\ell _{2} &amp;=-a_{0}\ell _{1}+r_{1}r_{2}+r_{1}r_{3}+r_{2}r_{3} \\
+\ell _{3} &amp;=-r_{1}r_{2}r_{3}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+General Procedure for State Estimation
+</div>
+<p><span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=Ax+bu,A\in
+\mathbb{R}
+^{n\times n},b\in
+\mathbb{R}
+^{n} \\
+y &amp;=cx,c\in
+\mathbb{R}
+^{1\times n}.
+\end{aligned}\]</span></p>
+<div class="center figure-block">
+<img src="assets/chapter16-source/sfbk_fig2b__3.png">
+</div>
+<p><span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=Ax+bu \\
+\frac{d\hat{x}}{dt} &amp;=A\hat{x}+bu \\
+\Longrightarrow \frac{d}{dt}(x-\hat{x}) &amp;=A(x-\hat{x}).
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+General Procedure for State Estimation
+</div>
+<p><span class="math display">\[\frac{d}{dt}(x-\hat{x})=A(x-\hat{x}).\]</span></p>
+<p>If <span class="math inline">\(A\)</span> is stable, then <span class="math display">\[\hat{x}(t)-x(t)=e^{At}(\hat{x}(0)-x(0))\rightarrow 0.\]</span></p>
+<ul>
+<li><p>If <span class="math inline">\(A\)</span> is unstable this estimator won’t work.</p></li>
+<li><p>Even if <span class="math inline">\(A\)</span> is stable the rate that <span class="math inline">\(\hat{x}(t)-x(t)\rightarrow 0\)</span> is fixed by the eigenvalues of <span class="math inline">\(A\)</span>.</p></li>
+</ul>
+<p>Consider <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=Ax+bu,A\in
+\mathbb{R}
+^{n\times n},b\in
+\mathbb{R}
+^{n} \\
+y &amp;=cx,c\in
+\mathbb{R}
+^{1\times n}.
+\end{aligned}\]</span></p>
+<p>with <span class="math inline">\(\det (sI-A)=s^{n}+\beta _{1}s^{n-1}+\beta _{2}s^{n-2}+\cdots +\beta _{n}.\)</span></p>
+<p>Define the <em>state estimator</em> <span class="math display">\[\begin{aligned}
+\frac{d\hat{x}}{dt} &amp;=A\hat{x}+bu+\ell (y-\hat{y})=A\hat{x}+bu+\ell c(x-
+\hat{x}) \\
+\hat{y} &amp;=c\hat{x}
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+General Procedure for State Estimation
+</div>
+<div class="center figure-block">
+<img src="assets/chapter16-source/sfbk_fig3__4.png">
+</div>
+<p>Error System: <span class="math display">\[\frac{d}{dt}\underset{\varepsilon }{\underbrace{(x-\hat{x})}}=A(x-\hat{x}
+)-\ell c(x-\hat{x})=(A-\ell c)\underset{\varepsilon }{\underbrace{(x-\hat{x})
+}}\]</span></p>
+<ul>
+<li><p>Solution <span class="math inline">\(\varepsilon (t)=e^{(A-\ell c)t}\varepsilon (0).\)</span></p></li>
+<li><p>Find <span class="math inline">\(\ell \in \mathbb{R} ^{n}\)</span> such that <span class="math inline">\(A-\ell c\)</span> is stable.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices in Observer Canonical Form</em></p>
+<p>Let <span class="math display">\[A_{o}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] ,\text{}c_{o}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1
+\end{array}
+\right]\]</span> Then <span class="math display">\[\det (sI-A_{o})=\det \left[
+\begin{array}{ccc}
+s &amp; 0 &amp; \beta _{0} \\
+-1\text{} &amp; s &amp; \beta _{1} \\
+0 &amp; -1\text{} &amp; s+\beta _{2}
+\end{array}
+\right] =s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}.\]</span> We say that the pair <span class="math inline">\((c_{o},A_{o})\)</span> are in <em>observer canonical</em> form. With <span class="math display">\[\ell =\left[
+\begin{array}{c}
+\ell _{0} \\
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right]\]</span> we compute <span class="math inline">\(\det (sI-(A_{o}-\ell c_{o})).\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p><span class="math display">\[\begin{aligned}
+\det (sI-(A_{o}-\ell c_{o})) &amp;=\det \left( \left[
+\begin{array}{ccc}
+s &amp; 0 &amp; 0 \\
+0 &amp; s &amp; 0 \\
+0 &amp; 0 &amp; s
+\end{array}
+\right] -\left( \left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] -\left[
+\begin{array}{c}
+\ell _{0} \\
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] \left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1
+\end{array}
+\right] \right) \right) \\
+&amp;=\det \left( \left[
+\begin{array}{ccc}
+s &amp; 0 &amp; 0 \\
+0 &amp; s &amp; 0 \\
+0 &amp; 0 &amp; s
+\end{array}
+\right] -\left( \left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] -\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; \ell _{0} \\
+0 &amp; 0 &amp; \ell _{1} \\
+0 &amp; 0 &amp; \ell _{2}
+\end{array}
+\right] \right) \right) \\
+&amp;=\det \left( \left[
+\begin{array}{ccc}
+s &amp; 0 &amp; 0 \\
+0 &amp; s &amp; 0 \\
+0 &amp; 0 &amp; s
+\end{array}
+\right] -\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0}-\ell _{0} \\
+1 &amp; 0 &amp; -\beta _{1}-\ell _{1} \\
+0 &amp; 1 &amp; -\beta _{2}-\ell _{2}
+\end{array}
+\right] \right) \\
+&amp;=\det \left( \left[
+\begin{array}{ccc}
+s &amp; 0 &amp; \beta _{0}+\ell _{0} \\
+1 &amp; s &amp; \beta _{1}+\ell _{1} \\
+0 &amp; 1 &amp; s+\beta _{2}+\ell _{2}
+\end{array}
+\right] \right) \\
+&amp;=s^{3}+(\beta _{2}+\ell _{2})s^{2}+(\beta _{1}+\ell _{1})s+\beta
+_{0}+\ell _{0}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p>Previous slide: <span class="math display">\[\det (sI-(A_{o}-\ell c_{o}))=s^{3}+(\beta _{2}+\ell _{2})s^{2}+(\beta
+_{1}+\ell _{1})s+\beta _{0}+\ell _{0}.\]</span></p>
+<p>Desired CL characteristic polynomial: <span class="math display">\[s^{3}+\beta _{d2}s^{2}+\beta _{d1}s+\beta _{d0}\]</span></p>
+<p>Choosing <span class="math display">\[\ell =\left[
+\begin{array}{c}
+\ell _{0} \\
+\ell _{1} \\
+\ell _{2}
+\end{array}
+\right] =\left[
+\begin{array}{c}
+\beta _{d0}-\beta _{0} \\
+\beta _{d1}-\beta _{1} \\
+\beta _{d2}-\beta _{2}
+\end{array}
+\right]\]</span></p>
+<p>results in <span class="math display">\[\det (sI-(A_{o}-\ell c_{o}))=s^{3}+\beta _{d2}s^{2}+\beta _{d1}s+\beta _{d0}.\]</span></p>
+<ul>
+<li>Conclusion: Put the system in observer canonical form!</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Digression on Matrix Multiplication
+</div>
+<p>Let</p>
+<p><span class="math display">\[\begin{aligned}
+r&amp;=\left[\begin{array}{ccc}r_{1}&amp;r_{2}&amp;r_{3}\end{array}\right], &amp;
+T&amp;=\left[
+\begin{array}{c}
+t_{1}\\ t_{2}\\ t_{3}
+\end{array}\right]
+=\left[
+\begin{array}{ccc}
+t_{11} &amp; t_{12} &amp; t_{13} \\
+t_{21} &amp; t_{22} &amp; t_{23} \\
+t_{31} &amp; t_{32} &amp; t_{33}
+\end{array}\right].
+\end{aligned}\]</span></p>
+<p>Then</p>
+<p><span class="math display">\[\begin{aligned}
+rT &amp;= r_{1}t_{1}+r_{2}t_{2}+r_{3}t_{3} \\
+&amp;=r_{1}\left[\begin{array}{ccc}t_{11}&amp;t_{12}&amp;t_{13}\end{array}\right]
++r_{2}\left[\begin{array}{ccc}t_{21}&amp;t_{22}&amp;t_{23}\end{array}\right]
++r_{3}\left[\begin{array}{ccc}t_{31}&amp;t_{32}&amp;t_{33}\end{array}\right].
+\end{aligned}\]</span></p>
+<ul>
+<li>Thus, <span class="math inline">\(rT\)</span> is a <em>linear combination of the rows</em> of <span class="math inline">\(T\)</span>.</li>
+</ul>
+<p>If the rows of <span class="math inline">\(R\)</span> are denoted by <span class="math inline">\(\rho _{1},\rho _{2},\rho _{3}\)</span>, the same rule applies row by row:</p>
+<p><span class="math display">\[RT=\left[
+\begin{array}{c}
+\rho _{1}T\\ \rho _{2}T\\ \rho _{3}T
+\end{array}\right],
+\qquad
+\rho _{i}T=\sum_{j=1}^{3}r_{ij}t_{j}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices NOT in Observer Canonical Form</em></p>
+<p><span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=Ax+bu,A\in
+\mathbb{R}
+^{3\times 3},b\in
+\mathbb{R}
+^{3} \\
+y &amp;=cx,c\in
+\mathbb{R}
+^{1\times 3} \\
+\det (sI-A) &amp;=s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}.
+\end{aligned}\]</span></p>
+<p>Suppose the <em>observability matrix</em> <span class="math display">\[\mathcal{O}\triangleq \left[
+\begin{array}{l}
+c \\
+cA \\
+cA^{2}
+\end{array}
+\right] \text{satisfies}\det \mathcal{O}\neq 0.\]</span></p>
+<p>Let <span class="math inline">\(x^{\prime }\triangleq \mathcal{O}x\)</span> to obtain <span class="math display">\[\begin{aligned}
+\frac{dx^{\prime }}{dt} &amp;=\underset{A^{\prime }}{\underbrace{\mathcal{O}A
+\mathcal{O}^{-1}}}x^{\prime }+\underset{b^{\prime }}{\underbrace{\mathcal{O}b
+}}u \\
+y &amp;=\underset{c^{\prime }}{\underbrace{c\mathcal{O}^{-1}}}x^{\prime }.
+\end{aligned}\]</span> That is, <span class="math display">\[\begin{aligned}
+A^{\prime } &amp;=\mathcal{O}A\mathcal{O}^{-1} \\
+c^{\prime } &amp;=c\mathcal{O}^{-1}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices NOT in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p>Rewrite <span class="math display">\[\begin{aligned}
+A^{\prime } &amp;=\mathcal{O}A\mathcal{O}^{-1} \\
+c^{\prime } &amp;=c\mathcal{O}^{-1}
+\end{aligned}\]</span> as <span class="math display">\[\begin{aligned}
+A^{\prime }\mathcal{O} &amp;\mathcal{=}&amp;\mathcal{O}A \\
+c^{\prime }\mathcal{O} &amp;=c
+\end{aligned}\]</span> or <span class="math display">\[\left[
+\begin{array}{ccc}
+a_{11}^{\prime } &amp; a_{12}^{\prime } &amp; a_{13}^{\prime } \\
+a_{21}^{\prime } &amp; a_{22}^{\prime } &amp; a_{23}^{\prime } \\
+a_{31}^{\prime } &amp; a_{32}^{\prime } &amp; a_{33}^{\prime }
+\end{array}
+\right] \underset{\mathcal{O}}{\underbrace{\left[
+\begin{array}{l}
+c \\
+cA \\
+cA^{2}
+\end{array}
+\right] }}=\underset{\mathcal{O}A}{\underbrace{\left[
+\begin{array}{l}
+cA \\
+cA^{2} \\
+cA^{3}
+\end{array}
+\right] }}\text{ and }\left[
+\begin{array}{ccc}
+c_{1}^{\prime } &amp; c_{2}^{\prime } &amp; c_{3}^{\prime }
+\end{array}
+\right] \left[
+\begin{array}{l}
+c \\
+cA \\
+cA^{2}
+\end{array}
+\right] =c.\]</span></p>
+<p>By the above matrix multiplication digression <span class="math display">\[\underset{A^{\prime }\mathcal{O}}{\underbrace{\left[
+\begin{array}{c}
+a_{11}^{\prime }c+a_{12}^{\prime }cA+a_{13}^{\prime }cA^{2} \\
+a_{21}^{\prime }c+a_{22}^{\prime }cA+a_{23}^{\prime }cA^{2} \\
+a_{31}^{\prime }c+a_{32}^{\prime }cA+a_{33}^{\prime }cA^{2}
+\end{array}
+\right] }}=\underset{\mathcal{O}A}{\underbrace{\left[
+\begin{array}{l}
+cA \\
+cA^{2} \\
+cA^{3}
+\end{array}
+\right] }}\text{ and }\underset{c^{\prime }\mathcal{O}}{\underbrace{
+c_{1}^{\prime }c+c_{2}^{\prime }cA+c_{3}^{\prime }cA^{2}}}=c.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices NOT in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p>From the previous slide:</p>
+<p><span class="math display">\[\underset{A^{\prime }\mathcal{O}}{\underbrace{\left[
+\begin{array}{c}
+a_{11}^{\prime }c+a_{12}^{\prime }cA+a_{13}^{\prime }cA^{2} \\
+a_{21}^{\prime }c+a_{22}^{\prime }cA+a_{23}^{\prime }cA^{2} \\
+a_{31}^{\prime }c+a_{32}^{\prime }cA+a_{33}^{\prime }cA^{2}
+\end{array}
+\right] }}=\underset{\mathcal{O}A}{\underbrace{\left[
+\begin{array}{l}
+cA \\
+cA^{2} \\
+cA^{3}
+\end{array}
+\right] }}\text{ and }\underset{c^{\prime }\mathcal{O}}{\underbrace{
+c_{1}^{\prime }c+c_{2}^{\prime }cA+c_{3}^{\prime }cA^{2}}}=c.\]</span></p>
+<p>By inspection we see that <span class="math display">\[A^{\prime }=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+a_{31}^{\prime } &amp; a_{32}^{\prime } &amp; a_{33}^{\prime }
+\end{array}
+\right] ,\text{}c^{\prime }=\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] .\]</span></p>
+<p>We still need to determine <span class="math inline">\(a_{31}^{\prime },a_{32}^{\prime },a_{33}^{\prime }\)</span> where <span class="math display">\[a_{31}^{\prime }c+a_{32}^{\prime }cA+a_{33}^{\prime }cA^{2}=cA^{3}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices NOT in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p>Previous slide: <span class="math display">\[A^{\prime }=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+a_{31}^{\prime } &amp; a_{32}^{\prime } &amp; a_{33}^{\prime }
+\end{array}
+\right] ,\text{}c^{\prime }=\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] .\]</span></p>
+<p>As <span class="math inline">\(\det (sI-A)=s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}\)</span>: <span class="math display">\[s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}=\det (sI-A)=\det (sI-A^{\prime
+})=s^{3}-a_{33}^{\prime }s^{2}-a_{32}^{\prime }s-a_{31}^{\prime }.\]</span> That is, <span class="math display">\[A^{\prime }=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\beta _{0} &amp; -\beta _{1} &amp; -\beta _{2}
+\end{array}
+\right] ,\text{}c^{\prime }=\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] .\]</span></p>
+<ul>
+<li>Not observer canonical form yet.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices NOT in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p><span class="math display">\[A_{o}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] ,\text{}c_{o}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1
+\end{array}
+\right] \text{and}\mathcal{O}_{o}\triangleq \left[
+\begin{array}{l}
+c_{o} \\
+c_{o}A_{o} \\
+c_{o}A_{o}^{2}
+\end{array}
+\right] .\]</span> <span class="math display">\[\begin{aligned}
+\frac{dx_{o}}{dt} &amp;=A_{o}x_{o}+b_{o}u,A_{o}\in
+\mathbb{R}
+^{3\times 3},b_{o}\in
+\mathbb{R}
+^{3} \\
+y &amp;=c_{o}x_{o},c_{o}\in
+\mathbb{R}
+^{1\times 3}.
+\end{aligned}\]</span> <span class="math inline">\(x^{\prime }=O_{o}x_{o}\Longrightarrow\)</span> <span class="math display">\[\begin{aligned}
+\frac{dx^{\prime }}{dt} &amp;=\underset{A^{\prime }}{\underbrace{\mathcal{O}
+_{o}A_{o}\mathcal{O}_{o}^{-1}}}x^{\prime }+\mathcal{O}_{o}b_{o}u \\
+y &amp;=\underset{c^{\prime }}{\underbrace{c_{o}\mathcal{O}_{o}^{-1}}}x^{\prime
+}
+\end{aligned}\]</span> with <span class="math display">\[\begin{aligned}
+A^{\prime } &amp;=\mathcal{O}_{o}A_{o}\mathcal{O}_{o}^{-1}=\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\beta _{0} &amp; -\beta _{1} &amp; -\beta _{2}
+\end{array}
+\right] ,b^{\prime }=\mathcal{O}_{o}b_{o}=\left[
+\begin{array}{c}
+b_{1}^{\prime } \\
+b_{2}^{\prime } \\
+b_{3}^{\prime }
+\end{array}
+\right]  \\
+\text{}c^{\prime } &amp;=c_{o}\mathcal{O}_{o}^{-1}=\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] .
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>System Matrices NOT in Observer Canonical Form &nbsp;</em> <strong>(continued)</strong></p>
+<p>Thus the <em>inverse</em> transformation <span class="math display">\[x_{o}=\mathcal{O}_{o}^{-1}x^{\prime }\]</span> must take <span class="math display">\[\begin{aligned}
+\frac{dx^{\prime }}{dt} &amp;=\underset{A^{\prime }}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 1 &amp; 0 \\
+0 &amp; 0 &amp; 1 \\
+-\beta _{0} &amp; -\beta _{1} &amp; -\beta _{2}
+\end{array}
+\right] }}x^{\prime }+\underset{b^{\prime }}{\underbrace{\left[
+\begin{array}{c}
+b_{1}^{\prime } \\
+b_{2}^{\prime } \\
+b_{3}^{\prime }
+\end{array}
+\right] }}u \\
+y &amp;=\underset{c^{\prime }}{\underbrace{\left[
+\begin{array}{ccc}
+1 &amp; 0 &amp; 0
+\end{array}
+\right] }}x^{\prime }
+\end{aligned}\]</span> to the observer canonical form <span class="math display">\[\begin{aligned}
+\frac{dx_{o}}{dt} &amp;=\underset{A_{o}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] }}x_{o}+\underset{b_{o}}{\underbrace{\left[
+\begin{array}{c}
+b_{1} \\
+b_{2} \\
+b_{3}
+\end{array}
+\right] }}u \\
+y &amp;=\underset{c_{o}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1
+\end{array}
+\right] }}x_{o}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Transformation to Observer Canonical Form</em></p>
+<p>Given <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=Ax+bu,A\in
+\mathbb{R}
+^{3\times 3},b\in
+\mathbb{R}
+^{3} \\
+y &amp;=cx,c\in
+\mathbb{R}
+^{1\times 3} \\
+\det (sI-A) &amp;=s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}
+\end{aligned}\]</span> with <span class="math inline">\(\mathcal{O}\triangleq \left[ \begin{array}{l} c \\ cA \\ cA^{2} \end{array} \right] ,\det \mathcal{O}\neq 0.\)</span></p>
+<p>With <span class="math inline">\(\mathcal{O}_{o}\triangleq \left[ \begin{array}{l} c_{o} \\ c_{o}A_{o} \\ c_{o}A_{o}^{2} \end{array} \right]\)</span> the transformation <span class="math inline">\(x_{o}=\mathcal{O}_{o}^{-1}\mathcal{O}x\)</span> results in <span class="math display">\[\begin{aligned}
+\frac{dx_{o}}{dt} &amp;=\underset{A_{o}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] }}x_{o}+\underset{b_{o}}{\underbrace{\left[
+\begin{array}{c}
+b_{o1} \\
+b_{o2} \\
+b_{o3}
+\end{array}
+\right] }}u \\
+y &amp;=\underset{c_{o}}{\underbrace{\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1
+\end{array}
+\right] }}x_{o}.
+\end{aligned}\]</span></p>
+<p>This follows from the previous two examples.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Placement of the Observer Poles</em></p>
+<p>Given <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=Ax+bu,A\in
+\mathbb{R}
+^{3\times 3},b\in
+\mathbb{R}
+^{3} \\
+y &amp;=cx,c\in
+\mathbb{R}
+^{1\times 3} \\
+\det (sI-A) &amp;=s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}
+\end{aligned}\]</span> with <span class="math display">\[\mathcal{O}\triangleq \left[
+\begin{array}{l}
+c \\
+cA \\
+cA^{2}
+\end{array}
+\right] ,\text{}\det \mathcal{O}\neq 0.\]</span> Set <span class="math display">\[A_{o}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; -\beta _{2}
+\end{array}
+\right] \mathbf{},c_{o}=\left[
+\begin{array}{ccc}
+0 &amp; 0 &amp; 1
+\end{array}
+\right] \mathbf{},\mathcal{O}_{o}\triangleq \left[
+\begin{array}{l}
+c_{o} \\
+c_{o}A_{o} \\
+c_{o}A_{o}^{2}
+\end{array}
+\right] .\]</span> Let the desired closed-loop characteristic polynomial be <span class="math display">\[s^{3}+\beta _{d2}s^{2}+\beta _{d1}s+\beta _{d0}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Theorem
+</div>
+<p><em>Placement of the Observer Poles &nbsp;</em> <strong>(continued)</strong></p>
+<p>The observer is <span class="math display">\[\begin{aligned}
+\frac{d\hat{x}}{dt} &amp;=A\hat{x}+bu+\ell (y-\hat{y})   \\
+\hat{y} &amp;=c\hat{x}.
+\end{aligned}\]</span> Using the transformation <span class="math inline">\(\hat{x}_{o}=\mathcal{O}_{o}^{-1}\mathcal{O}\hat{x}\)</span> this becomes <span class="math display">\[\begin{aligned}
+\frac{d\hat{x}_{o}}{dt} &amp;=\underset{A_{o}}{\underbrace{(\mathcal{O}_{o}^{-1}
+\mathcal{O})A(\mathcal{O}_{o}^{-1}\mathcal{O})^{-1}}}\hat{x}_{o}+\underset{
+b_{o}}{\underbrace{(\mathcal{O}_{o}^{-1}\mathcal{O})b}}u+\underset{\ell _{o}}
+{\underbrace{(\mathcal{O}_{o}^{-1}\mathcal{O})\ell }}(y-\hat{y})   \\
+\hat{y} &amp;=\underset{c_{o}}{\underbrace{c(\mathcal{O}_{o}^{-1}\mathcal{O})
+^{-1}}}\hat{x}_{o}.
+\end{aligned}\]</span> Thus <span class="math display">\[\ell _{o}=(\mathcal{O}_{o}^{-1}\mathcal{O})\ell \text{or}\ell =
+\mathcal{O}^{-1}\mathcal{O}_{o}\ell _{o}\]</span> with <span class="math display">\[\ell _{o}=\beta _{d}-\beta =\left[
+\begin{array}{c}
+\beta _{d0}-\beta _{0} \\
+\beta _{d1}-\beta _{1} \\
+\beta _{d2}-\beta _{2}
+\end{array}
+\right] .\]</span></p>
+<ul>
+<li>That is, &nbsp;<span class="math inline">\(\ell =\mathcal{O}^{-1}\mathcal{O}_{o}\ell _{o}\)</span> &nbsp;makes <span class="math inline">\(\det (sI-(A-\ell c))=s^{3}+\beta _{d2}s^{2}+\beta _{d1}s+\beta _{d0}\)</span>.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Observer for the Inverted Pendulum</em> <span class="math inline">\(y=x+\left( \ell + \dfrac{J}{m\ell }\right) \theta\)</span></p>
+<p>Let <span class="math inline">\(z=\left[\begin{array}{cccc}x&amp;v&amp;\theta&amp;\omega\end{array}\right]^{T}\)</span>. The model is</p>
+<p><span class="math display">\[\dot z=Az+bu,
+\qquad y=cz,\]</span></p>
+<p>with</p>
+<p><span class="math display">\[A=\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right],\]</span></p>
+<p><span class="math display">\[\begin{aligned}
+b&amp;=\left[
+\begin{array}{c}
+0 \\
+\dfrac{J+m\ell ^{2}}{Mm\ell ^{2}+J(M+m)} \\
+0 \\
+-\dfrac{m\ell }{Mm\ell ^{2}+J(M+m)}
+\end{array}
+\right], &amp;
+c&amp;=\left[\begin{array}{cccc}1&amp;0&amp;\ell+\dfrac{J}{m\ell}&amp;0\end{array}\right].
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Observer for the Inverted Pendulum</em> <span class="math inline">\(y=x+\left( \ell + \dfrac{J}{m\ell }\right) \theta\)</span></p>
+<p><strong>Observability Matrix</strong> <span class="math display">\[\begin{aligned}
+c &amp;=\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell } &amp; 0
+\end{array}
+\right] \\
+cA &amp;=\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell } &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right] =\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell }
+\end{array}
+\right] \\
+cA^{2} &amp;=\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell }
+\end{array}
+\right] \left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right] =\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; g &amp; 0
+\end{array}
+\right] \\
+cA^{3} &amp;=\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; g &amp; 0
+\end{array}
+\right] \left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right] =\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; 0 &amp; g
+\end{array}
+\right]
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Observer for the Inverted Pendulum</em> <span class="math inline">\(y=x+\left( \ell + \dfrac{J}{m\ell }\right) \theta\)</span></p>
+<p><strong>Observability Matrix</strong> <span class="math display">\[\begin{aligned}
+\mathcal{O} &amp;=\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell } &amp; 0 \\
+0 &amp; 1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell } \\
+0 &amp; 0 &amp; g &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; g
+\end{array}
+\right] \\
+\det \mathcal{O} &amp;=g^{2}
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Observer for the Inverted Pendulum</em> <span class="math inline">\(y=x+\left( \ell + \dfrac{J}{m\ell }\right) \theta\)</span></p>
+<p><strong>Open-Loop Characteristic Polynomial</strong> -&nbsp;<span class="math inline">\(\det (sI-A)=s^{4}+\beta _{3}s^{3}+\beta _{2}s^{2}+\beta _{1}s+\beta _{0}\)</span>&nbsp;<span class="math display">\[\begin{aligned}
+A &amp;=\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; 0
+\end{array}
+\right] ,\text{}b=\left[
+\begin{array}{c}
+0 \\
+\dfrac{J+m\ell ^{2}}{Mm\ell ^{2}+J(M+m)} \\
+0 \\
+-\dfrac{m\ell }{Mm\ell ^{2}+J(M+m)}
+\end{array}
+\right] \\
+c &amp;=\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; \ell +\dfrac{J}{m\ell } &amp; 0
+\end{array}
+\right] ,\alpha ^{2}\triangleq \frac{mg\ell (M+m)}{Mm\ell
+^{2}+J(M+m)}
+\end{aligned}\]</span> we have <span class="math display">\[\det (sI-A)=\det \left[
+\begin{array}{cccc}
+s &amp; -1 &amp; 0 &amp; 0 \\
+0 &amp; s &amp; \dfrac{gm^{2}\ell ^{2}}{Mm\ell ^{2}+J(M+m)} &amp; 0 \\
+0 &amp; 0 &amp; s &amp; -1 \\
+0 &amp; 0 &amp; -\dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)} &amp; s
+\end{array}
+\right] =s^{4}-\alpha ^{2}s^{2}\]</span> <span class="math display">\[\beta _{3}=0,\beta _{2}=-\alpha ^{2},\beta _{1}=0,\beta _{0}=0.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Observer for the Inverted Pendulum</em> <span class="math inline">\(y=x+\left( \ell + \dfrac{J}{m\ell }\right) \theta\)</span></p>
+<p><strong>Observer Canonical Form</strong> <span class="math display">\[\begin{aligned}
+A_{o} &amp;=\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; 0 &amp; -\beta _{0} \\
+1 &amp; 0 &amp; 0 &amp; -\beta _{1} \\
+0 &amp; 1 &amp; 0 &amp; -\beta _{2} \\
+0 &amp; 0 &amp; 1 &amp; -\beta _{3}
+\end{array}
+\right] =\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; 0 &amp; 0 \\
+1 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 1 &amp; 0 &amp; \alpha ^{2} \\
+0 &amp; 0 &amp; 1 &amp; 0
+\end{array}
+\right] \\
+c_{o} &amp;=\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; 0 &amp; 1
+\end{array}
+\right]
+\end{aligned}\]</span></p>
+<p><strong>Observability Matrix</strong> <span class="math inline">\(\mathcal{O}_{o}\)</span> <strong>for</strong> <span class="math inline">\((c_{o},A_{o}).\)</span></p>
+<p><span class="math display">\[\mathcal{O}_{o}=\left[
+\begin{array}{c}
+c_{o} \\
+c_{o}A_{o} \\
+c_{o}A_{o}^{2} \\
+c_{o}A_{o}^{3}
+\end{array}
+\right] =\left[
+\begin{array}{cccc}
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; 1 &amp; 0 \\
+0 &amp; 1 &amp; 0 &amp; \alpha ^{2} \\
+1 &amp; 0 &amp; \alpha ^{2} &amp; 0
+\end{array}
+\right] ,\det \mathcal{O}_{o}=1.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Example
+</div>
+<p><em>Observer for the Inverted Pendulum</em> <span class="math inline">\(y=x+\left( \ell + \dfrac{J}{m\ell }\right) \theta\)</span></p>
+<p><span class="math display">\[\begin{aligned}
+p_{d}(s)&amp;=\prod_{i=1}^{4}(s+\gamma _{i}) \\
+&amp;=s^{4}+\beta _{d3}s^{3}+\beta _{d2}s^{2}+\beta _{d1}s+\beta _{d0},
+\end{aligned}\]</span></p>
+<p>where</p>
+<p><span class="math display">\[\begin{aligned}
+\beta _{d3}&amp;=\gamma _1+\gamma _2+\gamma _3+\gamma _4,\\
+\beta _{d2}&amp;=\gamma _1\gamma _2+\gamma _1\gamma _3+\gamma _1\gamma _4
++\gamma _2\gamma _3+\gamma _2\gamma _4+\gamma _3\gamma _4,\\
+\beta _{d1}&amp;=\gamma _1\gamma _2\gamma _3+\gamma _1\gamma _2\gamma _4
++\gamma _1\gamma _3\gamma _4+\gamma _2\gamma _3\gamma _4,\\
+\beta _{d0}&amp;=\gamma _1\gamma _2\gamma _3\gamma _4.
+\end{aligned}\]</span></p>
+<p>Set</p>
+<p><span class="math display">\[\ell =\mathcal{O}^{-1}\mathcal{O}_{o}\ell _o,
+\qquad
+\ell _o=\left[
+\begin{array}{c}
+\beta _{d0}-\beta _0\\ \beta _{d1}-\beta _1\\
+\beta _{d2}-\beta _2\\ \beta _{d3}-\beta _3
+\end{array}\right],\]</span></p>
+<p>to place the closed-loop observer poles at <span class="math inline">\(-\gamma _{1},-\gamma _{2},-\gamma _{3},-\gamma _{4}.\)</span></p>
+<p><strong>Observer:</strong> <span class="math inline">\(\dot{\hat z}=A\hat z+bu+\ell(y-\hat y)\)</span>, <span class="math inline">\(\hat y=c\hat z\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Multi-Output Observer for the Inverted Pendulum
+</div>
+<ul>
+<li><p>The observer design procedure above is for single outputs.</p></li>
+<li><p>In the case of the inverted pendulum we measure <span class="math inline">\(x\)</span> and <span class="math inline">\(\theta\)</span>.</p></li>
+<li><p>Design an observer using the <em>vector</em> output measurement <span class="math inline">\(y=\left[ \begin{array}{c} x \\ \theta \end{array} \right] .\)</span></p></li>
+</ul>
+<p>Linear Model of the Inv Pend about <span class="math inline">\((x_{eq},v_{eq},\theta _{eq},\omega _{eq})=(0,0,0,0,0)\)</span> is <span class="math display">\[\begin{aligned}
+\underset{dz/dt}{\underbrace{\left[
+\begin{array}{c}
+dx/dt \\
+dv/dt \\
+d\theta /dt \\
+d\omega /dt
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\kappa gm^{2}\ell ^{2} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \alpha ^{2} &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta  \\
+\omega
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+\kappa (J+m\ell ^{2}) \\
+0 \\
+-\kappa m\ell
+\end{array}
+\right] }}u. \\
+y &amp;=\underset{C}{\underbrace{\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 1 &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta  \\
+\omega
+\end{array}
+\right] }}
+\end{aligned}\]</span> where <span class="math inline">\(\kappa =\dfrac{1}{Mm\ell ^{2}+J(M+m)},\ \alpha ^{2}=\dfrac{mg\ell (M+m)}{Mm\ell ^{2}+J(M+m)}.\)</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Multi-Output Observer for the Inverted Pendulum
+</div>
+<p><span class="math display">\[\begin{aligned}
+\underset{dz/dt}{\underbrace{\left[
+\begin{array}{c}
+dx/dt \\
+dv/dt \\
+d\theta /dt \\
+d\omega /dt
+\end{array}
+\right] }} &amp;=\underset{A}{\underbrace{\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\kappa gm^{2}\ell ^{2} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \alpha ^{2} &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta  \\
+\omega
+\end{array}
+\right] }}+\underset{b}{\underbrace{\left[
+\begin{array}{c}
+0 \\
+\kappa (J+m\ell ^{2}) \\
+0 \\
+-\kappa m\ell
+\end{array}
+\right] }}u. \\
+y &amp;=\left[
+\begin{array}{c}
+y_{1}(t) \\
+y_{2}(t)
+\end{array}
+\right] =\underset{C}{\underbrace{\left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 1 &amp; 0
+\end{array}
+\right] }}\underset{z}{\underbrace{\left[
+\begin{array}{c}
+x \\
+v \\
+\theta  \\
+\omega
+\end{array}
+\right] }},L\triangleq \left[
+\begin{array}{cc}
+l_{11} &amp; l_{12} \\
+l_{21} &amp; l_{22} \\
+l_{31} &amp; l_{32} \\
+l_{41} &amp; l_{42}
+\end{array}
+\right] \in
+\mathbb{R}
+^{4\times 2}.
+\end{aligned}\]</span> The observer for this system has the form <span class="math display">\[\begin{aligned}
+\frac{d\hat{z}}{dt} &amp;=A\hat{z}+bu+L(y-\hat{y}) \\
+\hat{y} &amp;=C\hat{z}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Multi-Output Observer for the Inverted Pendulum
+</div>
+<p>With <span class="math display">\[\begin{aligned}
+\frac{d\hat{z}}{dt} &amp;=A\hat{z}+bu+L(y-\hat{y}) \\
+\hat{y} &amp;=C\hat{z}
+\end{aligned}\]</span> subtract the system model <span class="math display">\[\begin{aligned}
+\frac{dz}{dt} &amp;=Az+bu \\
+y &amp;=Cz
+\end{aligned}\]</span> to obtain <span class="math display">\[\frac{d}{dt}(z-\hat{z})=A(z-\hat{z})-LC(z-\hat{z})=(A-LC)(z-\hat{z}).\]</span> If the eigenvalues of <span class="math inline">\(A-LC\)</span> are in the open left-half plane, <span class="math display">\[z(t)-\hat{z}(t)=e^{(A-LC)t}(z(0)-\hat{z}(0))\rightarrow 0_{4\times 1}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Multi-Output Observer for the Inverted Pendulum
+</div>
+<p>Need to find <span class="math inline">\(L\in \mathbb{R} ^{4\times 2}\)</span> to place the poles of <span class="math inline">\(A-LC.\)</span> <span class="math display">\[\begin{aligned}
+A-LC &amp;=\left[
+\begin{array}{cccc}
+0 &amp; 1 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -\kappa gm^{2}\ell ^{2} &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1 \\
+0 &amp; 0 &amp; \alpha ^{2} &amp; 0
+\end{array}
+\right] -\left[
+\begin{array}{cc}
+l_{11} &amp; l_{12} \\
+l_{21} &amp; l_{22} \\
+l_{31} &amp; l_{32} \\
+l_{41} &amp; l_{42}
+\end{array}
+\right] \left[
+\begin{array}{cccc}
+1 &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; 1 &amp; 0
+\end{array}
+\right]  \\
+&amp;=\left[
+\begin{array}{cccc}
+-l_{11} &amp; 1 &amp; -l_{12} &amp; 0 \\
+-l_{21} &amp; 0 &amp; -g\kappa m^{2}\ell ^{2}-l_{22} &amp; 0 \\
+-l_{31} &amp; 0 &amp; -l_{32} &amp; 1 \\
+-l_{41} &amp; 0 &amp; \alpha ^{2}-l_{42} &amp; 0
+\end{array}
+\right] .
+\end{aligned}\]</span> Next choose <span class="math inline">\(l_{12}=0,l_{22}=-g\kappa m^{2}\ell ^{2},l_{31}=0,l_{41}=0\)</span> so that <span class="math inline">\(A-LC\)</span> becomes <span class="math display">\[A-LC=\left[
+\begin{array}{cccc}
+-l_{11} &amp; 1 &amp; 0 &amp; 0 \\
+-l_{21} &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -l_{32} &amp; 1 \\
+0 &amp; 0 &amp; \alpha ^{2}-l_{42} &amp; 0
+\end{array}
+\right] .\]</span> <span class="math inline">\(A-LC\)</span> is now block diagonal.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Multi-Output Observer for the Inverted Pendulum
+</div>
+<p>With <span class="math display">\[A-LC=\left[
+\begin{array}{cccc}
+-l_{11} &amp; 1 &amp; 0 &amp; 0 \\
+-l_{21} &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; -l_{32} &amp; 1 \\
+0 &amp; 0 &amp; \alpha ^{2}-l_{42} &amp; 0
+\end{array}
+\right] .\]</span> we have <span class="math display">\[\begin{aligned}
+\det (sI-(A-LC)) &amp;=\det \left[
+\begin{array}{cccc}
+s+l_{11} &amp; -1 &amp; 0 &amp; 0 \\
+l_{21} &amp; s &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; s+l_{32} &amp; -1 \\
+0 &amp; 0 &amp; l_{42}-\alpha ^{2} &amp; s
+\end{array}
+\right]  \\
+&amp;=\det \left[
+\begin{array}{cc}
+s+l_{11} &amp; -1 \\
+l_{21} &amp; s
+\end{array}
+\right] \det \left[
+\begin{array}{cc}
+s+l_{32} &amp; -1 \\
+l_{42}-\alpha ^{2} &amp; s
+\end{array}
+\right]  \\
+&amp;=(s^{2}+l_{11}s+l_{21})(s^{2}+l_{32}s+l_{42}-\alpha ^{2})
+\end{aligned}\]</span> Setting <span class="math inline">\(l_{11}=r_{1}+r_{2},l_{21}=r_{1}r_{2},l_{32}=r_{3}+r_{4}, l_{42}=\alpha ^{2}+r_{3}r_{4}\)</span> <span class="math display">\[\det (sI-(A-LC))=(s+r_{1})(s+r_{2})(s+r_{3})(s+r_{4})\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Multi-Output Observer for the Inverted Pendulum
+</div>
+<p><strong>Summary</strong> The observer gain matrix <span class="math display">\[L=\left[
+\begin{array}{cc}
+r_{1}+r_{2} &amp; 0 \\
+r_{1}r_{2} &amp; -g\kappa m^{2}\ell ^{2} \\
+0 &amp; r_{3}+r_{4} \\
+0 &amp; \alpha ^{2}+r_{3}r_{4}
+\end{array}
+\right]\]</span> places the poles of <span class="math inline">\(A-LC\)</span> at <span class="math inline">\(-r_{1},-r_{2},-r_{3},-r_{4}.\)</span></p>
+<p><strong>State Estimator</strong> <span class="math display">\[\begin{aligned}
+\frac{d\hat{z}}{dt} &amp;=A\hat{z}+bu+L(y-\hat{y}) \\
+\hat{y} &amp;=C\hat{z}
+\end{aligned}\]</span> <span class="math display">\[y(t)=\left[
+\begin{array}{c}
+x(t) \\
+\theta (t)
+\end{array}
+\right] \in
+\mathbb{R}
+^{2},\hat{z}(t)=\left[
+\begin{array}{c}
+\hat{x}(t) \\
+\hat{v}(t) \\
+\hat{\theta}(t) \\
+\hat{\omega}(t)
+\end{array}
+\right] .\]</span></p>
+<ul>
+<li><p>This is a <em>multi-output</em> observer.</p></li>
+<li><p>Able to choose <span class="math inline">\(L\)</span> to arbitrarily place the closed-loop poles.</p></li>
+<li><p>We did not change to a new coordinate system in order to do this!</p>
+<ul>
+<li>Possible as <span class="math inline">\((C,A)\)</span> was in multi-output observer canonical form (lucky!).</li>
+</ul></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p><strong>Cart Model:</strong> <span class="math display">\[\begin{aligned}
+\frac{dx}{dt} &amp;=v \\
+\frac{d^{2}x}{dt^{2}} &amp;=-a\frac{dx}{dt}+bV(t)
+\end{aligned}\]</span></p>
+<p>Use experimental data to compute (identify) the parameters <span class="math inline">\(a\)</span> and <span class="math inline">\(b.\)</span></p>
+<p>Rewrite the second equation as <span class="math display">\[\left[
+\begin{array}{cc}
+-\dfrac{dx(t)}{dt} &amp; V(t)
+\end{array}
+\right] \underset{\text{unknowns}}{\underbrace{\left[
+\begin{array}{c}
+a \\
+b
+\end{array}
+\right] }}=\frac{d^{2}x(t)}{dt^{2}}\]</span></p>
+<ul>
+<li><p><span class="math inline">\(V(t),x(t),dx(t)/dt,d^{2}x(t)/dt^{2}\)</span> are measured/calculated.</p></li>
+<li><p>This equation holds for all time <span class="math inline">\(t\)</span> for some <em>unknown</em> constants <span class="math inline">\(a\)</span> and <span class="math inline">\(b.\)</span></p></li>
+<li><p><span class="math inline">\(T\)</span> is the sample period. <span class="math display">\[\frac{dx(nT)}{dt}\triangleq \left. \frac{dx(t)}{dt}\right\vert _{t=nT},\frac{d^{2}x(nT)}{dt^{2}}\triangleq \left. \frac{d^{2}x(t)}{dt^{2}}
+\right\vert _{t=nT},V(nT)\triangleq \left. V(t)\right\vert _{t=nT}.\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>We have</p>
+<p><span class="math display">\[\underset{W(nT)}{\underbrace{\left[
+\begin{array}{cc}
+-\dfrac{dx(nT)}{dt} &amp; V(nT)
+\end{array}
+\right] }}\text{}\underset{K}{\underbrace{\left[
+\begin{array}{c}
+a \\
+b
+\end{array}
+\right] }}=\underset{y(nT)}{\underbrace{\frac{d^{2}x(nT)}{dt^{2}}}}\]</span> or <span class="math display">\[W(nT)K=y(nT).\]</span></p>
+<ul>
+<li><p><span class="math inline">\(W\)</span> is referred to as the <em>regressor</em> matrix.</p></li>
+<li><p>Find the <em>constant</em> vector <span class="math inline">\(K\)</span> that satisfies this for all <span class="math inline">\(n\)</span>!</p></li>
+</ul>
+<p>To proceed, multiply both sides <span class="math inline">\(W^{T}(nT)\)</span> to obtain <span class="math display">\[W^{T}(nT)W(nT)K=W^{T}(nT)y(nT)\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>From previous slide: <span class="math display">\[W^{T}(nT)W(nT)K=W^{T}(nT)y(nT).\]</span></p>
+<p>Here <span class="math display">\[\begin{aligned}
+W^{T}(nT)W(nT) &amp;=\left[
+\begin{array}{c}
+-\dfrac{dx(nT)}{dt} \\
+V(nT)
+\end{array}
+\right] \left[
+\begin{array}{cc}
+-\dfrac{dx(nT)}{dt} &amp; V(nT)
+\end{array}
+\right] \\
+&amp;=\left[
+\begin{array}{cr}
+\left( \dfrac{dx(nT)}{dt}\right) ^{2} &amp; -\dfrac{dx(nT)}{dt}V(nT) \\
+&amp;  \\
+-\dfrac{dx(nT)}{dt}V(nT) &amp; V^{2}(nT)
+\end{array}
+\right]
+\end{aligned}\]</span> and <span class="math display">\[W^{T}(nT)y(nT)=\left[
+\begin{array}{c}
+-\dfrac{dx(nT)}{dt} \\
+V(nT)
+\end{array}
+\right] \frac{d^{2}x(nT)}{dt^{2}}=\left[
+\begin{array}{c}
+-\dfrac{dx(nT)}{dt}\dfrac{d^{2}x(nT)}{dt^{2}} \\
+V(nT)\dfrac{d^{2}x(nT)}{dt^{2}}
+\end{array}
+\right] .\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>For compactness, write</p>
+<p><span class="math display">\[\dot{x}_{n}=\frac{dx(nT)}{dt},
+\qquad \ddot{x}_{n}=\frac{d^{2}x(nT)}{dt^{2}},
+\qquad V_{n}=V(nT).\]</span></p>
+<p>Then <span class="math inline">\(W_{n}^{T}W_{n}K=W_{n}^{T}y_{n}\)</span> becomes</p>
+<p><span class="math display">\[\left[
+\begin{array}{cc}
+\dot{x}_{n}^{2} &amp; -\dot{x}_{n}V_{n} \\
+-\dot{x}_{n}V_{n} &amp; V_{n}^{2}
+\end{array}
+\right]
+\left[
+\begin{array}{c}
+a \\
+b
+\end{array}
+\right] =\left[
+\begin{array}{c}
+-\dot{x}_{n}\ddot{x}_{n} \\
+V_{n}\ddot{x}_{n}
+\end{array}
+\right] .\]</span></p>
+<p>The matrix is never invertible, because</p>
+<p><span class="math display">\[\begin{aligned}
+\det\!\left(W_{n}^{T}W_{n}\right)
+&amp;=\det\!\left[
+\begin{array}{cc}
+\dot{x}_{n}^{2} &amp; -\dot{x}_{n}V_{n}\\
+-\dot{x}_{n}V_{n} &amp; V_{n}^{2}
+\end{array}\right]\\
+&amp;=\dot{x}_{n}^{2}V_{n}^{2}-\left(\dot{x}_{n}V_{n}\right)^{2}\\
+&amp;=0.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>To obtain an invertible matrix <strong>sum</strong> both sides of <span class="math display">\[W^{T}(nT)W(nT)K=W^{T}(nT)y(nT)\]</span></p>
+<p>to obtain <span class="math display">\[\underset{R_{W}\in
+\mathbb{R}
+^{2\times 2}}{\underbrace{\left( \sum_{n=1}^{N}W^{T}(nT)W(nT)\right) }}K=
+\underset{R_{Wy}\in
+\mathbb{R}
+^{2}}{\underbrace{\sum_{n=1}^{N}W^{T}(nT)y(nT)}}\]</span> or <span class="math display">\[R_{W}K=R_{Wy}.\]</span></p>
+<p>Suppose <span class="math inline">\(R_{W}\triangleq \sum\limits_{n=1}^{N}W^{T}(nT)W(nT)\)</span> is invertible. Then <span class="math display">\[K=R_{W}^{-1}R_{Wy}.\]</span></p>
+<ul>
+<li><p>This value for <span class="math inline">\(K\)</span> is called the <em>least-squares</em> solution (explained below).</p></li>
+<li><p>Main Issue:&nbsp;&nbsp;Make sure <span class="math inline">\(R_{W}\)</span> is invertible.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide dense-slide boundary-safe-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p><strong>Least-Squares Approximation</strong></p>
+<p>For all <span class="math inline">\(n\)</span> we assumed that the following equation held: <span class="math display">\[\underset{W(nT)}{\underbrace{\left[
+\begin{array}{cc}
+-\dfrac{dx(nT)}{dt} &amp; V(t)
+\end{array}
+\right] }}\underset{K}{\underbrace{\left[
+\begin{array}{c}
+a \\
+b
+\end{array}
+\right] }}=\underset{y(nT)}{\underbrace{\frac{d^{2}x(t)}{dt^{2}}}}\]</span></p>
+<p>We then derived <span class="math inline">\(K=R_{W}^{-1}R_{Wy}\)</span>.</p>
+<ul>
+<li><p>In the “real-world”, this is never true.</p></li>
+<li><p>The model of the cart is not exact.</p></li>
+<li><p>The voltage <span class="math inline">\(V(t)\)</span>, and position <span class="math inline">\(x(t)\)</span> cannot be measured perfectly.</p></li>
+<li><p>The derivatives <span class="math inline">\(dx(t)/dt,d^{2}x/dt^{2}\)</span> cannot be computed exactly.</p></li>
+</ul>
+<p><em>Conclusion:</em>&nbsp;There will <em>not</em> be a single fixed parameter vector <span class="math inline">\(K\)</span> such that for all <span class="math inline">\(n\)</span> <span class="math display">\[W(nT)K=y(nT).\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>Run an experiment and collect the data <span class="math inline">\(x(t)\)</span> and <span class="math inline">\(V(t)\)</span>. From these data, form</p>
+<p><span class="math display">\[W_{n}=\left[\begin{array}{cc}-\dot{x}_{n}&amp;V_{n}\end{array}\right],
+\qquad
+K=\left[\begin{array}{c}a\\b\end{array}\right],
+\qquad y_{n}=\ddot{x}_{n}.\]</span></p>
+<p>The least-squares candidate is</p>
+<p><span class="math display">\[\hat K=R_{W}^{-1}R_{Wy}.\]</span></p>
+<p>For any candidate <span class="math inline">\(K\)</span>, define the predicted output and error by</p>
+<p><span class="math display">\[\hat y_{n}=W_{n}K,
+\qquad e_{n}=y_{n}-\hat y_{n}.\]</span></p>
+<p>Choose <span class="math inline">\(K\)</span> to minimize the total squared error</p>
+<p><span class="math display">\[\begin{aligned}
+E^{2}(K)
+&amp;\triangleq \sum_{n=1}^{N}\left(y_{n}-W_{n}K\right)^{T}
+\left(y_{n}-W_{n}K\right)\\
+&amp;=\sum_{n=1}^{N}e_{n}^{2}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide quality-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<ul>
+<li><p><span class="math inline">\(y(nT)\)</span> is considered the <em>output.</em></p></li>
+<li><p><span class="math inline">\(\hat{y}(nT)=W(nT)K\)</span> is the <em>predicted output</em> based on <span class="math inline">\(K.\)</span></p></li>
+<li><p><span class="math inline">\(e(nT)\)</span> is the <em>error</em> and the total <em>squared error</em> is <span class="math display">\[E^{2}(K)\triangleq \sum_{n=1}^{N}\left( y(nT)-W(nT)K\right)
+^{T}\left( y(nT)-W(nT)K\right) .\]</span></p></li>
+<li><p>If <span class="math inline">\(K\)</span> minimizes <span class="math inline">\(E^{2}(K)\)</span> then it is the <em>least-squares</em> estimate.</p></li>
+<li><p>We next show that <span class="math inline">\(\hat{K}\triangleq R_{W}^{-1}R_{Wy}\)</span> is the least-squares estimate.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<ul>
+<li><span class="math inline">\(\hat{K}\triangleq R_{W}^{-1}R_{Wy}\)</span> is the least-squares estimate.</li>
+</ul>
+<p><span class="math display">\[\begin{aligned}
+E^{2}(K)
+&amp;=\sum_{n=1}^{N}\left(y_{n}-W_{n}K\right)^{T}
+\left(y_{n}-W_{n}K\right)\\
+&amp;=\sum_{n=1}^{N}\left(
+y_{n}^{T}y_{n}-y_{n}^{T}W_{n}K-K^{T}W_{n}^{T}y_{n}
++K^{T}W_{n}^{T}W_{n}K\right)\\
+&amp;=R_{y}-R_{yW}K-K^{T}R_{Wy}+K^{T}R_{W}K.
+\end{aligned}\]</span></p>
+<p>Here</p>
+<p><span class="math display">\[\begin{aligned}
+R_{y}&amp;=\sum_{n=1}^{N}y_{n}^{T}y_{n}, &amp;
+R_{yW}&amp;=\sum_{n=1}^{N}y_{n}^{T}W_{n},\\
+R_{Wy}&amp;=\sum_{n=1}^{N}W_{n}^{T}y_{n}, &amp;
+R_{W}&amp;=\sum_{n=1}^{N}W_{n}^{T}W_{n}.
+\end{aligned}\]</span></p>
+<p>Therefore, <span class="math inline">\(R_{yW}=R_{Wy}^{T}\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide quality-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<ul>
+<li><p>We have shown <span class="math display">\[E^{2}(K)=R_{y}-R_{yW}K-K^{T}R_{Wy}+K^{T}R_{W}K.\]</span></p></li>
+<li><p>We want to show <span class="math display">\[E^{2}(K)=\underset{\geq 0}{\underbrace{R_{y}-R_{yW}R_{W}^{-1}R_{Wy}}}+
+\underset{\geq 0}{\underbrace{\left( K-R_{W}^{-1}R_{Wy}\right)
+^{T}R_{W}\left( K-R_{W}^{-1}R_{Wy}\right) }}.\]</span></p></li>
+<li><p>We also want to show <span class="math inline">\(E^{2}(K)\)</span> is minimized by taking <span class="math inline">\(K=R_{W}^{-1}R_{Wy}.\)</span></p></li>
+<li><p>We need to digress to go over some matrix facts.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><em>Transposes</em></p>
+<p>For any two matrices, we have <span class="math display">\[(AB)^{T}=B^{T}A^{T}.\]</span></p>
+<p><strong>Example</strong> <span class="math display">\[A=\left[
+\begin{array}{cc}
+1 &amp; 2 \\
+3 &amp; 4
+\end{array}
+\right] ,B=\left[
+\begin{array}{cc}
+5 &amp; 6 \\
+7 &amp; 8
+\end{array}
+\right]\]</span></p>
+<p><span class="math display">\[(AB)^{T}=\left( \left[
+\begin{array}{cc}
+1 &amp; 2 \\
+3 &amp; 4
+\end{array}
+\right] \left[
+\begin{array}{cc}
+5 &amp; 6 \\
+7 &amp; 8
+\end{array}
+\right] \right) ^{T}=\left( \left[
+\begin{array}{cc}
+19 &amp; 22 \\
+43 &amp; 50
+\end{array}
+\right] \right) ^{T}=\left[
+\begin{array}{cc}
+19 &amp; 43 \\
+22 &amp; 50
+\end{array}
+\right]\]</span></p>
+<p><span class="math display">\[B^{T}A^{T}=\left( \left[
+\begin{array}{cc}
+5 &amp; 6 \\
+7 &amp; 8
+\end{array}
+\right] \right) ^{T}\left( \left[
+\begin{array}{cc}
+1 &amp; 2 \\
+3 &amp; 4
+\end{array}
+\right] \right) ^{T}=\left[
+\begin{array}{cc}
+5 &amp; 7 \\
+6 &amp; 8
+\end{array}
+\right] \left[
+\begin{array}{cc}
+1 &amp; 3 \\
+2 &amp; 4
+\end{array}
+\right] =\left[
+\begin{array}{cc}
+19 &amp; 43 \\
+22 &amp; 50
+\end{array}
+\right]\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><em>Transposes</em></p>
+<p><strong>Example</strong></p>
+<p><span class="math display">\[A=\left[
+\begin{array}{cc}
+1 &amp; 2
+\end{array}
+\right] ,B=\left[
+\begin{array}{cc}
+5 &amp; 6 \\
+7 &amp; 8
+\end{array}
+\right]\]</span></p>
+<p><span class="math display">\[(AB)^{T}=\left( \left[
+\begin{array}{cc}
+1 &amp; 2
+\end{array}
+\right] \left[
+\begin{array}{cc}
+5 &amp; 6 \\
+7 &amp; 8
+\end{array}
+\right] \right) ^{T}=\left( \left[
+\begin{array}{cc}
+19 &amp; 22
+\end{array}
+\right] \right) ^{T}=\left[
+\begin{array}{c}
+19 \\
+22
+\end{array}
+\right]\]</span> and <span class="math display">\[B^{T}A^{T}=\left( \left[
+\begin{array}{cc}
+5 &amp; 6 \\
+7 &amp; 8
+\end{array}
+\right] \right) ^{T}\left( \left[
+\begin{array}{cc}
+1 &amp; 2
+\end{array}
+\right] \right) ^{T}=\left[
+\begin{array}{cc}
+5 &amp; 7 \\
+6 &amp; 8
+\end{array}
+\right] \left[
+\begin{array}{c}
+1 \\
+2
+\end{array}
+\right] =\left[
+\begin{array}{c}
+19 \\
+22
+\end{array}
+\right]\]</span></p>
+<ul>
+<li>For any two matrices of the same dimensions: <span class="math display">\[(A+B)^{T}=A^{T}+B^{T}.\]</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><em>Transposes and Inverses</em></p>
+<p>Let <span class="math inline">\(A\)</span> be an invertible matrix. That is, <span class="math inline">\(\det A\neq 0\)</span>. Then <span class="math display">\[\left( A^{T}\right) ^{-1}=\left( A^{-1}\right) ^{T}.\]</span></p>
+<p><strong>Example</strong> <span class="math display">\[A=\left[
+\begin{array}{cc}
+1 &amp; 2 \\
+3 &amp; 4
+\end{array}
+\right]\]</span> <span class="math display">\[\begin{aligned}
+(A^{T})^{-1} &amp;=\left( \left[
+\begin{array}{cc}
+1 &amp; 2 \\
+3 &amp; 4
+\end{array}
+\right] ^{T}\right) ^{-1}=\left( \left[
+\begin{array}{cc}
+1 &amp; 3 \\
+2 &amp; 4
+\end{array}
+\right] \right) ^{-1}=-\frac{1}{2}\left[
+\begin{array}{rr}
+4 &amp; -3 \\
+-2 &amp; 1
+\end{array}
+\right] \\
+(A^{-1})^{T} &amp;=\left( \left[
+\begin{array}{cc}
+1 &amp; 2 \\
+3 &amp; 4
+\end{array}
+\right] ^{-1}\right) ^{T}=\left( -\frac{1}{2}\left[
+\begin{array}{rr}
+4 &amp; -2 \\
+-3 &amp; 1
+\end{array}
+\right] \right) ^{T}=-\frac{1}{2}\left[
+\begin{array}{rr}
+4 &amp; -3 \\
+-2 &amp; 1
+\end{array}
+\right]
+\end{aligned}\]</span></p>
+<ul>
+<li>With <span class="math inline">\(\det A\neq 0,\det B\neq 0\)</span> we have <span class="math inline">\((AB)^{-1}=B^{-1}A^{-1}.\)</span> <span class="math display">\[(AB)(B^{-1}A^{-1})=ABB^{-1}A^{-1}=AA^{-1}=I\]</span></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><em>Symmetric and Positive Definite Matrices</em></p>
+<p>A matrix <span class="math inline">\(Q\)</span> is <em>symmetric</em> if <span class="math display">\[Q^{T}=Q.\]</span> A symmetric matrix <span class="math inline">\(Q\in \mathbb{R} ^{m\times m}\)</span> is <em>positive semidefinite</em> if for all <span class="math inline">\(x\in \mathbb{R} ^{m}\)</span>, <span class="math display">\[x^{T}Qx\geq 0.\]</span> A symmetric matrix <span class="math inline">\(Q\in \mathbb{R} ^{m\times m}\)</span> is <em>positive definite</em> if for all <span class="math inline">\(x\in \mathbb{R} ^{m}\)</span> <span class="math display">\[x^{T}Qx\geq 0\]</span> &nbsp;<em>and</em> <span class="math display">\[x^{T}Qx=0\]</span> if and only if <span class="math inline">\(x\)</span> is the zero vector, i.e., <span class="math inline">\(x=0_{m\times 1}\)</span>.</p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide quality-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><strong>Example</strong> <em>Positive Definite Matrix</em> <span class="math display">\[Q_{1}=\left[
+\begin{array}{cc}
+1 &amp; 0 \\
+0 &amp; 2
+\end{array}
+\right] ,Q_{1}=Q_{1}^{T}\]</span></p>
+<ul>
+<li><p>For all <span class="math inline">\(x\in \mathbb{R} ^{2}\)</span> <span class="math display">\[x^{T}Q_{1}x=\left[
+\begin{array}{cc}
+x_{1} &amp; x_{2}
+\end{array}
+\right] ^{T}\left[
+\begin{array}{cc}
+1 &amp; 0 \\
+0 &amp; 2
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] =x_{1}^{2}+2x_{2}^{2}\geq 0\]</span></p></li>
+<li><p><span class="math inline">\(x^{T}Q_{1}x=0\)</span> only if <span class="math inline">\(x_{1}=0,x_{2}=0\)</span>.</p></li>
+<li><p><span class="math inline">\(Q_{1}\)</span> is positive definite.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><strong>Example</strong> <em>Positive Semi Definite Matrix</em> <span class="math display">\[Q_{2}=\left[
+\begin{array}{cc}
+0 &amp; 0 \\
+0 &amp; 2
+\end{array}
+\right]\]</span></p>
+<ul>
+<li><p><span class="math inline">\(Q_{2}=Q_{2}^{T}\)</span>.</p></li>
+<li><p>For all <span class="math inline">\(x\in \mathbb{R} ^{2}\)</span> <span class="math display">\[x^{T}Q_{2}x=\left[
+\begin{array}{cc}
+x_{1} &amp; x_{2}
+\end{array}
+\right] ^{T}\left[
+\begin{array}{cc}
+0 &amp; 0 \\
+0 &amp; 2
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] =2x_{2}^{2}\geq 0.\]</span></p></li>
+<li><p><span class="math inline">\(Q_{2}\)</span> is positive semidefinite.</p></li>
+<li><p>With <span class="math inline">\(x=\left[ \begin{array}{c} 1 \\ 0 \end{array} \right]\)</span> we have <span class="math inline">\(x^{T}Q_{2}x=0.\Longrightarrow Q_{2}\)</span> is <em>not</em> positive definite.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Digression - Matrix Facts
+</div>
+<p><strong>Example &nbsp;</strong><em>Non Definite Matrix</em></p>
+<p><span class="math display">\[Q_{3}=\left[
+\begin{array}{cc}
+-1 &amp; 0 \\
+0 &amp; 2
+\end{array}
+\right]\]</span></p>
+<ul>
+<li><p><span class="math inline">\(Q_{3}=Q_{3}^{T}\)</span></p></li>
+<li><p>We compute <span class="math display">\[x^{T}Q_{3}x=\left[
+\begin{array}{cc}
+x_{1} &amp; x_{2}
+\end{array}
+\right] ^{T}\left[
+\begin{array}{cc}
+-1 &amp; 0 \\
+0 &amp; 2
+\end{array}
+\right] \left[
+\begin{array}{c}
+x_{1} \\
+x_{2}
+\end{array}
+\right] =-x_{1}^{2}+2x_{2}^{2}\]</span></p></li>
+<li><p><span class="math inline">\(x^{T}Q_{3}x&gt;0\)</span> if <span class="math inline">\(x=\left[ \begin{array}{c} 0 \\ 1 \end{array} \right] .\)</span></p></li>
+<li><p><span class="math inline">\(x^{T}Q_{3}x&lt;0\)</span> if <span class="math inline">\(x=\left[ \begin{array}{c} 1 \\ 0 \end{array} \right]\)</span>.</p>
+<p><span class="math inline">\(\Longrightarrow Q_{3}\)</span> is <strong>neither</strong> positive definite nor positive semidefinite.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>We have shown <span class="math display">\[E^{2}(K)=R_{y}-R_{yW}K-K^{T}R_{Wy}+K^{T}R_{W}K\]</span></p>
+<ul>
+<li><p>We want to show <span class="math display">\[E^{2}(K)=R_{y}-R_{yW}R_{W}^{-1}R_{Wy}+\left( K-R_{W}^{-1}R_{Wy}\right)
+^{T}R_{W}\left( K-R_{W}^{-1}R_{Wy}\right)\]</span></p></li>
+<li><p>We still want to show this is minimized by taking <span class="math inline">\(K=R_{W}^{-1}R_{Wy}.\)</span></p></li>
+<li><p>We first show that <span class="math display">\[R_{W}\triangleq \sum_{n=1}^{N}W^{T}(nT)W(nT)\in
+\mathbb{R}
+^{2\times 2}\]</span> is a <em>symmetric positive semidefinite</em> matrix.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>As <span class="math display">\[R_{W}\triangleq \sum_{n=1}^{N}W^{T}(nT)W(nT)\in
+\mathbb{R}
+^{2\times 2}\]</span> we have</p>
+<p><span class="math display">\[\begin{aligned}
+R_{W}^{T}\triangleq \left( \sum_{n=1}^{N}W^{T}(nT)W(nT)\right) ^{T}
+&amp;=\sum_{n=1}^{N}\left( W^{T}(nT)W(nT)\right) ^{T} \\
+&amp;=\sum_{n=1}^{N}W^{T}(nT)\left( W^{T}(nT)\right) ^{T} \\
+&amp;=\sum_{n=1}^{N}W^{T}(nT)W(nT) \\
+&amp;=R_{W}.
+\end{aligned}\]</span></p>
+<ul>
+<li><span class="math inline">\(R_{W}\)</span> is symmetric.</li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p><span class="math display">\[\begin{aligned}
+x^{T}R_{W}x\triangleq \sum_{n=1}^{N}x^{T}W^{T}(nT)W(nT)x
+&amp;=\sum_{n=1}^{N}\left( W(nT)x\right) ^{T}\left( W(nT)x\right) \\
+&amp;=\sum_{n=1}^{N}||W(nT)x||^{2}\geq 0
+\end{aligned}\]</span></p>
+<ul>
+<li><span class="math inline">\(R_{W}\)</span> is <em>positive semidefinite</em>.</li>
+</ul>
+<p>As <span class="math display">\[R_{Wy}\triangleq \sum_{n=1}^{N}W^{T}(nT)y(nT)\in
+\mathbb{R}
+^{2}\]</span> we have <span class="math display">\[R_{Wy}^{T}\triangleq \left( \sum_{n=1}^{N}W^{T}(nT)y(nT)\right)
+^{T}=\sum_{n=1}^{N}y^{T}(nT)W(nT)=R_{yW}\in
+\mathbb{R}
+^{1\times 2}.\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>Assume <span class="math inline">\(R_{W}^{-1}\)</span> exists and define</p>
+<p><span class="math display">\[\Delta\triangleq K-R_{W}^{-1}R_{Wy}.\]</span></p>
+<p>We want to show</p>
+<p><span class="math display">\[\begin{aligned}
+E^{2}(K) &amp;=R_{y}-R_{yW}K-K^{T}R_{Wy}+K^{T}R_{W}K \\
+&amp;=R_{y}-R_{yW}R_{W}^{-1}R_{Wy}+\Delta^{T}R_{W}\Delta.
+\end{aligned}\]</span></p>
+<p>Using <span class="math inline">\(R_{Wy}^{T}=R_{yW}\)</span> and <span class="math inline">\((R_{W}^{-1})^{T}=R_{W}^{-1}\)</span>,</p>
+<p><span class="math display">\[\begin{aligned}
+\Delta^{T}R_{W}\Delta
+&amp;=\left(K^{T}-R_{yW}R_{W}^{-1}\right)
+R_{W}\left(K-R_{W}^{-1}R_{Wy}\right)\\
+&amp;=K^{T}R_{W}K-K^{T}R_{Wy}-R_{yW}K
++R_{yW}R_{W}^{-1}R_{Wy}.
+\end{aligned}\]</span></p>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide equation-flow-slide spread-equations-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<p>Substituting the expansion of <span class="math inline">\(\Delta^{T}R_{W}\Delta\)</span> gives</p>
+<p><span class="math display">\[\begin{aligned}
+R_{y}-R_{yW}R_{W}^{-1}R_{Wy}+\Delta^{T}R_{W}\Delta
+&amp;=R_{y}+K^{T}R_{W}K-K^{T}R_{Wy}-R_{yW}K\\
+&amp;=E^{2}(K).
+\end{aligned}\]</span></p>
+<ul>
+<li><p>Must specify <span class="math inline">\(v(t),i(t)\)</span> so that <span class="math inline">\(R_{W}\)</span> is invertible.</p></li>
+<li><p><span class="math inline">\(R_{W}\)</span> positive semidefinite and invertible <span class="math inline">\(\Longrightarrow R_{W}\)</span> is <em>positive definite.</em></p></li>
+<li><p>Since <span class="math inline">\(\Delta\in\mathbb{R}^{2}\)</span>, choose <span class="math inline">\(K\)</span> to make</p>
+<p><span class="math display">\[E^{2}(K)=R_{y}-R_{yW}R_{W}^{-1}R_{Wy}+\Delta^{T}R_{W}\Delta\]</span></p>
+<p>as small as possible.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<ul>
+<li><p>Choose <span class="math inline">\(K\)</span> to minimize <span class="math display">\[E^{2}(K)=R_{y}-R_{yW}R_{W}^{-1}R_{Wy}+\underset{\in
+\mathbb{R}
+^{1\times 2}}{\underbrace{(K-R_{W}^{-1}R_{Wy})^{T}}}\underset{\in
+\mathbb{R}
+^{2\times 2}}{\underbrace{R_{W}}}\underset{\in
+\mathbb{R}
+^{2}}{\underbrace{(K-R_{W}^{-1}R_{Wy})}}.\]</span></p></li>
+<li><p><span class="math inline">\(R_{W}\)</span> positive definite.</p>
+<p><span class="math inline">\(\qquad\)</span>So for all <span class="math inline">\(K\in \mathbb{R} ^{2}\)</span> we have <span class="math display">\[(K-R_{W}^{-1}R_{Wy})^{T}R_{W}(K-R_{W}^{-1}R_{Wy})\geq 0\]</span></p>
+<p><em>and</em> this equals zero if and only if <span class="math inline">\(K-R_{W}^{-1}R_{Wy}=\left[ \begin{array}{c} 0 \\ 0 \end{array} \right]\)</span>.</p></li>
+<li><p><span class="math inline">\(E^{2}(K)\)</span> is minimized for <span class="math inline">\(K=\hat{K}\triangleq R_{W}^{-1}R_{Wy}\)</span>!</p></li>
+<li><p><span class="math inline">\(K=\hat{K}=R_{W}^{-1}R_{Wy}\)</span> results in the <em>least</em> squared error.</p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide quality-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<ul>
+<li><p>How good is the least-squares estimate?</p></li>
+<li><p>The true value of <span class="math inline">\(K\)</span> is not known!</p></li>
+<li><p>With <span class="math inline">\(K=\hat{K}\triangleq R_{W}^{-1}R_{Wy}\)</span> we have <span class="math display">\[E^{2}(K)_{\mid K=\hat{K}\triangleq
+R_{W}^{-1}R_{Wy}}=R_{y}-R_{yW}R_{W}^{-1}R_{Wy}.\]</span></p></li>
+<li><p>As <span class="math inline">\(E^{2}(K)=R_{y}+K^{T}R_{W}K-K^{T}R_{Wy}-R_{yW}K,\)</span> we have <span class="math display">\[E^{2}(K)_{\mid K=0}=R_{y}.\]</span></p></li>
+<li><p><span class="math inline">\(R_{W},R_{W}^{-1}\)</span> are both positive definite so we also have <span class="math display">\[E^{2}(\hat{K})=R_{y}-R_{yW}R_{W}^{-1}R_{Wy}\leq R_{y}=E^{2}(0)\]</span></p></li>
+<li><p>If <span class="math inline">\(K=\hat{K}\triangleq R_{W}^{-1}R_{Wy}\)</span> is to be a good estimate then we must have <span class="math display">\[\frac{E^{2}(\hat{K})}{E^{2}(0)}=\frac{R_{y}-R_{yW}R_{W}^{-1}R_{Wy}}{R_{y}}
+\ll 1.\]</span></p></li>
+</ul>
+</div>
+</section>
+<section class="slide level2">
+
+<div class="compact-slide expanded-body-slide">
+<div class="slide-title">
+Least Squares Parameter Identification
+</div>
+<ul>
+<li>Compare the minimum squared error <span class="math inline">\(E^{2}(K)_{\mid K=R_{W}^{-1}R_{Wy}}\)</span> to <span class="math inline">\(E^{2}(0)\)</span>:</li>
+</ul>
+<p><span class="math display">\[\mathbf{Error\ Index}\triangleq \sqrt{\frac{E^{2}(\hat{K})}{E^{2}(0)}}=
+\sqrt{\frac{R_{y}-R_{yW}R_{W}^{-1}R_{Wy}}{R_{y}}}\leq 1\]</span></p>
+<ul>
+<li><p>If this error index is close to <span class="math inline">\(1\)</span>, then <span class="math inline">\(K=R_{W}^{-1}R_{Wy}\)</span></p>
+<p>is not much better than choosing <span class="math inline">\(K=0!\)</span></p></li>
+<li><p>If <span class="math inline">\(\sqrt{\dfrac{E^{2}(\hat{K})}{E^{2}(0)}}\approx 1\)</span> then probably the model is incorrect.</p></li>
+</ul>
+</div>
 
 
 </section>
@@ -159,7 +2740,7 @@ John N. Chiasson and Aykut C. Satici
   <div class="quarto-auto-generated-content" style="display: none;">
 <p><img src="../../../images/monogram_solid-blk.png" class="slide-logo"></p>
 <div class="footer footer-default">
-<p><a href="../../../teaching/ug_courses/smac/index.html">← Course Home</a> · System Modeling and Control · Chapter 15</p>
+<p><a href="../../../teaching/ug_courses/smac/index.html">← Course Home</a> · System Modeling and Control · Chapter 16</p>
 </div>
 </div></div>
 
@@ -337,12 +2918,12 @@ John N. Chiasson and Aykut C. Satici
         // The "normal" size of the presentation, aspect ratio will be preserved
         // when the presentation is scaled to fit different resolutions. Can be
         // specified using percentage units.
-        width: 1050,
+        width: 1600,
 
-        height: 700,
+        height: 900,
 
         // Factor of the display size that should remain empty around the content
-        margin: 0.1,
+        margin: 4.0e-2,
 
         math: {
           mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
