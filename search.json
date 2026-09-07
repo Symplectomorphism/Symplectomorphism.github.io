@@ -8465,11 +8465,1061 @@
     ]
   },
   {
-    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html",
-    "href": "teaching/ug_courses/systems_architecture/chapter16.html",
-    "title": "Satici Lab",
-    "section": "",
-    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$",
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#learning-objectives",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#learning-objectives",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Learning objectives",
+    "text": "Learning objectives\n\nFormulate decisions, metrics, a value function, and constraints.\nRecognize six recurring decision patterns.\nExplain the tradeoffs behind common architectural styles.\nEstimate search-space size and choose an exploration method.\nCritique encodings, decomposition, and heuristic results.\n\n\n\nAsk: “Last chapter we read a tradespace. What must exist before we can generate those points?” A representation of candidates, a validity check, and an evaluation model.\nDistinguish the architect’s judgment from a programmed decision. A solver cannot supply missing stakeholder priorities or establish whether the chosen model is appropriate.\nThis is a full chapter treatment. Suggested teaching breaks follow ASSIGNING, CONNECTING, and §16.5. The exercises can be used as pair discussions or homework.\nThe learning goal is to formulate and audit a small problem, rather than implement an industrial optimization package.\n\nSource: Crawley, Cameron & Selva (2016), §16.1, pp. 373–374.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#six-recurring-architecting-tasks",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#six-recurring-architecting-tasks",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Six recurring architecting tasks",
+    "text": "Six recurring architecting tasks\n\n\n\nTask\nDecision to make\n\n\n\n\nDecompose form or function\nWhich elements belong together?\n\n\nMap function to form\nWhich objects perform which processes?\n\n\nSpecialize\nWhich solution-specific concept?\n\n\nCharacterize\nWhich attribute values?\n\n\nConnect\nWhich interfaces or operational relationships?\n\n\nSelect goals\nWhich candidate goals define the scope?\n\n\n\n\n\nConnect to OPM: processes express function, objects express form, and their relations describe how the system works. Choosing the allocation is an architectural decision; entering the chosen allocation in an OPM model records the result.\nDecomposition connects to Chapters 3–8 and 13; mapping to Chapters 6–8 and 12; specialization and characterization to Chapters 4, 7, 13, and 14; connectivity to Chapters 4, 5, and 7; goal selection to Chapter 11.\nAsk for a campus robot example of each task. “Choose lithium-ion batteries” specializes form; “choose 500 Wh capacity” characterizes it.\nThere are six tasks and six patterns, but their mapping is many-to-many.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.1, p. 374.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#architectures-as-decision-vectors",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#architectures-as-decision-vectors",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Architectures as decision vectors",
+    "text": "Architectures as decision vectors\nFor decision \\(i\\), choose one value from an allowed set \\(D_i\\):\n\\[A=(x_1,\\ldots,x_n),\\qquad x_i\\in D_i.\\]\nAn Apollo-style encoding includes:\n[EOR, earthLaunch, LOR, moonArrival, moonDeparture, cmCrew, lmCrew, smFuel, lmFuel]\nThe dictionary and ordering give the vector meaning.\n\n\nRead the vector as a compact architecture description, not a complete engineering specification. Units, option dictionaries, and dependencies belong in the model documentation.\nReuse Chapter 14’s naming: earthLaunch has alternatives orbit/direct. An illustrative valid vector is [no, orbit, yes, orbit, orbit, 3, 2, storable, storable].\nThe printed §16.2 Apollo vector starts with EOR=yes while calling itself the actual architecture. This conflicts with the LOR-only configuration used in our Chapter 14 discussion. Do not teach EOR=yes as the historical Apollo choice. The purpose here is the encoding.\nAsk whether swapping the two crew entries preserves meaning. It does not unless the dictionary also changes.\n\nSource: Crawley, Cameron & Selva (2016), §16.2, p. 375.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#the-value-function",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#the-value-function",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "The value function",
+    "text": "The value function\n\\[A\\ \\xrightarrow{\\quad V\\quad}\\ M=(M_1,\\ldots,M_p)\\]\n\nInput: a candidate architecture.\nModel: physics, cost estimates, risk models, and documented judgments.\nOutput: metrics that reflect stakeholder needs.\n\nApollo: minimize launched mass and maximize mission success.\n\n\nThe value function is an evaluator that can return a vector. It need not be a single weighted utility score.\nAsk what lives inside Apollo’s V: the rocket equation, mass assumptions, and the operation-level risk table. Changing an assumption can move many points in the tradespace.\nExplain the compression twice: the architecture vector leaves out design detail, and the metric vector leaves out stakeholder detail. Each compression needs justification.\nThe arrow is the input/output abstraction of Fig. 16.1, not an OPM procedural link. Keep mathematical evaluation distinct from the system’s physical function.\n\nSource: Crawley, Cameron & Selva (2016), §16.2 and Fig. 16.1, pp. 375–376.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#multiple-objectives-and-feasibility",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#multiple-objectives-and-feasibility",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Multiple objectives and feasibility",
+    "text": "Multiple objectives and feasibility\nLet \\(\\mathcal F\\) be the architectures that satisfy all hard constraints.\n\\[\\mathcal A^*=\\{A\\in\\mathcal F:\\nexists B\\in\\mathcal F\\text{ with }V(B)\\succ V(A)\\}\\]\nHere \\(\\succ\\) means dominates in the stated metric directions.\n\nState the preferred direction of every metric.\nRetain non-dominated tradeoffs.\nUse stakeholder preferences to choose among them.\n\n\n\nThe compact Pareto expression identifies candidates through their metric values. Equal metric vectors can correspond to several distinct architectures, all of which may deserve further comparison.\nThe book writes an argmax of a metric vector. Interpret this as multiobjective non-dominance, not as a request for one vector that independently maximizes every component. Mass is a minimization metric unless its sign is reversed.\nAsk students why “best mass and best reliability” might describe no single architecture.\nDominance is conditional on this feasible set and these metrics. A non-dominated point is not a certificate of real-world desirability.\n\nSource: Crawley, Cameron & Selva (2016), §16.2, p. 375; Chapter 15 Pareto analysis.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#useful-metrics-and-traceable-judgments",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#useful-metrics-and-traceable-judgments",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Useful metrics and traceable judgments",
+    "text": "Useful metrics and traceable judgments\n\nA metric should vary across the architectures under study.\nPrefer a small, interpretable set: the book suggests 2–5, often 2–3.\nKeep essential requirements even when they do not distinguish candidates.\nRecord the rationale behind subjective scores.\nExamine sensitivity to aggregation and weights.\n\n\n\nIf safety is identical for all modeled hybrid-car candidates, it does not help rank them. That does not authorize dropping safety requirements or verification.\nWith many competing objectives, dominance becomes less selective. A unique best performer in one metric cannot be dominated, but tied maxima need closer inspection. The book’s statement about any maximum should be read with this qualification.\nScientific value and community engagement can require judgment. Subjectivity is not automatically invalid; untraceable or inconsistent judgment is the problem.\nAppendix C discusses rule-based evaluation and explanations. Here students need to know why a score was assigned, not the implementation details of that appendix.\n\nSource: Crawley, Cameron & Selva (2016), §16.2, p. 376.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#hard-and-soft-constraints",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#hard-and-soft-constraints",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Hard and soft constraints",
+    "text": "Hard and soft constraints\n\n\n\nConstraint\nTreatment\nExample\n\n\n\n\nHard\nReject the architecture\nLOR requires lunar-orbit arrival\n\n\nSoft\nRetain it with a penalty\nA desirable range target\n\n\n\nIllustrative penalty for shortfall below range \\(r_0\\):\n\\[C_{\\mathrm{effective}}=C+\\lambda\\max(0,r_0-r),\\qquad\\lambda\\geq0.\\]\n\n\nAsk students to identify the units of lambda. If C is dollars and range is kilometres, lambda is dollars per kilometre of shortfall.\nThis linear penalty is a classroom formulation, not a formula supplied by the chapter. Other penalty shapes are possible.\nA hard constraint can express physical consistency, an inviolable requirement, or an analyst’s screening rule. The last use deserves scrutiny because it may remove useful architectures before comparison.\nThe book’s 5 km car-range threshold illustrates screening and soft penalties, not a universal market requirement. A soft penalty cannot make a physically meaningless simulation meaningful.\nOptimization transformations such as Lagrange multipliers do not change what stakeholders actually require.\n\nSource: Crawley, Cameron & Selva (2016), §16.2, p. 377.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#combinatorial-growth-and-model-scope",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#combinatorial-growth-and-model-scope",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Combinatorial growth and model scope",
+    "text": "Combinatorial growth and model scope\nFor independent decision domains:\n\\[N_{\\mathrm{raw}}=\\prod_{i=1}^{n}|D_i|.\\]\n\nCategorical choices do not supply ordinary derivatives.\nMore options improve coverage but increase computation.\nConstraints and duplicate encodings change the effective count.\nDifficulty depends on the evaluator and mathematical structure.\n\n\n\n“Independent domains” means each decision has a defined choice set, not that the decisions have independent effects on value.\nThe text describes NP-hardness as exponential time and suggests a practical limit near 15–20 decisions. Treat those as cautions about scale, not formal theorems or universal limits. NP-hardness does not prove an exponential lower bound, and many structured discrete problems are tractable.\nDirect gradients are unavailable for unordered labels such as fuel types. Structured integer methods, relaxations, or mixed formulations may still help in suitable problems.\nAsk which matters more: 20 binary choices with microsecond evaluation, or eight choices with a day-long simulation? Compute a time budget before deciding.\n\nSource: Crawley, Cameron & Selva (2016), §16.2, p. 376; §16.6, pp. 408–410.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#earth-observation-architectures",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#earth-observation-architectures",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Earth-observation architectures",
+    "text": "Earth-observation architectures\n\n\n\n\n\n\nEnvisat and the A-Train illustrate different ways to organize Earth-observing instruments. Source: Crawley, Cameron & Selva (2016), Fig. 16.2, p. 378.\n\n\n\nThe upper image concentrates instruments on a spacecraft; the lower image shows several coordinated spacecraft. They motivate the packaging decision without establishing which is better.\nScientists need usable data products about land, oceans, and atmosphere, rather than simply a larger satellite count.\nAsk: “What could be shared on one spacecraft? What could fail together?” Expected answers include power, communication, launch, schedule, and platform disturbances.\nOriginal image credits in the book: ESA/EPA/Corbis for Envisat and Ed Hanka/NASA for A-Train. Historical illustrations only.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.2, p. 378.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-stakeholders-and-candidate-instruments",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-stakeholders-and-candidate-instruments",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "NEOSS stakeholders and candidate instruments",
+    "text": "NEOSS stakeholders and candidate instruments\nScientists value resolution, accuracy, coverage, and continuous records.\n\n\n\nCandidate instruments\nCandidate instruments\n\n\n\n\nRadar altimeter\nGPS receiver\n\n\nConical microwave radiometer\nInfrared spectrometer\n\n\nLaser altimeter / lidar\nMillimeter-wave sounder\n\n\nSynthetic aperture radar\nHigh-resolution optical imager\n\n\n\nCost, schedule, and risk also enter the evaluation.\n\n\nIn OPM language, Measuring creates measurement information about an environmental property, and Processing produces a data product. Instruments are objects that enable the relevant processes.\nA laser altimeter and a synthetic aperture radar are alternative forms for some topographic measurements, with different capabilities. Selecting both can add value or create redundant capabilities.\nExplain spatial resolution as distinguishable ground detail and temporal resolution as how frequently useful observations arrive. Data continuity asks whether records remain comparable and uninterrupted across missions.\nThe chapter later uses six instruments and three orbit types to isolate the ASSIGNING pattern. Those are reduced examples, not a contradictory eight-instrument count.\n\nSource: Crawley, Cameron & Selva (2016), §16.3, pp. 377–379.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-decision-groups",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-decision-groups",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "NEOSS decision groups",
+    "text": "NEOSS decision groups\n\n\n\nGroup\nChoices\n\n\n\n\nInstrument selection\nWhich of the eight instruments?\n\n\nInstrument packaging\nWhich spacecraft, orbits, and constellations?\n\n\nMission scheduling\nWhich launch order and dates?\n\n\n\nInitial orbital options: 1–3 planes, 1–4 satellites per plane, true polar / sun-synchronous / tropical, 400 / 600 / 800 km.\n\n\nHigher altitude generally trades coarser ground resolution for broader coverage for a given instrument geometry. This is a model relationship, not a claim that every instrument’s performance depends only on altitude.\nPower limits and electromagnetic interference couple the instrument and platform decisions.\nA replacement mission launched after an existing mission ends can create a data gap even if its instrument is excellent. Shared budgets also link launch dates.\nAsk which decision group influences scientific value. All of them do, which anticipates the decomposition discussion.\nPackaging includes the orbital design, not just fitting objects in a box.\n\nSource: Crawley, Cameron & Selva (2016), §16.3, p. 379.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#patterns-and-architectural-styles",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#patterns-and-architectural-styles",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Patterns and architectural styles",
+    "text": "Patterns and architectural styles\n\nPattern: the structure of a recurring decision problem.\nStyle: a characteristic way to organize the resulting architecture.\n\nExamples:\n\nASSIGNING admits channelized and fully cross-strapped styles.\nPARTITIONING admits monolithic and distributed styles.\nCONNECTING admits bus, star, ring, mesh, and tree styles.\n\n\n\nThe chapter traces the idea to Christopher Alexander’s building patterns and the reusable software designs popularized by the Gang of Four.\nAlexander’s example of light from two sides of a room includes a recurring problem and ways to address it in differently sized buildings. The architectural decision patterns here chiefly organize the problem rather than prescribe one universal solution.\nClassical optimization problems, including knapsack and traveling salesman, provide related mathematical structures.\nAsk whether “choose a distributed architecture” specifies a decision pattern or a style. It is a style preference that still requires concrete grouping decisions.\nPatterns are useful mental models even when no optimization program is written.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 379–381.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#the-six-patterns-at-a-glance",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#the-six-patterns-at-a-glance",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "The six patterns at a glance",
+    "text": "The six patterns at a glance\n\n\n\nPattern\nCore question\n\n\n\n\nDECISION-OPTION\nWhich one option for each decision?\n\n\nDOWN-SELECTING\nWhich subset of candidates?\n\n\nASSIGNING\nWhich links between two sets?\n\n\nPARTITIONING\nWhich non-overlapping groups?\n\n\nPERMUTING\nWhich one-to-one placement or order?\n\n\nCONNECTING\nWhich links within a fixed node set?\n\n\n\n\n\nUse the vocabulary consistently throughout the lecture. The names identify mathematical structure, not six mutually exclusive kinds of real system.\nAsk students to classify packing instruments into unlabeled spacecraft versus allocating instrument copies to named orbits. Those are different questions despite both sounding like “assignment.”\nWe will give each pattern a representation, a count before extra constraints, a case example, and the architectural tradeoffs it exposes.\nKeep the distinction between an encoding and a physical system visible: a binary 1 can mean selecting an instrument, installing a copy, or connecting a cable depending on the model.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.2, p. 381.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#decision-option-one-choice-per-decision",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#decision-option-one-choice-per-decision",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "DECISION-OPTION: one choice per decision",
+    "text": "DECISION-OPTION: one choice per decision\n\\[A=(x_1,\\ldots,x_n),\\quad x_i\\in O_i,\\qquad N=\\prod_i m_i.\\]\n\n\n\nDecision\nOption 1\nOption 2\nOption 3\nOption 4\n\n\n\n\n1\n1.1\n1.2\n1.3\n\n\n\n2\n2.1\n2.2\n\n\n\n\n3\n3.1\n3.2\n3.3\n3.4\n\n\n\nThree decisions give \\(3\\times2\\times4=24\\) raw architectures.\n\n\nThis editable morphological matrix reproduces the structure of Table 16.3. An architecture selects one entry in each row.\nAsk students to decode [2,1,3]. It chooses options 1.2, 2.1, and 3.3.\nEach decision has its own domain. A memory capacity is not automatically an option for processor type.\nContinuous attributes require a finite set or a stated discretization if this pattern is used literally. The book’s spring rates of 400, 500, and 600 lb/in illustrate such a choice.\nSequence and compatibility are not implicit. Add constraints when needed.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 381–384; Table 16.3.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#two-decision-option-architectures",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#two-decision-option-architectures",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Two DECISION-OPTION architectures",
+    "text": "Two DECISION-OPTION architectures\n\n\n\n\n\n\nThe same choice sets support different architecture vectors. Source: Crawley, Cameron & Selva (2016), Fig. 16.3, p. 382.\n\n\n\nTrace one selected option for each decision in each half of the diagram. These are generic decision graphs, not a system-behavior notation.\nInvite a student to move from [2,1,3] to [1,1,2]. Two entries change; the second decision remains fixed.\nDiscuss why “independent options” does not imply that their performance contributions can be added independently. The evaluator may have strong interactions.\nA decision tree can express the same choices, but it can quickly become too large to inspect.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.3, p. 382.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#autonomous-underwater-vehicle-choices",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#autonomous-underwater-vehicle-choices",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Autonomous underwater vehicle choices",
+    "text": "Autonomous underwater vehicle choices\n\n\n\n\n\n\nBluefin 12 BOSS, Nereus, and SeaExplorer illustrate alternative AUV forms. Source: Crawley, Cameron & Selva (2016), Fig. 16.4, p. 383.\n\n\n\nUse the images to motivate specialization before presenting the count. Shape, propulsion, power, and sensing interact with the operational concept.\nAsk whether hovering and efficient long-distance transit necessarily favor the same configuration.\nThese are examples in the book, not a specification comparison of current products. Original credits: NOAA; AUVfest 2008/Navy/NOAA; Alseamar.\nThe next table lists the chapter’s abstract options. Do not infer that each pictured vehicle has every listed alternative.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.4, p. 383.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#auv-ten-decisions-4608-combinations",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#auv-ten-decisions-4608-combinations",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "AUV: ten decisions, 4,608 combinations",
+    "text": "AUV: ten decisions, 4,608 combinations\n\n\n\nDecision\nAlternatives\n\n\n\n\nConfiguration\nTorpedo, blended wing, hybrid, rectangular\n\n\nSwim / hover\nYes or no for each\n\n\nNavigation\nDead reckoning, acoustic positioning\n\n\nPropulsion\nPropeller, Kort nozzle, passive gliding\n\n\nMotor\nBrushed, brushless\n\n\nPower\nRechargeable batteries, fuel cells, solar\n\n\nSonar / magnetometer / thermistor\nYes or no for each\n\n\n\n\\(4(2)(2)(2)(3)(2)(3)(2)(2)(2)=4{,}608\\) before constraints.\n\n\nThere are ten decisions, despite seven displayed rows: swim and hover are separate, as are the three sensor decisions.\nAsk for invalid or operationally implausible combinations. Passive gliding with a motor choice may introduce irrelevant values; solar power depends on an appropriate operating concept.\nA raw Cartesian product is a starting point. It is not a count of 4,608 feasible, distinct, useful vehicles.\nThis pattern commonly supports specialization and characterization of form and function.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 383–384.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#aerial-network-duplicate-encodings",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#aerial-network-duplicate-encodings",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Aerial network: duplicate encodings",
+    "text": "Aerial network: duplicate encodings\nTen candidate balloon sites. Per site:\n\nRadio: type A, type B, or no balloon.\nAltitude: low or high.\n\nRaw encoding: \\(6^{10}=60{,}466{,}176\\) vectors.\nWith one canonical no-balloon state:\n\\[5^{10}=9{,}765{,}625\\ \\text{distinct site-choice combinations}.\\]\n\n\nThis derived count assumes at most one balloon per site and that all four radio-altitude combinations are allowed for an occupied site.\nThe book deliberately exposes the duplication: an empty site has no physical altitude. Two encoded states therefore represent one architecture choice.\nAsk students whether eliminating duplicate encodings is the same as eliminating a bad architecture. It is not; it avoids counting the same alternative repeatedly.\nIf radio types can mix across sites, the model must address interoperability. If several balloon types can occupy a site, the ASSIGNING formulation later allows a different design space.\nThe chapter’s approximate 60 million count describes raw vectors.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, p. 384; canonical count derived for class.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#down-selecting-a-subset-of-candidates",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#down-selecting-a-subset-of-candidates",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "DOWN-SELECTING: a subset of candidates",
+    "text": "DOWN-SELECTING: a subset of candidates\n\\[S\\subseteq U,\\qquad A=(x_1,\\ldots,x_m),\\ x_i\\in\\{0,1\\}.\\]\n\\[N=2^m\\quad\\text{including the empty and full subsets}.\\]\nInstrument order:\n[radiometer, altimeter, imager, sounder, lidar, GPS, SAR, spectrometer]\n[1,1,0,0,0,1,0,0] selects radiometer, altimeter, and GPS.\n\n\nAsk what flipping a bit does physically: it adds or removes one candidate instrument. In ordinary DECISION-OPTION, a change may instead replace one incompatible option with another.\nFor eight instruments, there are 256 subsets before budget and other constraints.\nThe subset structure gives search algorithms useful information. Adding an item changes its cost and benefit and may change interactions with items already present.\nThe chapter’s second printed example has a vector with an extra entry relative to the eight-item set. Its intended imager/sounder/SAR/spectrometer subset is [0,0,1,1,0,0,1,1]. Keep the dictionary explicit.\nSelecting goals and choosing among several allowable solution forms are common applications.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 384–386.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#two-selected-subsets",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#two-selected-subsets",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Two selected subsets",
+    "text": "Two selected subsets\n\n\n\n\n\n\nBoth architectures use the same candidate set; the selected members differ. Source: Crawley, Cameron & Selva (2016), Fig. 16.5 and §16.4, pp. 385–386.\n\n\n\nSolid rectangles show selected elements and dashed rectangles show omitted ones. Ask students to read the corresponding binary strings.\nA point with fewer elements can outperform a larger subset if the latter wastes resources or introduces interference.\nIn the NEOSS case, selecting radar altimetry without the complementary radiometer can reduce achievable measurement accuracy because an atmospheric correction is missing.\nAsk what model output would reveal that loss. A count of instruments alone would not.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.5 and §16.4, pp. 385–386.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#interactions-change-subset-value",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#interactions-change-subset-value",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Interactions change subset value",
+    "text": "Interactions change subset value\n\n\n\n\n\n\n\n\nInteraction\nEveryday example\nNEOSS example\n\n\n\n\nSynergy\nToothbrush with toothpaste\nAltimeter with radiometer\n\n\nRedundancy\nSeveral similar toothpastes\nOverlapping topographic measurements\n\n\nInterference\nHot food beside a cold drink\nPower or orbit conflicts\n\n\n\nA useful subset combines high synergy, low interference, and limited redundancy.\n\n\nA classical 0/1 knapsack adds fixed item values subject to a resource bound. This chapter’s subsets can have context-dependent values, so simply sorting items by benefit/cost can fail.\nRadar altimetry and microwave radiometry can work together through humidity correction. SAR and lidar can compete for resources or preferred orbital conditions. These interactions require the evaluator to know more than instrument names.\nThe book calls favorable recurring combinations schemata. We will return to the precise binary-string meaning in genetic algorithms.\nAsk whether redundancy is always wasteful. It may instead be valuable when the metric includes fault tolerance; interpretation depends on the function and failure model.\n\nSource: Crawley, Cameron & Selva (2016), §16.4 and Box 16.1, pp. 386–387.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#a-worked-subset-selection-problem",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#a-worked-subset-selection-problem",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "A worked subset-selection problem",
+    "text": "A worked subset-selection problem\nClassroom data: budget \\(=6\\) cost units.\n\n\n\nItem\nCost\nStandalone benefit\n\n\n\n\nA\n3\n4\n\n\nB\n3\n3\n\n\nC\n4\n8\n\n\n\nSelecting A and B together adds a synergy bonus of 4.\nWhich feasible subset has the highest benefit?\n\n\nGive students a minute before revealing the answer. Feasible subsets are empty, A, B, C, and AB. AC, BC, and ABC exceed the budget.\nBenefits are 0, 4, 3, 8, and 4+3+4=11 respectively. AB wins even though C has the highest standalone benefit/cost ratio.\nWithout the synergy term, C would beat AB’s benefit of 7. Thus the interaction changes the architecture recommendation.\nAsk how to encode the evaluator: B(x)=4x_A+3x_B+8x_C+4x_Ax_B, with 3x_A+3x_B+4x_C≤6.\nThese numbers are illustrative and do not quantify actual instruments.\n\nSource: Crawley, Cameron & Selva (2016), §16.4 and Box 16.1, pp. 386–387; classroom example.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#subset-selection-beyond-instruments",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#subset-selection-beyond-instruments",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Subset selection beyond instruments",
+    "text": "Subset selection beyond instruments\n\nNLP strategies: complementary methods can improve coverage while consuming development and computation resources.\nSpectral bands: additional bands can add information, duplicate a capability, or enable corrections.\nProjects and goals: a limited budget forces scope choices.\n\nThe benefit of an addition depends on what is already selected.\n\n\nThe chapter uses IBM Watson’s combination of language-processing strategies and a hypothetical next-generation RapidEye band-selection problem. Present these as historical teaching cases, not current product specifications.\nDeep and shallow language-processing approaches motivate complementary capabilities. For spectral bands, measurements of the same constituent motivate redundancy, while cloud or atmospheric information can enable corrections.\nThe text mentions 2.2 and 4.7 micrometre bands and a 1.6 micrometre correction example. The lesson is conditional value; detailed spectral retrieval physics would require a separate instrument model.\nAsk students to name two course projects that share equipment. Their combined cost need not equal their separate costs.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, p. 386.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#assigning-links-between-two-sets",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#assigning-links-between-two-sets",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "ASSIGNING: links between two sets",
+    "text": "ASSIGNING: links between two sets\nFor \\(m\\) left elements and \\(n\\) right elements:\n\\[a_{ij}=\\begin{cases}1&\\text{left }i\\text{ is assigned to right }j\\\\0&\\text{otherwise.}\\end{cases}\\]\n\\[A\\in\\{0,1\\}^{m\\times n},\\qquad N=2^{mn}.\\]\nEach left element may link to none, one, or several right elements.\n\n\nThis is a many-to-many relation in the general pattern. Exactly-one assignment is an additional constraint, not the default.\nExamples include workers to tasks, processes to objects, instruments to orbits, or sensors to computers. In OPM, a process-object allocation still needs a precise procedural role; a generic binary matrix does not specify whether an object enables, is consumed by, or is affected by a process.\nThe matrix has mn independent binary positions before added constraints. Six instruments and three orbits give 2^18=262,144 architectures.\nAsk whether assigning one instrument type to two orbits means teleporting one physical unit. It generally means deploying two copies.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 388–390.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-instrument-to-orbit-assignment",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-instrument-to-orbit-assignment",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "NEOSS instrument-to-orbit assignment",
+    "text": "NEOSS instrument-to-orbit assignment\n\n\n\n\n\n\nInstrument types can appear in more than one orbit, or in none. Source: Crawley, Cameron & Selva (2016), Fig. 16.6, p. 388.\n\n\n\nTrace the sounder and radiometer to geostationary and sun-synchronous orbits, radar to sun-synchronous and polar orbits, imager to sun-synchronous orbit, and lidar to polar orbit. GPS is unused.\nCount eight assignments in this illustration. A type appearing twice represents multiple deployed instances in this simplified model.\nThis reduced example introduces geostationary orbit and six instrument types to illustrate a pattern. It is not the same domain as the earlier eight-instrument NEOSS setup.\nAsk which constraints would limit available power or prohibit an instrument-orbit pairing.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.6, p. 388.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#assignment-constraints-change-the-count",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#assignment-constraints-change-the-count",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Assignment constraints change the count",
+    "text": "Assignment constraints change the count\nFor \\(m\\) left elements and \\(n\\) right elements:\n\n\n\nRule for each left element\nRaw count\n\n\n\n\nAny subset\n\\(2^{mn}\\)\n\n\nAt least one right element\n\\((2^n-1)^m\\)\n\n\nExactly one right element\n\\(n^m\\)\n\n\n\nFor 3 sensors and 2 computers: 64, 27, or 8.\n\n\nDerive one row at a time. Two computers have four subsets: empty, first, second, both. Removing empty leaves three; requiring exactly one leaves two.\nRaise each per-sensor count to three because the constraints in this classroom example are local to each sensor. Shared capacity limits would couple the rows and invalidate that simple product.\nThe book’s second generic example uses 3 by 5 elements, giving 2^15=32,768.\nAsk students to explain why “exactly one computer per sensor” does not require each computer to have exactly one sensor. Many-to-one mappings remain possible.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 388–392; constrained counts derived for class.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#channelized-and-cross-strapped-styles",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#channelized-and-cross-strapped-styles",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Channelized and cross-strapped styles",
+    "text": "Channelized and cross-strapped styles\n\n\nChannelized\n\n\nFully cross-strapped\n\n\n\nSource: Figs. 16.8–16.9, p. 391. Partial connections give intermediate architectures.\n\n\n\nThe figures show three isolated channels versus nine cross-connections. The ideal isolated-chain illustration is stronger than merely saying each left node has one right node: sharing a right node could still couple the chains.\nReconnect to Chapter 15’s GNC architecture study. Sensor-to-computer and computer-to-actuator links are separate assignment layers.\nThe book uses Saturn V’s functional decomposition and X-38’s independent buses as channelized examples, and Total Football and Space Shuttle avionics as examples of more coupled mappings or connectivity.\nSuh’s functional-independence principle motivates decoupling. Shared form can nevertheless reduce parts, mass, volume, and cost.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 390–392; Figs. 16.8–16.9.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#connectivity-cost-and-failures",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#connectivity-cost-and-failures",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Connectivity, cost, and failures",
+    "text": "Connectivity, cost, and failures\n\n\n\n\n\n\n\nChannelized tendencies\nCross-strapped tendencies\n\n\n\n\nFewer interfaces and lower connection cost\nMore interfaces and greater complexity\n\n\nFewer alternative paths\nMore potential redundancy and throughput\n\n\nGreater isolation between chains\nMore opportunities for failure propagation\n\n\n\nThe choice depends on connection cost, value of reliability, and the failure model.\n\n\nAvoid turning these tendencies into guarantees. A fully cross-strapped system is more reliable only under an appropriate model of component, interface, and dependent failures.\nThe book’s common-cause discussion includes one failed sensor damaging connected computers. Distinguish this propagated failure from a shared external cause such as loss of common power; both undermine an independent-failure calculation.\nAsk which style would be attractive if cables are nearly massless but can transmit damaging faults. The answer may differ from the independent-failure result.\nAn extra nine of reliability costs something. The stakeholder’s cost-reliability preferences and credible failure dependencies help determine whether that cost is worthwhile.\n\nSource: Crawley, Cameron & Selva (2016), Box 16.2, p. 392.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#partitioning-exhaustive-disjoint-groups",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#partitioning-exhaustive-disjoint-groups",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "PARTITIONING: exhaustive, disjoint groups",
+    "text": "PARTITIONING: exhaustive, disjoint groups\nPartition \\(U\\) into nonempty groups \\(S_1,\\ldots,S_k\\):\n\\[\\bigcup_{i=1}^{k}S_i=U,\\qquad S_i\\cap S_j=\\varnothing\\quad(i\\ne j).\\]\n\nEvery element belongs to exactly one group.\nThe number of groups can vary from 1 to \\(|U|\\).\nGroup labels do not define different architectures.\n\nExample: {{radar, radiometer}, {imager, sounder, GPS}, {lidar}}.\n\n\nPairwise disjointness is essential. The book prints an empty intersection over all groups, which is too weak: three groups can have no common element while still overlapping pairwise.\nGive the counterexample {a,b}, {b,c}, {a,c}. Their total intersection is empty, but each element appears twice. It is not a valid partition.\nUnlabeled bins distinguish a partition from assignment to named spacecraft or orbits. Relabeling satellite 1 as satellite 2 changes no grouping by itself.\nPartitioning does not decide precise facility positions or orbital parameters; those require further decisions.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, p. 393.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#two-instrument-packaging-architectures",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#two-instrument-packaging-architectures",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Two instrument-packaging architectures",
+    "text": "Two instrument-packaging architectures\n\n\n\n\n\n\nEvery instrument appears exactly once; the groups change. Source: Crawley, Cameron & Selva (2016), Fig. 16.10, p. 393.\n\n\n\nAsk students to list the groups on each side. Left: lidar alone; radar with radiometer; imager with sounder and GPS. Right: lidar alone; radar alone; imager with sounder; radiometer with GPS.\nCount instruments rather than labels to verify completeness. Ask what decision would permit leaving one out: a separate DOWN-SELECTING decision.\nExplain that the partition determines what shares a platform. A platform design step must subsequently check mass, power, interfaces, and orbit compatibility.\nGrouping radar and radiometer can support measurement synergy, but only if their operating conditions actually permit coordinated observations.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.10, p. 393.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#encoding-and-counting-partitions",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#encoding-and-counting-partitions",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Encoding and counting partitions",
+    "text": "Encoding and counting partitions\nFor ordered elements \\([a,b,c,d]\\):\n[1,1,2,3] represents {{a,b},{c},{d}}.\n[7,7,2,9] represents the same partition.\n\n\n\nElements \\(m\\)\nPartitions \\(B_m\\)\n\n\n\n\n3\n5\n\n\n5\n52\n\n\n8\n4,140\n\n\n10\n115,975\n\n\n\n\n\nCanonical labels assigned in order of first appearance eliminate this representation redundancy. Starting from [7,7,2,9], rename the first encountered group 1, the next 2, and the next 3.\nBell numbers count all partitions. Stirling numbers of the second kind S(m,k) count partitions into exactly k nonempty groups; B_m is their sum.\nAsk students to enumerate the five partitions of {a,b,c}: all together, all separate, and each of the three possible pairs plus a singleton.\nFig. 16.11 illustrates two eight-element partitions. Its B_8 count is captured in this editable table.\nDo not use m^m as the number of distinct unlabeled partitions.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 394–395; reference [19], pp. 417–418.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#partitioning-in-other-systems",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#partitioning-in-other-systems",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Partitioning in other systems",
+    "text": "Partitioning in other systems\n\nOil reservoirs: group reservoirs served by a common facility.\nService engineers: group engineers supported by a common supply manager.\nFunction decomposition: group lower-level processes into larger functions.\n\nThe partition decides which elements share a group. Further models determine location, capacity, and feasibility.\n\n\nThe book’s three-reservoir example has five partitions. Ask students whether grouping A and B locates their common facility on a map. It does not.\nThe service network example has 3,000 engineers, each assigned to one manager. Capacity and geography can make many mathematical partitions impractical.\nMapping function to form and decomposition are the most direct architecting tasks for this pattern.\nIn OPM, a grouping choice can inform decomposition or the allocation of processes to objects. Preserve the distinction between a structural grouping and a claim about what each process actually does.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 394–395.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#monolithic-and-distributed-architectures",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#monolithic-and-distributed-architectures",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Monolithic and distributed architectures",
+    "text": "Monolithic and distributed architectures\n\n\n\n\n\n\n\nMonolithic\nFully distributed\n\n\n\n\nOne large group\nOne group per element\n\n\nShares common infrastructure\nReplicates common infrastructure\n\n\nCan capture close-coupled synergies\nCan isolate interference and failures\n\n\nIntegration links development schedules\nSmaller units can evolve separately\n\n\nShared resources may become bottlenecks\nCoordination can add cost and complexity\n\n\n\n\n\nThese styles are the two ends of a partitioning tradespace. Intermediate groupings can preserve valuable synergies while separating incompatible elements.\nCost depends on both replicated common functionality and the cost of interference. A shared solar array saves duplication but can create a power bottleneck and a common vulnerability.\nDistributed systems are not automatically redundant. If each unique instrument flies once, losing one still loses its measurement, even if the other instruments survive.\nAsk students whether faster replacement of a smaller satellite improves evolvability even when the initial hardware costs more.\n\nSource: Crawley, Cameron & Selva (2016), Box 16.3, pp. 395–396.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#what-drives-the-grouping-decision",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#what-drives-the-grouping-decision",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "What drives the grouping decision?",
+    "text": "What drives the grouping decision?\n\nStrength of synergies and interferences.\nPhysical proximity needed for those interactions.\nCost of replicated power, communication, structure, and support.\nResource competition and failure concentration.\nDevelopment time, expense profile, and opportunities to upgrade.\n\n\n\nDOWN-SELECTING asks whether both instruments are present. PARTITIONING asks whether their placement allows the interaction to occur.\nRadar-altimeter and radiometer measurements must be sufficiently coordinated and registered to realize their synergy. Merely flying somewhere in the same program is insufficient.\nIn the book’s Envisat discussion, shared infrastructure and common observations come with power competition, launch risk, and dependence on the least ready instrument. Metop illustrates vibration interference from a scanning instrument to a sensitive sounder.\nThe chapter reports Envisat at roughly eight tonnes, ten instruments, over two billion euros, and over ten years of development. Use these as historical case details, not current cost estimates. Its specific SAR duty-cycle claim should not be generalized to all radar modes.\nAsk which grouping remains attractive if the maturity of one instrument slips by three years.\n\nSource: Crawley, Cameron & Selva (2016), §16.4 and Box 16.3, pp. 395–397.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#permuting-exclusive-positions",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#permuting-exclusive-positions",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "PERMUTING: exclusive positions",
+    "text": "PERMUTING: exclusive positions\nMatch \\(m\\) elements to \\(m\\) positions, one element per position.\n\\[N=m!\\]\nFor the order 2, 4, 1, 3:\n\n\n\nRepresentation\nVector\n\n\n\n\nElement occupying each successive position\n[2,4,1,3]\n\n\nPosition assigned to each successive element\n[3,1,4,2]\n\n\n\nThe two vectors are inverse descriptions of the same arrangement.\n\n\nUse explicit semantics instead of relying on potentially confusing labels such as “element-based.” In the second row, element 1 goes to position 3, element 2 to position 1, element 3 to position 4, and element 4 to position 2.\nAsk students to reconstruct the first vector from the second. This is a useful check against encoding mistakes.\nPositions can be launch slots, locations on a board, or other exclusive options. The pattern does not require a temporal interpretation.\nA permutation is a bijection: each element and each position appears exactly once.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 397–398.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#two-permutations-of-five-elements",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#two-permutations-of-five-elements",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Two permutations of five elements",
+    "text": "Two permutations of five elements\n\n\n\n\n\n\nFive elements have 5! = 120 possible arrangements. Source: Crawley, Cameron & Selva (2016), Fig. 16.12 and §16.4, pp. 397–398.\n\n\n\nTrace all five links and verify that no position has two occupants. A generic binary matrix without row and column constraints would admit many invalid configurations.\nAsk why a vector with repeated entries, such as [1,1,3,4,5], cannot represent this permutation.\nThe count for 15 elements is 15!=1,307,674,368,000, already over a trillion. This motivates selective search.\nFactorial growth eventually exceeds any fixed-base exponential c^m. The exact practical limit still depends on evaluation cost and exploitable structure.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.12 and §16.4, pp. 397–398.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#order-layout-and-operations",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#order-layout-and-operations",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Order, layout, and operations",
+    "text": "Order, layout, and operations\n\nNEOSS: launch order affects data continuity and budgets.\nCircuit layout: placement changes total interconnection length.\nVehicle operations: task order changes travel and resource use.\nExploration portfolios: destination sequence changes capability development.\n\nAn order alone may still need dates, durations, or geometry.\n\n\nThe book connects circuit placement to the importance of total wire length and uses NASA’s historical Flexible Path discussion as a portfolio-sequencing example.\nTreat those as illustrations of decision structure, not claims about current chip specifications or current NASA plans.\nAsk whether “A then B” gives a launch date. It does not. Development durations, launch availability, annual budgets, and precedence constraints can still determine feasibility.\nOperations belong in architectural reasoning early because the concept of operations generates goals and metrics.\nPosition exclusivity also supports layouts with no natural first-to-last ordering.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 398–399.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#front-loaded-and-incremental-deployment",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#front-loaded-and-incremental-deployment",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Front-loaded and incremental deployment",
+    "text": "Front-loaded and incremental deployment\n\n\n\n\n\n\n\nFront-loaded high-value deployment\nIncremental deployment\n\n\n\n\nPrioritizes the most valuable systems\nDelivers some value sooner\n\n\nMay require a long wait for first value\nBuilds capability progressively\n\n\nCan avoid duplicated interim capability\nMay incur interim or replacement costs\n\n\nGreater exposure to program cancellation\nMore opportunities to learn and adapt\n\n\n\n\n\nThe book calls the first style “greedy deployment,” assuming high-value elements are costly and slow to develop. Distinguish this architectural style from a generic greedy optimization algorithm.\nAsk which strategy stakeholders can sustain through years of spending without operational benefit.\nIncremental delivery can reduce programmatic risk and improve flexibility, but it can also require redundant or temporary capability.\nThe table gives tendencies under the chapter’s assumptions. If a high-value element is also quick and inexpensive, the apparent conflict may disappear.\nA useful evaluation considers value delivery over time, not only the final system’s performance.\n\nSource: Crawley, Cameron & Selva (2016), Box 16.4, p. 399.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#connecting-a-graph-on-a-fixed-node-set",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#connecting-a-graph-on-a-fixed-node-set",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "CONNECTING: a graph on a fixed node set",
+    "text": "CONNECTING: a graph on a fixed node set\n\\[G=(U,E),\\qquad a_{ij}=1\\ \\text{when edge }i\\to j\\text{ exists}.\\]\n\nOne set of nodes, with decisions about connections.\nThe adjacency matrix is square.\nAn undirected graph has \\(a_{ij}=a_{ji}\\).\nSelf-connections require an explicit modeling choice.\n\nNodes can represent systems, objects, processes, or facilities.\n\n\nThe book’s formal paragraph uses “vertices” for connections. Use the standard distinction: vertices or nodes are elements, and edges are connections.\nClarify whether an edge means a physical cable, a possible flow, or a logical dependency. Binary adjacency alone does not encode capacity, delay, or flow magnitude.\nExamples include a power grid and a water network with fixed production/treatment locations. Choosing those locations would add further architectural decisions.\nASSIGNING has two distinct node sets and only links across the sets. CONNECTING starts with a single fixed set and permits whatever pairs the domain allows.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 399–401.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#connectivity-and-adjacency-matrices",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#connectivity-and-adjacency-matrices",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Connectivity and adjacency matrices",
+    "text": "Connectivity and adjacency matrices\n\n\n\n\n\n\nThe matrices encode which pairs share a connection. Source: Crawley, Cameron & Selva (2016), Fig. 16.13, p. 400.\n\n\n\nAsk students to find node 3’s neighbors in the left graph: nodes 1, 2, 4, and 5. The corresponding row has four ones.\nCheck symmetry and the zero diagonal. Each undirected edge occupies two matrix entries but is only one binary decision.\nBoth graphs have six fixed nodes; they differ in edges. These are general mathematical network representations, not system-behavior diagrams.\nThe count 32,768 is 2^15 for six labeled nodes, no self-loops, and at most one edge per pair.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.13, p. 400.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#four-connectivity-counts",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#four-connectivity-counts",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Four connectivity counts",
+    "text": "Four connectivity counts\nFor \\(m\\) labeled nodes and binary connections:\n\n\n\nSelf-connections\nDirected\nUndirected\n\n\n\n\nAllowed\n\\(2^{m^2}\\)\n\\(2^{m(m+1)/2}\\)\n\n\nProhibited\n\\(2^{m(m-1)}\\)\n\\(2^{m(m-1)/2}\\)\n\n\n\nFor 3 nodes without self-connections:\n64 directed graphs, 8 undirected graphs.\n\n\nDerive the exponents as the number of independent yes/no choices. Directed edges use ordered pairs; undirected edges use unordered pairs.\nFor undirected graphs with loops, count m(m−1)/2 ordinary edges plus m loops, giving m(m+1)/2.\nThese formulas allow the empty graph and disconnected graphs. A connected-network requirement reduces the count and needs another constraint.\nParallel links, weighted edges, identical unlabeled nodes, and multiple edge types would need a different counting argument.\nAsk why squaring the node count is wrong for an undirected loop-free network.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.4, p. 400.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#bus-and-star-topologies",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#bus-and-star-topologies",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Bus and star topologies",
+    "text": "Bus and star topologies\n\n\n\n\n\n\nA bus is a shared interface. A star has a central node.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.14 and Box 16.5, pp. 402–403.\n\n\n\nAsk students to trace a message from element 1 to element 6. Which resource does every such transfer depend on?\nIn the star, element 4 is a node that can perform processing or act as a source or sink. The bus is a shared interface rather than an additional node in this illustration.\nAsk how increasing traffic affects the shared resource. Both styles can encounter bottlenecks, but the flow-control mechanism matters.\nThese generic graphs depict network topology, not procedural relationships in an OPM model. An architecture model should still state the kind of flow and the roles of its objects and processes.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.14 and Box 16.5, pp. 402–403.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#ring-mesh-and-tree-topologies",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#ring-mesh-and-tree-topologies",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Ring, mesh, and tree topologies",
+    "text": "Ring, mesh, and tree topologies\n\n\n\n\n\n\n\n\nWhere are the alternative routes, bottlenecks, and failure dependencies?\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.14 and Box 16.5, pp. 402–403.\n\n\n\nTrace the closed circuit in the ring, alternative paths in the mesh, and branches in the tree. A mesh need not be a complete graph.\nAsk students to remove one edge mentally and assess which flows remain possible. Avoid equating graph connectivity with the behavior of a particular forwarding protocol.\nThe commodity may be data, vehicles, power, water, gas, or food. Reliability, latency, throughput, and scalability depend on both topology and the flow and failure models.\nHybrid architectures combine styles across regions or levels. The following tables summarize the tradeoffs rather than declaring a universal winner.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.14 and Box 16.5, pp. 401–403.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#bus-star-and-ring-tradeoffs",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#bus-star-and-ring-tradeoffs",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Bus, star, and ring tradeoffs",
+    "text": "Bus, star, and ring tradeoffs\n\n\n\n\n\n\n\n\nStyle\nPotential advantage\nPrincipal concern\n\n\n\n\nBus\nLow interface cost, easy attachment\nShared bus failure or congestion\n\n\nStar\nSimple hub coordination\nHub bottleneck and failure\n\n\nRing\nPredictable access in suitable protocols\nDependence on the intact forwarding path\n\n\n\nA bus is a shared interface. A hub is a node that can process or relay flow.\n\n\nThe chapter cites launch-vehicle avionics for a bus, airline hub-and-spoke systems for a star, and token-ring networking for a ring. Present these as examples from the text rather than current universal practice.\nQualify the book’s statement that every ring node is a single point of failure. That applies to an unprotected forwarding ring; bypass, dual rings, routing, and protection alter failure behavior. An undirected cycle with one removed node can remain connected as a path.\nLikewise, scalability is not unlimited when every flow shares one resource.\nAsk whether adding a faster hub changes topology. It changes capability and cost while preserving the star’s structure.\n\nSource: Crawley, Cameron & Selva (2016), Box 16.5, p. 403.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#mesh-tree-and-hybrid-tradeoffs",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#mesh-tree-and-hybrid-tradeoffs",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Mesh, tree, and hybrid tradeoffs",
+    "text": "Mesh, tree, and hybrid tradeoffs\n\n\n\n\n\n\n\n\nStyle\nPotential advantage\nPrincipal concern\n\n\n\n\nMesh\nAlternative routes, distributed cooperation\nMore links and routing complexity\n\n\nTree\nClear hierarchy, maintainable expansion\nFailure can disconnect descendants\n\n\nHybrid\nDifferent structures for different needs\nMore interface and coordination choices\n\n\n\nPerformance depends on where flow originates, where it goes, and how much it carries.\n\n\nThe chapter uses rural communication networks and peer-to-peer systems for mesh structures, and apartment-building distribution networks for trees.\nA tree is connected and acyclic. Every edge is a bridge, so losing one can separate the graph; the system-level consequence depends on the traffic and available backup paths.\nA mesh can improve fault tolerance, but not every sparse mesh survives every failure. Make the protection target explicit.\nAsk students to propose a hybrid campus network and identify where resilience is most valuable. The point is to justify connections through stakeholder needs rather than select a fashionable topology.\n\nSource: Crawley, Cameron & Selva (2016), §16.4 and Box 16.5, pp. 401–403.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#pattern-recognition-exercise",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#pattern-recognition-exercise",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Pattern recognition exercise",
+    "text": "Pattern recognition exercise\nChoose a natural pattern and state one necessary assumption.\n\nSelect experiments within a mass limit.\nDivide experiments into spacecraft without duplication.\nDeploy instrument copies into named orbits.\nChoose the order of four launches.\nSelect communication links among the spacecraft.\nChoose one propulsion type for each spacecraft.\n\n\n\nExpected answers: DOWN-SELECTING, PARTITIONING, ASSIGNING, PERMUTING, CONNECTING, and DECISION-OPTION.\nAsk what changes if experiments can fly twice. Pure partitioning no longer represents the intended space without changing what the elements mean.\nAsk what changes if a launch can carry several spacecraft. A permutation of spacecraft alone no longer describes the full packaging/scheduling problem.\nAccept an alternative encoding if students state the constraints and explain what structure is lost or gained. Pattern recognition should not become a vocabulary guessing game.\nThis is a useful pause before the discussion of overlapping formulations.\n\nSource: Crawley, Cameron & Selva (2016), §16.4, pp. 379–403; classroom exercise.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#architecting-tasks-and-useful-patterns",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#architecting-tasks-and-useful-patterns",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Architecting tasks and useful patterns",
+    "text": "Architecting tasks and useful patterns\n\n\n\nTask\nUsually useful patterns\n\n\n\n\nDecompose form / function\nPARTITIONING\n\n\nMap function to form\nASSIGNING, PARTITIONING\n\n\nSpecialize form / function\nDECISION-OPTION, DOWN-SELECTING\n\n\nCharacterize form / function\nDECISION-OPTION\n\n\nConnect form / function\nASSIGNING, PERMUTING, CONNECTING\n\n\nDefine scope / select goals\nDOWN-SELECTING\n\n\n\n\n\nThis is the full mapping of Table 16.5 in a compact editable form. “Usually” matters: it is guidance, not a rule that excludes other encodings.\nRevisit students’ campus-robot examples from the opening table. Ask whether their assumptions point toward a particular pattern.\nIn NEOSS, assigning instruments to named orbits permits missing or repeated types, while partitioning a selected set into spacecraft permits neither. A budget or deployment rule may make one formulation more natural.\nThe pattern should match the architect’s mental model and the intended alternatives.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.5 and §16.5, p. 404.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#overlap-generic-encodings",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#overlap-generic-encodings",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Overlap: generic encodings",
+    "text": "Overlap: generic encodings\n\n\n\nPattern\nDECISION-OPTION representation\n\n\n\n\nDOWN-SELECTING\nOne binary choice per candidate\n\n\nASSIGNING\nOne binary choice per left-right pair\n\n\nPARTITIONING\nList partitions, or constrain group labels\n\n\nPERMUTING\nList permutations, or enforce distinct positions\n\n\nCONNECTING\nOne binary choice per allowable edge\n\n\n\nRepresentability does not guarantee a convenient search space.\n\n\nThis slide captures the DECISION-OPTION row of Table 16.6. Listing all 52 partitions of five instruments as one decision is possible, but conceals the grouping structure.\nThe printed ASSIGNING conversion uses an ambiguous N count. The explicit count is mn binary variables for m left and n right elements.\nA constrained label representation of partitions also needs duplicate handling because many group-label vectors encode the same partition.\nAsk which representation makes “move one instrument to another spacecraft” easy to express. The structured grouping representation usually does.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.6 and §16.5, pp. 405–406.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#overlap-subset-and-graph-views",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#overlap-subset-and-graph-views",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Overlap: subset and graph views",
+    "text": "Overlap: subset and graph views\n\nASSIGNING can be a subset choice for each left element.\nCONNECTING can select a subset of candidate edges.\nPARTITIONING can select candidate groups, with exact coverage constraints.\nPERMUTING can select element-position pairs, with one per element and position.\nA decision-option graph needs links only to that decision’s valid options.\n\n\n\nThese are the DOWN-SELECTING row and related graph conversions in Table 16.6.\nFor partitioning as group selection, require each element to occur in exactly one selected group. Otherwise a set of selected subsets may overlap or leave gaps.\nFor a decision-option bipartite graph, require exactly one selected edge out of each decision and forbid edges to another decision’s private options.\nAsk why treating a permutation as arbitrary edge selection creates many invalid candidates. Most edge subsets violate the one-to-one requirements.\nGeneral-purpose encodings often trade conceptual simplicity for extra constraints.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.6 and §16.5, pp. 405–406.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#overlap-groups-positions-and-networks",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#overlap-groups-positions-and-networks",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Overlap: groups, positions, and networks",
+    "text": "Overlap: groups, positions, and networks\n\nPARTITIONING: assign to indistinguishable bins, exactly once per element.\nPERMUTING: assign to distinct positions, exactly one per position.\nASSIGNING: connect two distinct node sets only across the sets.\nPERMUTING: use a perfect matching between elements and positions.\nPARTITIONING: recover groups from graph components, often with duplicates.\n\n\n\nThis captures the remaining direct relationships in Table 16.6. Empty abstract bins can be ignored for partitioning, but bin labels must not create spurious alternatives.\nMany graphs have the same connected components. For three elements all in one group, a path and a triangle recover the same partition, so graph encoding is many-to-one.\nThe table also discusses theoretical conversions between partitioning and permutation problems through complexity reductions. Those concern appropriately formulated optimization/decision problems with objectives and constraints; merely enumerating a permutation is not an NP-completeness claim.\nThe practical lesson is to preserve useful structure. The chapter’s broad interchangeability claim should not be read as a promise that every conversion is simple, compact, or equally efficient.\n\nSource: Crawley, Cameron & Selva (2016), Table 16.6 and §16.5, pp. 405–406.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#binary-encoding-requires-enough-bits",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#binary-encoding-requires-enough-bits",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Binary encoding requires enough bits",
+    "text": "Binary encoding requires enough bits\nA decision with \\(m\\) options needs\n\\[b=\\lceil\\log_2m\\rceil\\]\nbits in a compact binary encoding.\nFor 3 options:\n\n\n\nBits\nMeaning\n\n\n\n\n00 / 01 / 10\nOptions A / B / C\n\n\n11\nInvalid code\n\n\n\n\n\nThe ceiling is necessary. The book writes log2(m), which is not an integer for most option counts.\nAsk whether treating the two bits as unconstrained selection decisions preserves the original choice set. It introduces the invalid 11 code.\nA one-hot alternative would use three bits with an exactly-one constraint. It is less compact but gives another useful representation.\nCompactness alone does not determine a good encoding: mutation, crossover, feasibility checks, and neighborhood meaning also matter.\nWhen m is a power of two, every compact code can represent an option; other architectural constraints may still apply.\n\nSource: Crawley, Cameron & Selva (2016), §16.5, p. 406.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-subproblems-remain-coupled",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#neoss-subproblems-remain-coupled",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "NEOSS subproblems remain coupled",
+    "text": "NEOSS subproblems remain coupled\n\n\n\n\n\n\nDifferent patterns organize different decisions, with feedback between them. Source: Crawley, Cameron & Selva (2016), Fig. 16.15 and §16.5, pp. 407–408.\n\n\n\nInstrument selection maps naturally to DOWN-SELECTING; packaging to PARTITIONING or ASSIGNING; scheduling to PERMUTING plus any needed date decisions.\nFollow the feedback links: spare bus or launch capacity can favor an opportunity payload; instrument maturity affects packaging and launch order; data continuity affects both selection and scheduling.\nThe chapter argues that instrument selection often drives the largest cost and performance changes, with packaging effects at a smaller but still important scale. Treat this as a case-specific assessment.\nAsk why the best standalone instrument set might be awkward to package.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.15 and §16.5, pp. 407–408.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#decomposition-and-global-quality",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#decomposition-and-global-quality",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Decomposition and global quality",
+    "text": "Decomposition and global quality\n\nSeparate subproblems that are as loosely coupled as possible.\nPreserve links through shared constraints and evaluation.\nCarry multiple promising alternatives across a boundary.\nRevisit upstream choices when downstream results expose a conflict.\n\nCombining individually optimal subproblem solutions can produce a poor overall architecture.\n\n\nA data-gap requirement can constrain instrument selection so the scheduling stage has an appropriate replacement mission to launch.\nA packaging stage might reject an otherwise attractive set because of wasted bus capacity, interference, or an immature instrument that delays all others.\nCarrying alternatives and iterating are practical classroom extensions of the chapter’s explicit coupling constraints. They reduce premature commitment but do not prove a global optimum.\nAsk students to identify the metric and interface data exchanged between two teams. “We will coordinate” is insufficient unless they say what information changes the decisions.\nThe goal is manageable analysis with honest limits on the result.\n\nSource: Crawley, Cameron & Selva (2016), §16.5, pp. 404, 407–408.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#full-factorial-enumeration",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#full-factorial-enumeration",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Full-factorial enumeration",
+    "text": "Full-factorial enumeration\n\nGenerate every candidate combination.\nReject invalid architectures and duplicate encodings.\nEvaluate every remaining architecture.\nRetain metrics and explanations.\nApply Pareto analysis and stakeholder preferences.\n\nEnumeration gives both the frontier and the surrounding tradespace.\n\n\nThis builds on the chapter’s nested-loop approach and Chapter 15’s argument for retaining dominated regions to learn about structure.\nDistinguish a raw Cartesian product from the feasible set. The book’s Fig. 16.16 shows generation but omits the constraint filter in that snippet; include it in an actual workflow.\nExhaustive evaluation identifies the true Pareto set for the finite model if evaluation and filtering are correct. It does not validate the physical model itself.\nAsk what evidence is lost if the tool stores only its final best point. Clusters, sensitivities, alternative families, and explanations can disappear.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 408–409; Fig. 16.16.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#enumeration-algorithm",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#enumeration-algorithm",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Enumeration algorithm",
+    "text": "Enumeration algorithm\nresults = []\nfor A in CartesianProduct(option_sets):\n    if not hard_constraints_hold(A):\n        continue\n    A = canonicalize(A)\n    if already_evaluated(A):\n        continue\n    metrics, explanation = evaluate(A)\n    results.append(A, metrics, explanation)\nfront = nondominated_architectures(results)\n\n\n\nThis pseudocode generalizes Apollo’s nine nested loops. Canonicalization and duplicate checking are explicit classroom additions motivated by the balloon and partition examples.\nThe evaluation must apply any soft-constraint penalties consistently, and the Pareto routine must know each metric’s direction.\nAsk where a partition generator would fit. Either generate valid partitions directly or preprocess a list of partition options; naïvely looping over arbitrary labels needs constraints and duplicate handling.\nProcedural languages specify steps. Declarative/rule-based approaches specify relationships and goals and use an inference mechanism to generate candidates; Appendix C develops that alternative.\nDo not run a costly physical simulation on a combination already known to be invalid.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 408–409; adapted from Fig. 16.16.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#the-computational-budget",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#the-computational-budget",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "The computational budget",
+    "text": "The computational budget\nApproximate serial evaluation time:\n\\[T\\approx N_{\\mathrm{evaluated}}\\,t_{\\mathrm{eval}}.\\]\nClassroom example: \\(2^{20}=1{,}048{,}576\\) candidates.\n\n\n\nTime per evaluation\nTotal serial time\n\n\n\n\n1 millisecond\n17.5 minutes\n\n\n1 second\n12.1 days\n\n\n1 minute\n2.0 years\n\n\n\nBroader coverage competes with deeper modeling.\n\n\nThese estimates neglect generation, constraint checking, communication, and storage overhead. Parallelism can help, but speedup is limited by available resources and serial work.\nAsk students to decide whether more fidelity is worthwhile before seeing the evaluation budget. A detailed model that evaluates only two arbitrary candidates may be less useful at this stage.\nA staged approach can use a simpler model to find families and detailed models to scrutinize survivors, provided screening assumptions are checked.\n“Small enough” depends on candidate count, evaluation time, hardware, and tolerable elapsed time, not an immutable number of decisions.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, p. 408; classroom calculation.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#heuristic-search-for-large-spaces",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#heuristic-search-for-large-spaces",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Heuristic search for large spaces",
+    "text": "Heuristic search for large spaces\n\nGenerate promising candidates without visiting every combination.\nUse evaluated results to guide subsequent search.\nSeek several good architectural families.\nTreat the returned front as an approximation unless completeness is established.\n\nFlexible heuristics suit categorical, nonlinear, and nonsmooth models.\n\n\nThe chapter favors metaheuristics because they require relatively little problem structure. This is a pragmatic choice, not a claim that they outperform every exact or specialized algorithm.\nBranch-and-bound, cutting planes, network methods, and dynamic programming can be useful when their mathematical assumptions fit. Standard gradients are unsuitable for arbitrary category labels.\nA run that stops improving may have converged locally or simply exhausted its search budget.\nAsk students what would justify saying “globally optimal.” Exhaustive coverage, a valid optimality bound, or another mathematical certificate would be needed, not just a long run.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 409–410; reference [27].",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#generator-evaluator-and-search-agent",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#generator-evaluator-and-search-agent",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Generator, evaluator, and search agent",
+    "text": "Generator, evaluator, and search agent\n\n\n\n\n\n\nSearch directions connect candidate generation to evaluation feedback. Source: Crawley, Cameron & Selva (2016), Fig. 16.17, p. 410.\n\n\n\nTrace one cycle: generate an architecture, evaluate it using stakeholder requirements, then use metrics and explanations to choose another region or change.\nWith full enumeration, generation and final filtering can be separate. With heuristic search, generating candidates and selecting survivors become intertwined.\nThe evaluator’s explanation can show why a design failed or which requirement created a penalty. That information is useful to the human architect even if the search operator uses only numbers.\nAsk which box contains stakeholder judgments and which box proposes new decision vectors.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.17, p. 410.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#a-population-based-search-cycle",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#a-population-based-search-cycle",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "A population-based search cycle",
+    "text": "A population-based search cycle\n\n\n\n\n\n\nA population carries multiple alternatives through successive generations. Source: Crawley, Cameron & Selva (2016), Fig. 16.18, p. 411.\n\n\n\nWalk through all six numbered steps. Initial generation precedes evaluation; each iteration tests termination, selects parents or survivors, and creates the next candidates.\nEvaluation rules define performance. Selection rules decide which architectures contribute. Search rules decide how new candidates are constructed.\nPopulations are useful when the goal is several Pareto families instead of one best scalar solution.\nThe termination branch should not be interpreted as proof that the mathematical frontier was found. It may simply represent a budget limit.\n\nSource: Crawley, Cameron & Selva (2016), Fig. 16.18, p. 411.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#selection-diversity-and-stopping",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#selection-diversity-and-stopping",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Selection, diversity, and stopping",
+    "text": "Selection, diversity, and stopping\n\nPreserve high-quality candidates through elitism.\nRetain diversity across the tradeoffs and architecture families.\nGenerate new candidates through search operators.\nStop at a stated time, evaluation, generation, or improvement limit.\nCompare final candidates with baselines and further analysis.\n\n\n\nPareto rank is useful in multiobjective selection, but rank alone may let the population crowd into one narrow region.\nSome dominated candidates can contribute diversity and lead to useful new combinations. Selection is not identical to immediately discarding every dominated point forever.\nElitism means retaining high-quality solutions across generations; selecting only current Pareto points as parents is one possible rule, not the entire definition.\nAsk what happens if every individual becomes the same architecture. Crossover alone then offers little novelty.\nFinal preference selection remains a stakeholder decision informed by the search results.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 411–412, 414–415.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#generating-feasible-initial-populations",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#generating-feasible-initial-populations",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Generating feasible initial populations",
+    "text": "Generating feasible initial populations\n\nRandomly choose valid decision options or binary values.\nReject infeasible samples when rejection is inexpensive.\nFor tight constraints, generate feasible candidates directly.\nAlternatively, repair an infeasible candidate.\nCheck whether sampling or repair favors particular regions.\n\n\n\nFor an unconstrained DECISION-OPTION problem, sample one option per decision. For a subset problem, sample a binary vector.\nRejection sampling can become ineffective when feasible candidates occupy a tiny fraction of the raw space. Record the acceptance rate rather than assuming randomness is sufficient.\nRepair requires a definition of a nearby feasible architecture. It can introduce systematic bias, for example always deleting the most recently added instrument.\nAsk students how to sample a permutation directly. Shuffle the element list rather than sample positions independently and hope there are no repeats.\nFeasible-by-construction generation still needs the additional domain constraints checked.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, p. 412.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#uniform-sampling-can-miss-useful-styles",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#uniform-sampling-can-miss-useful-styles",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Uniform sampling can miss useful styles",
+    "text": "Uniform sampling can miss useful styles\nFor 10 elements, \\(B_{10}=115{,}975\\) partitions.\n\n\n\nNumber of groups\nNumber of partitions\n\n\n\n\n2\n511\n\n\n4\n34,105\n\n\n5\n42,525\n\n\n6\n22,827\n\n\n\nAbout 85.8% have 4–6 groups. Uniform over partitions is not uniform over group counts.\n\n\nThe counts are Stirling numbers of the second kind. The fraction is (34,105+42,525+22,827)/115,975=0.85757.\nThe book reports 88% and more than 45,000 five-group partitions; those figures are inaccurate. Use the exact counts here.\nIf two- or three-spacecraft architectures seem promising, deliberately include them or sample the group count first and then a partition conditional on that count.\nExplain that this intentional bias changes the sampling distribution. It can improve search coverage of a region of interest, but should not be mistaken for an unbiased statistical estimate of the entire tradespace.\nAsk whether uniformly generating arbitrary group labels would be uniform over partitions. In general, it would not.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, p. 412; counts computed from Stirling numbers.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#a-mixed-initial-population",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#a-mixed-initial-population",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "A mixed initial population",
+    "text": "A mixed initial population\n\n\n\n\n\n\n\nSource of candidates\nWhy include it?\n\n\n\n\nBaselines and architectures of interest\nCompare with known proposals\n\n\nExtreme styles\nTest boundaries of the architecture space\n\n\nStructured experimental designs\nCover selected combinations systematically\n\n\nCarefully sampled random candidates\nExplore less anticipated regions\n\n\n\nCheck feasibility for every source.\n\n\nFor PARTITIONING, include the monolithic and fully distributed extremes. For ASSIGNING, include channelized and fully cross-strapped examples where feasible.\nA deterministic design does not automatically contain every architectural extreme. Include important extremes explicitly.\nA Latin hypercube stratifies each sampled dimension; an orthogonal array balances combinations to a specified strength. Neither should be described as universally testing every full combination.\nAsk why an initial population consisting only of the current baseline and small mutations might overlook an entirely different architecture family.\nPreserve provenance so an architect can see whether an attractive result came from the baseline, a style extreme, or search.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 412–413.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#an-orthogonal-array-example",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#an-orthogonal-array-example",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "An orthogonal-array example",
+    "text": "An orthogonal-array example\nFor three binary decisions, choose four of the eight vectors:\n\n\n\nSample\nDecision 1\nDecision 2\nDecision 3\n\n\n\n\nA\n0\n0\n0\n\n\nB\n1\n1\n0\n\n\nC\n0\n1\n1\n\n\nD\n1\n0\n1\n\n\n\nEvery pair of columns contains 00, 01, 10, and 11 exactly once.\n\n\nHave students check columns 1 and 3, then columns 2 and 3. This is pairwise coverage, not all eight triples.\nOrthogonal here refers to combinatorial balance, not zero dot products of these binary vectors.\nThe chapter also gives L_9(3^4): nine runs for four three-level decisions, compared with 3^4=81 full-factorial cases. The run count is not generally less than the number of decisions; the text’s P&lt;N statement is a typo.\nCoverage alone does not isolate arbitrary higher-order interactions or guarantee inclusion of the best architecture.\nSuch designs can initialize a search or select tests when full-factorial testing is too expensive.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, p. 413.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#exploration-and-exploitation",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#exploration-and-exploitation",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Exploration and exploitation",
+    "text": "Exploration and exploitation\n\n\n\nExploration\nExploitation\n\n\n\n\nDiscover new regions\nImprove within a promising region\n\n\nPreserve diverse possibilities\nInvestigate useful local changes\n\n\nReduces premature convergence\nImproves candidate quality\n\n\n\nToo little exploration can trap a search. Too little exploitation can leave promising candidates underdeveloped.\n\n\nUse a landscape analogy cautiously because categorical spaces do not have a unique geometric distance. The encoding and move operator define what “nearby” means.\nThe chapter mentions genetic algorithms, particle swarm, ant colony, bees, and harmony search as families that balance these aims. It focuses on genetic operators and local search rather than surveying all algorithms.\nAsk whether mutation always explores far away. A one-bit mutation may be quite local; an operator’s effect depends on the problem.\nA practical search strategy may combine mechanisms instead of expecting one heuristic to serve every purpose.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, p. 413.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#crossover-combines-parent-decisions",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#crossover-combines-parent-decisions",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Crossover combines parent decisions",
+    "text": "Crossover combines parent decisions\nClassroom example: cut after the third decision.\n\n\n\nArchitecture\nPrefix\nSuffix\n\n\n\n\nParent 1\n1 1 0\n0 1 0\n\n\nParent 2\n0 0 1\n1 0 1\n\n\nChild 1\n1 1 0\n1 0 1\n\n\nChild 2\n0 0 1\n0 1 0\n\n\n\nSingle-point, multi-point, and uniform crossover exchange different portions of the encoding.\n\n\nRelate this explicit binary example to the single-point exchange in Fig. 16.19. The children inherit prefixes and suffixes from different parents.\nAsk whether two feasible parents guarantee feasible children. A shared budget or incompatible option pair can make a child invalid.\nSingle-point crossover tends to preserve contiguous fragments. The ordering of decisions therefore matters when useful interactions span particular positions.\nIn uniform crossover, choose the contributing parent at each decision position. It is decisions or genes that are exchanged within an architecture chromosome.\nGenetic algorithms use fitness or multiobjective selection to bias which parents contribute, not knowledge that each inherited fragment must be good.\n\nSource: Crawley, Cameron & Selva (2016), §16.6 and Fig. 16.19, p. 414; classroom encoding.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#schemata-represent-architecture-families",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#schemata-represent-architecture-families",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Schemata represent architecture families",
+    "text": "Schemata represent architecture families\nA schema uses 0, 1, and \\(*\\) (“either value”).\n[1,*,*,0] describes four binary architectures.\nFor a length-\\(n\\) schema with \\(k\\) fixed positions:\n\\[\\text{number of matching architectures}=2^{n-k}.\\]\nOne complete binary architecture matches \\(2^n\\) schemata.\n\n\nList [1,0,0,0], [1,0,1,0], [1,1,0,0], and [1,1,1,0]. Two free bits give four instances.\nTo see the second count, choose independently whether each position in a complete architecture remains fixed or becomes a wildcard.\nIn the book, a schema with instrument 2 present and instrument 5 absent identifies a family whose value can be estimated by average fitness over matching candidates.\nA promising schema has above-average fitness in the comparison population. That estimate depends on sampling and the other decisions, so it is not a context-free guarantee.\nSelection can amplify useful schemata, while crossover preserves some and disrupts others. This explains a mechanism, not a proof of global convergence.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 414–415.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#mutation-and-valid-neighborhoods",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#mutation-and-valid-neighborhoods",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Mutation and valid neighborhoods",
+    "text": "Mutation and valid neighborhoods\n\nMutation makes a small random change.\nLocal search examines neighboring architectures for improvement.\nA subset neighbor may flip one inclusion bit.\nA permutation neighbor may swap two positions.\nA partition neighbor may move one element between groups.\n\nOperators should respect the encoding’s meaning and constraints.\n\n\nThe chapter presents mutation as a way to reduce trapping in a suboptimal region. The pattern-specific moves here are classroom examples of implementing that principle.\nNaïve single-point crossover on [1,2,3,4] and [3,4,1,2] at the midpoint produces [1,2,1,2], which is not a permutation. Use a permutation-preserving operator or a justified repair.\nMoving an element out of a singleton partition removes the now-empty group. Canonicalize labels afterward.\nLocal search can become stuck if reaching a better architecture requires temporarily accepting a worse one.\nAsk which operation changes system scope versus only rearranging an existing scope.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 413–415; pattern-aware classroom examples.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#additional-heuristics-and-expert-knowledge",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#additional-heuristics-and-expert-knowledge",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Additional heuristics and expert knowledge",
+    "text": "Additional heuristics and expert knowledge\n\nTabu-style memory: discourage cycling through recently visited moves or configurations.\nDomain knowledge: try combinations known to have useful interactions.\nNEOSS example: colocate altimeter and radiometer when the mission permits their synergy.\nRetain exploration beyond the expert’s favored region.\n\n\n\nThe chapter simplifies Tabu Search to a list of bad schemata. Teach the broader memory idea carefully: tabu status is a temporary search restriction, not a statement that a design is physically infeasible or permanently bad.\nA domain rule can help discover useful packaging far faster than blind random changes, but it must respect orbit, resource, maturity, and data-continuity constraints.\nAsk what happens if expert knowledge is outdated or omits a new technology. An overly rigid rule can exclude the best family.\nKeep hard constraints separate from heuristic preferences. A useful tendency should not silently become an absolute prohibition.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, p. 415; reference [34].",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#a-portfolio-of-search-heuristics",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#a-portfolio-of-search-heuristics",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "A portfolio of search heuristics",
+    "text": "A portfolio of search heuristics\n\nCombine general and domain-specific operators.\nMeasure which operators produce useful candidates.\nAllocate more effort to effective operators.\nPreserve enough exploration to detect changing opportunities.\nAccount for evaluation cost as well as improvement.\n\n\n\nThe chapter warns about dilution: adding weak heuristics can reduce the impact of good ones if effort is divided indiscriminately.\nHyperheuristics adapt the choice of heuristics. Machine-learning approaches can support this extra layer, but are beyond the chapter’s introductory treatment.\nAsk what “effective” means in a multiobjective search. Possibilities include new non-dominated candidates, better coverage, or improved quality per evaluation; one scalar score may hide tradeoffs.\nAn operator that succeeds early may become less useful later. Monitoring should not assume performance is fixed.\nMore algorithmic complexity should earn its place through evidence on the problem at hand.\n\nSource: Crawley, Cameron & Selva (2016), §16.6, pp. 415–416.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#choosing-and-reporting-a-search-strategy",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#choosing-and-reporting-a-search-strategy",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Choosing and reporting a search strategy",
+    "text": "Choosing and reporting a search strategy\n\n\n\n\n\n\n\nSituation\nReasonable starting point\n\n\n\n\nSmall feasible space\nFull enumeration\n\n\nStrong exploitable mathematical structure\nA suitable specialized method\n\n\nLarge, irregular architecture model\nPopulation-based heuristic search\n\n\n\nReport the model, constraints, evaluation budget, baselines, and the limits of the resulting frontier.\n\n\nAsk students to separate model uncertainty from incomplete search. Repeating a search can reveal variability in found candidates, but cannot correct a biased cost model.\nCompare small versions against exhaustive enumeration when practical, and compare full runs with known baselines and style extremes.\nTreat reproducible random seeds, repeated runs, and sensitivity to assumptions as practical evaluation habits. They are useful checks, not certificates of optimality.\nThe chapter’s message is to use enumeration when feasible and flexible heuristics when needed, while retaining architecture judgment throughout.\n\nSource: Crawley, Cameron & Selva (2016), §16.6 and §16.7, pp. 408–416; classroom synthesis.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#a-compact-neoss-formulation-exercise",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#a-compact-neoss-formulation-exercise",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "A compact NEOSS formulation exercise",
+    "text": "A compact NEOSS formulation exercise\nFor a simplified program:\n\nChoose among four instruments.\nPartition selected instruments into spacecraft.\nAssign each spacecraft one of three allowed orbit options.\nOrder the spacecraft launches.\n\nDefine two metrics, two hard constraints, and one coupling that a staged solution must retain.\n\n\nGive pairs five minutes. Expected patterns: DOWN-SELECTING, PARTITIONING, DECISION-OPTION for each spacecraft’s orbit, and PERMUTING for launch order.\nPossible metrics: scientific requirement satisfaction and lifecycle cost. Possible constraints: spacecraft power capacity and an instrument-orbit incompatibility. A continuity requirement can couple instrument selection with launch timing.\nThe orbit step here requires exactly one named orbit option per spacecraft, so its simple decision-option encoding is intentional. A more general multiple-copy orbit allocation would use ASSIGNING.\nAsk students whether launch order alone verifies a no-gap condition. Actual dates or a model that derives dates are needed.\nDo not reward a long list of variables unless each has a dictionary, interpretation, and role in evaluation.\n\nSource: Crawley, Cameron & Selva (2016), §§16.2–16.6, pp. 375–416; classroom exercise.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#counting-the-compact-neoss-space",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#counting-the-compact-neoss-space",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Counting the compact NEOSS space",
+    "text": "Counting the compact NEOSS space\nClassroom assumptions: no duplicated instruments, no extra constraints.\nFor a selected set of size \\(s\\), partition it into \\(k\\) spacecraft, choose one of 3 orbits for each, and order the launches:\n\\[N=\\sum_{s=1}^{4}\\binom{4}{s}\\sum_{k=1}^{s}S(s,k)\\,3^k\\,k!=4{,}059.\\]\nThe empty program adds one more architecture if it is allowed.\n\n\nBreak the product into choices: choose the subset, choose an unlabeled partition, assign an orbit to each resulting instrument group, and permute those groups into launch order.\nContributions by selected-set size are 12, 126, 876, and 3,045, totaling 4,059. For one selected instrument there are four choices times three orbits.\nEach group is identifiable by its instrument membership, so assigning orbit options and launch positions does not reintroduce arbitrary bin-label duplicates.\nThis count does not represent the full NEOSS program in the book. It omits dates, constellation details, copies, and constraints by construction.\nUse as an optional challenge. The learning goal is a correct factorization, not memorizing Stirling numbers.\n\nSource: Crawley, Cameron & Selva (2016), §§16.4–16.6; derived classroom example.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#chapter-16-takeaways",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#chapter-16-takeaways",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Chapter 16 takeaways",
+    "text": "Chapter 16 takeaways\n\nA decision model links architecture choices to stakeholder metrics.\nSix patterns expose useful structure and architectural styles.\nEncodings must preserve meaning, feasibility, and distinct alternatives.\nDecomposition requires explicit attention to coupling.\nEnumeration gives complete model coverage when affordable.\nHeuristics provide useful candidates with limits that must remain visible.\n\n\n\nReconnect the final three chapters: Chapter 14 represents and evaluates decisions; Chapter 15 reasons about the tradespace; Chapter 16 formulates recurring structures and searches them.\nAsk students which step requires the most human judgment. There is no single correct stage: scope, metrics, assumptions, constraints, decomposition, and interpretation all do.\nOptimization supports architecture rather than replacing stakeholder analysis, concept generation, or detailed engineering.\nInvite a student to explain one pattern using an example outside aerospace to test transfer of understanding.\n\nSource: Crawley, Cameron & Selva (2016), §16.7, p. 416.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#exit-ticket",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#exit-ticket",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Exit ticket",
+    "text": "Exit ticket\n\nWhy is assigning to named orbits different from partitioning into spacecraft?\nWhy can two encodings represent the same architecture?\nWhen can a locally attractive subsystem harm the full system?\nWhat does a heuristic Pareto front establish, and what does it leave uncertain?\n\n\n\nExpected answer 1: general assignment permits omissions and multiple copies and uses named destinations; partitioning is exhaustive, disjoint grouping into unlabeled subsets.\nExpected answer 2: irrelevant values at an empty balloon site, or different labels for identical partition groups, do not change the physical architecture.\nExpected answer 3: shared resources, incompatible packaging, delayed maturity, or data-continuity gaps can offset local value.\nExpected answer 4: the returned candidates are non-dominated among those found under the stated model; unvisited candidates may dominate them, and the model itself may be inaccurate.\nUse the answers to identify whether students need another exercise in representation, coupling, or search interpretation.\n\nSource: Crawley, Cameron & Selva (2016), §16.7, p. 416; classroom assessment.",
+    "crumbs": [
+      "Teaching",
+      "Undergraduate Courses",
+      "Systems Architecture",
+      "IV. Architecture as Decisions",
+      "16. System Architecture Optimization Problems"
+    ]
+  },
+  {
+    "objectID": "teaching/ug_courses/systems_architecture/chapter16.html#reading-and-further-study",
+    "href": "teaching/ug_courses/systems_architecture/chapter16.html#reading-and-further-study",
+    "title": "Formulating and Solving System Architecture Optimization Problems",
+    "section": "Reading and further study",
+    "text": "Reading and further study\nCrawley, Cameron & Selva, System Architecture (2016)\n\nChapter 16, §§16.1–16.7, pp. 373–416.\nChapter references, pp. 416–419.\nAppendix C: rule-based representation, generation, and evaluation.\nAppendix D: related computational methods and classical problems.\n\nRevisit Chapters 14–15 for the Apollo, GNC, and Pareto examples.\n\n\nThe lecture follows the supplied edition. All reproduced source figures carry their figure and page references; numerical classroom examples are labeled as such.\nFurther-reading routes within the chapter include Alexander and software design patterns, Suh’s functional independence, Bell and Stirling numbers, Holland’s genetic algorithms, and multiobjective methods such as NSGA-II.\nStudents do not need to read every research citation before using the six patterns. Assign the chapter and choose a targeted reference for deeper work.\nSuggested follow-up: formulate a small architecture problem, enumerate it, then compare a limited heuristic search with the exact finite-model frontier.\n\nSource: Crawley, Cameron & Selva (2016), Chapter 16 and references, pp. 373–419.",
     "crumbs": [
       "Teaching",
       "Undergraduate Courses",
