@@ -52,16 +52,20 @@ function Pandoc(doc)
         table.insert(groups[record.year], entry)
       end
     end
-    table.sort(years, function(a,b) return a > b end)
+    table.sort(years, function(a,b)
+      if a == 'Undated' then return false end
+      if b == 'Undated' then return true end
+      return a > b
+    end)
     local blocks = pandoc.List()
     for _, year in ipairs(years) do
-      blocks:insert(pandoc.Header(2, year, pandoc.Attr('year-' .. year)))
+      blocks:insert(pandoc.Header(2, year .. ' (' .. #groups[year] .. ')', pandoc.Attr('year-' .. year)))
       for _, entry in ipairs(groups[year]) do blocks:insert(entry) end
     end
     local navigation = pandoc.List({pandoc.Str("Browse by year:"), pandoc.Space()})
     for i, year in ipairs(years) do
       if i > 1 then navigation:insert(pandoc.Space()); navigation:insert(pandoc.Str("·")); navigation:insert(pandoc.Space()) end
-      navigation:insert(pandoc.Link(year, "#year-" .. year))
+      navigation:insert(pandoc.Link(year .. " (" .. #groups[year] .. ")", "#year-" .. year))
     end
     blocks:insert(1, pandoc.Div({pandoc.Para(navigation)}, pandoc.Attr("", {"publication-years"})))
     div.content = blocks
