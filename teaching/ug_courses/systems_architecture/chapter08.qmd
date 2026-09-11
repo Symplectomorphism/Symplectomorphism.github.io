@@ -32,6 +32,11 @@ Running example: an **air transportation service**. Section 8.4 repeats the proc
 - **Preview the four-stage process**: concept → Level 1 architecture → Level 2 architecture → modularization
 - Two running examples: air transportation service (carries almost the whole chapter), home data network (Section 8.4, repeats the process on a different system to show it generalizes)
 - → Worth noting: the air-transportation example was a substantial contribution from Peter Davison of MIT
+
+**Discussion:** Why does synthesis need the same questions used in analysis?
+
+**Suggested answer:** They provide completeness checks for function, form, interfaces, and operation. In synthesis the answers are proposed and revised rather than inferred from a finished system.
+
 :::
 
 ## Two New Questions {.smaller}
@@ -55,6 +60,9 @@ Table 8.1 compiles every question from Chapters 4–7, in the order they're addr
 - → Nice single-slide review of the whole Ch.4–7 arc, useful as a study aid on its own
 - **Two genuinely new questions** (the callouts): **8a** — how does Level 1 extend to Level 2? **8b** — what's a sensible modularization of the Level 2 objects?
 - Order: Section 8.3 tackles 8a, Section 8.5 tackles 8b; Section 8.2 (next) first builds Level 1 properly by working back through Ch.4–7 questions
+
+**Suggested answer:** **8a:** take each Level 1 function as intent for Level 2, identify its internal processes and operands, decompose enabling form, and map the two with explicit interfaces. **8b:** use those Level 2 dependencies to propose coherent groups, then compare them with the trial Level 1 decomposition. In air transportation, a timeline is a useful starting arrangement, but shared personnel, information, and equipment may justify different module boundaries.
+
 :::
 
 # 8.2 Developing the Level 1 Architecture
@@ -71,6 +79,11 @@ Table 8.1 compiles every question from Chapters 4–7, in the order they're addr
 - **Air travel example** (clean, minimal): primary operand = the **traveler** (state changes all the way through); secondary operand = **checked baggage** (set aside for now)
 - Elegant observation: every process acts on the traveler except **purchasing the ticket**, which acts on the **ticket** — an information object encoding itinerary, status, reservation, fees
 - → Have students predict the diagram before the next slide: traveler progressing step by step (checked-in → ... → checked-out), one small side-branch for the ticket
+
+**Discussion:** Sketch the passenger pathway before adding secondary services.
+
+**Suggested answer:** Trace the traveler through departure handling, boarding, transportation, and arrival handling. Represent the ticket as a related information operand rather than assuming every process changes the traveler directly.
+
 :::
 
 ## Figure 8.1 · Primary Value Delivery {.smaller}
@@ -87,6 +100,11 @@ A simple "no-frills" airline: purchasing → check in → loading → transporti
 - This is a bare-bones, "no-frills" airline — just enough to get a traveler from A to B
 - Point out what's to the *right* of the dashed boundary: accompanying functions (communicating, traveling, parking, navigating, flight controlling, catering) + supporting functions (IT, scheduling, airport support, planning, training, HR) — enumerated but **not yet wired in**
 - → Deliberate — connecting them fully needs Level 2 detail not yet developed (comes back at Question 6c). This figure answers Question 5c: functional architecture and value-pathway connections
+
+**Discussion:** What could break the value pathway even if the flight itself succeeds?
+
+**Suggested answer:** A failed check-in, missed connection, or inability to complete arrival handling can prevent the intended journey. Successful component processes do not guarantee successful end-to-end service.
+
 :::
 
 ## Figure 8.2 · Adding Secondary Value {.smaller}
@@ -103,6 +121,9 @@ Nourishing, entertaining, and crediting (a frequent-flyer program) add secondary
 - **Important observation** (previews complexity themes from Ch.13): adding secondary value doesn't just add ovals — it makes the architecture **noticeably more complex**
 - Checked baggage now needs its own near-parallel path (loading, transporting, unloading), separating at check-in and reuniting at check-out — much of the single-operand detail must be duplicated for a second operand
 - → Not visible from the one-line concept statement — only becomes apparent once you actually build the architecture. The whole reason this chapter exists as a distinct step from Ch.7
+
+**Suggested answer:** Compared with the primary transportation pathway, the model adds nourishing, entertaining, and crediting the traveler, plus associated inputs, outputs, and enabling resources. Baggage also requires a coordinated path that separates from and later rejoins the passenger journey. Count more than new process symbols: ask what food, information, records, handling resources, and synchronization each addition requires. Secondary value can create substantial integration work even when the primary destination change is unchanged.
+
 :::
 
 ## Defining the Form: Zigzagging Back {.smaller}
@@ -117,6 +138,11 @@ Nourishing, entertaining, and crediting (a frequent-flyer program) add secondary
 - **4a**: form = airline's own employees/equipment + leased airport entities tied to processing (ticket desks, baggage conveyors) — *excludes* non-airline airport services (parking, arriving by car) and government-run ATC/navigation/security
 - → Nice concrete instance of "define the boundary, separate from context" (Chapter 2, Task 2) on a real, moderately complex system
 - **4d–4f**: book is candid about gaps — accompanying systems (nav satellites, ATC towers) only *inferred*, not drawn; only explicit interface is federally supplied security inspection at check-in; use context deliberately narrow — single domestic leg, real surrounding infrastructure (roads, rental cars, connections, international/passport control) knowingly out of scope
+
+**Discussion:** Why return to form after developing the functional pathway?
+
+**Suggested answer:** Each process needs enabling resources. Mapping back to people, equipment, and information systems exposes unsupported functions and shared-resource dependencies.
+
 :::
 
 ## Mapping Function to Form {.smaller}
@@ -134,6 +160,11 @@ Nourishing, entertaining, and crediting (a frequent-flyer program) add secondary
 - → General lesson: any Level 1 architecture is a simplification; good practice = being clear-eyed about which non-idealities were set aside
 - **Supporting functions (6c)**: the "supporting" ovals in Figs 8.1/8.2 (IT, scheduling, training, HR) are enumerated but *not yet wired in*
 - → Nearly every value-related instrument involves personnel who need training/HR support — mapping that fully needs detail not visible at Level 1. Exactly the gap Level 2 (next) fills
+
+**Discussion:** Does every process require its own physical component?
+
+**Suggested answer:** No. One component may enable several processes and one process may require several components. The allocation should make the necessary interactions and responsibilities explicit.
+
 :::
 
 ## Sequence and Parallel Threads {.smaller}
@@ -149,6 +180,9 @@ Nourishing, entertaining, and crediting (a frequent-flyer program) add secondary
 - → Ask students to name other systems with this same parallel-thread structure
 - **Clock time (6g)**: explicitly *not* captured — airlines keep real schedules, but nothing shown so far represents this; would need additional timing diagrams
 - → No single diagram type (OPM included) shows everything — different questions call for different representations (echoes Chapter 3's "views and projections")
+
+**Suggested answer:** An online purchase has parallel physical and informational threads: stock is picked, packed, and shipped while payment and tracking records are processed. These threads synchronize at conditions such as payment authorization before dispatch and delivery confirmation before closing the order. Similarly, passenger and baggage identities must match when their paths rejoin. A diagram's apparent ordering is not a complete schedule: specify precedence, shared-resource constraints, durations, and synchronization conditions separately.
+
 :::
 
 ## Figure 8.3 · Reasoning Down Through the Levels {.smaller}
@@ -166,6 +200,11 @@ The starting point for Level 1 is the Level 0 information: the solution-neutral 
 - Level 1 intent → specialized/zoomed into the Level 1 functional architecture (P_11, P_12, own operands/processes); Level 0 form separately decomposed into Level 1 form
 - → **Recursive part**: exactly the same pattern repeats one level further — Level 1 functions become Level 2 functional intent, process runs again
 - This diagram does double duty: summarizes Level 1 just walked through, and previews Section 8.3's entire recursive structure one level deeper
+
+**Discussion:** What becomes the intent when we move down one level?
+
+**Suggested answer:** The chosen higher-level function becomes the lower-level problem to solve. Decompose the relevant processes and enabling form while preserving the higher-level outcome and constraints.
+
 :::
 
 ## Function-Goal Reasoning {.smaller}
@@ -185,6 +224,11 @@ The starting point for Level 1 is the Level 0 information: the solution-neutral 
 - **The mechanics** (the actual recipe): Level 0 specific function → functional intent Level 1 must satisfy → specialized/zoomed into Level 1 functional architecture (operands, processes); Level 0 form separately decomposed into Level 1 form, mapped onto those processes (the zigzag: function → form → function)
 - Rest of Level 1 (non-idealities, supporting processes/form, interfaces) follows using the same Ch.6 machinery
 - → Connect back to the opening: function-goal reasoning is *why* concept→Level 1→Level 2 can be applied recursively — same pattern reapplies one level lower each time
+
+**Discussion:** Explain function-goal reasoning using ticket purchasing.
+
+**Suggested answer:** Once purchasing a ticket is selected as a service function, lower-level processes must achieve it: determine an itinerary, establish availability, authorize payment, and create a valid ticket record.
+
 :::
 
 ## Section 8.2 Summary {.smaller}
@@ -200,6 +244,11 @@ The starting point for Level 1 is the Level 0 information: the solution-neutral 
   - zag back into function for 6a–6g (mapping form to process, non-idealities, supporting functions, sequence, parallel threads, clock time)
   - all governed by **function-goal reasoning**: the specific function at one level *becomes* the functional intent one level down
 - → Restate this last point — Section 8.3 (next) leans on it immediately, applying it recursively to go from Level 1 to Level 2
+
+**Discussion:** How can we check a Level 1 architecture before adding detail?
+
+**Suggested answer:** Trace the primary value pathway, supporting functions, function-to-form allocation, and interfaces. Check normal and relevant off-nominal operation against the higher-level intent.
+
 :::
 
 # 8.3 Developing the Level 2 Architecture
@@ -220,6 +269,9 @@ Example: "purchasing tickets" (Level 1) becomes the Level 2 intent, specialized 
 - Book's answer (major theme again in Ch.13): the real info about how entities *should* cluster/modularize at Level 1 is hidden at Level 2 — need to dive down first
 - Mechanism: **recursively apply Table 8.1**, one level deeper — each Level 1 function becomes Level 2 functional intent (same pattern as Figure 8.3, shifted down)
 - → Worked example for the rest of the section: "purchasing tickets" (Level 1 function) becomes the Level 2 intent, specializes to purchasing online, zoomed further from there
+
+**Suggested answer:** We cannot justify a Level 1 grouping merely because its labels sound sensible. Examine the Level 2 processes, shared operands, instruments, and interfaces to see which activities are tightly coupled and which can operate independently. If a shared resource crosses many proposed boundaries, revise the grouping or explicitly manage the interface. The aim is sufficient detail to evaluate the decomposition, not an exhaustive model of every lower-level component.
+
 :::
 
 ## Figure 8.4 · Zooming to Level 2 for Ticket Purchasing {.smaller}
@@ -236,6 +288,11 @@ Purchasing specializes into 5 internal processes (linking, learning, reserving, 
 - **What's genuinely new**: 5 processes where Level 1 showed 1; **3 brand-new internal operands** surface (travel program status, schedule/routing/price info); **3 new accompanying instruments** outside the boundary (laptop, network, credit card)
 - None of this was visible at Level 1 — "purchasing tickets" was a black box until zoomed in
 - → This is the hidden structure the motivating question pointed at: can't judge if "purchasing tickets" was well-scoped until you see what's inside it
+
+**Discussion:** Why does zooming into ticket purchasing expose new operands?
+
+**Suggested answer:** The top-level transaction contains itinerary, availability, payment, and ticket information with distinct states. These become explicit when the internal processes are modeled.
+
 :::
 
 ## Table 8.2 · Level 2 Processes and Operands {.smaller}
@@ -252,6 +309,11 @@ Applying this zooming to all 9 Level 1 value processes produces **28 internal pr
 - **Judgment-call worth flagging**: entertaining, nourishing, crediting — full Level 1 processes in Fig 8.2 — effectively get "demoted" to Level 2 once this fuller picture is assembled
 - Not a mistake being corrected — a legitimate, routine judgment call; the right level for a process isn't always obvious until you've done the detailed analysis
 - → Concrete illustration of the motivating question: Level 2 detail genuinely informs, and sometimes revises, Level 1 judgments
+
+**Discussion:** Why list operands alongside Level 2 processes?
+
+**Suggested answer:** Process names alone hide what is changed or exchanged. Naming operands and states exposes missing information and incompatible inputs and outputs between processes.
+
 :::
 
 ## Table 8.3 · Level 2 Processes Mapped to Form {.smaller}
@@ -267,6 +329,11 @@ Applying this zooming to all 9 Level 1 value processes produces **28 internal pr
 - Maps all **28 Level 2 processes** onto **22 instruments of form**
 - Close to one-to-one — but notable exceptions: **agents and flight attendants** (human) are adaptable to many roles, show up as instruments across multiple processes, unlike rigid single-purpose equipment (x-ray machine, metal detector, baggage conveyor)
 - → General observation: human instruments of form are far more functionally flexible than mechanical/software ones — shows up visibly as a less sparse row in a table like this
+
+**Discussion:** What does a process with no mapped form tell us?
+
+**Suggested answer:** Either enabling resources are missing or the model is incomplete. Identify the person, software, or equipment that performs or supports it, including any external provider.
+
 :::
 
 ## Do We Need Level 3? {.smaller}
@@ -283,6 +350,9 @@ Three levels are hard to develop and too much to comprehend easily — we usuall
 - Not sloppiness — deliberate scoping to focus on core value-related structure
 - **Scale rules of thumb**: Level 1 ≈ **20–30** entities (recalls Ch.3's 7±2 per level, compounding), Level 2 ≈ **50–100**, Level 3 would run into the **hundreds** — echoes Ch.3's simple/medium/complex arithmetic, roughly geometric compounding
 - → Practical conclusion: three levels are hard to develop and too much to comprehend at once — usually don't need Level 3. Level 2's purpose: confirm Level 1's abstractions, inform modularization (Section 8.5) — not re-architect one level deeper than necessary
+
+**Suggested answer:** Descend further when an unresolved dependency, feasibility question, or resource conflict at Level 2 can change the Level 1 architectural decision. Stop when the current abstractions have adequate behavior and interface evidence for the question at hand. Three levels are not forbidden; they are simply costly to develop and difficult to display together. Keep deeper detail in focused views rather than placing everything on one diagram.
+
 :::
 
 ## Section 8.3 Summary {.smaller}
@@ -296,6 +366,11 @@ Three levels are hard to develop and too much to comprehend easily — we usuall
 - Result on air transportation: **18 → 28 processes** (22 form instruments) — a dramatic increase in detail
 - **Emphasize hardest**: the point isn't detail for its own sake — it validates whether Level 1 was a good decomposition, and sets up modularization (Section 8.5's payoff)
 - → Before that: Section 8.4 detours to repeat the process on a different system (home data network) to show the method isn't specific to air travel
+
+**Discussion:** When is further decomposition useful?
+
+**Suggested answer:** When unresolved interfaces, allocation, feasibility, or risk require it. Stop at a level adequate for the architectural decision rather than decomposing simply because more detail is possible.
+
 :::
 
 # 8.4 Home Data Network Architecture at Level 2
@@ -316,6 +391,11 @@ Layering lets a network designer view the system through the lens of a single la
 - Layering: **Internet, Link, Physical** — mirrors the bottom three layers of the standard Internet protocol suite (application/transport layers omitted, minor role within the home network)
 - **Layering trade-off** (fragment): lets a designer reason about one layer at a time (same "abstraction" idea as Ch.2) — gives scalability, robustness, flexibility
 - → But makes it harder to trace the data's continuous end-to-end functional pathway — exactly the harder, "linearized" view the next two figures walk through anyway, because it's valuable despite cutting against how networks are normally discussed
+
+**Discussion:** What transfers from the air-travel example to the network example?
+
+**Suggested answer:** The method: define the value pathway, identify operands and processes, map enabling form, and inspect interfaces. Domain-specific physics and protocols change, but these reasoning steps remain useful.
+
 :::
 
 ## Figure 8.5a · Laptop to Wireless Access Point {.smaller}
@@ -334,6 +414,11 @@ The laptop creates an IP packet, encapsulates it into an 802.11 frame with MAC a
   - Source MAC = static property of the NIC; destination MAC = looked up via **ARP table** (maps destination IP → destination MAC on the local network)
 - **Physical layer**: laptop's antenna modulates bits onto a 2.4-GHz signal, broadcasts
 - → **WAP** receives, de-encapsulates back to IP packet, reads destination, determines it must go through the residential gateway, re-encapsulates as a new **Ethernet frame** addressed to the gateway — next leg on the following slide
+
+**Discussion:** What must be compatible between a laptop and an access point?
+
+**Suggested answer:** Their communication interfaces and operating assumptions must allow data exchange. Naming two connected devices is insufficient without compatible signaling, protocols, and access arrangements.
+
 :::
 
 ## Figure 8.5b · Switch to the ISP {.smaller}
@@ -352,6 +437,11 @@ The switch error-checks, reads the destination, and forwards the frame to the ga
 - → NAT's two benefits: conserves scarce public IP addresses, and adds security (devices never directly broadcast their address to the Internet)
 - Re-encapsulated into a **PPPoE** frame (residential gateway ↔ ISP protocol), modulated by the DSL modem onto the phone line → telephone exchange → ISP
 - → Complete journey across three layers and two figures — a concrete demonstration of Level 2 detail on a system entirely different from air transportation
+
+**Discussion:** Why is the ISP boundary architecturally important?
+
+**Suggested answer:** It separates responsibilities and technologies while carrying the end-to-end data flow. The architecture must specify what crosses that boundary and what service each side provides.
+
 :::
 
 ## Section 8.4 Summary {.smaller}
@@ -366,6 +456,9 @@ The switch error-checks, reads the destination, and forwards the frame to the ga
 - → Reinforces: "form" was never restricted to physical hardware — informational entities are just as legitimately form
 - **Closing point** (ties to Section 8.3's "why Level 2" discussion): this Level 2 model — its layered structure especially — is what lets us judge whether Level 1 was robust and sensibly modularized
 - → Bridge into Section 8.5: with two worked Level 2 examples now in hand, the chapter turns to using Level 2 detail to modularize Level 1
+
+**Suggested answer:** For the home network, test whether each proposed layer or module has a coherent responsibility, explicit interfaces, and dependencies that match the actual lower-level functions. Physical devices and informational objects can both enable processes. If one presumed module depends on many hidden details of another, the Level 1 abstraction needs revision or stronger interface contracts. A layered drawing is evidence of an organizing idea, not by itself proof of robust modularization.
+
 :::
 
 # 8.5 Modularizing the System at Level 1
@@ -383,6 +476,9 @@ The switch error-checks, reads the destination, and forwards the frame to the ga
 - **Clustering objective**: cluster tightly interconnected entities, minimizing cross-module interactions, maximizing within-module coherence — echoes Ch.3's modular-vs-integral spectrum
 - **First choice point** (Box 8.1, next): cluster by **process** (shared operands) or by **form** (structural/spatial relationships)
 - → Rest of this section works the process-based route on air transportation; form-based route is an equally legitimate alternative, not covered in full
+
+**Suggested answer:** A timeline makes the customer's journey easy to explain, but consecutive activities do not necessarily belong in the same module. Level 2 analysis may reveal shared agents, records, or equipment that couple nonadjacent activities. Compare process clustering through shared operands with form clustering through structural relationships; assess the resulting interfaces, ownership, and performance. Minimize costly cross-module dependencies while preserving necessary interactions, rather than simply minimizing every connection.
+
 :::
 
 ## Box 8.1 · Clustering by Interactions {.smaller}
@@ -403,6 +499,11 @@ Here, clustering is based on **processes**, linked through *shared operands*: tw
 - **Key simplification**: earlier chapters preserved interaction *type* (I/a/c notation from Table 8.2); for clustering, that's suppressed to a simple count — is there a connection, and how many shared ones
 - → Trade-off: loses type info, but lets a mechanical algorithm rearrange rows/columns into contiguous tightly-coupled blocks — much harder to automate otherwise
 - Choice for the worked example (fragment): cluster by **process**, coupling = shared operands. Sets up Table 8.4's DSM next
+
+**Discussion:** Why cluster by interactions rather than merely by names?
+
+**Suggested answer:** Strongly interacting entities often need close coordination. Grouping them can reduce cross-boundary dependencies, although lifecycle, ownership, and implementation constraints may justify other boundaries.
+
 :::
 
 ## Table 8.4 · DSM Clustering of Level 2 Processes {.smaller}
@@ -419,6 +520,11 @@ The **Thebeau algorithm** reorders the 28×28 process-interaction matrix so tigh
 - **Thebeau algorithm** (Ronnie Thebeau's 2001 MIT master's thesis on system-interface knowledge management): reorders rows/columns so highly-coupled entities sit next to each other
 - Payoff: shaded **block-diagonal pattern**, **six clusters** emerge — groups that interact heavily internally, little across
 - → What matters is the *shape* of the reordered pattern (clean block-diagonal vs. messy), not individual numbers. Same technique (DSM + clustering) returns in much more depth in Chapter 13 — get comfortable reading it now
+
+**Discussion:** Does moving DSM rows and columns change the system?
+
+**Suggested answer:** Reordering reveals patterns in the same relationship data. Actual modularization may later change allocation or interfaces, but rearranging the matrix alone changes only its representation.
+
 :::
 
 ## Six Clusters Emerge {.smaller}
@@ -439,6 +545,11 @@ This clustering is *organized by operand path*, not by chronology — a genuinel
 - **Clusters 3–5**: passenger, checked bags, carry-on bags — strikingly similar structure, each following check-in → move → check-out
 - **Cluster 6** (secondary experience): alerting, informing, entertaining, nourishing
 - → Fragment's payoff, answers the section's opening question: organized around **operand path**, not **chronology** (the original Level 1 timeline). Two different lenses on the same system, genuinely different groupings — neither obviously "the" right one
+
+**Discussion:** Do six visible clusters establish a uniquely correct decomposition?
+
+**Suggested answer:** No. They reflect the relationships represented and the clustering criterion. Check excluded interactions and operational or organizational needs before adopting the groups.
+
 :::
 
 ## Two Decompositions, Neither "Right" {.smaller}
@@ -457,6 +568,11 @@ If the airline cared about *running time*, the time-based organization might mak
 - **Central conclusion**: timeline-based (Fig 8.2) and operand-based (Table 8.4) decompositions are just two ways of organizing the same system — neither objectively "right"
 - → Resolve via what the architect optimizes for: **running time** favors the time-based organization; **end-to-end reliability** per passenger/bag favors the operand-based clustering
 - Generalizable lesson: modularization isn't purely mechanical — it's anchored to the system's actual goals, echoing Chapter 2's focus principle ("which entities matter" depends on the question)
+
+**Discussion:** When would a timeline view be preferable to an interaction-based decomposition?
+
+**Suggested answer:** For understanding sequence, handoffs, and service progression. Interaction-based grouping can better support resource allocation or organizational coordination. Use the view appropriate to the question.
+
 :::
 
 ## Section 8.5 Summary {.smaller}
@@ -469,6 +585,11 @@ If the airline cared about *running time*, the time-based organization might mak
 - **Section checkpoint before the chapter wrap-up** — students should walk through the full recipe: expand to Level 2 (8.3), examine relationships via process or form (Box 8.1), represent as a DSM, apply a clustering algorithm (Thebeau) to surface tightly-coupled blocks
 - What this buys practically: informs where internal interfaces should sit, and how design work can be distributed across teams/suppliers — loosely-coupled modules need far less cross-team coordination
 - → Central caution, worth carrying forward: no decomposition is universally "correct" — the right one depends on what the architect is optimizing for. Not a limitation of the method — a fundamental feature of architectural decision-making, revisited especially in Part 3
+
+**Discussion:** What information should accompany a proposed module boundary?
+
+**Suggested answer:** Its purpose, contained functions and form, external interfaces, and rationale. Explain how the grouping manages strong dependencies and what coordination remains outside it.
+
 :::
 
 ## Chapter 8 Summary {.smaller}
@@ -487,6 +608,11 @@ If the airline cared about *running time*, the time-based organization might mak
 - Concept and architecture differ by orders of magnitude in information content; closing that gap is recursive (Level 0 → 1 → 2), governed throughout by function-goal reasoning
 - **Two-stage recipe**: Level 1 = value pathway (5b) + zigzag through Ch.4–6 questions; Level 2 = the same procedure recursively one level down — validates Level 1's decomposition, informs modularization (Section 8.5's DSM clustering)
 - → **This chapter closes out Part 2** — recap: Ch.4 form, Ch.5 function, Ch.6 architecture as a mapping, Ch.7 solution-neutral function/concept as the bridge to synthesis, Ch.8 completes the bridge: concept → full, validated, modularized architecture. Everything from here builds on this
+
+**Discussion:** What distinguishes a defensible architecture from a plausible-looking diagram?
+
+**Suggested answer:** Traceability to intent, complete functional pathways, credible enabling form, and explicit interfaces and assumptions. The diagram is evidence of the reasoning only when those checks support it.
+
 :::
 
 ## Next: Part 3 — Creating System Architecture
