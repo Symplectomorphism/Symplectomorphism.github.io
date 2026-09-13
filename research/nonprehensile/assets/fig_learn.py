@@ -312,7 +312,7 @@ def pipeline(path):
 
 def budget(path):
     """What gets measured, and against what."""
-    g = Svg(940, 392, ox=0, oy=0, scale=1, cls="fig")
+    g = Svg(940, 410, ox=0, oy=0, scale=1, cls="fig")
     g.header("One number decides whether any of this is worth it", y=32,
              crop=46)
     g.px_text((470, 58), "N&#923; = calls to the local solver, from the query "
@@ -321,15 +321,17 @@ def budget(path):
               family="'Latin Modern Math','STIX Two Math',Georgia,serif")
 
     bars = [
-        ("no discrete search at all", 0.0, C["violet"], "must be run first"),
+        ("no discrete search at all", 0.0, C["violet"], "run this first"),
+        ("a different discrete object", 0.0, C["violet"],
+         "contact intention + subgoal"),
         ("teacher, tries everything", 0.92, C["ink"], ""),
         ("closest-gap-first", 0.74, C["faint"], "misses two hops"),
         ("learned ranker", 0.40, C["primary"], "the claim to test"),
         ("shortest certified plan", 0.22, C["gold"], "the floor"),
     ]
-    x0, y0, w = 300, 92, 400
+    x0, y0, w = 316, 86, 384
     for i, (name, v, col, note) in enumerate(bars):
-        y = y0 + i * 48
+        y = y0 + i * 44
         g.px_text((x0 - 16, y + 21), name, size=13.5, anchor="end",
                   fill=C["ink"])
         g.add(f'<rect x="{x0}" y="{y}" width="{w}" height="30" rx="5" '
@@ -346,9 +348,9 @@ def budget(path):
             g.px_text((x0 + w + 12, y + 20), note, size=12.5, anchor="start",
                       fill=C["faint"])
 
-    g.px_text((470, 356), "the learned layer earns its place only if it sits "
+    g.px_text((470, 374), "the learned layer earns its place only if it sits "
               "below every baseline,", size=13.5, fill=C["muted"])
-    g.px_text((470, 376), "at equal budget and equal success rate", size=13.5,
+    g.px_text((470, 394), "at equal budget and equal success rate", size=13.5,
               fill=C["muted"])
     return g.save(path, "The measurement")
 

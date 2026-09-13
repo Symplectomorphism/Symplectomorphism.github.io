@@ -189,6 +189,6 @@ def prior_work(path):
               fill=C["muted"])
     g.add(f'<line x1="470" y1="26" x2="470" y2="334" stroke="{C["rule"]}" '
           f'stroke-width="1.4"/>')
-    g.px_text((470, 358), "this is the one structural difference that matters",
-              size=13.5, fill=C["faint"])
+    g.px_text((470, 358), "the difference that matters is which of these a "
+              "planner may decide", size=13.5, fill=C["faint"])
     return g.save(path, "Existing contacts versus the full catalog")

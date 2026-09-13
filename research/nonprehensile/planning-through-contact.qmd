@@ -73,8 +73,8 @@ Get the sequence wrong and no amount of trajectory optimization recovers it.
 ![](assets/prior-work.svg){fig-alt="Left: only the contacts that are currently touching are in the state. Right: the full catalog, including the riser and platform contacts that do not exist yet."}
 
 ::: claim
-Carrying unmade contacts in the state is the one structural difference —
-everything else follows from it.
+Carrying unmade **environment** contacts in the state, and gating their release
+by statics, is the structural difference — everything else follows from it.
 :::
 
 ::: {.notes}
@@ -83,11 +83,24 @@ found, a separating or maintaining normal velocity and — if maintaining — a
 sticking or sliding cell of the friction cone. Huang, Cheng and Mason enumerate
 those cells; Cheng and coauthors use them as primitives in an RRT and in
 Monte-Carlo tree search. Graphs of convex sets differ but share the shape of
-the limitation: vertices are modes, enumerated up front.
+the limitation: vertices are modes, enumerated up front. Either is a good
+discrete object for contacts you already have; neither can express "go and
+establish contact with the riser."
 
-Either is a good discrete object for contacts you already have. Neither can
-express "go and establish contact with the riser", which is the decision this
-task needs while the box is still on the floor.
+The claim has to be narrower than that, though, because of Xie, Xiang, Posa
+and Jin. Their hierarchy splits manipulation along the same seam — learned
+geometry above, model-based contact dynamics below — and their interface, a
+*contact intention* of a surface location plus a post-contact object subgoal,
+does establish new contacts. It solves a box pivoted against a step at 95 to 98
+per cent, with zero-shot transfer to a Franka.
+
+Two things sit outside that interface. Object–environment contacts are declared
+**passive** and never enter their action space, so the riser and the platform
+are consequences of a chosen subgoal rather than decisions. And the manoeuvre
+between contacts — disengage, travel, re-acquire — is a scripted
+lift-and-reposition, so nothing asks whether releasing is admissible at the
+current pose. Those two are exactly what this construction makes explicit, and
+they are what the next act is about.
 :::
 
 ## The method at a glance {.smaller}
@@ -258,12 +271,22 @@ Both decide whether an action is legal from *this* pose, not from its name.
 
 ::: {.notes}
 The test is asked of the *keep-set*: the contacts that survive the action.
-Mid-topple that is the riser alone, and a single contact can balance gravity
-only if its line of action passes through the centre of mass — here it does not.
-The figure shows the second, independent reason: the cone about a horizontal
-normal contains no vertical force. That second argument uses the report's
-convention that the normal is the environment feature's, which at a corner
-contact is worth pinning down.
+Mid-topple that is the riser alone, and the argument is the one the figure
+draws. The riser's face is vertical, so with no other horizontal force the
+balance forces its normal force to zero — and a Coulomb cone with zero normal
+force carries no tangential force either. The riser therefore holds *no*
+vertical load, at any pose and whatever its contact patch. That is stronger
+than it first looks: the refusal needs no hypothesis about a single contact
+point, so it holds throughout the topple, not just at one configuration.
+
+It does rest on one modelling choice, worth naming. The normal is taken from
+the *environment* feature — the vertical riser face — and during the pivot the
+realized contact is the riser's top corner bearing on the box face, where a
+corner has no geometric normal of its own. Take the box face's normal instead
+and the cone tilts with theta; the refusal then follows from the weaker
+line-of-action argument, which needs the contact patch to be a single point off
+the vertical through the centre of mass. Both readings refuse the release here.
+They differ in how much more they refuse.
 
 The left panel's motion is integrated, not keyframed — a penalty-contact model
 released from rest. It slides on the step corner for about a fifth of a second,
@@ -415,6 +438,13 @@ architecture will produce a result worth reporting.
 Calibrate $\Lambda$ first: measure how often a much larger retry budget reverses
 a rejection. Until that false-negative rate is known, every teacher label and
 every baseline number is unquantified.
+:::
+
+::: {.small}
+Then two comparisons against something other than a variant of this planner: a
+method that does no discrete search at all, and a **different discrete
+object** — the contact-intention interface, which solves a task of this shape
+with a surface location plus an object subgoal.
 :::
 
 ::: {.notes}
