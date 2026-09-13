@@ -194,11 +194,12 @@ Aykut C. Satici
 <h2>What the discrete object should be</h2>
 
 <img data-src="assets/prior-work.svg" alt="Left: only the contacts that are currently touching are in the state. Right: the full catalog, including the riser and platform contacts that do not exist yet." class="r-stretch"><div class="claim">
-<p>Carrying unmade contacts in the state is the one structural difference — everything else follows from it.</p>
+<p>Carrying unmade <strong>environment</strong> contacts in the state, and gating their release by statics, is the structural difference — everything else follows from it.</p>
 </div>
 <aside class="notes">
-<p>A <em>velocity mode</em> assigns, to each contact collision detection has already found, a separating or maintaining normal velocity and — if maintaining — a sticking or sliding cell of the friction cone. Huang, Cheng and Mason enumerate those cells; Cheng and coauthors use them as primitives in an RRT and in Monte-Carlo tree search. Graphs of convex sets differ but share the shape of the limitation: vertices are modes, enumerated up front.</p>
-<p>Either is a good discrete object for contacts you already have. Neither can express “go and establish contact with the riser”, which is the decision this task needs while the box is still on the floor.</p>
+<p>A <em>velocity mode</em> assigns, to each contact collision detection has already found, a separating or maintaining normal velocity and — if maintaining — a sticking or sliding cell of the friction cone. Huang, Cheng and Mason enumerate those cells; Cheng and coauthors use them as primitives in an RRT and in Monte-Carlo tree search. Graphs of convex sets differ but share the shape of the limitation: vertices are modes, enumerated up front. Either is a good discrete object for contacts you already have; neither can express “go and establish contact with the riser.”</p>
+<p>The claim has to be narrower than that, though, because of Xie, Xiang, Posa and Jin. Their hierarchy splits manipulation along the same seam — learned geometry above, model-based contact dynamics below — and their interface, a <em>contact intention</em> of a surface location plus a post-contact object subgoal, does establish new contacts. It solves a box pivoted against a step at 95 to 98 per cent, with zero-shot transfer to a Franka.</p>
+<p>Two things sit outside that interface. Object–environment contacts are declared <strong>passive</strong> and never enter their action space, so the riser and the platform are consequences of a chosen subgoal rather than decisions. And the manoeuvre between contacts — disengage, travel, re-acquire — is a scripted lift-and-reposition, so nothing asks whether releasing is admissible at the current pose. Those two are exactly what this construction makes explicit, and they are what the next act is about.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -379,7 +380,8 @@ Aykut C. Satici
 <h2>When the manipulator may let go</h2>
 
 <img data-src="assets/support.svg" alt="Mid-topple, the riser's friction cone holds no vertical force and the box tumbles clear; after landing, the platform's cone balances gravity and the release is admitted." class="r-stretch"><aside class="notes">
-<p>The test is asked of the <em>keep-set</em>: the contacts that survive the action. Mid-topple that is the riser alone, and a single contact can balance gravity only if its line of action passes through the centre of mass — here it does not. The figure shows the second, independent reason: the cone about a horizontal normal contains no vertical force. That second argument uses the report’s convention that the normal is the environment feature’s, which at a corner contact is worth pinning down.</p>
+<p>The test is asked of the <em>keep-set</em>: the contacts that survive the action. Mid-topple that is the riser alone, and the argument is the one the figure draws. The riser’s face is vertical, so with no other horizontal force the balance forces its normal force to zero — and a Coulomb cone with zero normal force carries no tangential force either. The riser therefore holds <em>no</em> vertical load, at any pose and whatever its contact patch. That is stronger than it first looks: the refusal needs no hypothesis about a single contact point, so it holds throughout the topple, not just at one configuration.</p>
+<p>It does rest on one modelling choice, worth naming. The normal is taken from the <em>environment</em> feature — the vertical riser face — and during the pivot the realized contact is the riser’s top corner bearing on the box face, where a corner has no geometric normal of its own. Take the box face’s normal instead and the cone tilts with theta; the refusal then follows from the weaker line-of-action argument, which needs the contact patch to be a single point off the vertical through the centre of mass. Both readings refuse the release here. They differ in how much more they refuse.</p>
 <p>The left panel’s motion is integrated, not keyframed — a penalty-contact model released from rest. It slides on the step corner for about a fifth of a second, loses that contact, and lands flat well clear of the riser. Shown because it can be computed; the test itself claims nothing about it.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -403,13 +405,12 @@ Aykut C. Satici
 <section id="that-is-already-a-planner" class="slide level2 smaller">
 <h2>That is already a planner</h2>
 
-<img data-src="assets/search.svg" alt="A search from start to goal: four candidates tried at the first node, three at the second, two at the third, with the rejections marked, totalling nine solver calls for a three-action plan." class="r-stretch"><div class="claim">
-<p>Nothing so far is learned. It runs, it is sound, and its <strong>only</strong> inefficiency is the order in which it hands candidates to <span class="math inline">\(\Lambda\)</span>.</p>
+<img data-src="assets/search.svg" alt="At one node, at most 36 candidate actions are narrowed by the two gates to an unmeasured admissible set, then tried in some order; the same set in two different orders costs four solver calls or one." class="r-stretch"><div class="claim">
+<p>Everything so far runs with nothing learned in it, and what it returns is certified by the records that produced it.</p>
 </div>
 <aside class="notes">
-<p>Worth pausing on, because it decides how the rest should be read.</p>
-<p>Everything up to here — catalog, bit vector, gated actions, the local solver, the search over (marking, quantized pose) — is a complete planner. No network, no training data, no teacher. Run it and it either returns a certified trajectory or exhausts its budget.</p>
-<p>Its weakness is narrow and specific. At every node it has a list of admissible actions and no principled order for them, so it spends calls on rejections. In the sketch, nine calls buy a three-action plan. That gap, and nothing else, is what a learned layer is allowed to attack.</p>
+<p>Everything up to here — catalog, bit vector, gated actions, the local solver, the search over (marking, quantized pose) — is a complete planner. No network, no training data, no teacher.</p>
+<p>Two cautions about this slide, both deliberate. It is <em>sound</em> but not <em>complete</em>: what it returns is certified, but a rejection by <span class="math inline">\(\Lambda\)</span> is not a proof of infeasibility, <code>Imp</code> is sound-and-incomplete, and a marking with an empty realization set surfaces only as a solver failure. And the two counts on the right are a mechanism, not a measurement — four versus one illustrates that rank is the cost, and nothing here claims how often rejections actually happen. That number is Phase I½’s job.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -539,6 +540,9 @@ Aykut C. Satici
 </div>
 <div class="warn">
 <p>Calibrate <span class="math inline">\(\Lambda\)</span> first: measure how often a much larger retry budget reverses a rejection. Until that false-negative rate is known, every teacher label and every baseline number is unquantified.</p>
+</div>
+<div class="small">
+<p>Then two comparisons against something other than a variant of this planner: a method that does no discrete search at all, and a <strong>different discrete object</strong> — the contact-intention interface, which solves a task of this shape with a surface location plus an object subgoal.</p>
 </div>
 <aside class="notes">
 <p>This slide has no picture, which is the point. Everything before it is a construction, and constructions are cheap. Whether the discrete decisions in this family are hard enough that a learned ordering saves solver calls is measurable in a week, with no network involved — and it has not been measured.</p>
