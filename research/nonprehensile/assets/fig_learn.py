@@ -266,7 +266,7 @@ def greedy_misses(path):
 
 def pipeline(path):
     """The whole system on one slide."""
-    g = Svg(940, 424, ox=0, oy=0, scale=1, cls="fig")
+    g = Svg(940, 432, ox=0, oy=0, scale=1, cls="fig")
     g.header("The whole system", y=28, crop=46, size=20)
 
     def card(x, y, w, h, title, body, col, fill="#ffffff", dash=False):
@@ -295,7 +295,7 @@ def pipeline(path):
     card(694, 102, 174, 92, "learned ranker",
          ["GNN over the graph,", "orders the actions"], C["primary"],
          fill=C["primary_soft"], dash=True)
-    g.px_text((781, 208), "optional", size=12, fill=C["primary"],
+    g.px_text((838, 212), "optional", size=12, fill=C["primary"],
               weight="700")
     for x1, x2 in [(248, 276), (452, 480), (666, 694)]:
         arrow(x1, x2, 148)
@@ -314,13 +314,32 @@ def pipeline(path):
     for x1, x2 in [(248, 276), (452, 480), (666, 694)]:
         arrow(x1, x2, 310)
 
-    g.add(f'<path d="M 868 194 C 908 216 908 244 868 262" fill="none" '
-          f'stroke="{C["primary"]}" stroke-width="1.8"/>'
-          f'<polygon points="868,262 879,255 879,266" fill="{C["primary"]}"/>')
-    g.add(f'<path d="M 781 356 C 781 388 160 388 160 360" fill="none" '
-          f'stroke="{C["faint"]}" stroke-width="1.8" stroke-dasharray="5 4"/>'
-          f'<polygon points="160,356 155,367 165,367" fill="{C["faint"]}"/>')
-    g.px_text((470, 410), "the solid path is a complete planner; the dashed "
+    def head(at, ang, col, size=10.0):
+        """Arrowhead at `at`, aimed along `ang`.  Derived from the path's
+        own end tangent rather than placed by hand, which is how the two
+        loops here came to disagree with the curves they terminated."""
+        w = size * 0.42
+        bx, by = at[0] - size * math.cos(ang), at[1] - size * math.sin(ang)
+        g.add(f'<polygon points="{at[0]:.1f},{at[1]:.1f} '
+              f'{bx-w*math.sin(ang):.1f},{by+w*math.cos(ang):.1f} '
+              f'{bx+w*math.sin(ang):.1f},{by-w*math.cos(ang):.1f}" '
+              f'fill="{col}"/>')
+
+    # the learned ranker feeds the ordering stage, not the solver: curve
+    # down and left into the top of the dashed box
+    p0, p1, p2, p3 = (781, 194), (781, 226), (573, 232), (573, 262)
+    g.add(f'<path d="M {p0[0]} {p0[1]} C {p1[0]} {p1[1]} {p2[0]} {p2[1]} '
+          f'{p3[0]} {p3[1]}" fill="none" stroke="{C["primary"]}" '
+          f'stroke-width="1.8"/>')
+    head(p3, math.atan2(p3[1] - p2[1], p3[0] - p2[0]), C["primary"])
+
+    # the reject loop returns to the state.  Straight segments, so the
+    # final approach is visibly vertical and the head cannot look detached
+    g.add(f'<path d="M 781 356 L 781 398 L 160 398 L 160 368" fill="none" '
+          f'stroke="{C["faint"]}" stroke-width="1.8" stroke-dasharray="5 4" '
+          f'stroke-linejoin="round"/>')
+    head((160, 357), -math.pi / 2, C["faint"])
+    g.px_text((470, 420), "the solid path is a complete planner; the dashed "
               "box only changes the order the list is tried in",
               size=13, fill=C["muted"])
     return g.save(path, "System overview")
