@@ -1,0 +1,86 @@
+---
+title: "Nonprehensile Manipulation"
+description: "Planning through contact: when the planner must invent the contact sequence, not just track one."
+---
+
+::: {.research-page}
+
+::: {.research-lead}
+When a robot cannot grasp an object, the plan *is* the sequence of contacts.
+:::
+
+Pushing, toppling, pivoting, and re-acquiring an object are all cases in which
+the robot never closes a rigid grasp. The object moves because contacts are
+made and broken in the right order, and the hard part of the problem is
+deciding that order. A trajectory optimizer cannot recover from a contact
+sequence that was wrong to begin with.
+
+Our work asks a specific question: **what should the discrete object be, if the
+planner is expected to invent contacts that do not exist yet?**
+
+## Planning through contact
+
+::: {.research-paper}
+
+**Presentation**
+
+[Planning Through Contact →](planning-through-contact.html) — an illustrated
+walkthrough of the construction: the contact catalog, the bit-vector state, the
+three actions, the local solver, the two feasibility gates, and where a learned
+ranker enters. Roughly twenty slides, figure-first, with speaker notes.
+
+:::
+
+The construction has five pieces and nothing more:
+
+- **Features.** Every body carries a finite, named inventory of contactable
+  patches, fixed by geometry before planning starts.
+- **Templates.** A candidate contact is one named feature pair together with a
+  signed gap. The gap is a function of configuration alone, so it is defined
+  whether or not the pair currently touches.
+- **State.** The discrete state is a bit vector over the catalog of candidate
+  contacts — which contacts the controller is committed to holding — carried
+  alongside the continuous pose.
+- **Actions.** Start holding a contact, stop holding one, or hold the set and
+  drive toward the goal. Each action flips at most one bit.
+- **Realization.** A short-horizon optimizer is handed one action compiled into
+  a cost, and either returns a trajectory segment or rejects the action.
+
+Two cheap tests run before that optimizer is ever called: a contact too far away
+cannot be closed in one horizon, and the contacts that survive an action must
+already hold the object against gravity. The second of these is what forbids a
+manipulator from letting go mid-topple, and admits the same release once the
+object has landed.
+
+## Why unmade contacts matter
+
+Complementarity-based planners enumerate velocity modes over the contacts that
+collision detection has already found, and graphs of convex sets place modes on
+vertices that must be enumerated in advance. Both are effective for reasoning
+about contacts a robot already has. Neither can express *go and establish
+contact with that edge*, because the contact is not in the state until it
+exists.
+
+Carrying unmade contacts in the discrete state is the one structural difference,
+and everything else in the construction follows from it.
+
+## Status
+
+The construction is specified and the software architecture is laid out. The
+measurement is the number of local-solver calls needed to reach the goal,
+compared against a greedy geometric baseline, against an exhaustive teacher, and
+against a planner that performs no discrete search at all.
+
+The experiment that decides whether a learned action ordering is worth anything
+on this task family has not yet been run, and is deliberately scheduled before
+any network is trained.
+
+::: {.research-next}
+
+[Robotics and control →](../robotics_and_control.qmd) ·
+[Dynamic manipulation →](../robotics_and_control.qmd#dynamic-manipulation) ·
+[All publications →](../../publications.qmd)
+
+:::
+
+:::
