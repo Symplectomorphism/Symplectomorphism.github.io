@@ -24,17 +24,33 @@ ESTYLE = {"tr": (C["box"], None, "transfer-adjacent"),
           "ex": (C["hot"], "2 4", "exclusion")}
 
 
+NODE_R = 21          # must match the circle drawn by _node
+
+
 def _edge(g, u, v, kind, opacity=1.0, sw=2.0):
+    """An edge between two vertices, stopping at their boundaries.
+
+    Drawing centre-to-centre and relying on the nodes being painted
+    afterwards fails as soon as a node is semi-transparent, as the faded
+    base layer of the live subgraph is: the line then shows through the
+    disc.  Trimming by the node radius is order-independent.
+    """
     (x1, y1, _, _), (x2, y2, _, _) = NODES[u], NODES[v]
     col, dash, _ = ESTYLE[kind]
     d = f' stroke-dasharray="{dash}"' if dash else ""
     if kind == "ex":
-        g.add(f'<path d="M {x1} {y1+23} C {x1+40} {y1+190} {x2-30} {y2+210} '
-              f'{x2} {y2+23}" fill="none" stroke="{col}" stroke-width="{sw}"'
-              f'{d} opacity="{opacity}"/>')
+        # already leaves and enters below the discs
+        g.add(f'<path d="M {x1} {y1+NODE_R+3} C {x1+40} {y1+190} '
+              f'{x2-30} {y2+210} {x2} {y2+NODE_R+3}" fill="none" '
+              f'stroke="{col}" stroke-width="{sw}"{d} opacity="{opacity}"/>')
     else:
-        g.add(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{col}" '
-              f'stroke-width="{sw}"{d} opacity="{opacity}"/>')
+        a = math.atan2(y2 - y1, x2 - x1)
+        gap = NODE_R + 1.5
+        sx, sy = x1 + gap * math.cos(a), y1 + gap * math.sin(a)
+        ex, ey = x2 - gap * math.cos(a), y2 - gap * math.sin(a)
+        g.add(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" '
+              f'y2="{ey:.1f}" stroke="{col}" stroke-width="{sw}"{d} '
+              f'opacity="{opacity}"/>')
 
 
 def _node(g, key, marked=False, ring=None, opacity=1.0):
