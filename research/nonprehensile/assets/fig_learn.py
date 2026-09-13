@@ -356,53 +356,96 @@ def budget(path):
 # ------------------------------------------------- where the solver calls go
 
 def search_cost(path):
-    """The planner without any learning: rejections are what cost calls."""
-    g = Svg(940, 400, ox=0, oy=0, scale=1, cls="fig")
-    g.header("Every rejection costs a call", y=30, crop=48)
+    """Where the calls go, without inventing a rejection rate.
 
-    xs = [92, 320, 548, 776]
-    y0 = 196
-    tried = [4, 3, 2]                    # candidates tried at each depth
-    g.px_text((xs[0], y0 - 34), "start", size=13, fill=C["muted"],
+    Two things are actually derivable and nothing else is asserted: the
+    candidate list at a node has at most |C| + 1 entries before gating, and
+    the calls spent at that node equal the rank of the first action that
+    works.  How many candidates survive the gates, and how often Lambda
+    rejects an admissible one, are the unmeasured quantities.
+    """
+    g = Svg(940, 430, ox=0, oy=0, scale=1, cls="fig")
+    g.header("What a call is spent on", y=30, crop=48)
+
+    # ---- the funnel, top row
+    g.px_text((92, 78), "at one node", size=13.5, fill=C["muted"],
+              weight="700")
+    g.px_text((92, 98), "(&#967;, &#963;)", size=15, fill=C["ink"],
+              family="'Latin Modern Math','STIX Two Math',Georgia,serif")
+
+    cw, gp = 15, 3
+    def grid(x0, y0, n, lit, col):
+        for i in range(n):
+            r, c = divmod(i, 6)
+            on = i < lit
+            g.add(f'<rect x="{x0+c*(cw+gp)}" y="{y0+r*(cw+gp)}" '
+                  f'width="{cw}" height="{cw}" rx="2.5" '
+                  f'fill="{col if on else "#f4f6f4"}" '
+                  f'stroke="{col if on else C["faint"]}" stroke-width="1.1" '
+                  f'opacity="{1 if on else 0.55}"/>')
+
+    grid(176, 70, 36, 36, C["box"])
+    g.px_text((228, 190), "|&#119966;| + 1 = 36", size=14, fill=C["ink"],
+              weight="700", family="'Latin Modern Math',Georgia,serif")
+    g.px_text((228, 210), "single-bit flips, plus transport", size=12.5,
+              fill=C["muted"])
+
+    g.add(f'<line x1="300" y1="122" x2="356" y2="122" stroke="{C["faint"]}" '
+          f'stroke-width="1.8"/><polygon points="366,122 356,117 356,127" '
+          f'fill="{C["faint"]}"/>')
+    g.px_text((333, 110), "gap gate", size=12, fill=C["gold"], weight="700")
+    g.px_text((333, 138), "support test", size=12, fill=C["gold"],
               weight="700")
 
-    def node(x, y, r=13, on=True):
-        g.add(f'<circle cx="{x}" cy="{y}" r="{r}" '
-              f'fill="{C["primary"] if on else "#ffffff"}" '
-              f'stroke="{C["primary"] if on else C["faint"]}" '
-              f'stroke-width="2"/>')
-
-    for d, n in enumerate(tried):
-        x0, x1 = xs[d], xs[d + 1]
-        rejects = n - 1
-        offs = [(-1) ** i * (28 + 26 * (i // 2)) for i in range(rejects)]
-        for k, dy in enumerate(offs):
-            yr = y0 + dy
-            g.add(f'<path d="M {x0+14} {y0} Q {(x0+x1)/2} {y0} '
-                  f'{x1-34} {yr}" fill="none" stroke="{C["hot"]}" '
-                  f'stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8"/>')
-            g.add(f'<text x="{x1-24}" y="{yr+5}" font-size="15" '
-                  f'fill="{C["hot"]}" font-weight="700">&#10007;</text>')
-        g.add(f'<line x1="{x0+14}" y1="{y0}" x2="{x1-22}" y2="{y0}" '
-              f'stroke="{C["primary"]}" stroke-width="2.4"/>'
-              f'<polygon points="{x1-13},{y0} {x1-23},{y0-5} '
-              f'{x1-23},{y0+5}" fill="{C["primary"]}"/>')
-        g.px_text(((x0 + x1) / 2, y0 - 12), f"{n} tried", size=12.5,
-                  fill=C["muted"], weight="700")
-
-    for d in range(4):
-        node(xs[d], y0, on=True)
-    g.px_text((xs[3], y0 - 34), "goal", size=13, fill=C["primary"],
+    grid(384, 70, 36, 7, C["primary"])
+    g.px_text((436, 132), "?", size=44, fill=C["hot"], weight="700",
+              extra='opacity="0.55"')
+    g.px_text((436, 190), "? admissible", size=14, fill=C["primary"],
               weight="700")
+    g.px_text((436, 210), "how many survive the gates is unmeasured",
+              size=12.5, fill=C["hot"])
 
-    g.add(f'<rect x="286" y="308" width="368" height="54" rx="8" '
+    g.add(f'<line x1="508" y1="122" x2="564" y2="122" stroke="{C["faint"]}" '
+          f'stroke-width="1.8"/><polygon points="574,122 564,117 564,127" '
+          f'fill="{C["faint"]}"/>')
+    g.px_text((541, 110), "some", size=12, fill=C["muted"], weight="700")
+    g.px_text((541, 138), "order", size=12, fill=C["muted"], weight="700")
+
+    # ---- the same admissible set, two orders
+    rows = 4
+    for k, (title, hit, col) in enumerate(
+            [("an arbitrary order", 3, C["faint"]),
+             ("a better order", 0, C["primary"])]):
+        x0 = 596 + k * 172
+        g.px_text((x0 + 60, 78), title, size=13, fill=C["ink"], weight="700")
+        for i in range(rows):
+            y = 92 + i * 26
+            done = i <= hit
+            g.add(f'<rect x="{x0}" y="{y}" width="120" height="21" rx="4" '
+                  f'fill="{"#f2f8f4" if i == hit else "#ffffff"}" '
+                  f'stroke="{col if i == hit else C["rule"]}" '
+                  f'stroke-width="{1.6 if i == hit else 1.1}"/>')
+            mark = "&#10003;" if i == hit else ("&#10007;" if done else "")
+            mc = C["primary"] if i == hit else C["hot"]
+            g.px_text((x0 + 13, y + 15), mark, size=13, fill=mc, weight="700")
+            if done:
+                g.px_text((x0 + 108, y + 15), "1 call", size=11,
+                          fill=C["muted"], anchor="end")
+        g.px_text((x0 + 60, 92 + rows * 26 + 16),
+                  f"{hit+1} &#923; call{'s' if hit else ''} spent here",
+                  size=13.5, fill=col if k else C["hot"], weight="700")
+
+    g.px_text((470, 268), "same node, same admissible set, different order",
+              size=13, fill=C["faint"])
+
+    g.add(f'<rect x="150" y="294" width="640" height="52" rx="8" '
           f'fill="{C["primary_soft"]}" stroke="{C["primary"]}" '
           f'stroke-width="1.6"/>')
-    g.px_text((470, 330), "9 solver calls for a 3-action plan", size=17,
-              fill=C["ink"], weight="700")
-    g.px_text((470, 352), "six of them bought nothing", size=13.5,
-              fill=C["hot"], weight="600")
-    g.px_text((470, 388), "the order in which candidates are tried is the "
-              "only thing that changes this number", size=13.5,
-              fill=C["muted"])
-    return g.save(path, "Where the solver calls go")
+    g.px_text((470, 316), "calls spent at a node = rank of the first action "
+              "that works", size=16, fill=C["ink"], weight="700")
+    g.px_text((470, 336), "that rank is the only quantity a learned layer "
+              "changes", size=13, fill=C["primary"], weight="600")
+    g.px_text((470, 374), "how often &#923; rejects an admissible action is "
+              "also unmeasured &#8212; calibrate it before trusting any of "
+              "these counts", size=13, fill=C["hot"])
+    return g.save(path, "What a call is spent on")

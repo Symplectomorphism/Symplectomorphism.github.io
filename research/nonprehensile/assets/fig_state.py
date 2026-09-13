@@ -51,6 +51,12 @@ def features(path):
     return g.save(path, "Feature inventories")
 
 
+# sign colours for the gap function, shared by the caption and the bracket
+SIGN_POS = C["gold"]        # phi > 0, separated
+SIGN_ZERO = C["primary"]    # phi = 0, touching
+SIGN_NEG = C["hot"]         # phi < 0, penetrating
+
+
 def template_gap(path):
     """A contact template is a named feature pair plus its signed gap."""
     g = Svg(940, 362, ox=0, oy=0, scale=1, cls="fig")
@@ -62,7 +68,7 @@ def template_gap(path):
 
     g.ox, g.oy, g.s = 560, 200, 230
     AMP = 0.46      # world displacement when separated (away from the riser)
-    PEN = 0.09      # world overlap at maximum penetration
+    PEN = 0.15      # world overlap at maximum penetration
     DURT = "7s"
     # Displacements are WORLD quantities: -x_W moves the box off the riser,
     # +x_W drives it in.  g.dx() carries the drawing direction, so this stays
@@ -81,7 +87,7 @@ def template_gap(path):
     g.poly([(0, ZB), (0.24, ZB), (0.24, ZH), (0, ZH)],
            fill=C["env_fill"], stroke=C["env"], sw=1.4)
     g.line((0, ZB), (0, ZH), stroke=C["env"], sw=6.0)
-    g.text((0.12, ZH), "F&#8347;", size=15, fill=C["env"], dy=-10,
+    g.text((0.36, -0.25), "F&#8347;", size=15, fill=C["env"],
            weight="700", family="'Latin Modern Math',Georgia,serif")
     g.text((0.12, ZB), "riser, height h", size=12.5, fill=C["muted"], dy=20)
 
@@ -96,18 +102,25 @@ def template_gap(path):
                     for v in (x_far, xr, x_pen, xr, x_far))
     anim = (f'keyTimes="{tkeys}" dur="{DURT}" calcMode="spline" '
             f'keySplines="{tspl}" repeatCount="indefinite"')
-    fade = ('<animate attributeName="opacity" values="1;1;0;0;1;1" '
-            f'keyTimes="0;0.28;0.33;0.69;0.74;1" dur="{DURT}" '
-            'repeatCount="indefinite"/>')
-    g.add(f'<g opacity="1">{fade}'
+    # The gap never stops existing -- it goes negative.  Keep the bracket
+    # visible throughout and let its COLOUR carry the sign, using the same
+    # three colours as the phase caption on the left.
+    sign_kt = "0;0.31;0.45;0.57;0.71;1"
+    sign_v = ";".join([SIGN_POS, SIGN_ZERO, SIGN_NEG,
+                       SIGN_ZERO, SIGN_POS, SIGN_POS])
+    sign = (f'keyTimes="{sign_kt}" values="{sign_v}" calcMode="discrete" '
+            f'dur="{DURT}" repeatCount="indefinite"')
+    bracket = (f'<g>'
           f'<line x1="{x_far:.1f}" y1="{yg:.1f}" x2="{xr:.1f}" y2="{yg:.1f}" '
-          f'stroke="{C["hot"]}" stroke-width="1.6" stroke-dasharray="5 4">'
-          f'<animate attributeName="x1" values="{x1v}" {anim}/></line>'
+          f'stroke="{SIGN_POS}" stroke-width="1.8" stroke-dasharray="5 4">'
+          f'<animate attributeName="x1" values="{x1v}" {anim}/>'
+          f'<animate attributeName="stroke" {sign}/></line>'
           f'<text x="{(x_far + xr) / 2:.1f}" y="{yg - 9:.1f}" font-size="16" '
-          f'fill="{C["hot"]}" text-anchor="middle" font-weight="700" '
+          f'fill="{SIGN_POS}" text-anchor="middle" font-weight="700" '
           f'font-family="\'Latin Modern Math\',Georgia,serif">&#966;'
           f'<tspan baseline-shift="sub" font-size="0.68em">s</tspan>'
-          f'<animate attributeName="x" values="{midv}" {anim}/></text></g>')
+          f'<animate attributeName="x" values="{midv}" {anim}/>'
+          f'<animate attributeName="fill" {sign}/></text></g>')
 
     # box face, moving
     g.add(f'<g transform="translate({sep:.1f},0)">'
@@ -122,12 +135,14 @@ def template_gap(path):
            dy=-14, weight="600", family="'Latin Modern Math',Georgia,serif")
     g.add("</g>")
 
+    g.add(bracket)   # annotation on top of the geometry it measures
+
     for t0, t1, txt, col in [
-            (0.00, 0.30, "&#966;&#8347; &gt; 0 &#160; separated", C["muted"]),
-            (0.32, 0.44, "&#966;&#8347; = 0 &#160; touching", C["primary"]),
-            (0.46, 0.56, "&#966;&#8347; &lt; 0 &#160; penetration", C["hot"]),
-            (0.58, 0.70, "&#966;&#8347; = 0 &#160; touching", C["primary"]),
-            (0.72, 1.00, "&#966;&#8347; &gt; 0 &#160; separated", C["muted"])]:
+            (0.00, 0.30, "&#966;&#8347; &gt; 0 &#160; separated", SIGN_POS),
+            (0.32, 0.44, "&#966;&#8347; = 0 &#160; touching", SIGN_ZERO),
+            (0.46, 0.56, "&#966;&#8347; &lt; 0 &#160; penetration", SIGN_NEG),
+            (0.58, 0.70, "&#966;&#8347; = 0 &#160; touching", SIGN_ZERO),
+            (0.72, 1.00, "&#966;&#8347; &gt; 0 &#160; separated", SIGN_POS)]:
         op = "1" if t0 == 0 else "0"
         g.add(f'<g opacity="{op}"><animate attributeName="opacity" '
               f'values="0;0;1;1;0;0" keyTimes="0;{max(t0-0.01,0):.3f};'
