@@ -325,13 +325,22 @@ def pipeline(path):
               f'{bx+w*math.sin(ang):.1f},{by-w*math.cos(ang):.1f}" '
               f'fill="{col}"/>')
 
-    # the learned ranker feeds the ordering stage, not the solver: curve
-    # down and left into the top of the dashed box
-    p0, p1, p2, p3 = (781, 194), (781, 226), (573, 232), (573, 262)
-    g.add(f'<path d="M {p0[0]} {p0[1]} C {p1[0]} {p1[1]} {p2[0]} {p2[1]} '
-          f'{p3[0]} {p3[1]}" fill="none" stroke="{C["primary"]}" '
-          f'stroke-width="1.8"/>')
-    head(p3, math.atan2(p3[1] - p2[1], p3[0] - p2[0]), C["primary"])
+    def bez(p0, p1, p2, p3, t):
+        u = 1.0 - t
+        return tuple(u**3 * a + 3 * u * u * t * b + 3 * u * t * t * c
+                     + t**3 * d for a, b, c, d in zip(p0, p1, p2, p3))
+
+    # the learned ranker feeds the ordering stage, not the solver.  The
+    # curve lands on the ordering card at a slant, and the head takes its
+    # angle from the curve rather than from the endpoint alone -- with the
+    # last handle vertical the true tangent straightens in the final few
+    # pixels and the head no longer matches the stroke the eye follows.
+    P = (781, 194), (781, 230), (660, 226), (605, 262)
+    g.add(f'<path d="M {P[0][0]} {P[0][1]} C {P[1][0]} {P[1][1]} '
+          f'{P[2][0]} {P[2][1]} {P[3][0]} {P[3][1]}" fill="none" '
+          f'stroke="{C["primary"]}" stroke-width="1.8"/>')
+    near = bez(*P, 0.94)
+    head(P[3], math.atan2(P[3][1] - near[1], P[3][0] - near[0]), C["primary"])
 
     # the reject loop returns to the state.  Straight segments, so the
     # final approach is visibly vertical and the head cannot look detached
