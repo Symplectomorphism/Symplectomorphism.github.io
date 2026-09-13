@@ -457,40 +457,69 @@ def markgraph(path):
     plan = [frozenset(b) for b in
             [{0, 2}, {0, 2, 4}, {0, 2, 3, 4}, {0, 3, 4}, {0, 4},
              {0, 4, 5}, {4, 5}, {1, 4, 5}, {1, 5}]]
-    planset, planedge = set(plan), {(plan[i], plan[i + 1])
-                                    for i in range(len(plan) - 1)}
+    planset = set(plan)
 
-    cols = {k: sorted([s for s in valid if len(s) == k], key=sorted)
+    # Walk vertices are placed by their POSITION IN THE WALK, so the path
+    # marches steadily down while zigzagging between columns and can be
+    # followed by eye.  The rest fill their column, nudged clear.
+    idx = {t: i for i, t in enumerate(plan)}
+    x0, dx, ytop, ybot = 108, 122, 84, 326
+    pos = {t: (x0 + dx * len(t), ytop + (ybot - ytop) * idx[t] / (len(plan) - 1))
+           for t in plan}
+    cols = {k: sorted([t for t in valid if len(t) == k], key=sorted)
             for k in range(7)}
-    x0, dx, ytop, ybot = 108, 122, 92, 352
-    pos = {}
-    for k, members in cols.items():
-        n = len(members)
-        for i, s in enumerate(members):
+    for k in range(7):
+        rest = [t for t in cols[k] if t not in planset]
+        taken = [pos[t][1] for t in plan if len(t) == k]
+        n = len(rest)
+        for i, t in enumerate(rest):
             y = (ytop + ybot) / 2 if n == 1 else ytop + i * (ybot - ytop) / (n - 1)
-            pos[s] = (x0 + k * dx, y)
+            for u in taken:
+                if abs(y - u) < 15:
+                    y = u + 15 if y >= u else u - 15
+            pos[t] = (x0 + dx * k, y)
 
-    for a in valid:                              # every legal single bit flip
+    walkedge = {(plan[i], plan[i + 1]) for i in range(len(plan) - 1)}
+    for a in valid:                       # background lattice, undirected
         for b in valid:
-            if len(b) == len(a) + 1 and a < b:
-                hot = (a, b) in planedge or (b, a) in planedge
+            if (len(b) == len(a) + 1 and a < b
+                    and (a, b) not in walkedge and (b, a) not in walkedge):
                 (x1, y1), (x2, y2) = pos[a], pos[b]
-                g.add(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
-                      f'stroke="{C["primary"] if hot else C["rule"]}" '
-                      f'stroke-width="{2.6 if hot else 0.8}" '
-                      f'opacity="{1 if hot else 0.85}"/>')
-    for s in valid:
-        x, y = pos[s]
-        on = s in planset
-        g.add(f'<circle cx="{x}" cy="{y}" r="{5.2 if on else 3.4}" '
+                g.add(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" '
+                      f'y2="{y2:.1f}" stroke="{C["rule"]}" stroke-width="0.9" '
+                      f'opacity="0.85"/>')
+    for i in range(len(plan) - 1):        # the walk, directed, in order
+        (x1, y1), (x2, y2) = pos[plan[i]], pos[plan[i + 1]]
+        a = math.atan2(y2 - y1, x2 - x1)
+        sx, sy = x1 + 7 * math.cos(a), y1 + 7 * math.sin(a)
+        ex, ey = x2 - 9 * math.cos(a), y2 - 9 * math.sin(a)
+        g.add(f'<line x1="{sx:.1f}" y1="{sy:.1f}" x2="{ex:.1f}" y2="{ey:.1f}" '
+              f'stroke="{C["primary"]}" stroke-width="2.6"/>')
+        w = 4.2
+        g.add(f'<polygon points="{x2-4*math.cos(a):.1f},{y2-4*math.sin(a):.1f} '
+              f'{ex-w*math.sin(a):.1f},{ey+w*math.cos(a):.1f} '
+              f'{ex+w*math.sin(a):.1f},{ey-w*math.cos(a):.1f}" '
+              f'fill="{C["primary"]}"/>')
+    for t in valid:
+        x, y = pos[t]
+        on = t in planset
+        g.add(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{5.4 if on else 3.4}" '
               f'fill="{C["primary"] if on else "#ffffff"}" '
               f'stroke="{C["primary"] if on else C["faint"]}" '
               f'stroke-width="{1.6 if on else 1.2}"/>')
-    for s, lab in ((plan[0], "&#963;&#8320;"), (plan[-1], "&#963;&#8328;")):
-        x, y = pos[s]
-        g.px_text((x - 11, y + 5), lab, size=14, weight="700", anchor="end",
-                  fill=C["primary"],
-                  family="'Latin Modern Math','STIX Two Math',Georgia,serif")
+    for i, t in enumerate(plan):
+        x, y = pos[t]
+        # put the label on the side the walk is NOT heading, so it never
+        # sits under the outgoing hop
+        nb = plan[i + 1] if i < len(plan) - 1 else plan[i - 1]
+        right = pos[nb][0] < x
+        g.px_text((x + (15 if right else -15), y + 5),
+                  f"&#963;<tspan baseline-shift='sub' font-size='0.68em'>{i}"
+                  f"</tspan>", size=13, weight="700", fill=C["primary"],
+                  anchor="start" if right else "end",
+                  family="'Latin Modern Math','STIX Two Math',Georgia,serif",
+                  extra='stroke="#ffffff" stroke-width="3.2" '
+                        'paint-order="stroke" stroke-linejoin="round"')
 
     for k in range(7):
         n = len(cols[k])
