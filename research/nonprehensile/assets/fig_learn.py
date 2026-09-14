@@ -454,14 +454,15 @@ def search_cost(path):
     g.add(f'<line x1="508" y1="122" x2="564" y2="122" stroke="{C["faint"]}" '
           f'stroke-width="1.8"/><polygon points="574,122 564,117 564,127" '
           f'fill="{C["faint"]}"/>')
-    g.px_text((541, 110), "some", size=12, fill=C["muted"], weight="700")
-    g.px_text((541, 138), "order", size=12, fill=C["muted"], weight="700")
+    g.px_text((541, 110), "tried in", size=12, fill=C["muted"], weight="700")
+    g.px_text((541, 138), "rank order", size=12, fill=C["muted"],
+              weight="700")
 
     # ---- the same admissible set, two orders
     rows = 4
     for k, (title, hit, col) in enumerate(
-            [("an arbitrary order", 3, C["faint"]),
-             ("a better order", 0, C["primary"])]):
+            [("gap-greedy order", 3, C["faint"]),
+             ("a learned order", 0, C["primary"])]):
         x0 = 596 + k * 172
         g.px_text((x0 + 60, 78), title, size=13, fill=C["ink"], weight="700")
         for i in range(rows):
@@ -481,15 +482,17 @@ def search_cost(path):
                   f"{hit+1} &#923; call{'s' if hit else ''} spent here",
                   size=13.5, fill=col if k else C["hot"], weight="700")
 
-    g.px_text((470, 268), "same node, same admissible set, different order",
+    g.px_text((470, 262), "same node, same admissible set, different order",
               size=13, fill=C["faint"])
+    g.px_text((470, 281), "ranks drawn for illustration: no rejection rate is claimed here",
+              size=12, fill=C["hot"])
 
-    g.add(f'<rect x="150" y="294" width="640" height="52" rx="8" '
+    g.add(f'<rect x="150" y="300" width="640" height="52" rx="8" '
           f'fill="{C["primary_soft"]}" stroke="{C["primary"]}" '
           f'stroke-width="1.6"/>')
-    g.px_text((470, 316), "calls spent at a node = rank of the first action "
+    g.px_text((470, 322), "calls spent at a node = rank of the first action "
               "that works", size=16, fill=C["ink"], weight="700")
-    g.px_text((470, 336), "that rank is the only quantity a learned layer "
+    g.px_text((470, 342), "that rank is the only quantity a learned layer "
               "changes", size=13, fill=C["primary"], weight="600")
     g.px_text((470, 374), "how often &#923; rejects an admissible action is "
               "also unmeasured &#8212; calibrate it before trusting any of "
