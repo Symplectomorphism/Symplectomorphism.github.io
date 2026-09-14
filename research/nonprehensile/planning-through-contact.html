@@ -405,12 +405,15 @@ Aykut C. Satici
 <section id="that-is-already-a-planner" class="slide level2 smaller">
 <h2>That is already a planner</h2>
 
-<img data-src="assets/search.svg" alt="At one node, at most 36 candidate actions are narrowed by the two gates to an unmeasured admissible set, then tried in some order; the same set in two different orders costs four solver calls or one." class="r-stretch"><div class="claim">
+<img data-src="assets/search.svg" alt="At one node, at most 36 candidate actions are narrowed by the two gates to an unmeasured admissible set, then tried in rank order; the same set costs four solver calls under a gap-greedy order and one under a learned order." class="r-stretch"><div class="claim">
 <p>Everything so far runs with nothing learned in it, and what it returns is certified by the records that produced it.</p>
 </div>
 <aside class="notes">
 <p>Everything up to here — catalog, bit vector, gated actions, the local solver, the search over (marking, quantized pose) — is a complete planner. No network, no training data, no teacher.</p>
-<p>Two cautions about this slide, both deliberate. It is <em>sound</em> but not <em>complete</em>: what it returns is certified, but a rejection by <span class="math inline">\(\Lambda\)</span> is not a proof of infeasibility, <code>Imp</code> is sound-and-incomplete, and a marking with an empty realization set surfaces only as a solver failure. And the two counts on the right are a mechanism, not a measurement — four versus one illustrates that rank is the cost, and nothing here claims how often rejections actually happen. That number is Phase I½’s job.</p>
+<p>Two cautions about this slide, both deliberate. It is <em>sound</em> but not <em>complete</em>: what it returns is certified, but a rejection by <span class="math inline">\(\Lambda\)</span> is not a proof of infeasibility, <code>Imp</code> is sound-and-incomplete, and a marking with an empty realization set surfaces only as a solver failure. And the two ranks on the right are a mechanism, not a measurement — four versus one illustrates that rank is the cost, and nothing here claims how often rejections actually happen. That number is Phase I½’s job.</p>
+<p>Gap-greedy is the named baseline, not a stand-in for “any old order”. It scores an action by the signed gaps of the contacts that action <em>adds</em>: <span class="math inline">\(-\sum_{c \in \Delta^+}
+\varphi_c(\chi)/\ell\)</span>, where <span class="math inline">\(\varphi_c(\chi)\)</span> is how far apart the two features of contact <span class="math inline">\(c\)</span> still are at the current pose. “Closest” is that gap and nothing else — read off the pose in front of you, never from where the plan needs to go.</p>
+<p>Two consequences. A break or a transport adds no contact, so the sum is empty and it scores exactly <span class="math inline">\(0\)</span>; every make with a real gap to close scores negative. So gap-greedy prefers changing nothing, and among makes takes whichever is already nearly touching. Hence the two hops: at the root it takes the floor vertex <span class="math inline">\(g_v\)</span>, already at <span class="math inline">\(\varphi = 0\)</span>, over the still-distant riser <span class="math inline">\(s\)</span>; after landing it takes a transport or the release of <span class="math inline">\(s\)</span> over sliding the disk onto the new bottom face. Both are actions whose payoff arrives several steps later, which is exactly what a gap read at the current pose cannot see.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -428,14 +431,16 @@ Aykut C. Satici
 <h1>Learning, as an accelerator</h1>
 <p>It reorders the candidate list. It changes nothing else, and it has to earn its place.</p>
 </section>
-<section id="the-graph" class="slide level2">
-<h2>The graph</h2>
+<section id="the-contact-graph-one-vertex-per-contact" class="slide level2 smaller">
+<h2>The contact graph: one vertex per contact</h2>
 
-<img data-src="assets/graph.svg" class="fig-tall r-stretch" alt="Six contacts as vertices, joined by transfer-adjacent, shared-object-face, and exclusion edges."><div class="claim">
-<p>Not the search space — that was the marking graph. This is the message-passing substrate of a learned heuristic <strong>over</strong> it, and conflating the two is the fastest way to make the method incomprehensible.</p>
+<img data-src="assets/graph.svg" class="fig-tall r-stretch" alt="Six contacts as vertices, with m-x and g filled to show the marking sigma-zero, joined by transfer-adjacent, shared-object-face, and exclusion edges."><div class="claim">
+<p><strong>A marking is a subset of these vertices</strong> — the two filled are <span class="math inline">\(\sigma_0\)</span>. So a vertex of the marking graph is one on/off setting of <em>this</em> picture, and the walk is it lighting up and going dark. We <strong>search</strong> over markings; the network <strong>runs here</strong>, and returns which marking-graph edge to take next.</p>
 </div>
 <aside class="notes">
-<p>Vertices are contacts; edges say which contacts should exchange information: same body pair with adjacent features, same face of the moving object against different environment bodies, and mutually impossible pairs. The shared-face edge is the one that is not standard, and the next slide shows what it buys.</p>
+<p>Why not run the network on the marking graph itself, since that is what we search? Two reasons. It has <span class="math inline">\(2^{|C|}\)</span> vertices, so there is nothing to embed. And its shape carries no information about the scene — it is the Boolean cube with the excluded subsets deleted, which is the same object for every task.</p>
+<p>This graph is the opposite: <span class="math inline">\(|C|\)</span> vertices, built once, and its edges are physical statements about <em>pairs of contacts</em> — same body pair with adjacent features, same face of the moving object against different environment bodies, mutually impossible. That is the part with any chance of transferring to a scene the network has not seen. The shared-face edge is the one that is not standard, and the next slide shows what it buys.</p>
+<p>Concretely: the marking is the network’s <em>input</em>, written on these vertices as on/off; a score per available action is its <em>output</em>.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
