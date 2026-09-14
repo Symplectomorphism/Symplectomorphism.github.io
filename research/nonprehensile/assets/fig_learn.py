@@ -410,7 +410,7 @@ def search_cost(path):
     works.  How many candidates survive the gates, and how often Lambda
     rejects an admissible one, are the unmeasured quantities.
     """
-    g = Svg(940, 430, ox=0, oy=0, scale=1, cls="fig")
+    g = Svg(940, 452, ox=0, oy=0, scale=1, cls="fig")
     g.header("What a call is spent on", y=30, crop=48)
 
     # ---- the funnel, top row
@@ -482,19 +482,25 @@ def search_cost(path):
                   f"{hit+1} &#923; call{'s' if hit else ''} spent here",
                   size=13.5, fill=col if k else C["hot"], weight="700")
 
-    g.px_text((470, 262), "same node, same admissible set, different order",
+    g.px_text((470, 248), "same node, same admissible set, different order",
               size=13, fill=C["faint"])
-    g.px_text((470, 281), "ranks drawn for illustration: no rejection rate is claimed here",
-              size=12, fill=C["hot"])
+    # "closest" needs saying in terms of the quantity that defines it
+    g.px_text((470, 268), "gap-greedy scores a make by &#8722;&#966;(added "
+              "contact), so the smallest remaining gap wins;", size=12.5,
+              fill=C["muted"])
+    g.px_text((470, 285), "breaks and transport add nothing and all score 0",
+              size=12.5, fill=C["muted"])
+    g.px_text((470, 304), "ranks drawn for illustration: no rejection rate is "
+              "claimed here", size=12, fill=C["hot"])
 
-    g.add(f'<rect x="150" y="300" width="640" height="52" rx="8" '
+    g.add(f'<rect x="150" y="322" width="640" height="52" rx="8" '
           f'fill="{C["primary_soft"]}" stroke="{C["primary"]}" '
           f'stroke-width="1.6"/>')
-    g.px_text((470, 322), "calls spent at a node = rank of the first action "
+    g.px_text((470, 344), "calls spent at a node = rank of the first action "
               "that works", size=16, fill=C["ink"], weight="700")
-    g.px_text((470, 342), "that rank is the only quantity a learned layer "
+    g.px_text((470, 364), "that rank is the only quantity a learned layer "
               "changes", size=13, fill=C["primary"], weight="600")
-    g.px_text((470, 374), "how often &#923; rejects an admissible action is "
+    g.px_text((470, 396), "how often &#923; rejects an admissible action is "
               "also unmeasured &#8212; calibrate it before trusting any of "
               "these counts", size=13, fill=C["hot"])
     return g.save(path, "What a call is spent on")
