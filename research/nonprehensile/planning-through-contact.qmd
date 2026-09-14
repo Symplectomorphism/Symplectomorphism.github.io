@@ -346,21 +346,32 @@ what a gap read at the current pose cannot see.
 It reorders the candidate list. It changes nothing else, and it has to earn its
 place.
 
-## The graph
+## The contact graph: one vertex per contact {.smaller}
 
-![](assets/graph.svg){.fig-tall fig-alt="Six contacts as vertices, joined by transfer-adjacent, shared-object-face, and exclusion edges."}
+![](assets/graph.svg){.fig-tall fig-alt="Six contacts as vertices, with m-x and g filled to show the marking sigma-zero, joined by transfer-adjacent, shared-object-face, and exclusion edges."}
 
 ::: claim
-Not the search space — that was the marking graph. This is the message-passing
-substrate of a learned heuristic **over** it, and conflating the two is the
-fastest way to make the method incomprehensible.
+**A marking is a subset of these vertices** — the two filled are $\sigma_0$. So
+a vertex of the marking graph is one on/off setting of *this* picture, and the
+walk is it lighting up and going dark. We **search** over markings; the network
+**runs here**, and returns which marking-graph edge to take next.
 :::
 
 ::: {.notes}
-Vertices are contacts; edges say which contacts should exchange information:
-same body pair with adjacent features, same face of the moving object against
-different environment bodies, and mutually impossible pairs. The shared-face
-edge is the one that is not standard, and the next slide shows what it buys.
+Why not run the network on the marking graph itself, since that is what we
+search? Two reasons. It has $2^{|C|}$ vertices, so there is nothing to embed.
+And its shape carries no information about the scene — it is the Boolean cube
+with the excluded subsets deleted, which is the same object for every task.
+
+This graph is the opposite: $|C|$ vertices, built once, and its edges are
+physical statements about *pairs of contacts* — same body pair with adjacent
+features, same face of the moving object against different environment bodies,
+mutually impossible. That is the part with any chance of transferring to a
+scene the network has not seen. The shared-face edge is the one that is not
+standard, and the next slide shows what it buys.
+
+Concretely: the marking is the network's *input*, written on these vertices as
+on/off; a score per available action is its *output*.
 :::
 
 ## A neighbourhood, not the whole catalog

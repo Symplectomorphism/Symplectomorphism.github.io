@@ -69,11 +69,17 @@ def _node(g, key, marked=False, ring=None, opacity=1.0):
 
 
 def contact_graph(path):
-    """Where the graph finally enters: as the GNN's message-passing substrate."""
+    """The second graph, and its one-line relation to the first.
+
+    A marking is a subset of these vertices, so the marking graph's vertices
+    are the on/off labellings of this one.  Saying that is the whole job of
+    the figure: the filled pair below is sigma_0.
+    """
     g = Svg(940, 424, ox=0, oy=0, scale=1, cls="fig")
-    g.header("The graph is the learner's substrate, not the search space",
-             "vertices are contacts; edges say which contacts exchange "
-             "information", y=32, crop=72, size=18)
+    g.header("The contact graph: one vertex per contact",
+             "a marking is a subset of these vertices \u2014 filled below is "
+             "&#963;&#8320; = { m&#7764;, g }, the walk's first",
+             y=32, crop=72, size=18)
 
     for u, v, k in EDGES:
         _edge(g, u, v, k)
