@@ -1,0 +1,154 @@
+---
+title: "Wind Turbine Control"
+description: "Gradient estimation for extremum seeking: what the estimator actually computes, and what turbulence does to it."
+---
+
+::: {.research-page}
+
+::: {.research-lead}
+A wind turbine must sit on the peak of an efficiency curve it cannot measure,
+using a knob whose effect arrives buried in turbulence.
+:::
+
+Below rated wind speed, a turbine's job is to hold the **tip-speed ratio**
+$\lambda = R\Omega/V$ at the value that maximizes the rotor's power coefficient
+$C_P$. The difficulty is that both coordinates of that curve are written in
+terms of the wind speed reaching the rotor, which is the one quantity the
+machine cannot measure. An anemometer on the nacelle reads air the rotor has
+already slowed, by an amount that depends on what the controller is doing.
+
+Extremum seeking control solves this without a model: perturb the control
+parameter with a small periodic dither, correlate the response against it, and
+climb. The line of work developed at the UTD Wind Energy Center has made that
+practical, most importantly by feeding the algorithm the *logarithm* of power.
+That removes the wind speed from the loop gain exactly, so a controller tuned at
+one wind speed works at every other.
+
+Our interest is in what happens next: **the statistics of the gradient the
+algorithm computes.**
+
+## Climbing a hill you cannot see
+
+::: {.research-paper}
+
+**Presentation**
+
+[Climbing a Hill You Cannot See →](gradient-estimation.html) is an illustrated
+walkthrough of the Region-2 control problem, the extremum-seeking machinery
+built for it, and five questions the published record leaves open. Roughly
+twenty slides, figure-first, with speaker notes.
+
+:::
+
+The deck builds the problem from the beginning: why the $k\Omega^2$ torque law
+works, why its equilibrium is a ray rather than a setpoint, and what the
+logarithm of power actually fixes. It then turns to what is unresolved.
+
+## Q4: the curvature question, worked through
+
+::: {.research-paper}
+
+**Presentation**
+
+[A Matrix Gain for Extremum Seeking →](q4-matrix-gain.html) works the fourth
+question all the way through. Meyn's Zap stochastic approximation needs the
+Jacobian of the update direction, which a demodulated gradient estimate does not
+supply in closed form. It turns out to sit at the second harmonic of the probe
+already being injected, so reading it costs one extra correlation rather than one
+extra experiment.
+
+:::
+
+Using it takes the curvature out of the loop gain, which turns the step size into
+a settling time and removes the retuning that Rotea describes as the practical
+obstacle. The deck also carries the version without extremum seeking at all,
+where a random perturbation supplies the gradient and either Spall's second-order
+SPSA or a Gaussian probe supplies the Jacobian, and then compares the two. That
+comparison turns out to be combinatorial rather than statistical: resolving every
+entry of the Hessian needs a frequency plan whose bandwidth grows quadratically
+in the number of parameters, from 101 seconds of averaging for one parameter to
+2915 for six.
+
+## Three questions about one turbine
+
+One deck each, worked to a test rather than surveyed.
+
+::: {.research-paper}
+
+**Presentations**
+
+[Q1: What Is the Estimator Targeting? →](q1-estimand.html) The converged
+tip-speed ratio in the published simulations sits $0.35$ above its design value,
+consistently, across every condition. Estimator bias and a shifted turbulent
+optimum together account for $0.042$ of that, so both are dead by an order of
+magnitude and the surviving candidate is that the simulator's own peak is
+elsewhere.
+
+[Q2: What Bounds the Speed? →](q2-speed-limit.html) Plain extremum seeking goes
+unstable at high wind, which the published first-order model cannot produce at
+any gain. A sampled-data account with one constant, taken from the same paper's
+settling time, reproduces all three reported outcomes and puts the boundary at
+$9.2$ m/s.
+
+[Q3: Does the Turbine Need to Probe? →](q3-probing.html) Aerodynamic torque is
+reconstructible with no wind sensor, turbulence already sweeps the curve about as
+far as the dither does, and the joint estimation problem has exactly one blind
+direction.
+
+:::
+
+## Five open questions
+
+- **What is the estimator estimating?** The steady argmax of $C_P$, the argmax
+  of expected log-power under turbulence, and the algorithm's own fixed point
+  are three different numbers. In the published large-eddy simulations the gap
+  between the first and the last is $0.35$ in $\lambda$, larger than the $0.2$
+  shift blade erosion produces, which is the effect the work is trying to
+  detect.
+- **What sets the stability limit?** Plain extremum seeking goes unstable at
+  high wind in simulation. The first-order model used to analyse it cannot go
+  unstable for any positive gain, so the failure mode that matters in practice
+  has no theory behind it. A sampled-data account looks likely.
+- **Is the dither necessary?** Aerodynamic torque is exactly reconstructible
+  from measured rotor speed and commanded generator torque, and turbulence
+  already sweeps $\lambda$ across the curve for free. Joint estimation of the
+  wind and the torque coefficient appears to have exactly one unidentifiable
+  direction, an overall wind scaling. That would mean a slow absolute reference
+  suffices where a fast rotor-effective estimate is currently assumed
+  necessary.
+- **What is the Hessian for?** The curvature at the peak sets the loop gain
+  calibration, the terminal scatter, and the energy lost to mistuning. In
+  stochastic approximation the same matrix governs the asymptotic covariance,
+  where iterate averaging attains the optimum without estimating it.
+- **How good could any algorithm be?** No performance bound exists for this
+  problem, so there is no way to tell whether current algorithms are near
+  optimal or leaving an order of magnitude on the table.
+
+## Why turbulence is not ordinary noise
+
+In classical stochastic approximation the disturbance is pure nuisance:
+it corrupts the measurement and is averaged away. Here the same physical process
+does both jobs. Turbulence is what buries the gradient estimate, and it is also
+what moves the rotor across the $C_P$ curve without anyone paying a fatigue cost
+to put it there. That duality is what makes estimating the curve *without*
+probing it worth asking about.
+
+## Status
+
+This is a reading of the published record rather than a result. The immediate
+next step is an experiment: rerun an established simulation setup at several
+dither amplitudes with independent, non-repeating turbulence seeds, and see
+whether the offset from the design optimum scales with the square of the dither
+amplitude. One outcome makes it estimator bias; the other means the turbulent
+optimum has moved. Either way it produces error bars, which none of the
+published simulations report.
+
+::: {.research-next}
+
+[Robotics and control →](../robotics_and_control.qmd) ·
+[Robust machine learning →](../robust_machine_learning.qmd) ·
+[All publications →](../../publications.qmd)
+
+:::
+
+:::

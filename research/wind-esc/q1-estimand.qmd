@@ -1,0 +1,277 @@
+---
+title: "What Is the Estimator Targeting?"
+subtitle: "A 0.35 offset in published simulations, and why the two obvious explanations do not account for it"
+author: "Aykut C. Satici"
+institute: "Robot Control Lab · Systems Engineering · UT Dallas"
+format:
+  # The website project declares `format: html`, which Quarto merges into every
+  # document.  There is no supported way to unset it per-document, so the
+  # inherited HTML build is redirected to a throwaway name and deleted by the
+  # project's post-render step; revealjs keeps the canonical URL.
+  html:
+    output-file: q1-estimand-unused.html
+    toc: false
+  revealjs:
+    theme: [default, assets/deck.scss]
+    slide-number: c/t
+    width: 1280
+    height: 760
+    margin: 0.06
+    center: false
+    transition: fade
+    transition-speed: fast
+    progress: true
+    hash: true
+    history: true
+    controls: true
+    html-math-method: mathjax
+    menu: {side: left, width: wide}
+    link-external-newwindow: true
+    lang: en
+    footer: "[&#8592; Wind Turbine Control](index.qmd) &middot; Q1, the Estimand"
+---
+
+## The quantity in question {.smaller}
+
+Below rated wind speed a turbine holds its tip-speed ratio at the value that
+maximizes the rotor's power coefficient. Extremum seeking finds that value
+online, by dithering the torque gain and climbing.
+
+::: claim
+Every convergence claim in this line of work is scored against
+$\lambda^\star = 7.5$, the peak of a blade-element design curve. This deck asks
+whether that is the number the algorithms are actually converging to.
+:::
+
+::: {.notes}
+The reason to care is specific. The degraded-blade work asks the controller to
+detect a shift in lambda-star of about 0.2, which is what erosion and soiling
+produce. Any systematic offset larger than that swamps the effect being looked
+for.
+:::
+
+## The anomaly {.smaller}
+
+![](assets/q1-anomaly.svg){fig-alt="Left, converged torque gain against design for six LES conditions, every bar negative, from half a per cent to eight per cent low. Right, converged tip-speed ratio for the same six, every point above the design value of 7.5, reaching 7.85."}
+
+::: {.warn}
+Every converged torque gain in the 2019 large-eddy simulations sits **below** the
+design value, and every tip-speed ratio sits **above** it. Two algorithms, three
+wind speeds, two inflow conditions, and the sign never changes.
+:::
+
+::: {.notes}
+This is not a criticism of the paper. The offsets are small enough to read as
+agreement, and nothing in that paper depends on them. They become interesting
+only once you want to resolve 0.2 in lambda.
+
+Six runs, two independent algorithms, sign never flips. That is bias, not
+scatter.
+:::
+
+## Three things it could mean {.smaller}
+
+::: {.cols3}
+::: {.card}
+[(a) the steady peak]{.cardh}
+
+$\arg\max C_P(\lambda)$ on the design curve. What every paper scores against.
+:::
+
+::: {.card}
+[(b) the turbulent peak]{.cardh}
+
+$\arg\max \mathbb{E}[\ln P]$ under the actual inflow. Differs from (a) by a
+Jensen gap plus rotor lag.
+:::
+
+::: {.card}
+[(c) the algorithm's fixed point]{.cardh}
+
+Where the *estimate* vanishes, which adds the finite-difference bias of the
+demodulator.
+:::
+:::
+
+::: claim
+These are three different numbers. Before asking how well the estimator performs,
+we have to say which one it is estimating.
+:::
+
+## Candidate one: estimator bias {.smaller}
+
+The 2019 scheme is a square-wave two-point difference, so what it returns is
+
+$$\hat g \;=\; \frac{J(q+a)-J(q-a)}{2a} \;=\; J'(q) + \frac{a^2}{6}J'''(q) + O(a^4)$$
+
+The algorithm stops where $\hat g = 0$, not where $J' = 0$, so its fixed point
+sits at
+
+$$q^\star - q_{opt} \;\approx\; -\frac{a^2}{6}\,\frac{J'''}{J''}$$
+
+::: claim
+Nonzero whenever the log-$C_P$ curve is asymmetric at the peak, which it is. And
+$a$ was $0.3$ against a design gain of $2.2$, so about 14%. Not a small
+perturbation.
+:::
+
+## Candidate two: the peak moved {.smaller}
+
+Rotor inertia is $3.5\times10^7$ kg m², so $\lambda$ cannot track the wind. It
+swings rather than sits. Expanding the objective under that swing,
+
+$$\mathbb{E}\big[C_P(\bar\lambda + \delta)\big] \approx C_P(\bar\lambda) + \tfrac12 \sigma_\lambda^2\,C_P''(\bar\lambda)$$
+
+and maximizing over $\bar\lambda$ moves the optimum to
+
+$$\bar\lambda^\star - \lambda^\star \;\approx\; -\frac{\sigma_\lambda^2}{2}\,\frac{C_P'''}{C_P''}$$
+
+::: claim
+Same structure as candidate one: a third derivative over a second, scaled by a
+variance. But the implications are opposite. One says the algorithm misses a
+fixed target; the other says the algorithm is right and the target moved.
+:::
+
+## The arithmetic {.smaller}
+
+![](assets/q1-budget.svg){.fig-wide fig-alt="Horizontal bars: finite-difference bias 0.012, turbulent optimum 0.015, averaging artifact 0.015, the three together 0.042, against an observed gap of 0.350."}
+
+::: {.warn}
+Both fail, by more than an order of magnitude. Adding a third effect, that the
+reported $\bar\lambda$ is a time average and $\lambda(u)$ is curved, brings the
+total to $0.042$ against an observed $0.350$.
+:::
+
+::: {.notes}
+Computed on the map from normalized torque gain to settled tip-speed ratio, using
+the dither amplitude the 2019 paper actually used.
+
+The honest caveat, and it should be said out loud: the third derivative comes
+from an analytic surface fitted through the peak, not from the NREL tables. So
+quote the sensitivity rather than the number. To explain the whole gap by
+finite-difference bias you would need that third derivative about 28 times
+larger. A fitted surface can be wrong by a factor of two or three. Not by 28.
+:::
+
+## What survives {.smaller}
+
+::: {.cols2}
+::: {.card}
+[Where the gap actually lives]{.cardh}
+
+The torque gain lands $7.7\%$ low, and that alone moves $\lambda_{eq}$ by
+$+0.19$. So the question is why $k$ is low, not why $\lambda$ is high.
+:::
+
+::: {.card}
+[The one candidate left]{.cardh}
+
+The simulated rotor's own $C_P$ peak is not at $7.5$. Its realized $C_P$ is
+already known to be $0.44$ rather than $0.49$.
+:::
+:::
+
+::: claim
+The design curve is **already established to be wrong about the level**. Nobody
+has checked whether it is also wrong about the location, and that is the
+explanation the arithmetic cannot rule out.
+:::
+
+::: {.notes}
+This inverts what I would have proposed a week ago. The obvious experiment was to
+vary the dither amplitude and look for an a-squared scaling in the offset. I now
+expect that experiment to return nothing, because the predicted effect is 0.012
+and seed-to-seed scatter will be larger.
+:::
+
+## The test {.smaller}
+
+::: {.openq}
+Stop closing the loop. Hold the torque gain at a series of fixed values, run each
+long enough to average out the turbulence, and **measure the simulator's own
+$C_P(\lambda)$ curve.** Then ask where its peak is.
+:::
+
+::: {.cols2}
+::: {.card}
+[If the peak is at 7.5]{.cardh}
+
+The gap is real and none of the three candidates explain it. That is a more
+interesting outcome than confirming one of them.
+:::
+
+::: {.card}
+[If the peak is near 7.85]{.cardh}
+
+There is no estimator bias. The algorithms were right, the reference was wrong,
+and every convergence claim in the line needs restating against the new number.
+:::
+:::
+
+::: {.small}
+A few days of compute, no new code, and it is the same measurement the
+simulator-fidelity question needs anyway.
+:::
+
+## Why this one comes first {.smaller}
+
+::: {.cols3}
+::: {.card}
+[It gates the bound]{.cardh}
+
+You cannot write a performance bound for the estimation of a quantity that has
+not been defined.
+:::
+
+::: {.card}
+[It gates stability]{.cardh}
+
+Calling a run unstable presumes you know what it failed to converge to.
+:::
+
+::: {.card}
+[It gates the application]{.cardh}
+
+Detecting a $0.2$ shift from erosion is hopeless if the reference carries an
+unexplained $0.35$.
+:::
+:::
+
+::: claim
+Cheapest of the open questions, and the one the others rest on.
+:::
+
+## What is the estimator targeting? {.smaller}
+
+::: {.closing}
+::: {.lead}
+Two explanations, costed out, and both are dead by an order of magnitude.
+:::
+
+::: {.cols2}
+::: {.card}
+[The claim]{.cardh}
+
+The $0.35$ offset is not estimator bias and not a Jensen shift. What remains is
+that the simulated rotor's peak is somewhere other than $7.5$.
+:::
+
+::: {.card}
+[The caveat]{.cardh}
+
+The third derivative behind that arithmetic comes from a fitted surface. The
+sensitivity is stated on the arithmetic slide: it would have to be wrong by
+$28\times$.
+:::
+:::
+
+::: {.small}
+Ciri, Leonardi & Rotea, *Wind Energy* 2019, Tables 3 and 4 ·
+Kumar & Rotea, *WES* 2024
+:::
+:::
+
+::: footnote
+One of three: see also [the speed limit](q2-speed-limit.html) and
+[whether probing is needed](q3-probing.html).
+:::
