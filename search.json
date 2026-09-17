@@ -4479,6 +4479,933 @@
     ]
   },
   {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$"
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#where-this-comes-from",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#where-this-comes-from",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Where this comes from",
+    "text": "Where this comes from\nRotea’s opening message asked for gradient estimation “and if possible, Hessian.” Meyn’s stochastic approximation gives two answers to that, and they are very different in cost.\n\n\nPolyak-Ruppert averaging\nAverage the iterates. Attains the optimal asymptotic covariance with no curvature estimate anywhere.\n\n\nZap stochastic approximation\nEstimate the Jacobian on a fast timescale, invert it, use it as a matrix gain. A stochastic Newton-Raphson method.\n\n\n\nIf the goal is terminal variance, averaging already wins. This deck asks the other question: what does a matrix gain buy on a wind turbine, and can we even build one?\n\n\nThe honest framing is that Zap is not the cheapest route to low variance. What it offers is transient behaviour, stability under weak conditions, and conditioning in more than one dimension. Those are the goods worth chasing here, and they happen to line up with the complaint Rotea actually made, which was about tuning effort rather than about noise."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#zap-in-four-lines",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#zap-in-four-lines",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Zap in four lines",
+    "text": "Zap in four lines\n\\[\n\\begin{aligned}\n\\hat A_{n+1} &= \\hat A_n + \\varepsilon_{n+1}\\big[A_{n+1} - \\hat A_n\\big] \\\\[0.15em]\n\\theta_{n+1} &= \\theta_n + \\alpha_{n+1}\\, G_{n+1}\\, f_{n+1}(\\theta_n) \\\\[0.15em]\nA_{n+1} &= \\partial_\\theta f_{n+1}(\\theta_n) \\\\[0.15em]\nG_{n+1} &= -\\big[\\varepsilon I + \\hat A^{\\!\\top}_{n+1}\\hat A_{n+1}\\big]^{-1}\\hat A_{n+1}\n\\end{aligned}\n\\]\nwith the two step sizes satisfying \\(\\varepsilon_n/\\alpha_n \\to \\infty\\).\n\nLine three is the whole problem. A is the Jacobian of the sample update direction, differentiated in the parameter. In Q-learning \\(f_{n+1}\\) is piecewise linear in \\(\\theta\\), so that derivative is free and rank one. A demodulated gradient estimate has no such closed form."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-dictionary",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-dictionary",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The dictionary",
+    "text": "The dictionary\n\n\nRead the third row twice. It is the claim that makes the rest of the deck possible, and the next three slides are its derivation."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-f-is-precisely",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-f-is-precisely",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What \\(f\\) is, precisely",
+    "text": "What \\(f\\) is, precisely\nThe objective is the turbulence-averaged log-power, \\(\\Gamma(\\theta) = \\mathbb{E}\\big[\\ln P(\\theta)\\big]\\), and because \\(3\\ln V\\) does not depend on \\(\\theta\\) this equals \\(\\mathbb{E}[\\ln C_P]\\) up to a constant.\nThe mean field is \\(\\bar f(\\theta) = \\nabla\\Gamma(\\theta)\\). The sample is one dither period of demodulation:\n\\[f_{n+1}(\\theta_n) \\;=\\; \\hat g_n \\;=\\; \\frac{2}{aT}\\int_{nT}^{(n+1)T}\\ln P(t)\\,\\sin\\omega t\\;dt\\]\n\nSo \\(f\\) is exactly what LP-ESC already computes. Nothing changes in the forward path. Zap only changes what multiplies \\(\\hat g_n\\) before it reaches the integrator."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-a-is-precisely",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-a-is-precisely",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What \\(A\\) is, precisely",
+    "text": "What \\(A\\) is, precisely\n\\[A(\\theta) \\;=\\; \\partial_\\theta \\bar f(\\theta) \\;=\\; \\nabla^2\\Gamma(\\theta)\\]\nFor the torque-gain problem this is the scalar \\(\\partial^2 \\ln C_P/\\partial u^2\\) at the operating point. It is the same number that appears in Rotea’s 2017 crossover frequency,\n\\[\\nu_c \\;=\\; \\frac{\\kappa}{C_P^{\\max}}\\left|\\frac{\\partial^2 C_P}{\\partial u^2}(u_o)\\right|\\]\n\nThe curvature is not a new quantity being introduced. It is already in the tuning formula, taken on faith from a design curve. Zap proposes to measure it instead."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#expand-around-the-operating-point",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#expand-around-the-operating-point",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Expand around the operating point",
+    "text": "Expand around the operating point\nPut \\(\\theta(t) = \\theta_n + a\\sin\\omega t\\) into a local quadratic model of \\(y = \\ln P\\), with \\(g\\) the slope and \\(H\\) the curvature at \\(\\theta_n\\):\n\\[y(t) \\;=\\; \\text{const} \\;+\\; g\\,a\\sin\\omega t \\;+\\; \\tfrac12 H a^2 \\sin^2\\!\\omega t\\]\nNow use \\(\\sin^2\\omega t = \\tfrac12(1 - \\cos 2\\omega t)\\):\n\\[y(t) \\;=\\; \\underbrace{\\Big[\\,\\cdot\\, + \\tfrac14 H a^2\\Big]}_{\\text{DC}}\n\\;+\\; \\underbrace{g\\,a\\,\\sin\\omega t}_{\\text{first harmonic}}\n\\;-\\; \\underbrace{\\tfrac14 H a^2\\cos 2\\omega t}_{\\text{second harmonic}}\\]\n\nThe gradient sits at \\(\\omega\\). The curvature sits at \\(2\\omega\\). They are in the same record, separated in frequency, and one probe generates both."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#in-the-spectrum",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#in-the-spectrum",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "In the spectrum",
+    "text": "In the spectrum\n\n\nTwo things to note on this picture. The curvature line is smaller than the gradient line by roughly a over four times the distance from the peak, so close to the optimum it is the larger of the two. And because turbulence falls off as f to the minus five thirds, the noise floor under the second harmonic is about three times lower in power than under the first."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-two-demodulators",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-two-demodulators",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The two demodulators",
+    "text": "The two demodulators\n\\[\n\\hat g_n \\;=\\; \\Big\\langle\\, y\\cdot \\tfrac{2}{a}\\sin\\omega t \\,\\Big\\rangle,\n\\qquad\n\\hat H_n \\;=\\; \\big\\langle\\, y \\cdot N(t) \\,\\big\\rangle,\n\\qquad\nN(t) = \\frac{16}{a^2}\\left(\\sin^2\\!\\omega t - \\frac12\\right)\n\\]\nCheck the second one: \\(N(t) = -\\tfrac{8}{a^2}\\cos 2\\omega t\\), and averaging it against \\(-\\tfrac14 H a^2\\cos2\\omega t\\) gives \\(\\tfrac14 H a^2 \\cdot \\tfrac{8}{a^2}\\cdot\\tfrac12 = H\\).\n\n\\(A_{n+1} = \\hat H_n\\). One extra correlation against a signal you already generate. No new sensor, no extra excitation, no additional load on the machine.\n\n\nThis demodulation pair is not new. It is the Newton-based extremum seeking of Ghaffari, Krstic and Nesic, Automatica 2012, which also supplies a Riccati filter that converges to the inverse of H without ever inverting a matrix. That paper is not in our literature folder and I am working from memory, so the attribution needs checking before it goes in a proposal.\nWhat is new here is the pairing: their demodulation supplies Zap’s missing Jacobian, and Zap supplies the asymptotic covariance theory and the regularized pseudo-inverse that their Riccati filter lacks."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#more-than-one-parameter",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#more-than-one-parameter",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "More than one parameter",
+    "text": "More than one parameter\nFor \\(\\theta \\in \\mathbb{R}^p\\), dither each component at its own frequency and demodulate with a matrix:\n\\[\nN_{ii}(t) = \\frac{16}{a_i^2}\\left(\\sin^2\\!\\omega_i t - \\frac12\\right),\n\\qquad\nN_{ij}(t) = \\frac{4}{a_i a_j}\\,\\sin\\omega_i t\\,\\sin\\omega_j t \\quad (i\\neq j)\n\\]\n\nThe frequencies must satisfy the usual separation conditions, and now also \\(2\\omega_i\\) must not collide with any \\(\\omega_j\\) or \\(\\omega_j \\pm \\omega_k\\). For six yawed turbines that is a real combinatorial constraint on a narrow usable band."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-loop-assembled",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-loop-assembled",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The loop, assembled",
+    "text": "The loop, assembled\n\n\nThe lower path is LP-ESC exactly as published. Everything added is a second correlation and two recursions, all on signals already in hand."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-curvature-leaves-the-loop-gain",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-curvature-leaves-the-loop-gain",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The curvature leaves the loop gain",
+    "text": "The curvature leaves the loop gain\n\nWrite \\(\\delta = \\theta - \\theta^\\star\\), so \\(g = H\\delta\\) with \\(H&lt;0\\) at a maximum. Gradient ascent linearizes to \\(\\dot\\delta = \\kappa H\\delta\\), stable at rate \\(\\kappa|H|\\). Meyn’s gain carries its own sign, \\(G = -H/(\\varepsilon+H^2)\\), and with \\(\\varepsilon\\to 0\\) the update gives \\(\\dot\\delta = -\\kappa\\delta\\).\n\n2017 removed \\(V\\) from the loop gain. This removes \\(H\\). What is left is \\(\\kappa\\), which now is the settling time rather than merely influencing it."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#which-is-the-tuning-complaint-answered",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#which-is-the-tuning-complaint-answered",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Which is the tuning complaint, answered",
+    "text": "Which is the tuning complaint, answered\n\n\nWhat Rotea wrote\nA version of ESC that “converges very fast but it takes too long to tune its parameters.”\n\n\nWhat the TORQUE paper says\n“All parameters with the exception of dither frequency and amplitude were obtained by trial and error.”\n\n\n\nUnder gradient ascent, \\(\\kappa\\) has to be re-found whenever \\(H\\) changes, and \\(H\\) changes with the site, with the blade condition, and with the operating point. Under a matrix gain, \\(\\kappa\\) is set once from the settling time you want.\n\n\nThis is the strongest single argument in the deck, because it addresses the thing he actually complained about rather than the thing the literature is organised around. Note that it holds even in the scalar case, where the matrix gain is just division by an estimated number."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#where-a-matrix-really-pays",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#where-a-matrix-really-pays",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Where a matrix really pays",
+    "text": "Where a matrix really pays\n\n\nGradient methods converge at a rate set by the smallest Hessian eigenvalue. The measured farm power maps in the twelve-turbine tunnel experiment are long narrow ridges in the yaw angles, which is precisely the case where that hurts.\n\n\nIn the scalar torque-gain problem a matrix gain is a convenience. In the yaw problem it is the difference between converging and crawling, because the wake interaction makes the objective strongly anisotropic and there is no reason the principal axes should line up with individual turbines."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#regularization-is-doing-real-work",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#regularization-is-doing-real-work",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Regularization is doing real work",
+    "text": "Regularization is doing real work\nIn the scalar case \\(G = -\\hat A/(\\varepsilon + \\hat A^2)\\), so the effective rate is\n\\[\\kappa\\,\\frac{H^2}{\\varepsilon + H^2}\\]\n\nOn a flat peak \\(\\hat A \\to 0\\) and an unregularized Newton step would explode. This form does the opposite: it backs off to a small step, degrading gracefully into gradient ascent exactly where curvature cannot be seen.\n\n\nWorth stressing because the C_P peak is flat by design and gets flatter as the blades degrade. A naive inverse-Hessian method on this plant would be dangerous. The epsilon in Meyn’s formula is not a numerical detail here, it is the safety property that makes the method usable."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-curvature-estimate-is-noisier-but-not-where-it-matters",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-curvature-estimate-is-noisier-but-not-where-it-matters",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The curvature estimate is noisier, but not where it matters",
+    "text": "The curvature estimate is noisier, but not where it matters\n\nIn absolute terms \\(\\sigma(\\hat H)/\\sigma(\\hat g) \\approx (8/a)\\,2^{-5/6} \\approx 14\\) at the published dither amplitude.\n\nBut the gradient signal vanishes at the optimum and the curvature signal does not. In relative terms the two cross at about 7% of \\(u_{opt}\\) from the peak, and inside that the curvature is the better conditioned of the two.\n\n\nThis is the result I did not expect. The received wisdom is that second-order information is hopeless under noise, and in absolute terms that is right. But a controller near convergence is estimating a gradient whose true value is approaching zero, so its relative error diverges, while the curvature it is trying to measure stays put. The regime where Newton methods are supposed to be impossible is the regime where the turbine actually operates."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-gate-2omega-must-fit-inside-the-plant",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-gate-2omega-must-fit-inside-the-plant",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The gate: \\(2\\omega\\) must fit inside the plant",
+    "text": "The gate: \\(2\\omega\\) must fit inside the plant\n\n\nThe rotor is a low-pass filter. If \\(2\\omega\\) falls outside its passband the second harmonic is attenuated and phase-shifted, and the curvature estimate is biased by an amount nobody is tracking.\n\n\nThe numbers decide feasibility case by case. For the torque-gain problem in Kumar and Rotea 2022, the plant time constant is 8 seconds and the dither is 0.02 radians per second, so two omega lands at 0.32 of the bandwidth: gain 0.95, phase lag 18 degrees. That is comfortably usable.\nFor the wind tunnel yaw work the plant time constant is 2 seconds and the dither is 0.4 to 0.5 radians per second, so two omega lands at 1.6 to 2.0 times the bandwidth: gain 0.45 to 0.53, phase lag close to 60 degrees. Not usable as tuned. The dither would have to be slowed by roughly a factor of three, which costs convergence time and partly undoes the reason LP-PIESC was attractive there.\nThis also sharpens the earlier observation about dither frequencies creeping upward across this line of work. Reading the second harmonic halves the usable dither band."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-timescales-are-the-wrong-way-round",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-timescales-are-the-wrong-way-round",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The timescales are the wrong way round",
+    "text": "The timescales are the wrong way round\n\n\nZap’s high-gain condition \\(\\varepsilon_n/\\alpha_n \\to \\infty\\) puts the noisier estimate on the shorter averaging window. That is right when the Jacobian is cheap, as in Q-learning. It is backwards here.\n\n\nThe curvature of the C_P surface is a property of the blade. It changes as the blade erodes, over weeks and months. The optimum itself moves faster than that, with the operating point. So the natural design is the reverse of Zap: identify A slowly and carefully, and let theta move on the faster timescale.\nThat is a defensible algorithm, but it is no longer Zap, and Meyn’s two-timescale convergence theory does not cover it. Something would have to be put in its place. This is the part of the proposal that is genuinely open rather than merely unimplemented."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#zap-against-averaging",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#zap-against-averaging",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Zap against averaging",
+    "text": "Zap against averaging\n\n\nWhat averaging gives you\nThe optimal asymptotic covariance. Free. No Jacobian, no second demodulator, no frequency budget, no bandwidth constraint.\n\n\nWhat the matrix gain adds\nGain calibration, transient behaviour, and conditioning in more than one dimension. It does not improve the terminal variance.\n\n\n\nSo the case for Zap here has to rest on tuning effort and on the multivariable yaw problem. If it is argued on variance it will lose to four lines of averaging."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-is-left-when-esc-goes",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-is-left-when-esc-goes",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What is left when ESC goes",
+    "text": "What is left when ESC goes\n\n\nWhat gets deleted\nThe dither frequency, the phase compensation \\(\\theta\\), the high-pass and low-pass filters, the lock-in multiplier, the requirement that \\(2\\omega\\) fit inside the plant passband.\n\n\nWhat is left\n\\[\\theta_{n+1} = \\theta_n + \\alpha_n\\,G_n\\,\\hat g_n\\]\nPerturb, hold, measure, update. The SA recursion with nothing wrapped around it.\n\n\n\nAn iteration is now a small number of held operating points, each averaged long enough to see through the turbulence, rather than a continuous sinusoid the machine rides.\n\n\nThis is a different algorithm, not extremum seeking with the tone replaced by noise. Worth being clear about, because the objection from the QSA literature is aimed at the second thing and does not transfer cleanly to the first."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-gradient-spsa",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-gradient-spsa",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The gradient: SPSA",
+    "text": "The gradient: SPSA\nDraw \\(\\Delta_n\\) with independent \\(\\pm1\\) entries, perturb every parameter at once, and take one difference:\n\\[\\hat g_n \\;=\\; \\frac{\\bar y(\\theta_n + c\\Delta_n) - \\bar y(\\theta_n - c\\Delta_n)}{2c}\n\\begin{bmatrix}\\Delta_{n1}^{-1}\\\\ \\vdots \\\\ \\Delta_{np}^{-1}\\end{bmatrix}\\]\nwhere \\(\\bar y\\) is the mean of \\(\\ln P\\) over a held window.\n\nTwo measurements, whatever \\(p\\) is. That is the property the deterministic scheme cannot match, and it is the entire case for going stochastic on this plant."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#where-a_n1-comes-from-now",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#where-a_n1-comes-from-now",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Where \\(A_{n+1}\\) comes from now",
+    "text": "Where \\(A_{n+1}\\) comes from now\nThe second harmonic is gone with the tone. Two replacements:\n\n\nSpall’s 2SPSA\nA second perturbation \\(\\tilde\\Delta_n\\), two more gradient estimates, and a symmetrized outer product\n\\[\\hat H_n = \\tfrac12\\Big[\\tfrac{\\delta \\hat g_n}{2\\tilde c}\\tilde\\Delta_n^{-\\top} + (\\cdot)^{\\!\\top}\\Big]\\]\nRank two per iteration, four measurements.\n\n\nGaussian probe and Stein\nFor \\(\\xi \\sim N(0,I)\\), the second-order Stein identity gives\n\\[\\mathbb{E}\\big[\\,y\\,(\\xi\\xi^{\\!\\top} - I)\\,\\big] = a^2\\,\\nabla^2\\Gamma\\]\nso \\(\\hat H_n = \\langle y(\\xi\\xi^{\\!\\top}-I)\\rangle/a^2\\). No second perturbation.\n\n\n\nEither way \\(A_{n+1} = \\hat H_n\\), the running average is Zap’s (8.51a), and the regularized inverse is unchanged. Spall’s 2SPSA is Zap with SPSA supplying the Jacobian.\n\n\nThe 2SPSA measurement count needs checking against Spall’s 2000 TAC paper, which is not in our folder. I have it as four per iteration with reuse, but the accounting varies between presentations."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-bernoulli-trap",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-bernoulli-trap",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The Bernoulli trap",
+    "text": "The Bernoulli trap\n\n\nThe natural stochastic analogue of the 2019 square wave is a random \\(\\pm1\\) sign sequence. It gives the gradient, but \\(\\xi^2 \\equiv 1\\), so \\(\\mathrm{Var}(\\xi^2)=0\\) and the Stein estimator divides by zero. Bernoulli probing carries no curvature information at all.\n\n\nVerified numerically: with a plus-minus-one probe, g-hat recovers the true gradient to four decimals while the curvature estimate is undefined. With a Gaussian probe of the same amplitude, both come back correct.\nSo the choice of perturbation distribution is not cosmetic. If you want the Hessian for one extra correlation rather than four extra measurements, the probe must have a non-degenerate fourth moment."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-it-costs-1",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-it-costs-1",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What it costs",
+    "text": "What it costs\n\nBoth schemes difference two windows, so both reject DC. The difference is where each weights the turbulence.\n\nAn alternating sign sequence concentrates the estimator’s noise weighting in one bin, which you place above the spectral peak. A random sequence is white, so it weights everything below its Nyquist frequency evenly, including the energy-containing range. Roughly \\(16\\times\\) in noise power, \\(4\\times\\) in the scatter of \\(\\hat g\\).\n\n\nThere is a second cost that does not show on this plot. ESC dithers continuously and treats the rotor response as part of a transfer function, with phase compensation absorbing the lag. Holding a perturbed operating point means waiting out the rotor, about six seconds of time constant, so roughly thirty seconds of dead time before the averaging window can even start. At four to six measurements per iteration that is two to three minutes of the budget spent settling rather than measuring."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-it-buys-1",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-it-buys-1",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What it buys",
+    "text": "What it buys\nThe deterministic Hessian needs a separate channel for every entry of \\(\\nabla^2\\Gamma\\), at a distinct frequency product, none colliding with any \\(\\omega_k\\) or \\(2\\omega_k\\), all inside the plant bandwidth.\n\n\n\nparameters \\(p\\)\nfrequency slots needed\n2SPSA measurements\n\n\n\n\n1, torque gain\n2\n4\n\n\n2, torque and pitch\n6\n4\n\n\n6, yaw, optimized jointly\n58\n4\n\n\n\n\nAt \\(p=1\\) the tone wins on every axis. At \\(p=6\\) the plan needs 58 slots, so the averaging window has to stretch to 49 minutes before noise is even considered, and the stochastic version becomes the only one that runs."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#why-frequencies-at-all",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#why-frequencies-at-all",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Why frequencies at all",
+    "text": "Why frequencies at all\n\n\nThere is one measurement, \\(\\ln P(t)\\), and \\(p\\) unknowns. The dither frequencies are a multiplexing scheme, nothing more. Distinct \\(\\omega_i\\) make the demodulation channels orthogonal, since \\(\\langle \\sin\\omega_i t\\,\\sin\\omega_j t\\rangle = \\tfrac12\\delta_{ij}\\).\n\n\nShare a frequency between two parameters and the cross term stops vanishing, so you read back the sum of two gradient components with no way to split them. Same tone means same channel.\nSeen this way the whole tone-versus-random question is a choice of multiplexing. Frequency division is exactly orthogonal but needs spectral room. Code division needs none, but random codes are orthogonal only in expectation, so the leakage between parameters survives in any finite sample and appears as variance. That leakage is the extra scatter we costed out two slides ago."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-the-hessian-costs-in-frequency",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-the-hessian-costs-in-frequency",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What the Hessian costs in frequency",
+    "text": "What the Hessian costs in frequency\nThe quadratic term produces products, and \\(\\sin\\omega_i t \\sin\\omega_j t = \\tfrac12[\\cos(\\omega_i-\\omega_j)t - \\cos(\\omega_i+\\omega_j)t]\\). So \\(H_{ij}\\) appears at sum and difference frequencies and \\(H_{ii}\\) at \\(2\\omega_i\\). Every member of\n\\[\\{\\omega_k\\} \\;\\cup\\; \\{2\\omega_k\\} \\;\\cup\\; \\{\\omega_i \\pm \\omega_j\\}\\]\nmust be distinct, and all of it must fit below \\(\\omega_{plant}\\).\n\nThat is stronger than a Sidon set, because the gradient tones must also avoid every second-order product. A plain Golomb ruler is necessary and not sufficient."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#and-it-grows-quadratically",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#and-it-grows-quadratically",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "And it grows quadratically",
+    "text": "And it grows quadratically\n\n\n\n\n\\(p\\)\na valid tone set\nwidest product\nminimum window\n\n\n\n\n1\n\\(\\{1\\}\\)\n2\n101 s\n\n\n3\n\\(\\{4,5,7\\}\\)\n14\n704 s\n\n\n6\n\\(\\{4,10,17,26,28,29\\}\\)\n58\n2915 s\n\n\n\n\nComputed by exhaustive search over the full condition, not from the asymptotic Sidon bound, with the widest product required to sit inside a plant bandwidth of 0.125 radians per second.\nTwo things to take from the left panel. The band fills from both ends, and the difference frequencies land close to DC, which is exactly where turbulence is strongest. So the off-diagonal Hessian channels are placed in the worst part of the spectrum by the algebra rather than by choice.\nAnd note where 314 seconds sits on the right panel. The published tuning has room for two parameters and no more."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#head-to-head",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#head-to-head",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Head to head",
+    "text": "Head to head\n\n\n\n\n\n\n\n\n\nESC, second harmonic\nSA, 2SPSA or Stein\n\n\n\n\nseparation\nfrequency division\ncode division\n\n\northogonality\nexact, over one period\nin expectation only\n\n\nmeasurements per update\n0 extra, same window\n4 extra\n\n\nspectral demand\ngrows as \\(p^2\\)\nnone\n\n\nnoise weighting\none chosen bin\nwhole band below Nyquist\n\n\nscatter in \\(\\hat g\\)\nreference\nabout \\(4\\times\\) worse\n\n\nsettling dead time\nnone, rides continuously\nabout \\(5\\tau\\) per held point\n\n\nperturbation seen by the drivetrain\nsmooth sinusoid\nstep changes\n\n\ndegenerate cases\ntones colliding with products\nBernoulli probe, \\(\\mathrm{Var}(\\xi^2)=0\\)\n\n\n\n\nThe tone wins every row except one. That row is spectral demand, and it is the row that decides the farm-scale problem."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#reading-the-table-honestly",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#reading-the-table-honestly",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Reading the table honestly",
+    "text": "Reading the table honestly\n\n\n\\(p \\le 2\\)\nThe frequency plan is trivial and the tone is better on every axis that matters. There is no argument for random probing here.\n\n\n\\(p \\ge 4\\)\nThe plan needs a 20 to 50 minute window before noise even enters. Random probing is not merely competitive, it is the only scheme that runs.\n\n\n\nThe load row deserves more weight than it usually gets. Kumar and Rotea 2022, Figure 13: the single step in torque gain when the controller switches on raises drivetrain torsion DEL by 70% at 4 m/s. SPSA makes a step like that every iteration, in both directions, and nobody has costed that out."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#the-synthesis-this-points-to",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#the-synthesis-this-points-to",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The synthesis this points to",
+    "text": "The synthesis this points to\nBoth columns assume the Hessian must be measured at the same rate as the gradient. Nothing in the problem requires that.\n\n\nGradient\nKeep the tone. Continuous, gentle, low-noise, and only \\(p\\) frequencies are needed when no products have to be resolved.\n\n\nCurvature\nA deliberate experiment, run rarely. \\(H\\) drifts with erosion, over months. Once a week is often enough.\n\n\nIn between\nUse the last estimate as a slowly refreshed preconditioner, which is Zap with the timescales put the right way round.\n\n\n\nRun rarely, the curvature experiment can be time-division multiplexed: sweep one parameter at a time. No frequency plan, no \\(2\\omega\\) constraint, no \\(p^2\\) bandwidth, and no random probing either.\n\n\nThis is the answer the two halves of the deck converge on. The whole tone-against-noise argument is a fight over how to squeeze p-squared channels through a narrow band every single iteration, and the premise of that fight is wrong. The gradient needs to be fast because it is chasing a moving optimum. The curvature does not, because it is tracking blade wear.\nSeparate the two rates and the combinatorial problem dissolves, because sequential excitation is admissible once you are not in a hurry."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#verdict",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#verdict",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Verdict",
+    "text": "Verdict\n\n\nTone, feasible now\nSingle-turbine torque gain. \\(2\\omega\\) sits at 0.32 of the plant bandwidth at the published tuning, and with \\(p=1\\) there is no frequency plan to solve.\n\n\nTone, after retuning\nTwo parameters, \\((u,\\beta)\\). Three demodulation channels to place, and the bandwidth is there for them.\n\n\nRandom probing\nYaw across a farm, optimized jointly. This is not what the tunnel experiment does: it runs six scalar loops on clusters, which is how it keeps \\(p=1\\).\n\n\n\nBoth versions share everything downstream of the Jacobian: the averaging recursion, the regularized inverse, the Polyak-Ruppert tail. Only the way \\(A_{n+1}\\) is measured changes, so the two are the same program with two front ends."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#what-i-would-test-first",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#what-i-would-test-first",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What I would test first",
+    "text": "What I would test first\n\n\nP0, two weeks\nRun the existing LP-ESC at a fixed torque gain, demodulate at \\(2\\omega\\), and compare \\(\\hat H\\) against the curvature of the simulator’s own \\(C_P\\) surface. Pure measurement, no loop closed.\n\n\nThe gate\nDoes \\(\\hat H\\) converge to within, say, 20% over a plausible averaging window, and does its scatter match the \\((8/a)2^{-5/6}\\) prediction?\n\n\n\nIf \\(\\hat H\\) can be measured open-loop, everything else in this deck is engineering. If it cannot, the matrix gain is dead and Polyak-Ruppert averaging is the whole answer to Rotea’s question.\n\n\nNote what this test does not require: closing the loop, retuning anything, or committing to Zap. It asks only whether the second harmonic carries usable curvature on this plant, which is the single fact everything else depends on."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain-unused.html#a-matrix-gain-for-extremum-seeking",
+    "href": "research/wind-esc/q4-matrix-gain-unused.html#a-matrix-gain-for-extremum-seeking",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "A matrix gain for extremum seeking",
+    "text": "A matrix gain for extremum seeking\n\n\nThe Jacobian Zap needs is measurable: one octave up from the gradient, or in the second moment of a random probe.\n\n\n\nThe mapping\n\\(f\\) is a gradient estimate, from a tone or from a random perturbation. \\(A\\) is the curvature of \\(\\ln C_P\\), read at \\(2\\omega\\) or from a second moment. \\(\\hat A\\) is the Hessian that erosion moves.\n\n\nThe open part\nWhich front end to use is set by \\(p\\), not by taste. Still open: a convergence theory for the reversed timescale ordering this plant actually wants.\n\n\n\nMeyn, Control Systems and Reinforcement Learning, §8.5 · Ghaffari, Krstic & Nesic, Automatica 2012 · Spall, IEEE TAC 2000 (both attributions to be checked) · Kumar & Rotea, Energies 2022 · Rotea et al., TORQUE 2024\n\n\n\nCompanion to Climbing a Hill You Cannot See."
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#where-this-comes-from",
+    "href": "research/wind-esc/q4-matrix-gain.html#where-this-comes-from",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Where this comes from",
+    "text": "Where this comes from\nRotea’s opening message asked for gradient estimation “and if possible, Hessian.” Meyn’s stochastic approximation gives two answers to that, and they are very different in cost.\n\n\nPolyak-Ruppert averaging\nAverage the iterates. Attains the optimal asymptotic covariance with no curvature estimate anywhere.\n\n\nZap stochastic approximation\nEstimate the Jacobian on a fast timescale, invert it, use it as a matrix gain. A stochastic Newton-Raphson method.\n\n\n\nIf the goal is terminal variance, averaging already wins. This deck asks the other question: what does a matrix gain buy on a wind turbine, and can we even build one?\n\n\nThe honest framing is that Zap is not the cheapest route to low variance. What it offers is transient behaviour, stability under weak conditions, and conditioning in more than one dimension. Those are the goods worth chasing here, and they happen to line up with the complaint Rotea actually made, which was about tuning effort rather than about noise.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#zap-in-four-lines",
+    "href": "research/wind-esc/q4-matrix-gain.html#zap-in-four-lines",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Zap in four lines",
+    "text": "Zap in four lines\n\\[\n\\begin{aligned}\n\\hat A_{n+1} &= \\hat A_n + \\varepsilon_{n+1}\\big[A_{n+1} - \\hat A_n\\big] \\\\[0.15em]\n\\theta_{n+1} &= \\theta_n + \\alpha_{n+1}\\, G_{n+1}\\, f_{n+1}(\\theta_n) \\\\[0.15em]\nA_{n+1} &= \\partial_\\theta f_{n+1}(\\theta_n) \\\\[0.15em]\nG_{n+1} &= -\\big[\\varepsilon I + \\hat A^{\\!\\top}_{n+1}\\hat A_{n+1}\\big]^{-1}\\hat A_{n+1}\n\\end{aligned}\n\\]\nwith the two step sizes satisfying \\(\\varepsilon_n/\\alpha_n \\to \\infty\\).\n\nLine three is the whole problem. A is the Jacobian of the sample update direction, differentiated in the parameter. In Q-learning \\(f_{n+1}\\) is piecewise linear in \\(\\theta\\), so that derivative is free and rank one. A demodulated gradient estimate has no such closed form.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-dictionary",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-dictionary",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The dictionary",
+    "text": "The dictionary\n\n\nRead the third row twice. It is the claim that makes the rest of the deck possible, and the next three slides are its derivation.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-f-is-precisely",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-f-is-precisely",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What \\(f\\) is, precisely",
+    "text": "What \\(f\\) is, precisely\nThe objective is the turbulence-averaged log-power, \\(\\Gamma(\\theta) = \\mathbb{E}\\big[\\ln P(\\theta)\\big]\\), and because \\(3\\ln V\\) does not depend on \\(\\theta\\) this equals \\(\\mathbb{E}[\\ln C_P]\\) up to a constant.\nThe mean field is \\(\\bar f(\\theta) = \\nabla\\Gamma(\\theta)\\). The sample is one dither period of demodulation:\n\\[f_{n+1}(\\theta_n) \\;=\\; \\hat g_n \\;=\\; \\frac{2}{aT}\\int_{nT}^{(n+1)T}\\ln P(t)\\,\\sin\\omega t\\;dt\\]\n\nSo \\(f\\) is exactly what LP-ESC already computes. Nothing changes in the forward path. Zap only changes what multiplies \\(\\hat g_n\\) before it reaches the integrator.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-a-is-precisely",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-a-is-precisely",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What \\(A\\) is, precisely",
+    "text": "What \\(A\\) is, precisely\n\\[A(\\theta) \\;=\\; \\partial_\\theta \\bar f(\\theta) \\;=\\; \\nabla^2\\Gamma(\\theta)\\]\nFor the torque-gain problem this is the scalar \\(\\partial^2 \\ln C_P/\\partial u^2\\) at the operating point. It is the same number that appears in Rotea’s 2017 crossover frequency,\n\\[\\nu_c \\;=\\; \\frac{\\kappa}{C_P^{\\max}}\\left|\\frac{\\partial^2 C_P}{\\partial u^2}(u_o)\\right|\\]\n\nThe curvature is not a new quantity being introduced. It is already in the tuning formula, taken on faith from a design curve. Zap proposes to measure it instead.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#expand-around-the-operating-point",
+    "href": "research/wind-esc/q4-matrix-gain.html#expand-around-the-operating-point",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Expand around the operating point",
+    "text": "Expand around the operating point\nPut \\(\\theta(t) = \\theta_n + a\\sin\\omega t\\) into a local quadratic model of \\(y = \\ln P\\), with \\(g\\) the slope and \\(H\\) the curvature at \\(\\theta_n\\):\n\\[y(t) \\;=\\; \\text{const} \\;+\\; g\\,a\\sin\\omega t \\;+\\; \\tfrac12 H a^2 \\sin^2\\!\\omega t\\]\nNow use \\(\\sin^2\\omega t = \\tfrac12(1 - \\cos 2\\omega t)\\):\n\\[y(t) \\;=\\; \\underbrace{\\Big[\\,\\cdot\\, + \\tfrac14 H a^2\\Big]}_{\\text{DC}}\n\\;+\\; \\underbrace{g\\,a\\,\\sin\\omega t}_{\\text{first harmonic}}\n\\;-\\; \\underbrace{\\tfrac14 H a^2\\cos 2\\omega t}_{\\text{second harmonic}}\\]\n\nThe gradient sits at \\(\\omega\\). The curvature sits at \\(2\\omega\\). They are in the same record, separated in frequency, and one probe generates both.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#in-the-spectrum",
+    "href": "research/wind-esc/q4-matrix-gain.html#in-the-spectrum",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "In the spectrum",
+    "text": "In the spectrum\n\n\nTwo things to note on this picture. The curvature line is smaller than the gradient line by roughly a over four times the distance from the peak, so close to the optimum it is the larger of the two. And because turbulence falls off as f to the minus five thirds, the noise floor under the second harmonic is about three times lower in power than under the first.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-two-demodulators",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-two-demodulators",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The two demodulators",
+    "text": "The two demodulators\n\\[\n\\hat g_n \\;=\\; \\Big\\langle\\, y\\cdot \\tfrac{2}{a}\\sin\\omega t \\,\\Big\\rangle,\n\\qquad\n\\hat H_n \\;=\\; \\big\\langle\\, y \\cdot N(t) \\,\\big\\rangle,\n\\qquad\nN(t) = \\frac{16}{a^2}\\left(\\sin^2\\!\\omega t - \\frac12\\right)\n\\]\nCheck the second one: \\(N(t) = -\\tfrac{8}{a^2}\\cos 2\\omega t\\), and averaging it against \\(-\\tfrac14 H a^2\\cos2\\omega t\\) gives \\(\\tfrac14 H a^2 \\cdot \\tfrac{8}{a^2}\\cdot\\tfrac12 = H\\).\n\n\\(A_{n+1} = \\hat H_n\\). One extra correlation against a signal you already generate. No new sensor, no extra excitation, no additional load on the machine.\n\n\nThis demodulation pair is not new. It is the Newton-based extremum seeking of Ghaffari, Krstic and Nesic, Automatica 2012, which also supplies a Riccati filter that converges to the inverse of H without ever inverting a matrix. That paper is not in our literature folder and I am working from memory, so the attribution needs checking before it goes in a proposal.\nWhat is new here is the pairing: their demodulation supplies Zap’s missing Jacobian, and Zap supplies the asymptotic covariance theory and the regularized pseudo-inverse that their Riccati filter lacks.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#more-than-one-parameter",
+    "href": "research/wind-esc/q4-matrix-gain.html#more-than-one-parameter",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "More than one parameter",
+    "text": "More than one parameter\nFor \\(\\theta \\in \\mathbb{R}^p\\), dither each component at its own frequency and demodulate with a matrix:\n\\[\nN_{ii}(t) = \\frac{16}{a_i^2}\\left(\\sin^2\\!\\omega_i t - \\frac12\\right),\n\\qquad\nN_{ij}(t) = \\frac{4}{a_i a_j}\\,\\sin\\omega_i t\\,\\sin\\omega_j t \\quad (i\\neq j)\n\\]\n\nThe frequencies must satisfy the usual separation conditions, and now also \\(2\\omega_i\\) must not collide with any \\(\\omega_j\\) or \\(\\omega_j \\pm \\omega_k\\). For six yawed turbines that is a real combinatorial constraint on a narrow usable band.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-loop-assembled",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-loop-assembled",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The loop, assembled",
+    "text": "The loop, assembled\n\n\nThe lower path is LP-ESC exactly as published. Everything added is a second correlation and two recursions, all on signals already in hand.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-curvature-leaves-the-loop-gain",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-curvature-leaves-the-loop-gain",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The curvature leaves the loop gain",
+    "text": "The curvature leaves the loop gain\n\nWrite \\(\\delta = \\theta - \\theta^\\star\\), so \\(g = H\\delta\\) with \\(H&lt;0\\) at a maximum. Gradient ascent linearizes to \\(\\dot\\delta = \\kappa H\\delta\\), stable at rate \\(\\kappa|H|\\). Meyn’s gain carries its own sign, \\(G = -H/(\\varepsilon+H^2)\\), and with \\(\\varepsilon\\to 0\\) the update gives \\(\\dot\\delta = -\\kappa\\delta\\).\n\n2017 removed \\(V\\) from the loop gain. This removes \\(H\\). What is left is \\(\\kappa\\), which now is the settling time rather than merely influencing it.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#which-is-the-tuning-complaint-answered",
+    "href": "research/wind-esc/q4-matrix-gain.html#which-is-the-tuning-complaint-answered",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Which is the tuning complaint, answered",
+    "text": "Which is the tuning complaint, answered\n\n\nWhat Rotea wrote\nA version of ESC that “converges very fast but it takes too long to tune its parameters.”\n\n\nWhat the TORQUE paper says\n“All parameters with the exception of dither frequency and amplitude were obtained by trial and error.”\n\n\n\nUnder gradient ascent, \\(\\kappa\\) has to be re-found whenever \\(H\\) changes, and \\(H\\) changes with the site, with the blade condition, and with the operating point. Under a matrix gain, \\(\\kappa\\) is set once from the settling time you want.\n\n\nThis is the strongest single argument in the deck, because it addresses the thing he actually complained about rather than the thing the literature is organised around. Note that it holds even in the scalar case, where the matrix gain is just division by an estimated number.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#where-a-matrix-really-pays",
+    "href": "research/wind-esc/q4-matrix-gain.html#where-a-matrix-really-pays",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Where a matrix really pays",
+    "text": "Where a matrix really pays\n\n\nGradient methods converge at a rate set by the smallest Hessian eigenvalue. The measured farm power maps in the twelve-turbine tunnel experiment are long narrow ridges in the yaw angles, which is precisely the case where that hurts.\n\n\nIn the scalar torque-gain problem a matrix gain is a convenience. In the yaw problem it is the difference between converging and crawling, because the wake interaction makes the objective strongly anisotropic and there is no reason the principal axes should line up with individual turbines.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#regularization-is-doing-real-work",
+    "href": "research/wind-esc/q4-matrix-gain.html#regularization-is-doing-real-work",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Regularization is doing real work",
+    "text": "Regularization is doing real work\nIn the scalar case \\(G = -\\hat A/(\\varepsilon + \\hat A^2)\\), so the effective rate is\n\\[\\kappa\\,\\frac{H^2}{\\varepsilon + H^2}\\]\n\nOn a flat peak \\(\\hat A \\to 0\\) and an unregularized Newton step would explode. This form does the opposite: it backs off to a small step, degrading gracefully into gradient ascent exactly where curvature cannot be seen.\n\n\nWorth stressing because the C_P peak is flat by design and gets flatter as the blades degrade. A naive inverse-Hessian method on this plant would be dangerous. The epsilon in Meyn’s formula is not a numerical detail here, it is the safety property that makes the method usable.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-curvature-estimate-is-noisier-but-not-where-it-matters",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-curvature-estimate-is-noisier-but-not-where-it-matters",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The curvature estimate is noisier, but not where it matters",
+    "text": "The curvature estimate is noisier, but not where it matters\n\nIn absolute terms \\(\\sigma(\\hat H)/\\sigma(\\hat g) \\approx (8/a)\\,2^{-5/6} \\approx 14\\) at the published dither amplitude.\n\nBut the gradient signal vanishes at the optimum and the curvature signal does not. In relative terms the two cross at about 7% of \\(u_{opt}\\) from the peak, and inside that the curvature is the better conditioned of the two.\n\n\nThis is the result I did not expect. The received wisdom is that second-order information is hopeless under noise, and in absolute terms that is right. But a controller near convergence is estimating a gradient whose true value is approaching zero, so its relative error diverges, while the curvature it is trying to measure stays put. The regime where Newton methods are supposed to be impossible is the regime where the turbine actually operates.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-gate-2omega-must-fit-inside-the-plant",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-gate-2omega-must-fit-inside-the-plant",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The gate: \\(2\\omega\\) must fit inside the plant",
+    "text": "The gate: \\(2\\omega\\) must fit inside the plant\n\n\nThe rotor is a low-pass filter. If \\(2\\omega\\) falls outside its passband the second harmonic is attenuated and phase-shifted, and the curvature estimate is biased by an amount nobody is tracking.\n\n\nThe numbers decide feasibility case by case. For the torque-gain problem in Kumar and Rotea 2022, the plant time constant is 8 seconds and the dither is 0.02 radians per second, so two omega lands at 0.32 of the bandwidth: gain 0.95, phase lag 18 degrees. That is comfortably usable.\nFor the wind tunnel yaw work the plant time constant is 2 seconds and the dither is 0.4 to 0.5 radians per second, so two omega lands at 1.6 to 2.0 times the bandwidth: gain 0.45 to 0.53, phase lag close to 60 degrees. Not usable as tuned. The dither would have to be slowed by roughly a factor of three, which costs convergence time and partly undoes the reason LP-PIESC was attractive there.\nThis also sharpens the earlier observation about dither frequencies creeping upward across this line of work. Reading the second harmonic halves the usable dither band.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-timescales-are-the-wrong-way-round",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-timescales-are-the-wrong-way-round",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The timescales are the wrong way round",
+    "text": "The timescales are the wrong way round\n\n\nZap’s high-gain condition \\(\\varepsilon_n/\\alpha_n \\to \\infty\\) puts the noisier estimate on the shorter averaging window. That is right when the Jacobian is cheap, as in Q-learning. It is backwards here.\n\n\nThe curvature of the C_P surface is a property of the blade. It changes as the blade erodes, over weeks and months. The optimum itself moves faster than that, with the operating point. So the natural design is the reverse of Zap: identify A slowly and carefully, and let theta move on the faster timescale.\nThat is a defensible algorithm, but it is no longer Zap, and Meyn’s two-timescale convergence theory does not cover it. Something would have to be put in its place. This is the part of the proposal that is genuinely open rather than merely unimplemented.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#zap-against-averaging",
+    "href": "research/wind-esc/q4-matrix-gain.html#zap-against-averaging",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Zap against averaging",
+    "text": "Zap against averaging\n\n\nWhat averaging gives you\nThe optimal asymptotic covariance. Free. No Jacobian, no second demodulator, no frequency budget, no bandwidth constraint.\n\n\nWhat the matrix gain adds\nGain calibration, transient behaviour, and conditioning in more than one dimension. It does not improve the terminal variance.\n\n\n\nSo the case for Zap here has to rest on tuning effort and on the multivariable yaw problem. If it is argued on variance it will lose to four lines of averaging.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-is-left-when-esc-goes",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-is-left-when-esc-goes",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What is left when ESC goes",
+    "text": "What is left when ESC goes\n\n\nWhat gets deleted\nThe dither frequency, the phase compensation \\(\\theta\\), the high-pass and low-pass filters, the lock-in multiplier, the requirement that \\(2\\omega\\) fit inside the plant passband.\n\n\nWhat is left\n\\[\\theta_{n+1} = \\theta_n + \\alpha_n\\,G_n\\,\\hat g_n\\]\nPerturb, hold, measure, update. The SA recursion with nothing wrapped around it.\n\n\n\nAn iteration is now a small number of held operating points, each averaged long enough to see through the turbulence, rather than a continuous sinusoid the machine rides.\n\n\nThis is a different algorithm, not extremum seeking with the tone replaced by noise. Worth being clear about, because the objection from the QSA literature is aimed at the second thing and does not transfer cleanly to the first.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-gradient-spsa",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-gradient-spsa",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The gradient: SPSA",
+    "text": "The gradient: SPSA\nDraw \\(\\Delta_n\\) with independent \\(\\pm1\\) entries, perturb every parameter at once, and take one difference:\n\\[\\hat g_n \\;=\\; \\frac{\\bar y(\\theta_n + c\\Delta_n) - \\bar y(\\theta_n - c\\Delta_n)}{2c}\n\\begin{bmatrix}\\Delta_{n1}^{-1}\\\\ \\vdots \\\\ \\Delta_{np}^{-1}\\end{bmatrix}\\]\nwhere \\(\\bar y\\) is the mean of \\(\\ln P\\) over a held window.\n\nTwo measurements, whatever \\(p\\) is. That is the property the deterministic scheme cannot match, and it is the entire case for going stochastic on this plant.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#where-a_n1-comes-from-now",
+    "href": "research/wind-esc/q4-matrix-gain.html#where-a_n1-comes-from-now",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Where \\(A_{n+1}\\) comes from now",
+    "text": "Where \\(A_{n+1}\\) comes from now\nThe second harmonic is gone with the tone. Two replacements:\n\n\nSpall’s 2SPSA\nA second perturbation \\(\\tilde\\Delta_n\\), two more gradient estimates, and a symmetrized outer product\n\\[\\hat H_n = \\tfrac12\\Big[\\tfrac{\\delta \\hat g_n}{2\\tilde c}\\tilde\\Delta_n^{-\\top} + (\\cdot)^{\\!\\top}\\Big]\\]\nRank two per iteration, four measurements.\n\n\nGaussian probe and Stein\nFor \\(\\xi \\sim N(0,I)\\), the second-order Stein identity gives\n\\[\\mathbb{E}\\big[\\,y\\,(\\xi\\xi^{\\!\\top} - I)\\,\\big] = a^2\\,\\nabla^2\\Gamma\\]\nso \\(\\hat H_n = \\langle y(\\xi\\xi^{\\!\\top}-I)\\rangle/a^2\\). No second perturbation.\n\n\n\nEither way \\(A_{n+1} = \\hat H_n\\), the running average is Zap’s (8.51a), and the regularized inverse is unchanged. Spall’s 2SPSA is Zap with SPSA supplying the Jacobian.\n\n\nThe 2SPSA measurement count needs checking against Spall’s 2000 TAC paper, which is not in our folder. I have it as four per iteration with reuse, but the accounting varies between presentations.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-bernoulli-trap",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-bernoulli-trap",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The Bernoulli trap",
+    "text": "The Bernoulli trap\n\n\nThe natural stochastic analogue of the 2019 square wave is a random \\(\\pm1\\) sign sequence. It gives the gradient, but \\(\\xi^2 \\equiv 1\\), so \\(\\mathrm{Var}(\\xi^2)=0\\) and the Stein estimator divides by zero. Bernoulli probing carries no curvature information at all.\n\n\nVerified numerically: with a plus-minus-one probe, g-hat recovers the true gradient to four decimals while the curvature estimate is undefined. With a Gaussian probe of the same amplitude, both come back correct.\nSo the choice of perturbation distribution is not cosmetic. If you want the Hessian for one extra correlation rather than four extra measurements, the probe must have a non-degenerate fourth moment.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-it-costs-1",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-it-costs-1",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What it costs",
+    "text": "What it costs\n\nBoth schemes difference two windows, so both reject DC. The difference is where each weights the turbulence.\n\nAn alternating sign sequence concentrates the estimator’s noise weighting in one bin, which you place above the spectral peak. A random sequence is white, so it weights everything below its Nyquist frequency evenly, including the energy-containing range. Roughly \\(16\\times\\) in noise power, \\(4\\times\\) in the scatter of \\(\\hat g\\).\n\n\nThere is a second cost that does not show on this plot. ESC dithers continuously and treats the rotor response as part of a transfer function, with phase compensation absorbing the lag. Holding a perturbed operating point means waiting out the rotor, about six seconds of time constant, so roughly thirty seconds of dead time before the averaging window can even start. At four to six measurements per iteration that is two to three minutes of the budget spent settling rather than measuring.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-it-buys-1",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-it-buys-1",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What it buys",
+    "text": "What it buys\nThe deterministic Hessian needs a separate channel for every entry of \\(\\nabla^2\\Gamma\\), at a distinct frequency product, none colliding with any \\(\\omega_k\\) or \\(2\\omega_k\\), all inside the plant bandwidth.\n\n\n\nparameters \\(p\\)\nfrequency slots needed\n2SPSA measurements\n\n\n\n\n1, torque gain\n2\n4\n\n\n2, torque and pitch\n6\n4\n\n\n6, yaw, optimized jointly\n58\n4\n\n\n\n\nAt \\(p=1\\) the tone wins on every axis. At \\(p=6\\) the plan needs 58 slots, so the averaging window has to stretch to 49 minutes before noise is even considered, and the stochastic version becomes the only one that runs.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#why-frequencies-at-all",
+    "href": "research/wind-esc/q4-matrix-gain.html#why-frequencies-at-all",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Why frequencies at all",
+    "text": "Why frequencies at all\n\n\nThere is one measurement, \\(\\ln P(t)\\), and \\(p\\) unknowns. The dither frequencies are a multiplexing scheme, nothing more. Distinct \\(\\omega_i\\) make the demodulation channels orthogonal, since \\(\\langle \\sin\\omega_i t\\,\\sin\\omega_j t\\rangle = \\tfrac12\\delta_{ij}\\).\n\n\nShare a frequency between two parameters and the cross term stops vanishing, so you read back the sum of two gradient components with no way to split them. Same tone means same channel.\nSeen this way the whole tone-versus-random question is a choice of multiplexing. Frequency division is exactly orthogonal but needs spectral room. Code division needs none, but random codes are orthogonal only in expectation, so the leakage between parameters survives in any finite sample and appears as variance. That leakage is the extra scatter we costed out two slides ago.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-the-hessian-costs-in-frequency",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-the-hessian-costs-in-frequency",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What the Hessian costs in frequency",
+    "text": "What the Hessian costs in frequency\nThe quadratic term produces products, and \\(\\sin\\omega_i t \\sin\\omega_j t = \\tfrac12[\\cos(\\omega_i-\\omega_j)t - \\cos(\\omega_i+\\omega_j)t]\\). So \\(H_{ij}\\) appears at sum and difference frequencies and \\(H_{ii}\\) at \\(2\\omega_i\\). Every member of\n\\[\\{\\omega_k\\} \\;\\cup\\; \\{2\\omega_k\\} \\;\\cup\\; \\{\\omega_i \\pm \\omega_j\\}\\]\nmust be distinct, and all of it must fit below \\(\\omega_{plant}\\).\n\nThat is stronger than a Sidon set, because the gradient tones must also avoid every second-order product. A plain Golomb ruler is necessary and not sufficient.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#and-it-grows-quadratically",
+    "href": "research/wind-esc/q4-matrix-gain.html#and-it-grows-quadratically",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "And it grows quadratically",
+    "text": "And it grows quadratically\n\n\n\n\n\\(p\\)\na valid tone set\nwidest product\nminimum window\n\n\n\n\n1\n\\(\\{1\\}\\)\n2\n101 s\n\n\n3\n\\(\\{4,5,7\\}\\)\n14\n704 s\n\n\n6\n\\(\\{4,10,17,26,28,29\\}\\)\n58\n2915 s\n\n\n\n\nComputed by exhaustive search over the full condition, not from the asymptotic Sidon bound, with the widest product required to sit inside a plant bandwidth of 0.125 radians per second.\nTwo things to take from the left panel. The band fills from both ends, and the difference frequencies land close to DC, which is exactly where turbulence is strongest. So the off-diagonal Hessian channels are placed in the worst part of the spectrum by the algebra rather than by choice.\nAnd note where 314 seconds sits on the right panel. The published tuning has room for two parameters and no more.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#head-to-head",
+    "href": "research/wind-esc/q4-matrix-gain.html#head-to-head",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Head to head",
+    "text": "Head to head\n\n\n\n\n\n\n\n\n\nESC, second harmonic\nSA, 2SPSA or Stein\n\n\n\n\nseparation\nfrequency division\ncode division\n\n\northogonality\nexact, over one period\nin expectation only\n\n\nmeasurements per update\n0 extra, same window\n4 extra\n\n\nspectral demand\ngrows as \\(p^2\\)\nnone\n\n\nnoise weighting\none chosen bin\nwhole band below Nyquist\n\n\nscatter in \\(\\hat g\\)\nreference\nabout \\(4\\times\\) worse\n\n\nsettling dead time\nnone, rides continuously\nabout \\(5\\tau\\) per held point\n\n\nperturbation seen by the drivetrain\nsmooth sinusoid\nstep changes\n\n\ndegenerate cases\ntones colliding with products\nBernoulli probe, \\(\\mathrm{Var}(\\xi^2)=0\\)\n\n\n\n\nThe tone wins every row except one. That row is spectral demand, and it is the row that decides the farm-scale problem.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#reading-the-table-honestly",
+    "href": "research/wind-esc/q4-matrix-gain.html#reading-the-table-honestly",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Reading the table honestly",
+    "text": "Reading the table honestly\n\n\n\\(p \\le 2\\)\nThe frequency plan is trivial and the tone is better on every axis that matters. There is no argument for random probing here.\n\n\n\\(p \\ge 4\\)\nThe plan needs a 20 to 50 minute window before noise even enters. Random probing is not merely competitive, it is the only scheme that runs.\n\n\n\nThe load row deserves more weight than it usually gets. Kumar and Rotea 2022, Figure 13: the single step in torque gain when the controller switches on raises drivetrain torsion DEL by 70% at 4 m/s. SPSA makes a step like that every iteration, in both directions, and nobody has costed that out.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#the-synthesis-this-points-to",
+    "href": "research/wind-esc/q4-matrix-gain.html#the-synthesis-this-points-to",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "The synthesis this points to",
+    "text": "The synthesis this points to\nBoth columns assume the Hessian must be measured at the same rate as the gradient. Nothing in the problem requires that.\n\n\nGradient\nKeep the tone. Continuous, gentle, low-noise, and only \\(p\\) frequencies are needed when no products have to be resolved.\n\n\nCurvature\nA deliberate experiment, run rarely. \\(H\\) drifts with erosion, over months. Once a week is often enough.\n\n\nIn between\nUse the last estimate as a slowly refreshed preconditioner, which is Zap with the timescales put the right way round.\n\n\n\nRun rarely, the curvature experiment can be time-division multiplexed: sweep one parameter at a time. No frequency plan, no \\(2\\omega\\) constraint, no \\(p^2\\) bandwidth, and no random probing either.\n\n\nThis is the answer the two halves of the deck converge on. The whole tone-against-noise argument is a fight over how to squeeze p-squared channels through a narrow band every single iteration, and the premise of that fight is wrong. The gradient needs to be fast because it is chasing a moving optimum. The curvature does not, because it is tracking blade wear.\nSeparate the two rates and the combinatorial problem dissolves, because sequential excitation is admissible once you are not in a hurry.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#verdict",
+    "href": "research/wind-esc/q4-matrix-gain.html#verdict",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "Verdict",
+    "text": "Verdict\n\n\nTone, feasible now\nSingle-turbine torque gain. \\(2\\omega\\) sits at 0.32 of the plant bandwidth at the published tuning, and with \\(p=1\\) there is no frequency plan to solve.\n\n\nTone, after retuning\nTwo parameters, \\((u,\\beta)\\). Three demodulation channels to place, and the bandwidth is there for them.\n\n\nRandom probing\nYaw across a farm, optimized jointly. This is not what the tunnel experiment does: it runs six scalar loops on clusters, which is how it keeps \\(p=1\\).\n\n\n\nBoth versions share everything downstream of the Jacobian: the averaging recursion, the regularized inverse, the Polyak-Ruppert tail. Only the way \\(A_{n+1}\\) is measured changes, so the two are the same program with two front ends.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#what-i-would-test-first",
+    "href": "research/wind-esc/q4-matrix-gain.html#what-i-would-test-first",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "What I would test first",
+    "text": "What I would test first\n\n\nP0, two weeks\nRun the existing LP-ESC at a fixed torque gain, demodulate at \\(2\\omega\\), and compare \\(\\hat H\\) against the curvature of the simulator’s own \\(C_P\\) surface. Pure measurement, no loop closed.\n\n\nThe gate\nDoes \\(\\hat H\\) converge to within, say, 20% over a plausible averaging window, and does its scatter match the \\((8/a)2^{-5/6}\\) prediction?\n\n\n\nIf \\(\\hat H\\) can be measured open-loop, everything else in this deck is engineering. If it cannot, the matrix gain is dead and Polyak-Ruppert averaging is the whole answer to Rotea’s question.\n\n\nNote what this test does not require: closing the loop, retuning anything, or committing to Zap. It asks only whether the second harmonic carries usable curvature on this plant, which is the single fact everything else depends on.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q4-matrix-gain.html#a-matrix-gain-for-extremum-seeking",
+    "href": "research/wind-esc/q4-matrix-gain.html#a-matrix-gain-for-extremum-seeking",
+    "title": "A Matrix Gain for Extremum Seeking",
+    "section": "A matrix gain for extremum seeking",
+    "text": "A matrix gain for extremum seeking\n\n\nThe Jacobian Zap needs is measurable: one octave up from the gradient, or in the second moment of a random probe.\n\n\n\nThe mapping\n\\(f\\) is a gradient estimate, from a tone or from a random perturbation. \\(A\\) is the curvature of \\(\\ln C_P\\), read at \\(2\\omega\\) or from a second moment. \\(\\hat A\\) is the Hessian that erosion moves.\n\n\nThe open part\nWhich front end to use is set by \\(p\\), not by taste. Still open: a convergence theory for the reversed timescale ordering this plant actually wants.\n\n\n\nMeyn, Control Systems and Reinforcement Learning, §8.5 · Ghaffari, Krstic & Nesic, Automatica 2012 · Spall, IEEE TAC 2000 (both attributions to be checked) · Kumar & Rotea, Energies 2022 · Rotea et al., TORQUE 2024\n\n\n\nCompanion to Climbing a Hill You Cannot See.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q4: A Matrix Gain for Extremum Seeking"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html",
+    "href": "research/wind-esc/q2-speed-limit-unused.html",
+    "title": "What Bounds the Speed?",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$"
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#speed-is-the-complaint",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#speed-is-the-complaint",
+    "title": "What Bounds the Speed?",
+    "section": "Speed is the complaint",
+    "text": "Speed is the complaint\n\n\nWhat we were told\nA version of extremum seeking that “converges very fast but takes too long to tune its parameters.”\n\n\nWhat the papers show\nSettling times from 8 minutes to 46, and at one wind speed no settling time at all, because the algorithm goes unstable.\n\n\n\nSo the governing question is not only how noisy the gradient is. It is what sets the ceiling on convergence rate, and whether anyone knows where that ceiling is."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#the-puzzle",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#the-puzzle",
+    "title": "What Bounds the Speed?",
+    "section": "The puzzle",
+    "text": "The puzzle\nThe 2017 analysis reduces the whole loop to one equation,\n\\[\\dot{\\tilde u} = -\\omega_c\\,\\tilde u,\n\\qquad\n\\omega_c = \\kappa\\left|\\frac{\\partial^2 C_P}{\\partial u^2}\\right| P_{\\text{wind}}\\]\nOne pole, on the negative real axis, for any positive gain. Raise \\(\\kappa\\), or raise the wind, and it moves further left. It converges faster and it never rings.\n\nThe 2019 large-eddy simulations report plain ESC as unstable at 12 m/s, in uniform inflow and again under shear with turbulence, with the torque gain oscillating hard enough to stall the turbine repeatedly.\n\n\nA first-order model cannot produce that behaviour at any gain. Whatever sets the limit is not in the published analysis."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#what-is-actually-around-the-loop",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#what-is-actually-around-the-loop",
+    "title": "What Bounds the Speed?",
+    "section": "What is actually around the loop",
+    "text": "What is actually around the loop\n\n\nThe rotor settles in about 8 s and the dither period is 150 s, so the rotor is not the missing dynamics. It is fully settled between updates."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#the-missing-element-is-a-delay",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#the-missing-element-is-a-delay",
+    "title": "What Bounds the Speed?",
+    "section": "The missing element is a delay",
+    "text": "The missing element is a delay\nYou cannot act on a measurement until its averaging window has closed.\n\n\nWhy it is unavoidable\nThe gradient estimate for period \\(n\\) exists only once period \\(n\\) has finished. The soonest it can change the parameter is period \\(n+1\\).\n\n\nWhat it is, in the loop\nOne sample of pure delay, which is a second pole. Continuous-time analysis does not see it because it assumes the estimate is available instantaneously.\n\n\n\nThis is the same structure as the 27% of each period the 2019 scheme blanks out to avoid transients. Both are the loop paying for the fact that measurement takes time."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#one-line-of-algebra",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#one-line-of-algebra",
+    "title": "What Bounds the Speed?",
+    "section": "One line of algebra",
+    "text": "One line of algebra\nWith the rotor settled, the loop is a discrete integrator plus a one-sample delay. The characteristic equation is\n\\[z^2 - z + K = 0, \\qquad K = \\kappa |H| \\ \\text{per update}\\]\nJury’s criterion for \\(z^2 + b_1 z + b_0\\) requires \\(|b_0| &lt; 1\\) and \\(|b_1| &lt; 1 + b_0\\), which here gives\n\\[\\boxed{\\;0 &lt; K &lt; 1\\;}\\]\n\n\ncontinuous first order no bound at all\n\n\ndiscrete integrator alone \\(K &lt; 2\\)\n\n\nwith the delay \\(K &lt; 1\\)"
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#where-the-poles-go",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#where-the-poles-go",
+    "title": "What Bounds the Speed?",
+    "section": "Where the poles go",
+    "text": "Where the poles go\n\n\nThe pair leaves the unit circle at \\(60^\\circ\\), so the mode that goes unstable rings at \\(6T\\). At the published dither period that is a 15 minute oscillation, which is a signature you can look for in the existing time series."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#calibrate-on-their-own-numbers",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#calibrate-on-their-own-numbers",
+    "title": "What Bounds the Speed?",
+    "section": "Calibrate on their own numbers",
+    "text": "Calibrate on their own numbers\nThe 2019 paper tunes for a 99% settling time of 11 minutes at 8 m/s, with \\(T = 150\\) s. That is \\(4.4\\) updates, so \\((1-K)^{4.4} = 0.01\\) and\n\\[K(8\\ \\text{m/s}) = 0.649\\]\nNothing else is fitted. Plain ESC has \\(K \\propto V^3\\):\n\n\n4 m/s \\(K = 0.081\\), stable.\nLES: stable.\n\n\n8 m/s \\(K = 0.649\\), stable.\nLES: stable.\n\n\n12 m/s \\(K = 2.19\\), unstable.\nLES: unstable."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#and-it-predicts-the-edge",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#and-it-predicts-the-edge",
+    "title": "What Bounds the Speed?",
+    "section": "And it predicts the edge",
+    "text": "And it predicts the edge\n\n\nThe boundary sits at 9.2 m/s. And because the logarithm makes \\(K\\) independent of wind speed, LP-ESC stays at \\(0.649\\) everywhere and never crosses, which is exactly what the LES found at all three speeds.\n\n\nOne model, one constant taken from their own settling time, four observations reproduced: ESC stable at 4 and 8, unstable at 12, LP-ESC stable throughout.\nNothing was tuned to fit the instability. It falls out."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#the-test",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#the-test",
+    "title": "What Bounds the Speed?",
+    "section": "The test",
+    "text": "The test\n\nRun plain ESC at 10 m/s in the existing setup. One run. The model says unstable. A stable result falsifies it cleanly, and tells us something specific is missing from the loop.\n\n\n\nSecond, cheaper check\nLook at the existing 12 m/s time series. The model says the oscillation should have a period near \\(6T\\), about 13 minutes at that gain. No new runs needed.\n\n\nThird, on the other side\nThe model says the ceiling moves with \\(T\\). Halving the dither period should move the boundary up by \\(2^{1/3}\\), to about 11.6 m/s."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#what-it-buys-beyond-the-puzzle",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#what-it-buys-beyond-the-puzzle",
+    "title": "What Bounds the Speed?",
+    "section": "What it buys beyond the puzzle",
+    "text": "What it buys beyond the puzzle\n\n\nA hard ceiling\n\\(K &lt; 1\\) bounds convergence rate independently of noise. No amount of variance reduction moves it. It is set by how long you must average.\n\n\nA design equation\n\\(K = \\kappa|H| &lt; 1\\) ties the gain, the curvature and the update period together in one inequality. That is the tuning rule this line currently obtains by trial and error.\n\n\n\nIt also explains why the logarithm helped so much. Its real effect is to stop \\(K\\) from scaling with \\(V^3\\), which is what was pushing the loop across the boundary at high wind."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit-unused.html#what-bounds-the-speed",
+    "href": "research/wind-esc/q2-speed-limit-unused.html#what-bounds-the-speed",
+    "title": "What Bounds the Speed?",
+    "section": "What bounds the speed?",
+    "text": "What bounds the speed?\n\n\nThe instability is not a numerical artifact. It is a sampled-data loop crossing its stability boundary.\n\n\n\nThe claim\n\\(K &lt; 1\\), calibrated at \\(K = 0.649\\) from their own settling time, reproduces all three reported outcomes and puts the boundary at \\(9.2\\) m/s.\n\n\nThe caveat\nThe model assumes the rotor is fully settled between updates, which holds at \\(T = 150\\) s and fails if the dither is sped up. Then the rotor pole returns and the bound tightens.\n\n\n\nCiri, Leonardi & Rotea, Wind Energy 2019 · Rotea, IFAC 2017 · Mulders, Gallo & Rotea, ACC 2024\n\n\n\nOne of three: see also the estimand and whether probing is needed."
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#speed-is-the-complaint",
+    "href": "research/wind-esc/q2-speed-limit.html#speed-is-the-complaint",
+    "title": "What Bounds the Speed?",
+    "section": "Speed is the complaint",
+    "text": "Speed is the complaint\n\n\nWhat we were told\nA version of extremum seeking that “converges very fast but takes too long to tune its parameters.”\n\n\nWhat the papers show\nSettling times from 8 minutes to 46, and at one wind speed no settling time at all, because the algorithm goes unstable.\n\n\n\nSo the governing question is not only how noisy the gradient is. It is what sets the ceiling on convergence rate, and whether anyone knows where that ceiling is.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#the-puzzle",
+    "href": "research/wind-esc/q2-speed-limit.html#the-puzzle",
+    "title": "What Bounds the Speed?",
+    "section": "The puzzle",
+    "text": "The puzzle\nThe 2017 analysis reduces the whole loop to one equation,\n\\[\\dot{\\tilde u} = -\\omega_c\\,\\tilde u,\n\\qquad\n\\omega_c = \\kappa\\left|\\frac{\\partial^2 C_P}{\\partial u^2}\\right| P_{\\text{wind}}\\]\nOne pole, on the negative real axis, for any positive gain. Raise \\(\\kappa\\), or raise the wind, and it moves further left. It converges faster and it never rings.\n\nThe 2019 large-eddy simulations report plain ESC as unstable at 12 m/s, in uniform inflow and again under shear with turbulence, with the torque gain oscillating hard enough to stall the turbine repeatedly.\n\n\nA first-order model cannot produce that behaviour at any gain. Whatever sets the limit is not in the published analysis.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#what-is-actually-around-the-loop",
+    "href": "research/wind-esc/q2-speed-limit.html#what-is-actually-around-the-loop",
+    "title": "What Bounds the Speed?",
+    "section": "What is actually around the loop",
+    "text": "What is actually around the loop\n\n\nThe rotor settles in about 8 s and the dither period is 150 s, so the rotor is not the missing dynamics. It is fully settled between updates.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#the-missing-element-is-a-delay",
+    "href": "research/wind-esc/q2-speed-limit.html#the-missing-element-is-a-delay",
+    "title": "What Bounds the Speed?",
+    "section": "The missing element is a delay",
+    "text": "The missing element is a delay\nYou cannot act on a measurement until its averaging window has closed.\n\n\nWhy it is unavoidable\nThe gradient estimate for period \\(n\\) exists only once period \\(n\\) has finished. The soonest it can change the parameter is period \\(n+1\\).\n\n\nWhat it is, in the loop\nOne sample of pure delay, which is a second pole. Continuous-time analysis does not see it because it assumes the estimate is available instantaneously.\n\n\n\nThis is the same structure as the 27% of each period the 2019 scheme blanks out to avoid transients. Both are the loop paying for the fact that measurement takes time.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#one-line-of-algebra",
+    "href": "research/wind-esc/q2-speed-limit.html#one-line-of-algebra",
+    "title": "What Bounds the Speed?",
+    "section": "One line of algebra",
+    "text": "One line of algebra\nWith the rotor settled, the loop is a discrete integrator plus a one-sample delay. The characteristic equation is\n\\[z^2 - z + K = 0, \\qquad K = \\kappa |H| \\ \\text{per update}\\]\nJury’s criterion for \\(z^2 + b_1 z + b_0\\) requires \\(|b_0| &lt; 1\\) and \\(|b_1| &lt; 1 + b_0\\), which here gives\n\\[\\boxed{\\;0 &lt; K &lt; 1\\;}\\]\n\n\ncontinuous first order no bound at all\n\n\ndiscrete integrator alone \\(K &lt; 2\\)\n\n\nwith the delay \\(K &lt; 1\\)",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#where-the-poles-go",
+    "href": "research/wind-esc/q2-speed-limit.html#where-the-poles-go",
+    "title": "What Bounds the Speed?",
+    "section": "Where the poles go",
+    "text": "Where the poles go\n\n\nThe pair leaves the unit circle at \\(60^\\circ\\), so the mode that goes unstable rings at \\(6T\\). At the published dither period that is a 15 minute oscillation, which is a signature you can look for in the existing time series.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#calibrate-on-their-own-numbers",
+    "href": "research/wind-esc/q2-speed-limit.html#calibrate-on-their-own-numbers",
+    "title": "What Bounds the Speed?",
+    "section": "Calibrate on their own numbers",
+    "text": "Calibrate on their own numbers\nThe 2019 paper tunes for a 99% settling time of 11 minutes at 8 m/s, with \\(T = 150\\) s. That is \\(4.4\\) updates, so \\((1-K)^{4.4} = 0.01\\) and\n\\[K(8\\ \\text{m/s}) = 0.649\\]\nNothing else is fitted. Plain ESC has \\(K \\propto V^3\\):\n\n\n4 m/s \\(K = 0.081\\), stable.\nLES: stable.\n\n\n8 m/s \\(K = 0.649\\), stable.\nLES: stable.\n\n\n12 m/s \\(K = 2.19\\), unstable.\nLES: unstable.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#and-it-predicts-the-edge",
+    "href": "research/wind-esc/q2-speed-limit.html#and-it-predicts-the-edge",
+    "title": "What Bounds the Speed?",
+    "section": "And it predicts the edge",
+    "text": "And it predicts the edge\n\n\nThe boundary sits at 9.2 m/s. And because the logarithm makes \\(K\\) independent of wind speed, LP-ESC stays at \\(0.649\\) everywhere and never crosses, which is exactly what the LES found at all three speeds.\n\n\nOne model, one constant taken from their own settling time, four observations reproduced: ESC stable at 4 and 8, unstable at 12, LP-ESC stable throughout.\nNothing was tuned to fit the instability. It falls out.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#the-test",
+    "href": "research/wind-esc/q2-speed-limit.html#the-test",
+    "title": "What Bounds the Speed?",
+    "section": "The test",
+    "text": "The test\n\nRun plain ESC at 10 m/s in the existing setup. One run. The model says unstable. A stable result falsifies it cleanly, and tells us something specific is missing from the loop.\n\n\n\nSecond, cheaper check\nLook at the existing 12 m/s time series. The model says the oscillation should have a period near \\(6T\\), about 13 minutes at that gain. No new runs needed.\n\n\nThird, on the other side\nThe model says the ceiling moves with \\(T\\). Halving the dither period should move the boundary up by \\(2^{1/3}\\), to about 11.6 m/s.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#what-it-buys-beyond-the-puzzle",
+    "href": "research/wind-esc/q2-speed-limit.html#what-it-buys-beyond-the-puzzle",
+    "title": "What Bounds the Speed?",
+    "section": "What it buys beyond the puzzle",
+    "text": "What it buys beyond the puzzle\n\n\nA hard ceiling\n\\(K &lt; 1\\) bounds convergence rate independently of noise. No amount of variance reduction moves it. It is set by how long you must average.\n\n\nA design equation\n\\(K = \\kappa|H| &lt; 1\\) ties the gain, the curvature and the update period together in one inequality. That is the tuning rule this line currently obtains by trial and error.\n\n\n\nIt also explains why the logarithm helped so much. Its real effect is to stop \\(K\\) from scaling with \\(V^3\\), which is what was pushing the loop across the boundary at high wind.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q2-speed-limit.html#what-bounds-the-speed",
+    "href": "research/wind-esc/q2-speed-limit.html#what-bounds-the-speed",
+    "title": "What Bounds the Speed?",
+    "section": "What bounds the speed?",
+    "text": "What bounds the speed?\n\n\nThe instability is not a numerical artifact. It is a sampled-data loop crossing its stability boundary.\n\n\n\nThe claim\n\\(K &lt; 1\\), calibrated at \\(K = 0.649\\) from their own settling time, reproduces all three reported outcomes and puts the boundary at \\(9.2\\) m/s.\n\n\nThe caveat\nThe model assumes the rotor is fully settled between updates, which holds at \\(T = 150\\) s and fails if the dither is sped up. Then the rotor pole returns and the bound tightens.\n\n\n\nCiri, Leonardi & Rotea, Wind Energy 2019 · Rotea, IFAC 2017 · Mulders, Gallo & Rotea, ACC 2024\n\n\n\nOne of three: see also the estimand and whether probing is needed.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q2: What Bounds the Speed?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html",
+    "href": "research/wind-esc/index.html",
+    "title": "Wind Turbine Control",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html#climbing-a-hill-you-cannot-see",
+    "href": "research/wind-esc/index.html#climbing-a-hill-you-cannot-see",
+    "title": "Wind Turbine Control",
+    "section": "Climbing a hill you cannot see",
+    "text": "Climbing a hill you cannot see\n\nPresentation\nClimbing a Hill You Cannot See → is an illustrated walkthrough of the Region-2 control problem, the extremum-seeking machinery built for it, and five questions the published record leaves open. Roughly twenty slides, figure-first, with speaker notes.\n\nThe deck builds the problem from the beginning: why the \\(k\\Omega^2\\) torque law works, why its equilibrium is a ray rather than a setpoint, and what the logarithm of power actually fixes. It then turns to what is unresolved.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html#q4-the-curvature-question-worked-through",
+    "href": "research/wind-esc/index.html#q4-the-curvature-question-worked-through",
+    "title": "Wind Turbine Control",
+    "section": "Q4: the curvature question, worked through",
+    "text": "Q4: the curvature question, worked through\n\nPresentation\nA Matrix Gain for Extremum Seeking → works the fourth question all the way through. Meyn’s Zap stochastic approximation needs the Jacobian of the update direction, which a demodulated gradient estimate does not supply in closed form. It turns out to sit at the second harmonic of the probe already being injected, so reading it costs one extra correlation rather than one extra experiment.\n\nUsing it takes the curvature out of the loop gain, which turns the step size into a settling time and removes the retuning that Rotea describes as the practical obstacle. The deck also carries the version without extremum seeking at all, where a random perturbation supplies the gradient and either Spall’s second-order SPSA or a Gaussian probe supplies the Jacobian, and then compares the two. That comparison turns out to be combinatorial rather than statistical: resolving every entry of the Hessian needs a frequency plan whose bandwidth grows quadratically in the number of parameters, from 101 seconds of averaging for one parameter to 2915 for six.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html#three-questions-about-one-turbine",
+    "href": "research/wind-esc/index.html#three-questions-about-one-turbine",
+    "title": "Wind Turbine Control",
+    "section": "Three questions about one turbine",
+    "text": "Three questions about one turbine\nOne deck each, worked to a test rather than surveyed.\n\nPresentations\nQ1: What Is the Estimator Targeting? → The converged tip-speed ratio in the published simulations sits \\(0.35\\) above its design value, consistently, across every condition. Estimator bias and a shifted turbulent optimum together account for \\(0.042\\) of that, so both are dead by an order of magnitude and the surviving candidate is that the simulator’s own peak is elsewhere.\nQ2: What Bounds the Speed? → Plain extremum seeking goes unstable at high wind, which the published first-order model cannot produce at any gain. A sampled-data account with one constant, taken from the same paper’s settling time, reproduces all three reported outcomes and puts the boundary at \\(9.2\\) m/s.\nQ3: Does the Turbine Need to Probe? → Aerodynamic torque is reconstructible with no wind sensor, turbulence already sweeps the curve about as far as the dither does, and the joint estimation problem has exactly one blind direction.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html#five-open-questions",
+    "href": "research/wind-esc/index.html#five-open-questions",
+    "title": "Wind Turbine Control",
+    "section": "Five open questions",
+    "text": "Five open questions\n\nWhat is the estimator estimating? The steady argmax of \\(C_P\\), the argmax of expected log-power under turbulence, and the algorithm’s own fixed point are three different numbers. In the published large-eddy simulations the gap between the first and the last is \\(0.35\\) in \\(\\lambda\\), larger than the \\(0.2\\) shift blade erosion produces, which is the effect the work is trying to detect.\nWhat sets the stability limit? Plain extremum seeking goes unstable at high wind in simulation. The first-order model used to analyse it cannot go unstable for any positive gain, so the failure mode that matters in practice has no theory behind it. A sampled-data account looks likely.\nIs the dither necessary? Aerodynamic torque is exactly reconstructible from measured rotor speed and commanded generator torque, and turbulence already sweeps \\(\\lambda\\) across the curve for free. Joint estimation of the wind and the torque coefficient appears to have exactly one unidentifiable direction, an overall wind scaling. That would mean a slow absolute reference suffices where a fast rotor-effective estimate is currently assumed necessary.\nWhat is the Hessian for? The curvature at the peak sets the loop gain calibration, the terminal scatter, and the energy lost to mistuning. In stochastic approximation the same matrix governs the asymptotic covariance, where iterate averaging attains the optimum without estimating it.\nHow good could any algorithm be? No performance bound exists for this problem, so there is no way to tell whether current algorithms are near optimal or leaving an order of magnitude on the table.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html#why-turbulence-is-not-ordinary-noise",
+    "href": "research/wind-esc/index.html#why-turbulence-is-not-ordinary-noise",
+    "title": "Wind Turbine Control",
+    "section": "Why turbulence is not ordinary noise",
+    "text": "Why turbulence is not ordinary noise\nIn classical stochastic approximation the disturbance is pure nuisance: it corrupts the measurement and is averaged away. Here the same physical process does both jobs. Turbulence is what buries the gradient estimate, and it is also what moves the rotor across the \\(C_P\\) curve without anyone paying a fatigue cost to put it there. That duality is what makes estimating the curve without probing it worth asking about.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/index.html#status",
+    "href": "research/wind-esc/index.html#status",
+    "title": "Wind Turbine Control",
+    "section": "Status",
+    "text": "Status\nThis is a reading of the published record rather than a result. The immediate next step is an experiment: rerun an established simulation setup at several dither amplitudes with independent, non-repeating turbulence seeds, and see whether the offset from the design optimum scales with the square of the dither amplitude. One outcome makes it estimator bias; the other means the turbulent optimum has moved. Either way it produces error bars, which none of the published simulations report.\n\nRobotics and control → · Robust machine learning → · All publications →",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control"
+    ]
+  },
+  {
     "objectID": "research/robust_machine_learning.html",
     "href": "research/robust_machine_learning.html",
     "title": "Robust Machine Learning",
@@ -5677,6 +6604,17 @@
     ]
   },
   {
+    "objectID": "research/robotics_and_control.html#estimation-for-wind-turbine-control",
+    "href": "research/robotics_and_control.html#estimation-for-wind-turbine-control",
+    "title": "Robotics and Control",
+    "section": "Estimation for wind turbine control",
+    "text": "Estimation for wind turbine control\nNot every control problem is a robot. A wind turbine below rated wind speed must hold its tip-speed ratio at the value that maximizes rotor efficiency, while being unable to measure either coordinate of the curve it is climbing, because both are written in terms of the wind speed reaching the rotor.\nExtremum seeking solves this without a model, by perturbing the control parameter and correlating the response. Our interest is in the estimator’s statistics rather than the loop: what quantity the gradient estimate is actually an estimate of, what turbulence does to its variance, and whether the perturbation is needed at all.\n\nOngoing work\nWind turbine control → covers the problem, the existing machinery, and five open questions.\nClimbing a Hill You Cannot See → is an illustrated, figure-first walkthrough.",
+    "crumbs": [
+      "Research",
+      "Robotics and Control"
+    ]
+  },
+  {
     "objectID": "research/robotics_and_control.html#locomotion-and-coordinated-motion",
     "href": "research/robotics_and_control.html#locomotion-and-coordinated-motion",
     "title": "Robotics and Control",
@@ -5697,6 +6635,844 @@
       "Research",
       "Robotics and Control"
     ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#two-regimes-one-optimization-problem",
+    "href": "research/wind-esc/gradient-estimation.html#two-regimes-one-optimization-problem",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Two regimes, one optimization problem",
+    "text": "Two regimes, one optimization problem\n\n\n\nRegion 3: above rated\nThere is more wind than the machine can use. Throw the excess away and hold rated power. A setpoint, an error signal and a PI controller.\n\n\nRegion 2: below rated\nTake everything the wind offers. There is no setpoint, only an efficiency to maximize. This is the only regime containing an extremum to seek.\n\n\n\nEverything in this deck is Region 2. The machine spends most of its operating hours there.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#the-hill",
+    "href": "research/wind-esc/gradient-estimation.html#the-hill",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The hill",
+    "text": "The hill\n\n\nThe rotor’s efficiency depends on one number, the tip-speed ratio \\(\\lambda = R\\Omega/V\\), which is blade tip speed divided by wind speed. Hold \\(\\lambda\\) at \\(\\lambda^\\star\\) and you capture the most power available.\n\n\nTwo features of this curve set up everything that follows. The peak is flat: being wrong by half a unit in lambda costs about one per cent of the power, so power is a weak signal about where you are. The curve also moves. Blades erode, insects accumulate, and the factory value of lambda-star stops being right.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#you-cannot-measure-either-axis",
+    "href": "research/wind-esc/gradient-estimation.html#you-cannot-measure-either-axis",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "You cannot measure either axis",
+    "text": "You cannot measure either axis\n\n\nBoth coordinates of the hill are written in terms of \\(V\\), the wind speed actually reaching the rotor, which is exactly what a turbine cannot measure.\n\n\nConcretely: an anemometer on the nacelle sits behind the rotor, in air the rotor has already slowed, and how much it has slowed depends on the thrust, which depends on the control parameter. The measurement responds to the thing you are trying to tune. That circularity is why this line of work is model-free.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#the-komega2-law",
+    "href": "research/wind-esc/gradient-estimation.html#the-komega2-law",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The \\(k\\Omega^2\\) law",
+    "text": "The \\(k\\Omega^2\\) law\nThe generator is commanded to resist the rotor with a torque quadratic in speed,\n\\[\\tau_{\\text{gen}} = k\\,\\Omega^2 .\\]\nBalance it against the aerodynamic torque \\(T_{\\text{aero}} = \\tfrac12\\rho\\pi R^3V^2\\,C_Q(\\lambda)\\), with \\(C_Q = C_P/\\lambda\\), and the equilibrium condition is\n\\[\\boxed{\\ \\frac{C_P(\\lambda)}{\\lambda^3} \\;=\\; \\frac{2k}{\\rho\\pi R^5}\\ }\\]\n\nThe wind speed cancels. Try \\(\\tau_{\\text{gen}} = k\\Omega^n\\) and you get \\(C_Q(\\lambda)/\\lambda^{n} \\propto V^{\\,n-2}\\). Only \\(n = 2\\) removes \\(V\\), so it is the unique exponent for which the equilibrium tip-speed ratio does not depend on the wind.\n\n\nRead the boxed equation carefully: the left side is a pure function of lambda, the right side is a constant you choose. So picking k picks an equilibrium lambda, permanently, without anyone measuring anything.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#there-is-no-rotor-speed-to-regulate-to",
+    "href": "research/wind-esc/gradient-estimation.html#there-is-no-rotor-speed-to-regulate-to",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "There is no rotor speed to regulate to",
+    "text": "There is no rotor speed to regulate to\n\n\nThe equilibrium of the rotor equation is a ray, not a point. Every wind speed gets its own \\(\\Omega\\); all of them share the same \\(\\lambda\\). The controller never rejects the wind. It makes the desired behaviour an attracting manifold and lets the wind slide the machine along it.\n\n\nThis inverts the usual picture. In ordinary regulation you form an error and drive it to zero. Here there is no error signal: the closed loop was designed so that its natural resting place is the set you want. The wind is a parameter that moves you along that set rather than a disturbance pushing you off it.\nRegion 3 is the opposite and matches the textbook picture, with a real speed setpoint tracked by blade pitch.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#so-the-problem-reduces-to-one-number",
+    "href": "research/wind-esc/gradient-estimation.html#so-the-problem-reduces-to-one-number",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "So the problem reduces to one number",
+    "text": "So the problem reduces to one number\n\n\nWhat we have\nA single scalar knob \\(k\\), and a monotone map from \\(k\\) to the tip-speed ratio the machine settles at.\n\n\nWhat we want\nThe \\(k\\) that lands us on the peak. The factory value is wrong at commissioning and gets worse as the blades age.\n\n\n\nFind the maximum of a function you cannot evaluate, by turning a knob and watching a noisy meter. That is extremum seeking control, and it is what the last decade of work at UTD has been about.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#the-loop",
+    "href": "research/wind-esc/gradient-estimation.html#the-loop",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The loop",
+    "text": "The loop\n\n\nAdd a slow sinusoid \\(a\\sin\\omega t\\) to the knob. If the output wiggles in phase, you are on the uphill side; out of phase, the downhill side. Multiply and average, and what survives is proportional to the slope.\n\n\nThe multiply-and-average step is a lock-in amplifier, the same device used to pull tiny optical signals out of noise. Its whole purpose is to answer one question: how much of the tone I injected came back out, and with what sign?",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#the-one-identity-that-made-it-practical",
+    "href": "research/wind-esc/gradient-estimation.html#the-one-identity-that-made-it-practical",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The one identity that made it practical",
+    "text": "The one identity that made it practical\nPower is proportional to the cube of the wind speed, so the gradient of power is too, and the wind varies by 3:1 across Region 2. A loop tuned at 8 m/s is 27 times too slow at 4 m/s and 27 times too aggressive at 12 m/s.\nRotea’s 2017 observation is one line. Since \\(\\ln P = \\ln(\\tfrac12\\rho A) + 3\\ln V + \\ln C_P(u)\\), and the wind term does not depend on \\(u\\):\n\\[\\frac{\\partial \\ln P}{\\partial u} \\;=\\; \\frac{1}{C_P}\\frac{\\partial C_P}{\\partial u}\\]\n\nFeed the algorithm \\(\\ln P\\) instead of \\(P\\) and the loop bandwidth becomes \\(\\nu_c = (\\kappa/C_P^{\\max})\\,|\\partial^2 C_P/\\partial u^2|\\), free of both the wind speed and the air density. Tune it once; it works everywhere.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#what-the-logarithm-fixes",
+    "href": "research/wind-esc/gradient-estimation.html#what-the-logarithm-fixes",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "What the logarithm fixes",
+    "text": "What the logarithm fixes\n\n\nNote also a small free bonus. The 1/C_P factor is a state-dependent gain: far from the peak, C_P is small, so the step is large. The algorithm accelerates itself during the transient and settles down near the optimum, with nothing to tune.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#it-holds-up-in-high-fidelity-simulation",
+    "href": "research/wind-esc/gradient-estimation.html#it-holds-up-in-high-fidelity-simulation",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "It holds up in high-fidelity simulation",
+    "text": "It holds up in high-fidelity simulation\n\n\n\nCiri, Leonardi & Rotea 2019\nLarge-eddy simulation of the full flow around an NREL 5 MW rotor, with shear and 10% turbulence. No analytic gradient anywhere.\n\n\nThe result\nLog-power holds 8 minutes across a 3:1 wind range. Plain ESC is four times slower at the bottom and goes unstable at the top.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#making-it-fast-lp-piesc",
+    "href": "research/wind-esc/gradient-estimation.html#making-it-fast-lp-piesc",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Making it fast: LP-PIESC",
+    "text": "Making it fast: LP-PIESC\n\n\nReplace demodulation with recursive least squares on \\(\\dot y = \\theta_0 + \\theta_1(u-\\hat u)\\) and add a proportional term. The gradient \\(\\theta_1\\) now comes with a covariance matrix \\(\\Sigma\\) that the algorithm already propagates, and that none of these papers reports.\n\n\nOn the energy number: LP-ESC, measured against a controller that already knows the optimal gain, loses 14.2% of the energy. That is the cost of searching. LP-PIESC brings it to 0.3%, which is what makes the approach deployable.\nThe wind tunnel result is a twelve-turbine array steering wakes by yaw, and the algorithms converge in seconds at model scale.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#where-things-stand",
+    "href": "research/wind-esc/gradient-estimation.html#where-things-stand",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Where things stand",
+    "text": "Where things stand\n\n\nSolved\nConsistency across wind speed. The logarithm removes the \\(V^3\\) dependence exactly, in theory, in LES, and in the tunnel.\n\n\nSolved\nSpeed. LP-PIESC converges fast enough that the search costs 0.3% of energy rather than 14%.\n\n\nNot solved\nEverything to do with noise. “The enemy is process noise”, and none of these papers reports a variance.\n\n\n\nExtremum seeking works well when the process noise is negligible. Otherwise you must average, and averaging costs convergence time. That trade-off has not been quantified for this problem.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q1-what-is-the-estimator-estimating",
+    "href": "research/wind-esc/gradient-estimation.html#q1-what-is-the-estimator-estimating",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q1 · What is the estimator estimating?",
+    "text": "Q1 · What is the estimator estimating?\n\n\nIn the 2019 LES, both algorithms converge to \\(\\bar\\lambda \\approx 7.85\\) against a design value of \\(7.5\\), at every wind speed, in every condition. The paper calls this “close to the ideal optimum” and moves on.\n\n\nThree candidate targets, and they are not the same number:\n\nthe argmax of the steady C_P curve, which is what every paper scores against;\nthe argmax of the expected log-power under turbulence, which differs by a Jensen gap plus rotor inertial lag;\nthe algorithm’s actual fixed point, which adds a finite-difference bias.\n\nThe gap between (a) and (c) in the published data is 0.35 in lambda. The effect everybody wants to detect, blade erosion, is 0.2. You cannot do estimation theory when the ambiguity in the definition of the target exceeds the signal.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q1-why-it-is-a-variance-problem",
+    "href": "research/wind-esc/gradient-estimation.html#q1-why-it-is-a-variance-problem",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q1 · Why it is a variance problem",
+    "text": "Q1 · Why it is a variance problem\n\n\n\\(3\\ln V\\) is independent of the knob, so it vanishes from the gradient exactly. It does not vanish from any finite-time estimate of that gradient, and it is fifteen times larger than the signal.\n\n\nWriting the estimator out: one dither period produces one number,\ng-hat = (1/aT) times the integral of ln P against the dither.\nSubstituting the decomposition, the constant drops out by symmetry and two terms survive: the projection of the turbulence onto the dither, which has nothing to do with the turbine, and the projection of the C_P response, which carries the signal. A back-of-the-envelope for the first gives\nsigma(g-hat) is about 3 · TI · sqrt(tau_c/T) / a\nwhich falls as one over root T, the averaging Rotea mentions, and as one over a.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q1-the-trade-that-was-never-computed",
+    "href": "research/wind-esc/gradient-estimation.html#q1-the-trade-that-was-never-computed",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q1 · The trade that was never computed",
+    "text": "Q1 · The trade that was never computed\n\n\nA central difference estimates \\(J'(q) + \\tfrac{a^2}{6}J'''(q)\\), so its zero sits off the true optimum by \\(-\\tfrac{a^2}{6}\\,J'''/J''\\). Bigger dither, less noise, more bias. There is an optimal \\(a\\), and both published values were chosen by trial and error.\n\n\nThis is Kiefer-Wolfowitz structure, and it has not been written down for wind turbines.\nIt also suggests the experiment that settles Q1. Run the existing setup at two or three dither amplitudes with several independent turbulence seeds. If the offset from 7.5 scales as a-squared, it is estimator bias. If it is flat in a, the turbulent optimum has moved, and the reference value these papers score against is wrong. Either answer is publishable, and the seed spread gives you the error bars none of them report.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q2-what-sets-the-stability-limit",
+    "href": "research/wind-esc/gradient-estimation.html#q2-what-sets-the-stability-limit",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q2 · What sets the stability limit?",
+    "text": "Q2 · What sets the stability limit?\n\n\nThe 2017 model is first order: \\(\\dot{\\tilde u} = -\\omega_c\\tilde u\\). It cannot go unstable for any positive gain. The LES did, twice: in uniform flow and in turbulence.\n\n\nSo the failure mode that actually kills the algorithm in practice has no theory behind it in this line of work.\nThe likely mechanism is sampled data. One parameter update per 150-second dither period, against a rotor whose own time constant is about six seconds, with the loop gain tripling between 8 and 12 m/s. That is a discrete-time stability boundary, and a continuous first-order model is blind to it.\nThis boundary, rather than the noise, is the ceiling on how fast any of these algorithms can be made to converge, which is the quantity Rotea says he cares about.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q3-does-the-turbine-need-to-probe-at-all",
+    "href": "research/wind-esc/gradient-estimation.html#q3-does-the-turbine-need-to-probe-at-all",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q3 · Does the turbine need to probe at all?",
+    "text": "Q3 · Does the turbine need to probe at all?\nThe rotor equation is \\(I\\dot\\Omega = T_{\\text{aero}} - \\tau_{\\text{gen}}\\). Every term on the right is known: \\(\\tau_{\\text{gen}}\\) is commanded, \\(\\Omega\\) is measured, and \\(I\\) is a design constant. So\n\\[T_{\\text{aero}}(t) \\;=\\; I\\dot\\Omega(t) + \\tau_{\\text{gen}}(t)\\]\nis exactly reconstructible without any anemometer. And turbulence already swings \\(\\lambda\\) between 6 and 8.5 all day long, for free.\n\nThe dither exists because the excitation is unknown, not because excitation is lacking. So: are \\(V(t)\\) and the curve \\(C_Q(\\cdot)\\) jointly identifiable from the record of \\((\\Omega,\\,T_{\\text{aero}})\\) alone?\n\n\nThis is the question with the largest payoff, because a yes would dissolve the probing-versus-loads trade-off rather than optimize it. Without a dither there is no fatigue cost to probing and no amplitude to choose.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q3-exactly-one-blind-direction",
+    "href": "research/wind-esc/gradient-estimation.html#q3-exactly-one-blind-direction",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q3 · Exactly one blind direction",
+    "text": "Q3 · Exactly one blind direction\n\nSubstituting \\(\\tilde V = cV\\) into \\(T_{\\text{aero}} = \\tfrac12\\rho\\pi R^3V^2C_Q(R\\Omega/V)\\):\n\\[\\tilde C_Q(x) = \\frac{C_Q(cx)}{c^2}\n\\quad\\Longrightarrow\\quad\n\\tilde C_P(x) = \\frac{C_P(cx)}{c^3}\n\\quad\\Longrightarrow\\quad\n\\tilde\\lambda^\\star = \\frac{\\lambda^\\star}{c}\\]\n\nThere is one unidentifiable direction, an overall scaling of the wind, and it maps straight onto a scaling of \\(\\lambda^\\star\\). Everything else about the curve is determined. Air density errors, by contrast, scale \\(C_P\\) uniformly and do not move the peak.\n\n\nIf this holds, you do not need a fast rotor-effective wind estimate. You need one slowly updated absolute wind scale to pin the constant c: a met mast, a lidar, or a long-run SCADA average. The fast fluctuations come free from the rotor itself.\nA slow reference is also harder to contaminate with the control parameter, because the induction response you would worry about is fast. That sidesteps the circularity that makes nacelle wind estimates unusable.\nCaveat: this sits close to the wind-speed-estimator literature, which assumes C_P known and solves for V. The joint version is what would be new, and it needs checking against that literature before anyone builds on it.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q4-what-the-curvature-is-doing",
+    "href": "research/wind-esc/gradient-estimation.html#q4-what-the-curvature-is-doing",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q4 · What the curvature is doing",
+    "text": "Q4 · What the curvature is doing\nLook again at the 2017 result:\n\\[\\nu_c \\;=\\; \\frac{\\kappa}{C_P^{\\max}}\\left|\\frac{\\partial^2 C_P}{\\partial u^2}(u_o)\\right|\\]\n\nChoosing the gain \\(\\kappa\\) to hit a target settling time requires the curvature at the peak, currently taken from a design curve that the LES says is wrong by 10% in \\(C_P\\). The gain calibration is not self-consistent, and “it takes too long to tune” is partly a symptom of that.\n\nThe curvature also sets the terminal scatter, \\(\\sigma_\\lambda \\approx \\sigma_{\\hat g}/|H|\\), and the energy lost to mistuning is quadratic in \\(\\sigma_\\lambda\\). The same number sets the gain, the achievable accuracy and the cost of missing.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q4-two-routes-to-the-same-covariance",
+    "href": "research/wind-esc/gradient-estimation.html#q4-two-routes-to-the-same-covariance",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q4 · Two routes to the same covariance",
+    "text": "Q4 · Two routes to the same covariance\n\n\nMeyn does not estimate the Hessian in the ESC papers. It appears in the analysis, as the matrix \\(A = \\nabla^2\\Gamma(\\theta^\\star)\\) governing the asymptotic covariance. Where he does estimate it, in Zap SA, it is a two-timescale recursive Jacobian estimate used as a matrix gain: stochastic Newton-Raphson.\n\n\nPolyak-Ruppert averaging attains the same optimal asymptotic covariance without estimating any curvature. You average the iterates. Meyn’s own recommendation is that this is the first thing to try.\nSo if the goal is optimal terminal variance, the Hessian is not needed. A matrix gain buys transient behaviour and stability under weak assumptions, which are worth having but are not what the variance question asks for.\nWhich raises a question to settle early: how much of what looks open in wind is already answered in stochastic approximation and simply has not been imported?",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#q5-how-good-could-any-algorithm-be",
+    "href": "research/wind-esc/gradient-estimation.html#q5-how-good-could-any-algorithm-be",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q5 · How good could any algorithm be?",
+    "text": "Q5 · How good could any algorithm be?\n\n\nGiven a turbulence spectrum, an observation time and a fatigue budget, how well can anyone locate \\(\\lambda^\\star\\)? Nobody has written the bound down.\n\n\nWithout it there is no way to know whether LP-PIESC is within twenty per cent of optimal, in which case this is engineering rather than research, or a factor of twenty off, in which case there is a great deal of work here.\nThe structure suits a Cramer-Rao argument: the measurement equation is known, the noise spectrum is measurable, and the nuisance parameter is the wind. I would want this before committing to anything else, since it is the only item that says whether the other four are worth doing.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#why-turbulence-is-not-ordinary-noise",
+    "href": "research/wind-esc/gradient-estimation.html#why-turbulence-is-not-ordinary-noise",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Why turbulence is not ordinary noise",
+    "text": "Why turbulence is not ordinary noise\n\n\nIn classical stochastic approximation\nNoise is pure nuisance. It corrupts the measurement and you average it away.\n\n\nHere\nTurbulence is simultaneously the noise and the excitation. It is what corrupts the gradient estimate and what sweeps the rotor across the curve for free.\n\n\n\nThat duality is what the stochastic-approximation literature does not cover, and it is what makes Q3, estimating the curve without probing it, plausible.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#the-experiment-i-would-run-first",
+    "href": "research/wind-esc/gradient-estimation.html#the-experiment-i-would-run-first",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The experiment I would run first",
+    "text": "The experiment I would run first\n\nTake the existing simulation setup. Run it at two or three dither amplitudes, with several independent, non-repeating turbulence seeds. Look at where the torque gain lands.\n\n\n\nIf the offset scales as \\(a^2\\)\nIt is estimator bias. The algorithm is systematically missing the peak, and the fix is a known one.\n\n\nIf it is flat in \\(a\\)\nThe turbulent optimum has moved, and the published results have been scored against a reference that is off.\n\n\n\nEither way the seed spread yields \\(\\sigma(\\hat g)\\) and \\(\\sigma_\\lambda\\), which none of these papers reports. Two outcomes, both publishable, a few days of compute.\n\n\nOne methodological point: the 2019 LES recycles a twenty-minute precursor wind field, so a sixty-minute run contains three copies of the same turbulence. No variance estimate survives that, so the inflow has to be fixed first.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation.html#climbing-a-hill-you-cannot-see",
+    "href": "research/wind-esc/gradient-estimation.html#climbing-a-hill-you-cannot-see",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Climbing a hill you cannot see",
+    "text": "Climbing a hill you cannot see\n\n\nThe algorithms work. What is missing is the statistics of the quantity they compute.\n\n\n\nWhat exists\nA model-free loop, consistent across wind speed and fast enough to deploy, with results from large-eddy simulation, a wind tunnel and a field test.\n\n\nWhat does not\nA definition of the estimand, a variance for it, an account of the stability limit, a performance bound, and an answer on whether the dither is needed.\n\n\n\nRotea, IFAC 2017 · Ciri, Leonardi & Rotea, Wind Energy 2019 · Kumar & Rotea, Energies 2022 · Rotea et al., TORQUE 2024 · Lauand & Meyn, IEEE CSM 2023\n\n\n\nPrepared for a collaboration with M. A. Rotea, UTD Wind Energy Center.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Climbing a Hill You Cannot See"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html",
+    "href": "research/wind-esc/gradient-estimation-unused.html",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$"
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#two-regimes-one-optimization-problem",
+    "href": "research/wind-esc/gradient-estimation-unused.html#two-regimes-one-optimization-problem",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Two regimes, one optimization problem",
+    "text": "Two regimes, one optimization problem\n\n\n\nRegion 3: above rated\nThere is more wind than the machine can use. Throw the excess away and hold rated power. A setpoint, an error signal and a PI controller.\n\n\nRegion 2: below rated\nTake everything the wind offers. There is no setpoint, only an efficiency to maximize. This is the only regime containing an extremum to seek.\n\n\n\nEverything in this deck is Region 2. The machine spends most of its operating hours there."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#the-hill",
+    "href": "research/wind-esc/gradient-estimation-unused.html#the-hill",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The hill",
+    "text": "The hill\n\n\nThe rotor’s efficiency depends on one number, the tip-speed ratio \\(\\lambda = R\\Omega/V\\), which is blade tip speed divided by wind speed. Hold \\(\\lambda\\) at \\(\\lambda^\\star\\) and you capture the most power available.\n\n\nTwo features of this curve set up everything that follows. The peak is flat: being wrong by half a unit in lambda costs about one per cent of the power, so power is a weak signal about where you are. The curve also moves. Blades erode, insects accumulate, and the factory value of lambda-star stops being right."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#you-cannot-measure-either-axis",
+    "href": "research/wind-esc/gradient-estimation-unused.html#you-cannot-measure-either-axis",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "You cannot measure either axis",
+    "text": "You cannot measure either axis\n\n\nBoth coordinates of the hill are written in terms of \\(V\\), the wind speed actually reaching the rotor, which is exactly what a turbine cannot measure.\n\n\nConcretely: an anemometer on the nacelle sits behind the rotor, in air the rotor has already slowed, and how much it has slowed depends on the thrust, which depends on the control parameter. The measurement responds to the thing you are trying to tune. That circularity is why this line of work is model-free."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#the-komega2-law",
+    "href": "research/wind-esc/gradient-estimation-unused.html#the-komega2-law",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The \\(k\\Omega^2\\) law",
+    "text": "The \\(k\\Omega^2\\) law\nThe generator is commanded to resist the rotor with a torque quadratic in speed,\n\\[\\tau_{\\text{gen}} = k\\,\\Omega^2 .\\]\nBalance it against the aerodynamic torque \\(T_{\\text{aero}} = \\tfrac12\\rho\\pi R^3V^2\\,C_Q(\\lambda)\\), with \\(C_Q = C_P/\\lambda\\), and the equilibrium condition is\n\\[\\boxed{\\ \\frac{C_P(\\lambda)}{\\lambda^3} \\;=\\; \\frac{2k}{\\rho\\pi R^5}\\ }\\]\n\nThe wind speed cancels. Try \\(\\tau_{\\text{gen}} = k\\Omega^n\\) and you get \\(C_Q(\\lambda)/\\lambda^{n} \\propto V^{\\,n-2}\\). Only \\(n = 2\\) removes \\(V\\), so it is the unique exponent for which the equilibrium tip-speed ratio does not depend on the wind.\n\n\nRead the boxed equation carefully: the left side is a pure function of lambda, the right side is a constant you choose. So picking k picks an equilibrium lambda, permanently, without anyone measuring anything."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#there-is-no-rotor-speed-to-regulate-to",
+    "href": "research/wind-esc/gradient-estimation-unused.html#there-is-no-rotor-speed-to-regulate-to",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "There is no rotor speed to regulate to",
+    "text": "There is no rotor speed to regulate to\n\n\nThe equilibrium of the rotor equation is a ray, not a point. Every wind speed gets its own \\(\\Omega\\); all of them share the same \\(\\lambda\\). The controller never rejects the wind. It makes the desired behaviour an attracting manifold and lets the wind slide the machine along it.\n\n\nThis inverts the usual picture. In ordinary regulation you form an error and drive it to zero. Here there is no error signal: the closed loop was designed so that its natural resting place is the set you want. The wind is a parameter that moves you along that set rather than a disturbance pushing you off it.\nRegion 3 is the opposite and matches the textbook picture, with a real speed setpoint tracked by blade pitch."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#so-the-problem-reduces-to-one-number",
+    "href": "research/wind-esc/gradient-estimation-unused.html#so-the-problem-reduces-to-one-number",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "So the problem reduces to one number",
+    "text": "So the problem reduces to one number\n\n\nWhat we have\nA single scalar knob \\(k\\), and a monotone map from \\(k\\) to the tip-speed ratio the machine settles at.\n\n\nWhat we want\nThe \\(k\\) that lands us on the peak. The factory value is wrong at commissioning and gets worse as the blades age.\n\n\n\nFind the maximum of a function you cannot evaluate, by turning a knob and watching a noisy meter. That is extremum seeking control, and it is what the last decade of work at UTD has been about."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#the-loop",
+    "href": "research/wind-esc/gradient-estimation-unused.html#the-loop",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The loop",
+    "text": "The loop\n\n\nAdd a slow sinusoid \\(a\\sin\\omega t\\) to the knob. If the output wiggles in phase, you are on the uphill side; out of phase, the downhill side. Multiply and average, and what survives is proportional to the slope.\n\n\nThe multiply-and-average step is a lock-in amplifier, the same device used to pull tiny optical signals out of noise. Its whole purpose is to answer one question: how much of the tone I injected came back out, and with what sign?"
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#the-one-identity-that-made-it-practical",
+    "href": "research/wind-esc/gradient-estimation-unused.html#the-one-identity-that-made-it-practical",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The one identity that made it practical",
+    "text": "The one identity that made it practical\nPower is proportional to the cube of the wind speed, so the gradient of power is too, and the wind varies by 3:1 across Region 2. A loop tuned at 8 m/s is 27 times too slow at 4 m/s and 27 times too aggressive at 12 m/s.\nRotea’s 2017 observation is one line. Since \\(\\ln P = \\ln(\\tfrac12\\rho A) + 3\\ln V + \\ln C_P(u)\\), and the wind term does not depend on \\(u\\):\n\\[\\frac{\\partial \\ln P}{\\partial u} \\;=\\; \\frac{1}{C_P}\\frac{\\partial C_P}{\\partial u}\\]\n\nFeed the algorithm \\(\\ln P\\) instead of \\(P\\) and the loop bandwidth becomes \\(\\nu_c = (\\kappa/C_P^{\\max})\\,|\\partial^2 C_P/\\partial u^2|\\), free of both the wind speed and the air density. Tune it once; it works everywhere."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#what-the-logarithm-fixes",
+    "href": "research/wind-esc/gradient-estimation-unused.html#what-the-logarithm-fixes",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "What the logarithm fixes",
+    "text": "What the logarithm fixes\n\n\nNote also a small free bonus. The 1/C_P factor is a state-dependent gain: far from the peak, C_P is small, so the step is large. The algorithm accelerates itself during the transient and settles down near the optimum, with nothing to tune."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#it-holds-up-in-high-fidelity-simulation",
+    "href": "research/wind-esc/gradient-estimation-unused.html#it-holds-up-in-high-fidelity-simulation",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "It holds up in high-fidelity simulation",
+    "text": "It holds up in high-fidelity simulation\n\n\n\nCiri, Leonardi & Rotea 2019\nLarge-eddy simulation of the full flow around an NREL 5 MW rotor, with shear and 10% turbulence. No analytic gradient anywhere.\n\n\nThe result\nLog-power holds 8 minutes across a 3:1 wind range. Plain ESC is four times slower at the bottom and goes unstable at the top."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#making-it-fast-lp-piesc",
+    "href": "research/wind-esc/gradient-estimation-unused.html#making-it-fast-lp-piesc",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Making it fast: LP-PIESC",
+    "text": "Making it fast: LP-PIESC\n\n\nReplace demodulation with recursive least squares on \\(\\dot y = \\theta_0 + \\theta_1(u-\\hat u)\\) and add a proportional term. The gradient \\(\\theta_1\\) now comes with a covariance matrix \\(\\Sigma\\) that the algorithm already propagates, and that none of these papers reports.\n\n\nOn the energy number: LP-ESC, measured against a controller that already knows the optimal gain, loses 14.2% of the energy. That is the cost of searching. LP-PIESC brings it to 0.3%, which is what makes the approach deployable.\nThe wind tunnel result is a twelve-turbine array steering wakes by yaw, and the algorithms converge in seconds at model scale."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#where-things-stand",
+    "href": "research/wind-esc/gradient-estimation-unused.html#where-things-stand",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Where things stand",
+    "text": "Where things stand\n\n\nSolved\nConsistency across wind speed. The logarithm removes the \\(V^3\\) dependence exactly, in theory, in LES, and in the tunnel.\n\n\nSolved\nSpeed. LP-PIESC converges fast enough that the search costs 0.3% of energy rather than 14%.\n\n\nNot solved\nEverything to do with noise. “The enemy is process noise”, and none of these papers reports a variance.\n\n\n\nExtremum seeking works well when the process noise is negligible. Otherwise you must average, and averaging costs convergence time. That trade-off has not been quantified for this problem."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q1-what-is-the-estimator-estimating",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q1-what-is-the-estimator-estimating",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q1 · What is the estimator estimating?",
+    "text": "Q1 · What is the estimator estimating?\n\n\nIn the 2019 LES, both algorithms converge to \\(\\bar\\lambda \\approx 7.85\\) against a design value of \\(7.5\\), at every wind speed, in every condition. The paper calls this “close to the ideal optimum” and moves on.\n\n\nThree candidate targets, and they are not the same number:\n\nthe argmax of the steady C_P curve, which is what every paper scores against;\nthe argmax of the expected log-power under turbulence, which differs by a Jensen gap plus rotor inertial lag;\nthe algorithm’s actual fixed point, which adds a finite-difference bias.\n\nThe gap between (a) and (c) in the published data is 0.35 in lambda. The effect everybody wants to detect, blade erosion, is 0.2. You cannot do estimation theory when the ambiguity in the definition of the target exceeds the signal."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q1-why-it-is-a-variance-problem",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q1-why-it-is-a-variance-problem",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q1 · Why it is a variance problem",
+    "text": "Q1 · Why it is a variance problem\n\n\n\\(3\\ln V\\) is independent of the knob, so it vanishes from the gradient exactly. It does not vanish from any finite-time estimate of that gradient, and it is fifteen times larger than the signal.\n\n\nWriting the estimator out: one dither period produces one number,\ng-hat = (1/aT) times the integral of ln P against the dither.\nSubstituting the decomposition, the constant drops out by symmetry and two terms survive: the projection of the turbulence onto the dither, which has nothing to do with the turbine, and the projection of the C_P response, which carries the signal. A back-of-the-envelope for the first gives\nsigma(g-hat) is about 3 · TI · sqrt(tau_c/T) / a\nwhich falls as one over root T, the averaging Rotea mentions, and as one over a."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q1-the-trade-that-was-never-computed",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q1-the-trade-that-was-never-computed",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q1 · The trade that was never computed",
+    "text": "Q1 · The trade that was never computed\n\n\nA central difference estimates \\(J'(q) + \\tfrac{a^2}{6}J'''(q)\\), so its zero sits off the true optimum by \\(-\\tfrac{a^2}{6}\\,J'''/J''\\). Bigger dither, less noise, more bias. There is an optimal \\(a\\), and both published values were chosen by trial and error.\n\n\nThis is Kiefer-Wolfowitz structure, and it has not been written down for wind turbines.\nIt also suggests the experiment that settles Q1. Run the existing setup at two or three dither amplitudes with several independent turbulence seeds. If the offset from 7.5 scales as a-squared, it is estimator bias. If it is flat in a, the turbulent optimum has moved, and the reference value these papers score against is wrong. Either answer is publishable, and the seed spread gives you the error bars none of them report."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q2-what-sets-the-stability-limit",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q2-what-sets-the-stability-limit",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q2 · What sets the stability limit?",
+    "text": "Q2 · What sets the stability limit?\n\n\nThe 2017 model is first order: \\(\\dot{\\tilde u} = -\\omega_c\\tilde u\\). It cannot go unstable for any positive gain. The LES did, twice: in uniform flow and in turbulence.\n\n\nSo the failure mode that actually kills the algorithm in practice has no theory behind it in this line of work.\nThe likely mechanism is sampled data. One parameter update per 150-second dither period, against a rotor whose own time constant is about six seconds, with the loop gain tripling between 8 and 12 m/s. That is a discrete-time stability boundary, and a continuous first-order model is blind to it.\nThis boundary, rather than the noise, is the ceiling on how fast any of these algorithms can be made to converge, which is the quantity Rotea says he cares about."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q3-does-the-turbine-need-to-probe-at-all",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q3-does-the-turbine-need-to-probe-at-all",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q3 · Does the turbine need to probe at all?",
+    "text": "Q3 · Does the turbine need to probe at all?\nThe rotor equation is \\(I\\dot\\Omega = T_{\\text{aero}} - \\tau_{\\text{gen}}\\). Every term on the right is known: \\(\\tau_{\\text{gen}}\\) is commanded, \\(\\Omega\\) is measured, and \\(I\\) is a design constant. So\n\\[T_{\\text{aero}}(t) \\;=\\; I\\dot\\Omega(t) + \\tau_{\\text{gen}}(t)\\]\nis exactly reconstructible without any anemometer. And turbulence already swings \\(\\lambda\\) between 6 and 8.5 all day long, for free.\n\nThe dither exists because the excitation is unknown, not because excitation is lacking. So: are \\(V(t)\\) and the curve \\(C_Q(\\cdot)\\) jointly identifiable from the record of \\((\\Omega,\\,T_{\\text{aero}})\\) alone?\n\n\nThis is the question with the largest payoff, because a yes would dissolve the probing-versus-loads trade-off rather than optimize it. Without a dither there is no fatigue cost to probing and no amplitude to choose."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q3-exactly-one-blind-direction",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q3-exactly-one-blind-direction",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q3 · Exactly one blind direction",
+    "text": "Q3 · Exactly one blind direction\n\nSubstituting \\(\\tilde V = cV\\) into \\(T_{\\text{aero}} = \\tfrac12\\rho\\pi R^3V^2C_Q(R\\Omega/V)\\):\n\\[\\tilde C_Q(x) = \\frac{C_Q(cx)}{c^2}\n\\quad\\Longrightarrow\\quad\n\\tilde C_P(x) = \\frac{C_P(cx)}{c^3}\n\\quad\\Longrightarrow\\quad\n\\tilde\\lambda^\\star = \\frac{\\lambda^\\star}{c}\\]\n\nThere is one unidentifiable direction, an overall scaling of the wind, and it maps straight onto a scaling of \\(\\lambda^\\star\\). Everything else about the curve is determined. Air density errors, by contrast, scale \\(C_P\\) uniformly and do not move the peak.\n\n\nIf this holds, you do not need a fast rotor-effective wind estimate. You need one slowly updated absolute wind scale to pin the constant c: a met mast, a lidar, or a long-run SCADA average. The fast fluctuations come free from the rotor itself.\nA slow reference is also harder to contaminate with the control parameter, because the induction response you would worry about is fast. That sidesteps the circularity that makes nacelle wind estimates unusable.\nCaveat: this sits close to the wind-speed-estimator literature, which assumes C_P known and solves for V. The joint version is what would be new, and it needs checking against that literature before anyone builds on it."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q4-what-the-curvature-is-doing",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q4-what-the-curvature-is-doing",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q4 · What the curvature is doing",
+    "text": "Q4 · What the curvature is doing\nLook again at the 2017 result:\n\\[\\nu_c \\;=\\; \\frac{\\kappa}{C_P^{\\max}}\\left|\\frac{\\partial^2 C_P}{\\partial u^2}(u_o)\\right|\\]\n\nChoosing the gain \\(\\kappa\\) to hit a target settling time requires the curvature at the peak, currently taken from a design curve that the LES says is wrong by 10% in \\(C_P\\). The gain calibration is not self-consistent, and “it takes too long to tune” is partly a symptom of that.\n\nThe curvature also sets the terminal scatter, \\(\\sigma_\\lambda \\approx \\sigma_{\\hat g}/|H|\\), and the energy lost to mistuning is quadratic in \\(\\sigma_\\lambda\\). The same number sets the gain, the achievable accuracy and the cost of missing."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q4-two-routes-to-the-same-covariance",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q4-two-routes-to-the-same-covariance",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q4 · Two routes to the same covariance",
+    "text": "Q4 · Two routes to the same covariance\n\n\nMeyn does not estimate the Hessian in the ESC papers. It appears in the analysis, as the matrix \\(A = \\nabla^2\\Gamma(\\theta^\\star)\\) governing the asymptotic covariance. Where he does estimate it, in Zap SA, it is a two-timescale recursive Jacobian estimate used as a matrix gain: stochastic Newton-Raphson.\n\n\nPolyak-Ruppert averaging attains the same optimal asymptotic covariance without estimating any curvature. You average the iterates. Meyn’s own recommendation is that this is the first thing to try.\nSo if the goal is optimal terminal variance, the Hessian is not needed. A matrix gain buys transient behaviour and stability under weak assumptions, which are worth having but are not what the variance question asks for.\nWhich raises a question to settle early: how much of what looks open in wind is already answered in stochastic approximation and simply has not been imported?"
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#q5-how-good-could-any-algorithm-be",
+    "href": "research/wind-esc/gradient-estimation-unused.html#q5-how-good-could-any-algorithm-be",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Q5 · How good could any algorithm be?",
+    "text": "Q5 · How good could any algorithm be?\n\n\nGiven a turbulence spectrum, an observation time and a fatigue budget, how well can anyone locate \\(\\lambda^\\star\\)? Nobody has written the bound down.\n\n\nWithout it there is no way to know whether LP-PIESC is within twenty per cent of optimal, in which case this is engineering rather than research, or a factor of twenty off, in which case there is a great deal of work here.\nThe structure suits a Cramer-Rao argument: the measurement equation is known, the noise spectrum is measurable, and the nuisance parameter is the wind. I would want this before committing to anything else, since it is the only item that says whether the other four are worth doing."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#why-turbulence-is-not-ordinary-noise",
+    "href": "research/wind-esc/gradient-estimation-unused.html#why-turbulence-is-not-ordinary-noise",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Why turbulence is not ordinary noise",
+    "text": "Why turbulence is not ordinary noise\n\n\nIn classical stochastic approximation\nNoise is pure nuisance. It corrupts the measurement and you average it away.\n\n\nHere\nTurbulence is simultaneously the noise and the excitation. It is what corrupts the gradient estimate and what sweeps the rotor across the curve for free.\n\n\n\nThat duality is what the stochastic-approximation literature does not cover, and it is what makes Q3, estimating the curve without probing it, plausible."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#the-experiment-i-would-run-first",
+    "href": "research/wind-esc/gradient-estimation-unused.html#the-experiment-i-would-run-first",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "The experiment I would run first",
+    "text": "The experiment I would run first\n\nTake the existing simulation setup. Run it at two or three dither amplitudes, with several independent, non-repeating turbulence seeds. Look at where the torque gain lands.\n\n\n\nIf the offset scales as \\(a^2\\)\nIt is estimator bias. The algorithm is systematically missing the peak, and the fix is a known one.\n\n\nIf it is flat in \\(a\\)\nThe turbulent optimum has moved, and the published results have been scored against a reference that is off.\n\n\n\nEither way the seed spread yields \\(\\sigma(\\hat g)\\) and \\(\\sigma_\\lambda\\), which none of these papers reports. Two outcomes, both publishable, a few days of compute.\n\n\nOne methodological point: the 2019 LES recycles a twenty-minute precursor wind field, so a sixty-minute run contains three copies of the same turbulence. No variance estimate survives that, so the inflow has to be fixed first."
+  },
+  {
+    "objectID": "research/wind-esc/gradient-estimation-unused.html#climbing-a-hill-you-cannot-see",
+    "href": "research/wind-esc/gradient-estimation-unused.html#climbing-a-hill-you-cannot-see",
+    "title": "Climbing a Hill You Cannot See",
+    "section": "Climbing a hill you cannot see",
+    "text": "Climbing a hill you cannot see\n\n\nThe algorithms work. What is missing is the statistics of the quantity they compute.\n\n\n\nWhat exists\nA model-free loop, consistent across wind speed and fast enough to deploy, with results from large-eddy simulation, a wind tunnel and a field test.\n\n\nWhat does not\nA definition of the estimand, a variance for it, an account of the stability limit, a performance bound, and an answer on whether the dither is needed.\n\n\n\nRotea, IFAC 2017 · Ciri, Leonardi & Rotea, Wind Energy 2019 · Kumar & Rotea, Energies 2022 · Rotea et al., TORQUE 2024 · Lauand & Meyn, IEEE CSM 2023\n\n\n\nPrepared for a collaboration with M. A. Rotea, UTD Wind Energy Center."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#the-quantity-in-question",
+    "href": "research/wind-esc/q1-estimand.html#the-quantity-in-question",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The quantity in question",
+    "text": "The quantity in question\nBelow rated wind speed a turbine holds its tip-speed ratio at the value that maximizes the rotor’s power coefficient. Extremum seeking finds that value online, by dithering the torque gain and climbing.\n\nEvery convergence claim in this line of work is scored against \\(\\lambda^\\star = 7.5\\), the peak of a blade-element design curve. This deck asks whether that is the number the algorithms are actually converging to.\n\n\nThe reason to care is specific. The degraded-blade work asks the controller to detect a shift in lambda-star of about 0.2, which is what erosion and soiling produce. Any systematic offset larger than that swamps the effect being looked for.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#the-anomaly",
+    "href": "research/wind-esc/q1-estimand.html#the-anomaly",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The anomaly",
+    "text": "The anomaly\n\n\nEvery converged torque gain in the 2019 large-eddy simulations sits below the design value, and every tip-speed ratio sits above it. Two algorithms, three wind speeds, two inflow conditions, and the sign never changes.\n\n\nThis is not a criticism of the paper. The offsets are small enough to read as agreement, and nothing in that paper depends on them. They become interesting only once you want to resolve 0.2 in lambda.\nSix runs, two independent algorithms, sign never flips. That is bias, not scatter.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#three-things-it-could-mean",
+    "href": "research/wind-esc/q1-estimand.html#three-things-it-could-mean",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Three things it could mean",
+    "text": "Three things it could mean\n\n\n(a) the steady peak\n\\(\\arg\\max C_P(\\lambda)\\) on the design curve. What every paper scores against.\n\n\n(b) the turbulent peak\n\\(\\arg\\max \\mathbb{E}[\\ln P]\\) under the actual inflow. Differs from (a) by a Jensen gap plus rotor lag.\n\n\n(c) the algorithm’s fixed point\nWhere the estimate vanishes, which adds the finite-difference bias of the demodulator.\n\n\n\nThese are three different numbers. Before asking how well the estimator performs, we have to say which one it is estimating.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#candidate-one-estimator-bias",
+    "href": "research/wind-esc/q1-estimand.html#candidate-one-estimator-bias",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Candidate one: estimator bias",
+    "text": "Candidate one: estimator bias\nThe 2019 scheme is a square-wave two-point difference, so what it returns is\n\\[\\hat g \\;=\\; \\frac{J(q+a)-J(q-a)}{2a} \\;=\\; J'(q) + \\frac{a^2}{6}J'''(q) + O(a^4)\\]\nThe algorithm stops where \\(\\hat g = 0\\), not where \\(J' = 0\\), so its fixed point sits at\n\\[q^\\star - q_{opt} \\;\\approx\\; -\\frac{a^2}{6}\\,\\frac{J'''}{J''}\\]\n\nNonzero whenever the log-\\(C_P\\) curve is asymmetric at the peak, which it is. And \\(a\\) was \\(0.3\\) against a design gain of \\(2.2\\), so about 14%. Not a small perturbation.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#candidate-two-the-peak-moved",
+    "href": "research/wind-esc/q1-estimand.html#candidate-two-the-peak-moved",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Candidate two: the peak moved",
+    "text": "Candidate two: the peak moved\nRotor inertia is \\(3.5\\times10^7\\) kg m², so \\(\\lambda\\) cannot track the wind. It swings rather than sits. Expanding the objective under that swing,\n\\[\\mathbb{E}\\big[C_P(\\bar\\lambda + \\delta)\\big] \\approx C_P(\\bar\\lambda) + \\tfrac12 \\sigma_\\lambda^2\\,C_P''(\\bar\\lambda)\\]\nand maximizing over \\(\\bar\\lambda\\) moves the optimum to\n\\[\\bar\\lambda^\\star - \\lambda^\\star \\;\\approx\\; -\\frac{\\sigma_\\lambda^2}{2}\\,\\frac{C_P'''}{C_P''}\\]\n\nSame structure as candidate one: a third derivative over a second, scaled by a variance. But the implications are opposite. One says the algorithm misses a fixed target; the other says the algorithm is right and the target moved.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#the-arithmetic",
+    "href": "research/wind-esc/q1-estimand.html#the-arithmetic",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The arithmetic",
+    "text": "The arithmetic\n\n\nBoth fail, by more than an order of magnitude. Adding a third effect, that the reported \\(\\bar\\lambda\\) is a time average and \\(\\lambda(u)\\) is curved, brings the total to \\(0.042\\) against an observed \\(0.350\\).\n\n\nComputed on the map from normalized torque gain to settled tip-speed ratio, using the dither amplitude the 2019 paper actually used.\nThe honest caveat, and it should be said out loud: the third derivative comes from an analytic surface fitted through the peak, not from the NREL tables. So quote the sensitivity rather than the number. To explain the whole gap by finite-difference bias you would need that third derivative about 28 times larger. A fitted surface can be wrong by a factor of two or three. Not by 28.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#what-survives",
+    "href": "research/wind-esc/q1-estimand.html#what-survives",
+    "title": "What Is the Estimator Targeting?",
+    "section": "What survives",
+    "text": "What survives\n\n\nWhere the gap actually lives\nThe torque gain lands \\(7.7\\%\\) low, and that alone moves \\(\\lambda_{eq}\\) by \\(+0.19\\). So the question is why \\(k\\) is low, not why \\(\\lambda\\) is high.\n\n\nThe one candidate left\nThe simulated rotor’s own \\(C_P\\) peak is not at \\(7.5\\). Its realized \\(C_P\\) is already known to be \\(0.44\\) rather than \\(0.49\\).\n\n\n\nThe design curve is already established to be wrong about the level. Nobody has checked whether it is also wrong about the location, and that is the explanation the arithmetic cannot rule out.\n\n\nThis inverts what I would have proposed a week ago. The obvious experiment was to vary the dither amplitude and look for an a-squared scaling in the offset. I now expect that experiment to return nothing, because the predicted effect is 0.012 and seed-to-seed scatter will be larger.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#the-test",
+    "href": "research/wind-esc/q1-estimand.html#the-test",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The test",
+    "text": "The test\n\nStop closing the loop. Hold the torque gain at a series of fixed values, run each long enough to average out the turbulence, and measure the simulator’s own \\(C_P(\\lambda)\\) curve. Then ask where its peak is.\n\n\n\nIf the peak is at 7.5\nThe gap is real and none of the three candidates explain it. That is a more interesting outcome than confirming one of them.\n\n\nIf the peak is near 7.85\nThere is no estimator bias. The algorithms were right, the reference was wrong, and every convergence claim in the line needs restating against the new number.\n\n\n\nA few days of compute, no new code, and it is the same measurement the simulator-fidelity question needs anyway.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#why-this-one-comes-first",
+    "href": "research/wind-esc/q1-estimand.html#why-this-one-comes-first",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Why this one comes first",
+    "text": "Why this one comes first\n\n\nIt gates the bound\nYou cannot write a performance bound for the estimation of a quantity that has not been defined.\n\n\nIt gates stability\nCalling a run unstable presumes you know what it failed to converge to.\n\n\nIt gates the application\nDetecting a \\(0.2\\) shift from erosion is hopeless if the reference carries an unexplained \\(0.35\\).\n\n\n\nCheapest of the open questions, and the one the others rest on.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand.html#what-is-the-estimator-targeting",
+    "href": "research/wind-esc/q1-estimand.html#what-is-the-estimator-targeting",
+    "title": "What Is the Estimator Targeting?",
+    "section": "What is the estimator targeting?",
+    "text": "What is the estimator targeting?\n\n\nTwo explanations, costed out, and both are dead by an order of magnitude.\n\n\n\nThe claim\nThe \\(0.35\\) offset is not estimator bias and not a Jensen shift. What remains is that the simulated rotor’s peak is somewhere other than \\(7.5\\).\n\n\nThe caveat\nThe third derivative behind that arithmetic comes from a fitted surface. The sensitivity is stated on the arithmetic slide: it would have to be wrong by \\(28\\times\\).\n\n\n\nCiri, Leonardi & Rotea, Wind Energy 2019, Tables 3 and 4 · Kumar & Rotea, WES 2024\n\n\n\nOne of three: see also the speed limit and whether probing is needed.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q1: What Is the Estimator Targeting?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html",
+    "href": "research/wind-esc/q1-estimand-unused.html",
+    "title": "What Is the Estimator Targeting?",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$"
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#the-quantity-in-question",
+    "href": "research/wind-esc/q1-estimand-unused.html#the-quantity-in-question",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The quantity in question",
+    "text": "The quantity in question\nBelow rated wind speed a turbine holds its tip-speed ratio at the value that maximizes the rotor’s power coefficient. Extremum seeking finds that value online, by dithering the torque gain and climbing.\n\nEvery convergence claim in this line of work is scored against \\(\\lambda^\\star = 7.5\\), the peak of a blade-element design curve. This deck asks whether that is the number the algorithms are actually converging to.\n\n\nThe reason to care is specific. The degraded-blade work asks the controller to detect a shift in lambda-star of about 0.2, which is what erosion and soiling produce. Any systematic offset larger than that swamps the effect being looked for."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#the-anomaly",
+    "href": "research/wind-esc/q1-estimand-unused.html#the-anomaly",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The anomaly",
+    "text": "The anomaly\n\n\nEvery converged torque gain in the 2019 large-eddy simulations sits below the design value, and every tip-speed ratio sits above it. Two algorithms, three wind speeds, two inflow conditions, and the sign never changes.\n\n\nThis is not a criticism of the paper. The offsets are small enough to read as agreement, and nothing in that paper depends on them. They become interesting only once you want to resolve 0.2 in lambda.\nSix runs, two independent algorithms, sign never flips. That is bias, not scatter."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#three-things-it-could-mean",
+    "href": "research/wind-esc/q1-estimand-unused.html#three-things-it-could-mean",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Three things it could mean",
+    "text": "Three things it could mean\n\n\n(a) the steady peak\n\\(\\arg\\max C_P(\\lambda)\\) on the design curve. What every paper scores against.\n\n\n(b) the turbulent peak\n\\(\\arg\\max \\mathbb{E}[\\ln P]\\) under the actual inflow. Differs from (a) by a Jensen gap plus rotor lag.\n\n\n(c) the algorithm’s fixed point\nWhere the estimate vanishes, which adds the finite-difference bias of the demodulator.\n\n\n\nThese are three different numbers. Before asking how well the estimator performs, we have to say which one it is estimating."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#candidate-one-estimator-bias",
+    "href": "research/wind-esc/q1-estimand-unused.html#candidate-one-estimator-bias",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Candidate one: estimator bias",
+    "text": "Candidate one: estimator bias\nThe 2019 scheme is a square-wave two-point difference, so what it returns is\n\\[\\hat g \\;=\\; \\frac{J(q+a)-J(q-a)}{2a} \\;=\\; J'(q) + \\frac{a^2}{6}J'''(q) + O(a^4)\\]\nThe algorithm stops where \\(\\hat g = 0\\), not where \\(J' = 0\\), so its fixed point sits at\n\\[q^\\star - q_{opt} \\;\\approx\\; -\\frac{a^2}{6}\\,\\frac{J'''}{J''}\\]\n\nNonzero whenever the log-\\(C_P\\) curve is asymmetric at the peak, which it is. And \\(a\\) was \\(0.3\\) against a design gain of \\(2.2\\), so about 14%. Not a small perturbation."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#candidate-two-the-peak-moved",
+    "href": "research/wind-esc/q1-estimand-unused.html#candidate-two-the-peak-moved",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Candidate two: the peak moved",
+    "text": "Candidate two: the peak moved\nRotor inertia is \\(3.5\\times10^7\\) kg m², so \\(\\lambda\\) cannot track the wind. It swings rather than sits. Expanding the objective under that swing,\n\\[\\mathbb{E}\\big[C_P(\\bar\\lambda + \\delta)\\big] \\approx C_P(\\bar\\lambda) + \\tfrac12 \\sigma_\\lambda^2\\,C_P''(\\bar\\lambda)\\]\nand maximizing over \\(\\bar\\lambda\\) moves the optimum to\n\\[\\bar\\lambda^\\star - \\lambda^\\star \\;\\approx\\; -\\frac{\\sigma_\\lambda^2}{2}\\,\\frac{C_P'''}{C_P''}\\]\n\nSame structure as candidate one: a third derivative over a second, scaled by a variance. But the implications are opposite. One says the algorithm misses a fixed target; the other says the algorithm is right and the target moved."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#the-arithmetic",
+    "href": "research/wind-esc/q1-estimand-unused.html#the-arithmetic",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The arithmetic",
+    "text": "The arithmetic\n\n\nBoth fail, by more than an order of magnitude. Adding a third effect, that the reported \\(\\bar\\lambda\\) is a time average and \\(\\lambda(u)\\) is curved, brings the total to \\(0.042\\) against an observed \\(0.350\\).\n\n\nComputed on the map from normalized torque gain to settled tip-speed ratio, using the dither amplitude the 2019 paper actually used.\nThe honest caveat, and it should be said out loud: the third derivative comes from an analytic surface fitted through the peak, not from the NREL tables. So quote the sensitivity rather than the number. To explain the whole gap by finite-difference bias you would need that third derivative about 28 times larger. A fitted surface can be wrong by a factor of two or three. Not by 28."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#what-survives",
+    "href": "research/wind-esc/q1-estimand-unused.html#what-survives",
+    "title": "What Is the Estimator Targeting?",
+    "section": "What survives",
+    "text": "What survives\n\n\nWhere the gap actually lives\nThe torque gain lands \\(7.7\\%\\) low, and that alone moves \\(\\lambda_{eq}\\) by \\(+0.19\\). So the question is why \\(k\\) is low, not why \\(\\lambda\\) is high.\n\n\nThe one candidate left\nThe simulated rotor’s own \\(C_P\\) peak is not at \\(7.5\\). Its realized \\(C_P\\) is already known to be \\(0.44\\) rather than \\(0.49\\).\n\n\n\nThe design curve is already established to be wrong about the level. Nobody has checked whether it is also wrong about the location, and that is the explanation the arithmetic cannot rule out.\n\n\nThis inverts what I would have proposed a week ago. The obvious experiment was to vary the dither amplitude and look for an a-squared scaling in the offset. I now expect that experiment to return nothing, because the predicted effect is 0.012 and seed-to-seed scatter will be larger."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#the-test",
+    "href": "research/wind-esc/q1-estimand-unused.html#the-test",
+    "title": "What Is the Estimator Targeting?",
+    "section": "The test",
+    "text": "The test\n\nStop closing the loop. Hold the torque gain at a series of fixed values, run each long enough to average out the turbulence, and measure the simulator’s own \\(C_P(\\lambda)\\) curve. Then ask where its peak is.\n\n\n\nIf the peak is at 7.5\nThe gap is real and none of the three candidates explain it. That is a more interesting outcome than confirming one of them.\n\n\nIf the peak is near 7.85\nThere is no estimator bias. The algorithms were right, the reference was wrong, and every convergence claim in the line needs restating against the new number.\n\n\n\nA few days of compute, no new code, and it is the same measurement the simulator-fidelity question needs anyway."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#why-this-one-comes-first",
+    "href": "research/wind-esc/q1-estimand-unused.html#why-this-one-comes-first",
+    "title": "What Is the Estimator Targeting?",
+    "section": "Why this one comes first",
+    "text": "Why this one comes first\n\n\nIt gates the bound\nYou cannot write a performance bound for the estimation of a quantity that has not been defined.\n\n\nIt gates stability\nCalling a run unstable presumes you know what it failed to converge to.\n\n\nIt gates the application\nDetecting a \\(0.2\\) shift from erosion is hopeless if the reference carries an unexplained \\(0.35\\).\n\n\n\nCheapest of the open questions, and the one the others rest on."
+  },
+  {
+    "objectID": "research/wind-esc/q1-estimand-unused.html#what-is-the-estimator-targeting",
+    "href": "research/wind-esc/q1-estimand-unused.html#what-is-the-estimator-targeting",
+    "title": "What Is the Estimator Targeting?",
+    "section": "What is the estimator targeting?",
+    "text": "What is the estimator targeting?\n\n\nTwo explanations, costed out, and both are dead by an order of magnitude.\n\n\n\nThe claim\nThe \\(0.35\\) offset is not estimator bias and not a Jensen shift. What remains is that the simulated rotor’s peak is somewhere other than \\(7.5\\).\n\n\nThe caveat\nThe third derivative behind that arithmetic comes from a fitted surface. The sensitivity is stated on the arithmetic slide: it would have to be wrong by \\(28\\times\\).\n\n\n\nCiri, Leonardi & Rotea, Wind Energy 2019, Tables 3 and 4 · Kumar & Rotea, WES 2024\n\n\n\nOne of three: see also the speed limit and whether probing is needed."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#what-probing-costs",
+    "href": "research/wind-esc/q3-probing.html#what-probing-costs",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "What probing costs",
+    "text": "What probing costs\n\n\nSearching is not free. It costs energy while you search, and it costs fatigue whether or not you find anything. Every design choice in this line is a trade against those two numbers.\n\n\nThe energy figure is measured against a controller that already knows the optimal gain, so it is the pure cost of not knowing. LP-PIESC brings it to 0.3 per cent, which is what makes the approach deployable at all.\nThe load figures are worth keeping in view because they do not shrink with better estimation. They are the price of moving the machine.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#what-comes-for-free",
+    "href": "research/wind-esc/q3-probing.html#what-comes-for-free",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "What comes for free",
+    "text": "What comes for free\nThe rotor equation is \\(I\\dot\\Omega = T_{\\text{aero}} - \\tau_{\\text{gen}}\\), and every term on the right is known. \\(\\tau_{\\text{gen}}\\) is commanded, \\(\\Omega\\) is measured by an encoder, \\(I\\) is a design constant. So\n\\[T_{\\text{aero}}(t) \\;=\\; I\\dot\\Omega(t) + \\tau_{\\text{gen}}(t)\\]\nis exactly reconstructible with no anemometer, and it satisfies\n\\[T_{\\text{aero}} \\;=\\; \\tfrac12\\rho\\pi R^3 V^2\\, C_Q\\!\\left(\\frac{R\\Omega}{V}\\right)\\]\n\nTwo unknowns: the wind path \\(V(t)\\) and the function \\(C_Q(\\cdot)\\). The question is whether the record of \\((\\Omega,\\,T_{\\text{aero}})\\) determines them.\n\n\nNote what this quietly resolves. The generator-versus-aerodynamic-power problem, the one the 2024 ACC paper is about, disappears here: the inertial term is not a contaminant to be filtered out, it is the signal being used.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#the-wind-is-already-doing-the-experiment",
+    "href": "research/wind-esc/q3-probing.html#the-wind-is-already-doing-the-experiment",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "The wind is already doing the experiment",
+    "text": "The wind is already doing the experiment\n\n\nTurbulence sweeps \\(\\lambda\\) with \\(\\sigma_\\lambda \\approx 0.24\\), against the probe’s \\(0.34\\). Same order. The dither is not supplying excitation the wind lacks. It is supplying excitation the controller knows about.\n\n\nThe estimate is the fraction of turbulence energy above the rotor’s own pole, which is what the rotor cannot follow and so passes straight into lambda. At ten per cent intensity and a pole near 0.18 radians per second, roughly a ninth of the variance gets through.\nOrder of magnitude, not a measurement, and it does not need to be tight to make the point: the machine is swept across its own curve all day, and the fatigue cost of that sweep is being paid whether or not anyone uses it.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#exactly-one-blind-direction",
+    "href": "research/wind-esc/q3-probing.html#exactly-one-blind-direction",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "Exactly one blind direction",
+    "text": "Exactly one blind direction\nSubstitute \\(\\tilde V = cV\\) and ask which curve explains the same data:\n\\[\\tilde C_Q(x) = \\frac{C_Q(cx)}{c^2}\n\\;\\;\\Longrightarrow\\;\\;\n\\tilde C_P(x) = \\frac{C_P(cx)}{c^3}\n\\;\\;\\Longrightarrow\\;\\;\n\\tilde\\lambda^\\star = \\frac{\\lambda^\\star}{c}\\]\n\n\nOne unidentifiable direction, an overall scaling of the wind, mapping straight onto a scaling of \\(\\lambda^\\star\\). Everything else about the curve is determined.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#and-one-thing-that-does-not-matter",
+    "href": "research/wind-esc/q3-probing.html#and-one-thing-that-does-not-matter",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "And one thing that does not matter",
+    "text": "And one thing that does not matter\nAir density enters as a prefactor, so an error in \\(\\rho\\) scales \\(C_P\\) uniformly:\n\\[\\tilde C_P(x) = \\frac{C_P(x)}{d}\n\\;\\;\\Longrightarrow\\;\\;\n\\tilde\\lambda^\\star = \\lambda^\\star\\]\n\n\nWind speed scale\nMoves the estimated peak. Must be pinned.\n\n\nAir density\nDoes not move the peak. Can be left unknown.\n\n\n\nUseful, because density is the quantity that varies with temperature and altitude and is usually estimated badly. It turns out not to matter for locating \\(\\lambda^\\star\\).",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#what-breaks-the-degeneracy",
+    "href": "research/wind-esc/q3-probing.html#what-breaks-the-degeneracy",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "What breaks the degeneracy",
+    "text": "What breaks the degeneracy\n\n\nWhat you do not need\nA fast rotor-effective wind estimate. Those are reconstructed through a presumed \\(C_P\\) surface, which makes the whole exercise circular.\n\n\nWhat you do need\nOne slowly updated absolute wind scale, to pin the constant \\(c\\). A met mast, a nacelle lidar, or a long-run SCADA average.\n\n\n\nA slow reference is also far harder to contaminate with the control parameter. The induction response that makes nacelle estimates circular is fast, and it does not reach a monthly average.\n\n\nThis is the part that makes the idea practical rather than merely elegant. The usual objection is that you cannot separate the wind from the curve, and that is true, but it is true in exactly one direction, and that direction is the one a site already has an instrument for.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#the-test",
+    "href": "research/wind-esc/q3-probing.html#the-test",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "The test",
+    "text": "The test\n\nTake an existing simulation run with the dither switched off. Reconstruct \\(T_{\\text{aero}} = I\\dot\\Omega + \\tau_{\\text{gen}}\\), fit a parametrized \\(C_Q(\\cdot)\\) jointly with the wind path, pin the scale with the known mean wind, and compare the recovered peak against the simulator’s own answer.\n\n\n\nWhat makes it cheap\nNo new runs. Every quantity needed is already logged in the existing output, and the dither-off case is the baseline condition.\n\n\nWhat decides it\nWhether the recovered \\(\\lambda^\\star\\) lands within the tolerance the erosion problem needs, which is about \\(0.1\\).",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#risks-stated-plainly",
+    "href": "research/wind-esc/q3-probing.html#risks-stated-plainly",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "Risks, stated plainly",
+    "text": "Risks, stated plainly\n\n\nPrior art\nThis sits close to the wind-speed-estimator literature, which assumes \\(C_P\\) known and solves for \\(V\\). The joint version is what would be new, and that claim needs checking first.\n\n\nDifferentiation\n\\(T_{\\text{aero}}\\) needs \\(\\dot\\Omega\\), and differentiating a noisy encoder signal is where this could fail in practice rather than in principle.\n\n\nIdentifiability in practice\nOne blind direction in theory does not guarantee a well-conditioned fit. The degeneracy could be nearly degenerate in more directions than one.\n\n\n\nOf the three questions this is the riskiest and the one with the largest payoff. It does not improve the probing trade-off. It removes it.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing.html#does-the-turbine-need-to-probe",
+    "href": "research/wind-esc/q3-probing.html#does-the-turbine-need-to-probe",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "Does the turbine need to probe?",
+    "text": "Does the turbine need to probe?\n\n\nThe dither exists because the excitation is unknown, not because excitation is lacking.\n\n\n\nThe claim\nAerodynamic torque is reconstructible with no wind sensor, turbulence supplies comparable excitation to the probe, and the joint estimation problem has exactly one blind direction, which a slow absolute reference pins.\n\n\nIf it holds\nNo dither. No fatigue cost of probing, no amplitude to choose, no frequency plan, and the bias-variance trade of the estimand question disappears with it.\n\n\n\nKumar & Rotea, Energies 2022 · Ciri, Leonardi & Rotea, Wind Energy 2019 · Mulders, Gallo & Rotea, ACC 2024 · Soltani et al. on rotor-effective wind estimation\n\n\n\nOne of three: see also the estimand and the speed limit.",
+    "crumbs": [
+      "Research",
+      "Wind Turbine Control",
+      "Q3: Does the Turbine Need to Probe?"
+    ]
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html",
+    "href": "research/wind-esc/q3-probing-unused.html",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$"
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#what-probing-costs",
+    "href": "research/wind-esc/q3-probing-unused.html#what-probing-costs",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "What probing costs",
+    "text": "What probing costs\n\n\nSearching is not free. It costs energy while you search, and it costs fatigue whether or not you find anything. Every design choice in this line is a trade against those two numbers.\n\n\nThe energy figure is measured against a controller that already knows the optimal gain, so it is the pure cost of not knowing. LP-PIESC brings it to 0.3 per cent, which is what makes the approach deployable at all.\nThe load figures are worth keeping in view because they do not shrink with better estimation. They are the price of moving the machine."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#what-comes-for-free",
+    "href": "research/wind-esc/q3-probing-unused.html#what-comes-for-free",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "What comes for free",
+    "text": "What comes for free\nThe rotor equation is \\(I\\dot\\Omega = T_{\\text{aero}} - \\tau_{\\text{gen}}\\), and every term on the right is known. \\(\\tau_{\\text{gen}}\\) is commanded, \\(\\Omega\\) is measured by an encoder, \\(I\\) is a design constant. So\n\\[T_{\\text{aero}}(t) \\;=\\; I\\dot\\Omega(t) + \\tau_{\\text{gen}}(t)\\]\nis exactly reconstructible with no anemometer, and it satisfies\n\\[T_{\\text{aero}} \\;=\\; \\tfrac12\\rho\\pi R^3 V^2\\, C_Q\\!\\left(\\frac{R\\Omega}{V}\\right)\\]\n\nTwo unknowns: the wind path \\(V(t)\\) and the function \\(C_Q(\\cdot)\\). The question is whether the record of \\((\\Omega,\\,T_{\\text{aero}})\\) determines them.\n\n\nNote what this quietly resolves. The generator-versus-aerodynamic-power problem, the one the 2024 ACC paper is about, disappears here: the inertial term is not a contaminant to be filtered out, it is the signal being used."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#the-wind-is-already-doing-the-experiment",
+    "href": "research/wind-esc/q3-probing-unused.html#the-wind-is-already-doing-the-experiment",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "The wind is already doing the experiment",
+    "text": "The wind is already doing the experiment\n\n\nTurbulence sweeps \\(\\lambda\\) with \\(\\sigma_\\lambda \\approx 0.24\\), against the probe’s \\(0.34\\). Same order. The dither is not supplying excitation the wind lacks. It is supplying excitation the controller knows about.\n\n\nThe estimate is the fraction of turbulence energy above the rotor’s own pole, which is what the rotor cannot follow and so passes straight into lambda. At ten per cent intensity and a pole near 0.18 radians per second, roughly a ninth of the variance gets through.\nOrder of magnitude, not a measurement, and it does not need to be tight to make the point: the machine is swept across its own curve all day, and the fatigue cost of that sweep is being paid whether or not anyone uses it."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#exactly-one-blind-direction",
+    "href": "research/wind-esc/q3-probing-unused.html#exactly-one-blind-direction",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "Exactly one blind direction",
+    "text": "Exactly one blind direction\nSubstitute \\(\\tilde V = cV\\) and ask which curve explains the same data:\n\\[\\tilde C_Q(x) = \\frac{C_Q(cx)}{c^2}\n\\;\\;\\Longrightarrow\\;\\;\n\\tilde C_P(x) = \\frac{C_P(cx)}{c^3}\n\\;\\;\\Longrightarrow\\;\\;\n\\tilde\\lambda^\\star = \\frac{\\lambda^\\star}{c}\\]\n\n\nOne unidentifiable direction, an overall scaling of the wind, mapping straight onto a scaling of \\(\\lambda^\\star\\). Everything else about the curve is determined."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#and-one-thing-that-does-not-matter",
+    "href": "research/wind-esc/q3-probing-unused.html#and-one-thing-that-does-not-matter",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "And one thing that does not matter",
+    "text": "And one thing that does not matter\nAir density enters as a prefactor, so an error in \\(\\rho\\) scales \\(C_P\\) uniformly:\n\\[\\tilde C_P(x) = \\frac{C_P(x)}{d}\n\\;\\;\\Longrightarrow\\;\\;\n\\tilde\\lambda^\\star = \\lambda^\\star\\]\n\n\nWind speed scale\nMoves the estimated peak. Must be pinned.\n\n\nAir density\nDoes not move the peak. Can be left unknown.\n\n\n\nUseful, because density is the quantity that varies with temperature and altitude and is usually estimated badly. It turns out not to matter for locating \\(\\lambda^\\star\\)."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#what-breaks-the-degeneracy",
+    "href": "research/wind-esc/q3-probing-unused.html#what-breaks-the-degeneracy",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "What breaks the degeneracy",
+    "text": "What breaks the degeneracy\n\n\nWhat you do not need\nA fast rotor-effective wind estimate. Those are reconstructed through a presumed \\(C_P\\) surface, which makes the whole exercise circular.\n\n\nWhat you do need\nOne slowly updated absolute wind scale, to pin the constant \\(c\\). A met mast, a nacelle lidar, or a long-run SCADA average.\n\n\n\nA slow reference is also far harder to contaminate with the control parameter. The induction response that makes nacelle estimates circular is fast, and it does not reach a monthly average.\n\n\nThis is the part that makes the idea practical rather than merely elegant. The usual objection is that you cannot separate the wind from the curve, and that is true, but it is true in exactly one direction, and that direction is the one a site already has an instrument for."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#the-test",
+    "href": "research/wind-esc/q3-probing-unused.html#the-test",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "The test",
+    "text": "The test\n\nTake an existing simulation run with the dither switched off. Reconstruct \\(T_{\\text{aero}} = I\\dot\\Omega + \\tau_{\\text{gen}}\\), fit a parametrized \\(C_Q(\\cdot)\\) jointly with the wind path, pin the scale with the known mean wind, and compare the recovered peak against the simulator’s own answer.\n\n\n\nWhat makes it cheap\nNo new runs. Every quantity needed is already logged in the existing output, and the dither-off case is the baseline condition.\n\n\nWhat decides it\nWhether the recovered \\(\\lambda^\\star\\) lands within the tolerance the erosion problem needs, which is about \\(0.1\\)."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#risks-stated-plainly",
+    "href": "research/wind-esc/q3-probing-unused.html#risks-stated-plainly",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "Risks, stated plainly",
+    "text": "Risks, stated plainly\n\n\nPrior art\nThis sits close to the wind-speed-estimator literature, which assumes \\(C_P\\) known and solves for \\(V\\). The joint version is what would be new, and that claim needs checking first.\n\n\nDifferentiation\n\\(T_{\\text{aero}}\\) needs \\(\\dot\\Omega\\), and differentiating a noisy encoder signal is where this could fail in practice rather than in principle.\n\n\nIdentifiability in practice\nOne blind direction in theory does not guarantee a well-conditioned fit. The degeneracy could be nearly degenerate in more directions than one.\n\n\n\nOf the three questions this is the riskiest and the one with the largest payoff. It does not improve the probing trade-off. It removes it."
+  },
+  {
+    "objectID": "research/wind-esc/q3-probing-unused.html#does-the-turbine-need-to-probe",
+    "href": "research/wind-esc/q3-probing-unused.html#does-the-turbine-need-to-probe",
+    "title": "Does the Turbine Need to Probe?",
+    "section": "Does the turbine need to probe?",
+    "text": "Does the turbine need to probe?\n\n\nThe dither exists because the excitation is unknown, not because excitation is lacking.\n\n\n\nThe claim\nAerodynamic torque is reconstructible with no wind sensor, turbulence supplies comparable excitation to the probe, and the joint estimation problem has exactly one blind direction, which a slow absolute reference pins.\n\n\nIf it holds\nNo dither. No fatigue cost of probing, no amplitude to choose, no frequency plan, and the bias-variance trade of the estimand question disappears with it.\n\n\n\nKumar & Rotea, Energies 2022 · Ciri, Leonardi & Rotea, Wind Energy 2019 · Mulders, Gallo & Rotea, ACC 2024 · Soltani et al. on rotor-effective wind estimation\n\n\n\nOne of three: see also the estimand and the speed limit."
   },
   {
     "objectID": "teaching/grad_courses/deep_learning/index.html",

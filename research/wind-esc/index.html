@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="Neural controller design, energy shaping, and Bayesian learning for uncertain dynamical systems.">
+<meta name="description" content="Gradient estimation for extremum seeking: what the estimator actually computes, and what turbulence does to it.">
 
-<title>Robust Machine Learning – Aykut C. Satici</title>
+<title>Wind Turbine Control – Aykut C. Satici</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -30,25 +30,26 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<link href="../research/wind-esc/q4-matrix-gain.html" rel="prev">
-<link href="../images/robot-arm-favicon.png" rel="icon" type="image/png">
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-09b469177ad55450d94bd915a4dae986.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../research/wind-esc/gradient-estimation.html" rel="next">
+<link href="../../research/nonprehensile/planning-through-contact.html" rel="prev">
+<link href="../../images/robot-arm-favicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-09b469177ad55450d94bd915a4dae986.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -87,12 +88,41 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
-<link rel="stylesheet" href="../styles.css">
-<link rel="stylesheet" href="research.css">
-<meta property="og:title" content="Robust Machine Learning – Aykut C. Satici">
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../research.css">
+<meta property="og:title" content="Wind Turbine Control – Aykut C. Satici">
 <meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
-<meta property="og:image" content="https://Symplectomorphism.github.io/research/images/robot-control-lab-social.png">
+<meta property="og:image" content="https://Symplectomorphism.github.io/research/wind-esc/images/robot-control-lab-social.png">
 <meta property="og:site_name" content="Aykut C. Satici">
 </head>
 
@@ -103,7 +133,7 @@ window.MathJax = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="../index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">Aykut C. Satici</span>
     </a>
   </div>
@@ -114,31 +144,31 @@ window.MathJax = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="../research/index.html" aria-current="page"> 
+    <a class="nav-link active" href="../../research/index.html" aria-current="page"> 
 <span class="menu-text">Research</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../publications.html"> 
+    <a class="nav-link" href="../../publications.html"> 
 <span class="menu-text">Publications</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../teaching/index.html"> 
+    <a class="nav-link" href="../../teaching/index.html"> 
 <span class="menu-text">Teaching</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../people/index.html"> 
+    <a class="nav-link" href="../../people/index.html"> 
 <span class="menu-text">People</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../news/index.html"> 
+    <a class="nav-link" href="../../news/index.html"> 
 <span class="menu-text">News</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../positions/index.html"> 
+    <a class="nav-link" href="../../positions/index.html"> 
 <span class="menu-text">Opportunities</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../about.html"> 
+    <a class="nav-link" href="../../about.html"> 
 <span class="menu-text">About</span></a>
   </li>  
   <li class="nav-item dropdown ">
@@ -147,11 +177,11 @@ window.MathJax = {
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-miscellaneous">    
         <li>
-    <a class="dropdown-item" href="../fun/index.html">
+    <a class="dropdown-item" href="../../fun/index.html">
  <span class="dropdown-text">Fun</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="../chiasson/index.html">
+    <a class="dropdown-item" href="../../chiasson/index.html">
  <span class="dropdown-text">John Chiasson</span></a>
   </li>  
     </ul>
@@ -172,7 +202,7 @@ window.MathJax = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../research/robust_machine_learning.html">Robust Machine Learning</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../research/wind-esc/index.html">Wind Turbine Control</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -186,19 +216,19 @@ window.MathJax = {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Research</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/robotics_and_control.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/robotics_and_control.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Robotics and Control</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../research/nonprehensile/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../research/nonprehensile/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Nonprehensile Manipulation</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -207,7 +237,7 @@ window.MathJax = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/nonprehensile/planning-through-contact.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/nonprehensile/planning-through-contact.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Planning Through Contact</span></a>
   </div>
 </li>
@@ -215,7 +245,7 @@ window.MathJax = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../research/wind-esc/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../research/wind-esc/index.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Wind Turbine Control</span></a>
           <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -224,31 +254,31 @@ window.MathJax = {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/wind-esc/gradient-estimation.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/wind-esc/gradient-estimation.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Climbing a Hill You Cannot See</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/wind-esc/q1-estimand.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/wind-esc/q1-estimand.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Q1: What Is the Estimator Targeting?</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/wind-esc/q2-speed-limit.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/wind-esc/q2-speed-limit.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Q2: What Bounds the Speed?</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/wind-esc/q3-probing.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/wind-esc/q3-probing.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Q3: Does the Turbine Need to Probe?</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/wind-esc/q4-matrix-gain.html" class="sidebar-item-text sidebar-link">
+  <a href="../../research/wind-esc/q4-matrix-gain.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Q4: A Matrix Gain for Extremum Seeking</span></a>
   </div>
 </li>
@@ -256,7 +286,7 @@ window.MathJax = {
   </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../research/robust_machine_learning.html" class="sidebar-item-text sidebar-link active">
+  <a href="../../research/robust_machine_learning.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Robust Machine Learning</span></a>
   </div>
 </li>
@@ -296,12 +326,12 @@ $$
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Robust Machine Learning</h1>
+<h1 class="title">Wind Turbine Control</h1>
 </div>
 
 <div>
   <div class="description">
-    Neural controller design, energy shaping, and Bayesian learning for uncertain dynamical systems.
+    Gradient estimation for extremum seeking: what the estimator actually computes, and what turbulence does to it.
   </div>
 </div>
 
@@ -320,47 +350,56 @@ $$
 
 <div class="research-page">
 <div class="research-lead">
-<p>How can learning help us design controllers that account for uncertainty?</p>
+<p>A wind turbine must sit on the peak of an efficiency curve it cannot measure, using a knob whose effect arrives buried in turbulence.</p>
 </div>
-<p>A learned controller acts on a dynamical system: its decisions influence the states it will encounter next. Our research connects neural approximation and Bayesian learning with nonlinear control, focusing on controller design, stability, and sensitivity to uncertain models and measurements.</p>
-<section id="learning-to-design-controllers" class="level2">
-<h2 class="anchored" data-anchor-id="learning-to-design-controllers">Learning to design controllers</h2>
-<p>Passivity-based control provides a connection between a system’s energy and its stability. Applying this approach can require solving nonlinear partial differential equations, which may be difficult to solve in closed form.</p>
-<p>We investigate neural networks as approximations within this design process. In our work on interconnection and damping assignment, the required equations become part of a data-driven optimization problem. The physical structure of the control problem guides what is learned.</p>
+<p>Below rated wind speed, a turbine’s job is to hold the <strong>tip-speed ratio</strong> <span class="math inline">\(\lambda = R\Omega/V\)</span> at the value that maximizes the rotor’s power coefficient <span class="math inline">\(C_P\)</span>. The difficulty is that both coordinates of that curve are written in terms of the wind speed reaching the rotor, which is the one quantity the machine cannot measure. An anemometer on the nacelle reads air the rotor has already slowed, by an amount that depends on what the controller is doing.</p>
+<p>Extremum seeking control solves this without a model: perturb the control parameter with a small periodic dither, correlate the response against it, and climb. The line of work developed at the UTD Wind Energy Center has made that practical, most importantly by feeding the algorithm the <em>logarithm</em> of power. That removes the wind speed from the loop gain exactly, so a controller tuned at one wind speed works at every other.</p>
+<p>Our interest is in what happens next: <strong>the statistics of the gradient the algorithm computes.</strong></p>
+<section id="climbing-a-hill-you-cannot-see" class="level2">
+<h2 class="anchored" data-anchor-id="climbing-a-hill-you-cannot-see">Climbing a hill you cannot see</h2>
 <div class="research-paper">
-<p><strong>Representative work</strong></p>
-<p><a href="https://doi.org/10.1080/00207179.2022.2051750">Data-Driven Passivity-Based Control of Underactuated Mechanical Systems via Interconnection and Damping Assignment</a></p>
-<p>Wankun Sirichotiyakul and Aykut C. Satici · <em>International Journal of Control</em></p>
-<p><a href="../publications.html#ref-satici2022ijc">Publication and Scholar search</a></p>
+<p><strong>Presentation</strong></p>
+<p><a href="gradient-estimation.html">Climbing a Hill You Cannot See →</a> is an illustrated walkthrough of the Region-2 control problem, the extremum-seeking machinery built for it, and five questions the published record leaves open. Roughly twenty slides, figure-first, with speaker notes.</p>
 </div>
+<p>The deck builds the problem from the beginning: why the <span class="math inline">\(k\Omega^2\)</span> torque law works, why its equilibrium is a ray rather than a setpoint, and what the logarithm of power actually fixes. It then turns to what is unresolved.</p>
 </section>
-<section id="bayesian-learning-and-uncertainty" class="level2">
-<h2 class="anchored" data-anchor-id="bayesian-learning-and-uncertainty">Bayesian learning and uncertainty</h2>
-<p>A controller is often designed from imperfect information about the system and its state. Bayesian learning represents uncertainty through distributions, providing a way to examine controller design beyond a single parameter estimate.</p>
-<p>Our preprint <em>Robustness of Control Design via Bayesian Learning</em> compares deterministic and Bayesian controller design for a one-dimensional, open-loop unstable stochastic system. The Bayesian formulation accounts for uncertainty in both the system parameter and state. This deliberately simple setting allows the role of uncertainty to be studied directly.</p>
-<p><a href="https://arxiv.org/abs/2205.06896">Read the preprint</a> · <a href="../publications.html#ref-ashenafi2022robustness">Publication and Scholar search</a></p>
-</section>
-<section id="connecting-learning-and-nonlinear-control" class="level2">
-<h2 class="anchored" data-anchor-id="connecting-learning-and-nonlinear-control">Connecting learning and nonlinear control</h2>
-<p>A related line of work brings neural approximators and Bayesian inference into passivity-based control of underactuated systems. Together, these studies explore how flexible approximation methods can be used within a control-theoretic framework.</p>
+<section id="q4-the-curvature-question-worked-through" class="level2">
+<h2 class="anchored" data-anchor-id="q4-the-curvature-question-worked-through">Q4: the curvature question, worked through</h2>
 <div class="research-paper">
-<p><strong>Representative work</strong></p>
-<p><a href="../publications.html#ref-ashenafi2022robust">Robust Passivity-Based Control of Underactuated Systems via Neural Approximators and Bayesian Inference</a></p>
-<p>Nardos Ayele Ashenafi, Wankun Sirichotiyakul, and Aykut C. Satici · <em>IEEE Control Systems Letters</em>, 2022</p>
-<p><a href="../publications.html#ref-sirichotiyakul2021combining">Combining Energy-Shaping Control of Dynamical Systems with Data-Driven Approaches</a></p>
-<p>Wankun Sirichotiyakul and Aykut C. Satici · CCTA, 2021</p>
+<p><strong>Presentation</strong></p>
+<p><a href="q4-matrix-gain.html">A Matrix Gain for Extremum Seeking →</a> works the fourth question all the way through. Meyn’s Zap stochastic approximation needs the Jacobian of the update direction, which a demodulated gradient estimate does not supply in closed form. It turns out to sit at the second harmonic of the probe already being injected, so reading it costs one extra correlation rather than one extra experiment.</p>
+</div>
+<p>Using it takes the curvature out of the loop gain, which turns the step size into a settling time and removes the retuning that Rotea describes as the practical obstacle. The deck also carries the version without extremum seeking at all, where a random perturbation supplies the gradient and either Spall’s second-order SPSA or a Gaussian probe supplies the Jacobian, and then compares the two. That comparison turns out to be combinatorial rather than statistical: resolving every entry of the Hessian needs a frequency plan whose bandwidth grows quadratically in the number of parameters, from 101 seconds of averaging for one parameter to 2915 for six.</p>
+</section>
+<section id="three-questions-about-one-turbine" class="level2">
+<h2 class="anchored" data-anchor-id="three-questions-about-one-turbine">Three questions about one turbine</h2>
+<p>One deck each, worked to a test rather than surveyed.</p>
+<div class="research-paper">
+<p><strong>Presentations</strong></p>
+<p><a href="q1-estimand.html">Q1: What Is the Estimator Targeting? →</a> The converged tip-speed ratio in the published simulations sits <span class="math inline">\(0.35\)</span> above its design value, consistently, across every condition. Estimator bias and a shifted turbulent optimum together account for <span class="math inline">\(0.042\)</span> of that, so both are dead by an order of magnitude and the surviving candidate is that the simulator’s own peak is elsewhere.</p>
+<p><a href="q2-speed-limit.html">Q2: What Bounds the Speed? →</a> Plain extremum seeking goes unstable at high wind, which the published first-order model cannot produce at any gain. A sampled-data account with one constant, taken from the same paper’s settling time, reproduces all three reported outcomes and puts the boundary at <span class="math inline">\(9.2\)</span> m/s.</p>
+<p><a href="q3-probing.html">Q3: Does the Turbine Need to Probe? →</a> Aerodynamic torque is reconstructible with no wind sensor, turbulence already sweeps the curve about as far as the dither does, and the joint estimation problem has exactly one blind direction.</p>
 </div>
 </section>
-<section id="questions-that-guide-this-direction" class="level2">
-<h2 class="anchored" data-anchor-id="questions-that-guide-this-direction">Questions that guide this direction</h2>
+<section id="five-open-questions" class="level2">
+<h2 class="anchored" data-anchor-id="five-open-questions">Five open questions</h2>
 <ul>
-<li>How can physical structure make a learning-based control problem easier to solve?</li>
-<li>How should uncertainty in models and measurements enter controller design?</li>
-<li>How can stability analysis inform the design and evaluation of learned controllers?</li>
+<li><strong>What is the estimator estimating?</strong> The steady argmax of <span class="math inline">\(C_P\)</span>, the argmax of expected log-power under turbulence, and the algorithm’s own fixed point are three different numbers. In the published large-eddy simulations the gap between the first and the last is <span class="math inline">\(0.35\)</span> in <span class="math inline">\(\lambda\)</span>, larger than the <span class="math inline">\(0.2\)</span> shift blade erosion produces, which is the effect the work is trying to detect.</li>
+<li><strong>What sets the stability limit?</strong> Plain extremum seeking goes unstable at high wind in simulation. The first-order model used to analyse it cannot go unstable for any positive gain, so the failure mode that matters in practice has no theory behind it. A sampled-data account looks likely.</li>
+<li><strong>Is the dither necessary?</strong> Aerodynamic torque is exactly reconstructible from measured rotor speed and commanded generator torque, and turbulence already sweeps <span class="math inline">\(\lambda\)</span> across the curve for free. Joint estimation of the wind and the torque coefficient appears to have exactly one unidentifiable direction, an overall wind scaling. That would mean a slow absolute reference suffices where a fast rotor-effective estimate is currently assumed necessary.</li>
+<li><strong>What is the Hessian for?</strong> The curvature at the peak sets the loop gain calibration, the terminal scatter, and the energy lost to mistuning. In stochastic approximation the same matrix governs the asymptotic covariance, where iterate averaging attains the optimum without estimating it.</li>
+<li><strong>How good could any algorithm be?</strong> No performance bound exists for this problem, so there is no way to tell whether current algorithms are near optimal or leaving an order of magnitude on the table.</li>
 </ul>
-<p>These questions connect this research direction to the lab’s work in <a href="../research/robotics_and_control.html">robotics and control</a>.</p>
+</section>
+<section id="why-turbulence-is-not-ordinary-noise" class="level2">
+<h2 class="anchored" data-anchor-id="why-turbulence-is-not-ordinary-noise">Why turbulence is not ordinary noise</h2>
+<p>In classical stochastic approximation the disturbance is pure nuisance: it corrupts the measurement and is averaged away. Here the same physical process does both jobs. Turbulence is what buries the gradient estimate, and it is also what moves the rotor across the <span class="math inline">\(C_P\)</span> curve without anyone paying a fatigue cost to put it there. That duality is what makes estimating the curve <em>without</em> probing it worth asking about.</p>
+</section>
+<section id="status" class="level2">
+<h2 class="anchored" data-anchor-id="status">Status</h2>
+<p>This is a reading of the published record rather than a result. The immediate next step is an experiment: rerun an established simulation setup at several dither amplitudes with independent, non-repeating turbulence seeds, and see whether the offset from the design optimum scales with the square of the dither amplitude. One outcome makes it estimator bias; the other means the turbulent optimum has moved. Either way it produces error bars, which none of the published simulations report.</p>
 <div class="research-next">
-<p><a href="../research/index.html">Research overview →</a> · <a href="../publications.html">All publications →</a></p>
+<p><a href="../../research/robotics_and_control.html">Robotics and control →</a> · <a href="../../research/robust_machine_learning.html">Robust machine learning →</a> · <a href="../../publications.html">All publications →</a></p>
 </div>
 </section>
 </div>
@@ -770,11 +809,14 @@ $$
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../research/wind-esc/q4-matrix-gain.html" class="pagination-link" aria-label="Q4: A Matrix Gain for Extremum Seeking">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Q4: A Matrix Gain for Extremum Seeking</span>
+      <a href="../../research/nonprehensile/planning-through-contact.html" class="pagination-link" aria-label="Planning Through Contact">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Planning Through Contact</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
+      <a href="../../research/wind-esc/gradient-estimation.html" class="pagination-link" aria-label="Climbing a Hill You Cannot See">
+        <span class="nav-page-text">Climbing a Hill You Cannot See</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
   </div>
 </nav>
 </div> <!-- /content -->
@@ -799,7 +841,7 @@ $$
 </a>
   </li>  
     <li class="nav-item">
-    <a class="nav-link" href="../positions/index.html">
+    <a class="nav-link" href="../../positions/index.html">
 <p>Opportunities</p>
 </a>
   </li>  
