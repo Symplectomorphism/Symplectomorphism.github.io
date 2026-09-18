@@ -2,7 +2,7 @@
 
 Numbers are taken from the same sources as the first deck: the plant time
 constants and dither settings are Kumar & Rotea (Energies 2022, Tables 2-3) and
-Rotea et al. (TORQUE 2024, Table A1).
+Rotea et al., J. Phys. Conf. Ser. 2767 (2024) 032043, Table A1.
 """
 
 from __future__ import annotations
@@ -144,7 +144,7 @@ def demod(path):
 
 
 def newton_rate(path):
-    """A Newton step takes the curvature out of the loop gain."""
+    """Gradient ascent inherits the plant's curvature; a Newton step does not."""
     fig, ax = figure(9.4, 4.5)
     h = np.linspace(0.25, 3.0, 300)
 
@@ -152,29 +152,35 @@ def newton_rate(path):
             label="gradient ascent:  rate $= \\kappa\\,|H|$")
     ax.plot(h, np.ones_like(h), color=PRIMARY, linewidth=2.8,
             label="Newton / Zap step:  rate $= \\kappa$")
+    ax.axhline(1.0, color=FAINT, linewidth=1.0, linestyle=(0, (3, 4)), zorder=1)
+    ax.plot([1.0], [1.0], "o", color=INK, markersize=9, zorder=6)
+    ax.annotate("tuned here", xy=(1.0, 1.0), xytext=(1.30, 1.48),
+                fontsize=10.5, color=INK,
+                arrowprops=dict(arrowstyle="->", color=INK, linewidth=1.2))
 
-    ax.axvspan(0.25, 0.75, color=SOFT, zorder=0)
-    ax.text(0.50, 2.72, "flat peak\n(eroded blades,\noff-design site)",
-            ha="center", fontsize=10.5, color=PRIMARY, linespacing=1.4)
-    ax.annotate("", xy=(0.40, 0.40), xytext=(0.40, 1.0),
-                arrowprops=dict(arrowstyle="<|-|>", color=HOT, linewidth=1.6))
-    ax.annotate("2.5x slower here,\nand nothing reports it",
-                xy=(0.42, 0.70), xytext=(1.15, 0.52), fontsize=10.5, color=HOT,
-                linespacing=1.4, va="center",
-                arrowprops=dict(arrowstyle="->", color=HOT, linewidth=1.2))
+    # the two ways the plant drifts away from the value it was tuned at
+    ax.axvspan(0.25, 0.70, color=SOFT, zorder=0)
+    ax.axvspan(1.60, 3.00, color="#faf6ec", zorder=0)
+    ax.text(0.475, 3.02, "flatter peak\n$|H|$ smaller", ha="center", va="top",
+            fontsize=10.5, color=PRIMARY, linespacing=1.4)
+    ax.text(2.30, 3.02, "sharper peak\n$|H|$ larger", ha="center", va="top",
+            fontsize=10.5, color=GOLD, linespacing=1.4)
+
+    for x, lab, col in ((0.40, "$2.5\\times$ too slow", HOT),
+                        (2.50, "$2.5\\times$ too fast", HOT)):
+        ax.annotate("", xy=(x, x), xytext=(x, 1.0),
+                    arrowprops=dict(arrowstyle="<|-|>", color=HOT, linewidth=1.6))
+        ax.text(x + 0.10, (x + 1.0) / 2, lab, fontsize=10.5, color=HOT,
+                va="center", ha="left")
 
     ax.set_xlim(0.25, 3.0)
-    ax.set_ylim(-0.30, 3.2)
-    style(ax, "curvature at the peak  $|H|$   (design value = 1)",
+    ax.set_ylim(0.0, 3.35)
+    style(ax, "curvature at the peak  $|H|$   (value it was tuned at = 1)",
           "closed-loop rate   (design value = 1)")
-    leg = ax.legend(loc="upper right", frameon=False, fontsize=11)
+    leg = ax.legend(loc="lower right", frameon=False, fontsize=11)
     for t in leg.get_texts():
         t.set_color(INK)
-    ax.text(0.30, -0.22, "2017 removed $V$ from the loop gain. This removes $H$, "
-            "and $\\kappa$ becomes the settling time.",
-            fontsize=10.5, color=MUTED)
     save(fig, path)
-
 
 def conditioning(path):
     """Where a matrix gain actually pays: a long ridge in two yaw angles."""
@@ -224,8 +230,10 @@ def relerr(path):
     """Near the peak the curvature is the better conditioned of the two."""
     fig, ax = figure(9.4, 4.6)
     d = np.logspace(-2.4, -0.1, 400)      # distance from the peak, in u_opt
-    a = 0.33
-    ratio = 8 / a * 2 ** (-5 / 6)         # sigma(Hhat)/sigma(ghat)
+    # a must be the dither as a FRACTION of u_opt for d to be in the same units:
+    # Ciri et al. use a = 0.3 N.m.rpm^-2 against u_opt = 2.2, i.e. 13.6%.
+    a = 0.136
+    ratio = 8 / a * 2 ** (-5 / 6)         # sigma(Hhat)/sigma(ghat), per u_opt
 
     rel_g = 1.0 / d
     rel_h = np.full_like(d, ratio)
@@ -237,8 +245,8 @@ def relerr(path):
 
     xc = 1 / ratio
     ax.plot([xc], [ratio], "o", color=GOLD, markersize=11, zorder=6)
-    ax.annotate(f"they cross at {100*xc:.0f}% from the peak",
-                xy=(xc, ratio), xytext=(xc * 1.5, ratio * 4.5),
+    ax.annotate(f"they cross at {100*xc:.1f}% from the peak",
+                xy=(xc, ratio), xytext=(xc * 1.7, ratio * 3.2),
                 fontsize=11, color=GOLD,
                 arrowprops=dict(arrowstyle="->", color=GOLD, linewidth=1.4))
     ax.axvspan(d[0], xc, color="#f4eefa", zorder=0)
@@ -247,7 +255,7 @@ def relerr(path):
             fontsize=10.5, color=VIOLET, linespacing=1.4)
 
     ax.set_xlim(d[0], d[-1])
-    ax.set_ylim(0.62, 4e2)
+    ax.set_ylim(0.62, 1.2e3)
     style(ax, "distance from the peak   (fraction of $u_{opt}$)",
           "relative error of the estimate")
     leg = ax.legend(loc="upper right", frameon=False, fontsize=11)
@@ -265,14 +273,15 @@ def bandwidth(path):
     r = np.logspace(-1.3, 1.0, 400)
     ax.semilogx(r, 1 / np.sqrt(1 + r ** 2), color=INK, linewidth=2.4)
     ax.axhline(1 / np.sqrt(2), color=FAINT, linewidth=1.2, linestyle=(0, (4, 3)))
-    ax.text(0.055, 0.735, "$-3$ dB", fontsize=10.5, color=MUTED)
+    ax.text(9.4, 0.735, "$-3$ dB", fontsize=10.5, color=MUTED, ha="right")
 
     kr = 2 * 0.02 / 0.125
     ax.plot([kr], [1 / np.sqrt(1 + kr ** 2)], "o", color=PRIMARY, markersize=10,
             zorder=6)
     ax.annotate("Kumar & Rotea 2022\n$2\\omega$ at 0.04 rad/s,  gain 0.95",
-                xy=(kr, 1 / np.sqrt(1 + kr ** 2)), xytext=(0.062, 0.50),
+                xy=(kr, 1 / np.sqrt(1 + kr ** 2)), xytext=(0.062, 0.38),
                 fontsize=10.5, color=PRIMARY, linespacing=1.4, ha="left",
+                va="top",
                 arrowprops=dict(arrowstyle="->", color=PRIMARY, linewidth=1.2))
 
     for x in (1.6, 2.0):
@@ -298,36 +307,39 @@ def bandwidth(path):
 
 
 def timescales(path):
-    """Zap assumes the Jacobian is the fast variable. Here it is the slow one."""
+    """Keep Meyn's recursion; run the gain as the slow variable, not the fast one."""
     fig, ax = figure(9.8, 4.4)
     blank(ax)
     ax.set_xlim(-0.05, 10.05)
     ax.set_ylim(0, 4.6)
 
-    box(ax, 0.0, 2.45, 4.80, 1.85,
+    W, GAP = 4.75, 0.50
+    x2 = W + GAP
+    box(ax, 0.0, 2.55, W, 1.80,
         "What Zap assumes\n\n"
-        "$\\varepsilon_n / \\alpha_n \\to \\infty$\n\n"
-        "The Jacobian estimate moves fast,\n"
-        "the parameter moves slowly.",
+        "$\\varepsilon_n/\\alpha_n \\to \\infty$\n\n"
+        "Jacobian estimate fast,\nparameter slow.",
         ec=VIOLET, fs=11)
 
-    box(ax, 5.20, 2.45, 4.80, 1.85,
+    box(ax, x2, 2.55, W, 1.80,
         "What this plant does\n\n"
         "$\\theta^\\star$ drifts over minutes.\n"
         "$H$ drifts over months, with erosion.\n\n"
         "The Jacobian is the SLOW variable.",
         ec=PRIMARY, fs=11)
 
-    box(ax, 0.0, 0.15, 10.0, 1.95,
-        "So the high-gain condition puts the noisier estimate on the shorter "
-        "window, which is backwards here.\n\n"
-        "The fix is not exotic: keep the Zap structure, reverse the ordering, and "
-        "treat $\\hat A$ as a slowly\nre-identified preconditioner rather than a "
-        "fast-tracking one. What is lost is Zap's two-timescale\n"
-        "convergence theory, which would have to be replaced.",
+    ax.annotate("", xy=(x2 - 0.06, 3.45), xytext=(W + 0.06, 3.45),
+                arrowprops=dict(arrowstyle="-|>", color=MUTED, linewidth=1.6))
+
+    box(ax, 0.0, 0.20, 2 * W + GAP, 2.05,
+        "Keep Meyn's recursion; feed it the demodulated $\\hat H_n$ as innovation:\n"
+        r"$\hat A_{n+1} = \hat A_n + \gamma\,(\hat H_n - \hat A_n)$,"
+        "   so   " r"$N_H = 2/\gamma - 1$" "\n"
+        "Small $\\gamma$ makes $\\hat A$ slow and quiet. Erosion at months against\n"
+        "an estimator at a day is still a two-timescale separation,\n"
+        "only the other way up.",
         fc="#fbf6e8", ec=GOLD, fs=10.5, lw=1.4)
     save(fig, path, pad=0.05)
-
 
 def probes(path):
     """Bernoulli probing carries the gradient but not the curvature."""

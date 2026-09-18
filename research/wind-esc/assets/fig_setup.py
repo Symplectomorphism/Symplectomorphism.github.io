@@ -25,23 +25,24 @@ def regions(path):
 
     ax.text((cut_in + rated) / 2, 4.55, "Region 2", ha="center", fontsize=13,
             color=PRIMARY, fontweight="bold")
-    ax.text((cut_in + rated) / 2, 4.05, "maximize $C_P$\nactuator: generator torque",
-            ha="center", fontsize=10.5, color=MUTED, linespacing=1.3)
+    ax.text((cut_in + rated) / 2, 4.28, "maximize $C_P$\nactuator: generator torque",
+            ha="center", va="top", fontsize=10.5, color=MUTED, linespacing=1.35)
     ax.text((rated + cut_out) / 2, 4.55, "Region 3", ha="center", fontsize=13,
             color=GOLD, fontweight="bold")
-    ax.text((rated + cut_out) / 2, 4.05, "hold rated power\nactuator: blade pitch",
-            ha="center", fontsize=10.5, color=MUTED, linespacing=1.3)
+    ax.text((rated + cut_out) / 2, 4.28, "hold rated power\nactuator: blade pitch",
+            ha="center", va="top", fontsize=10.5, color=MUTED, linespacing=1.35)
 
-    for x, lab in ((cut_in, "cut-in\n3 m/s"), (rated, "rated\n11.4 m/s")):
+    for x, lab, ha, dx in ((cut_in, "cut-in\n3 m/s", "right", -0.25),
+                           (rated, "rated\n11.4 m/s", "left", 0.25)):
         ax.axvline(x, color=FAINT, linewidth=1.1, linestyle=(0, (4, 3)), zorder=1)
-        ax.text(x, -0.62, lab, ha="center", va="top", fontsize=9.5, color=FAINT,
-                linespacing=1.25)
+        ax.text(x + dx, 0.55, lab, ha=ha, va="top", fontsize=9.5, color=MUTED,
+                linespacing=1.3)
 
     ax.set_xlim(0, 25)
     ax.set_ylim(0, 5.6)
     style(ax, "wind speed $V$  [m/s]", "electrical power  [MW]")
     ax.set_yticks([0, 1, 2, 3, 4, 5])
-    save(fig, path, pad=0.2)
+    save(fig, path, pad=0.12)
 
 
 def cp_curve(path):
@@ -88,32 +89,36 @@ def cp_curve(path):
 
 def blind(path):
     """What you can measure, and what the objective is written in."""
-    fig, ax = figure(9.2, 4.0)
+    fig, ax = figure(9.2, 5.1)
     blank(ax)
     ax.set_xlim(-0.05, 10.1)
-    ax.set_ylim(0, 4.3)
+    ax.set_ylim(0, 5.45)
 
-    box(ax, 0.02, 2.50, 4.62, 1.60,
+    box(ax, 0.02, 3.05, 4.62, 2.30,
         "You measure\n\n"
         r"$\Omega$  rotor speed:  encoder, exact" "\n"
         r"$\tau_g$  generator torque:  you command it" "\n"
         r"$P_g$  generator power:  a wattmeter",
         fc="#ffffff", ec=PRIMARY, fs=10.5)
 
-    box(ax, 5.42, 2.50, 4.62, 1.60,
-        "The objective needs\n\n"
-        r"$\lambda = R\Omega/V$  needs $V$" "\n"
-        r"$C_P = P/(\frac{1}{2}\rho A V^3)$  needs $V^3$" "\n"
-        r"$\partial C_P/\partial\lambda$  needs both",
+    box(ax, 5.42, 3.05, 4.62, 2.30,
+        "The curve is drawn in\n\n"
+        r"$\lambda = R\Omega/V$      horizontal axis" "\n"
+        r"$C_P = P/(\frac{1}{2}\rho A V^3)$   vertical axis" "\n"
+        r"$\partial C_P/\partial\lambda$        the slope, from both" "\n\n"
+        r"all three need $V$",
         fc="#fbf0ee", ec=HOT, fs=10.5)
 
-    ax.text(5.0, 3.3, "$\\neq$", ha="center", va="center", fontsize=30,
+    ax.text(5.0, 4.20, "$\\neq$", ha="center", va="center", fontsize=30,
             color=HOT)
 
-    box(ax, 0.02, 0.25, 10.02, 1.75,
-        "A nacelle anemometer sits in the rotor's own induction field, so it reads a wind speed that\n"
-        "depends on what the controller is doing. Every axis of the hill is either unmeasurable or\n"
-        "contaminated by the control input, which is why this work is model-free.",
+    box(ax, 0.02, 0.28, 10.02, 2.35,
+        "So you could try to build the curve directly, from $\\hat V$. Both axes carry the same\n"
+        "unknown, so an error there does not scatter the points: it rescales the curve and\n"
+        "carries the peak along, "
+        r"$\hat\lambda^\star = \lambda^\star/c$." "  "
+        "Resolving the $0.2$ that erosion produces\n"
+        "would need $\\hat V$ good to $3\\%$. Extremum seeking does not go this way at all.",
         fc=SOFT, ec=PRIMARY, fs=10.5, lw=1.3)
     save(fig, path, pad=0.05)
 
@@ -146,3 +151,40 @@ def ray(path):
             "the equilibrium is a ray,\nnot a point: there is no\nrotor speed to regulate to",
             ha="right", va="bottom", fontsize=10.5, color=MUTED, linespacing=1.35)
     save(fig, path)
+
+
+def rest(path):
+    """Where the rotor rests: a fixed curve meeting a line you choose."""
+    from scipy.optimize import brentq
+    fig, ax = figure(9.2, 4.8)
+    lam = np.linspace(3.0, 12.5, 800)
+    phi = lambda l: cp(l) / l ** 3
+    p0 = phi(LAMBDA_OPT)
+
+    ax.plot(lam, phi(lam) / p0, color=PRIMARY, linewidth=3.0, zorder=4)
+    ax.text(11.9, phi(11.9) / p0 + 0.06, "$C_P(\\lambda)\\,/\\,\\lambda^3$",
+            fontsize=13, color=PRIMARY, ha="right")
+
+    for f, col, lab in ((0.75, FAINT, "$k = 0.75\\,k_{opt}$"),
+                        (1.00, HOT, "$k = k_{opt}$"),
+                        (1.35, FAINT, "$k = 1.35\\,k_{opt}$")):
+        r = brentq(lambda l: phi(l) / p0 - f, 3.0, 12.5)
+        ax.axhline(f, color=col, linewidth=1.8,
+                   linestyle="-" if f == 1.0 else (0, (5, 3)), zorder=2)
+        ax.plot([r], [f], "o", color=col, markersize=11, zorder=6)
+        ax.plot([r, r], [0, f], color=col, linewidth=1.0,
+                linestyle=(0, (2, 3)), zorder=1)
+        ax.text(3.15, f + 0.045, lab, fontsize=11, color=col)
+        ax.text(r + 0.20, f + 0.055, f"$\\lambda = {r:.2f}$", fontsize=11.5,
+                color=col, ha="left", va="bottom")
+
+    ax.set_xlim(3.0, 12.5)
+    ax.set_ylim(0, 2.35)
+    style(ax, "tip-speed ratio  $\\lambda$",
+          "$C_P/\\lambda^3$,  in units of its value at $\\lambda^\\star$")
+    ax.text(6.6, 2.05,
+            "the curve is fixed by the blades;\nthe line is the number you choose",
+            fontsize=11.5, color=MUTED, linespacing=1.4)
+    ax.text(3.15, 0.10, "the curve falls here, so every crossing is attracting",
+            fontsize=10.5, color=PRIMARY)
+    save(fig, path, pad=0.16)

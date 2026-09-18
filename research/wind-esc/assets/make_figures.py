@@ -20,16 +20,19 @@ import fig_three    # noqa: E402
 import fig_zap      # noqa: E402
 import fig_open     # noqa: E402
 import fig_setup    # noqa: E402
+import fig_sim      # noqa: E402
 
 JOBS = [
     (fig_setup.regions, "regions.svg"),
     (fig_setup.cp_curve, "cp-curve.svg"),
     (fig_setup.blind, "blind.svg"),
     (fig_setup.ray, "ray.svg"),
+    (fig_setup.rest, "rest.svg"),
     (fig_esc.esc_loop, "esc-loop.svg"),
     (fig_esc.logfix, "logfix.svg"),
     (fig_esc.evidence, "evidence.svg"),
     (fig_esc.piesc, "piesc.svg"),
+    (fig_esc.piesc_loop, "piesc-loop.svg"),
     (fig_open.estimand, "estimand.svg"),
     (fig_open.channels, "channels.svg"),
     (fig_open.biasvar, "biasvar.svg"),
@@ -49,13 +52,11 @@ JOBS = [
     (fig_zap.spread, "zap-spread.svg"),
     (fig_zap.multiplex, "zap-multiplex.svg"),
     (fig_zap.sidon, "zap-sidon.svg"),
+    (fig_sim.sim_gate, "sim-gate.svg"),
+    (fig_sim.sim_curvature, "sim-curvature.svg"),
+    (fig_sim.sim_rolling, "sim-rolling.svg"),
     (fig_three.anomaly, "q1-anomaly.svg"),
     (fig_three.budget, "q1-budget.svg"),
-    (fig_three.loop, "q2-loop.svg"),
-    (fig_three.boundary, "q2-boundary.svg"),
-    (fig_three.excitation, "q3-excitation.svg"),
-    (fig_three.zplane, "q2-zplane.svg"),
-    (fig_three.probe_cost, "q3-cost.svg"),
 ]
 
 

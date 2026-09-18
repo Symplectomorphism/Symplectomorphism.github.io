@@ -4,12 +4,14 @@ All 15 figures are generated from the NREL 5-MW reference turbine's constants
 and from numbers quoted in the source papers:
 
     ../../../.venv/bin/python make_figures.py
+    ../../../.venv/bin/python check_overlaps.py
 
 Output is SVG with `svg.fonttype: none`, so the slide's own typeface is used and
 the palette matches `deck.scss` exactly.
 
 | file | module | what it shows |
 |------|--------|---------------|
+| `check_overlaps.py` | (check) | re-renders each figure and fails on text/text or text/box collisions |
 | `windkit.py` | (shared) | palette, turbine constants, `C_P(λ)`, plot styling, block-diagram primitives |
 | `fig_setup.py` | `regions`, `cp-curve`, `blind`, `ray` | the control problem and why it is blind |
 | `fig_esc.py` | `esc-loop`, `logfix`, `evidence`, `piesc` | extremum seeking and the published results |
@@ -40,3 +42,21 @@ slides. A symmetric stand-in would quietly erase the effect.
 
 `bound.svg` is explicitly schematic and labelled as such on the figure: the
 performance bound it draws does not exist yet, which is the point of that slide.
+
+## Text placement
+
+Run `check_overlaps.py` after `make_figures.py`. It re-renders each figure,
+measures the rendered extent of every text artist, and reports any text that
+runs into other text or crosses a box edge.
+
+Two causes account for nearly every collision found so far:
+
+- `ax.text` defaults to `va="baseline"`, and for a **multi-line** string that
+  anchors the last line, so earlier lines grow *upward* from the `y` you give.
+  A two-line caption placed under a heading will climb into it. Pass
+  `va="top"` for anything multi-line.
+- Labels positioned next to a box by eye. Mathtext line heights are much larger
+  than `fontsize x linespacing` suggests, because superscripts, dots and
+  fractions all add to the ascent. Measure instead of estimating: render the
+  figure, call `get_window_extent(renderer)` on the text and transform it
+  through `ax.transData.inverted()`.

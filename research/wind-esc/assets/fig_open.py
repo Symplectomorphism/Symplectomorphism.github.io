@@ -88,44 +88,46 @@ def channels(path):
 
 
 def biasvar(path):
-    """Q1. Dither amplitude: a bias-variance trade nobody has computed."""
-    fig, ax = figure(9.2, 4.5)
-    a = np.logspace(-2.1, -0.3, 400)
+    """Dither amplitude: bias does not average down, scatter does."""
+    fig, ax = figure(9.4, 4.7)
+    x = np.linspace(0.04, 1.0, 400)          # dither, as a fraction of k_opt
+    N = 3                                     # N_eff = 2/g - 1 from their own
+                                              # constant-gain tuning, not a run length
+    # constants computed from the C_P surface and the 2019 dither settings:
+    #   |bias| = 0.682 x^2   from the C_P curve
+    #   scatter = 0.033 / (x sqrt(N))   an UPPER BOUND calibrated from the
+    #   run-to-run spread in Ciri et al. 2019 Table 4; predicting it from the
+    #   turbulence overshoots by 24-40x and is the open problem
+    bias = 0.6817 * x ** 2
+    scat = 0.0330 / (x * np.sqrt(N))
+    rms = np.sqrt(bias ** 2 + scat ** 2)
 
-    bias2 = (a ** 2 / 0.006) ** 2 * 3e-4
-    var = 9 * 0.10 ** 2 * (30.0 / 150.0) / a ** 2 * 1e-3
-    tot = bias2 + var
+    ax.loglog(x, bias, color=GOLD, linewidth=2.2, linestyle=(0, (5, 3)),
+              label="bias  $\\propto a^2$,  does not average down")
+    ax.loglog(x, scat, color=HOT, linewidth=2.2, linestyle=(0, (5, 3)),
+              label="scatter  $\\propto 1/(a\\sqrt{N})$,  does")
+    ax.loglog(x, rms, color=PRIMARY, linewidth=3.0, label="total error in $\\lambda$")
 
-    ax.loglog(a, bias2, color=GOLD, linewidth=2.0, linestyle=(0, (5, 3)),
-              label="bias$^2$  $\\propto a^4$   (finite-difference curvature error)")
-    ax.loglog(a, var, color=HOT, linewidth=2.0, linestyle=(0, (5, 3)),
-              label="variance  $\\propto 1/a^2$   (turbulence in the probe band)")
-    ax.loglog(a, tot, color=PRIMARY, linewidth=3.0, label="total MSE")
+    i = int(np.argmin(rms))
+    ax.plot([x[i]], [rms[i]], "o", color=PRIMARY, markersize=11, zorder=6)
+    ax.annotate(f"best at {100*x[i]:.0f}% of $k_{{opt}}$", xy=(x[i], rms[i]),
+                xytext=(x[i] * 2.05, rms[i] * 2.6), fontsize=11, color=PRIMARY,
+                ha="center",
+                arrowprops=dict(arrowstyle="->", color=PRIMARY, linewidth=1.3))
 
-    i = int(np.argmin(tot))
-    ax.plot([a[i]], [tot[i]], "o", color=PRIMARY, markersize=10, zorder=6)
-    ax.annotate("$a^\\star$", xy=(a[i], tot[i]), xytext=(a[i] * 0.42, tot[i] * 0.30),
-                fontsize=15, color=PRIMARY,
-                arrowprops=dict(arrowstyle="->", color=PRIMARY, lw=1.4))
+    ax.axvline(0.136, color=BLUE, linewidth=1.6, linestyle=(0, (2, 3)), zorder=2)
+    ax.annotate("published:  $a=0.3$,  $13.6\\%$\nscatter beats bias $11\\times$",
+                xy=(0.136, 0.16), xytext=(0.044, 1.15), fontsize=10.5, color=BLUE,
+                linespacing=1.4, ha="left",
+                arrowprops=dict(arrowstyle="->", color=BLUE, linewidth=1.2))
 
-    for av, lab, col in ((0.33, "LP-ESC\n33% of $u_{opt}$", HOT),
-                         (0.33 * 0.25, "LP-PIESC\n25% of that", BLUE)):
-        ax.axvline(av, color=col, linewidth=1.3, linestyle=(0, (2, 3)), zorder=2)
-        ax.text(av * 1.07, 1.1e-5, lab, fontsize=10, color=col,
-                linespacing=1.3, va="bottom")
-
-    ax.set_xlim(a[0], a[-1])
-    ax.set_ylim(3e-6, 2e-1)
-    style(ax, "dither amplitude  $a$   (fraction of $u_{opt}$)",
-          "mean-square error of  $\\hat g$")
-    leg = ax.legend(loc="lower left", frameon=False, fontsize=10.5,
-                    bbox_to_anchor=(0.0, 0.02))
+    ax.set_xlim(0.04, 1.0)
+    ax.set_ylim(2e-2, 3.0)
+    style(ax, "dither amplitude, as a fraction of $k_{opt}$",
+          "error in $\\lambda$, at the tuned $N_{eff} = 3$")
+    leg = ax.legend(loc="lower left", frameon=False, fontsize=10.5)
     for t in leg.get_texts():
         t.set_color(INK)
-    ax.text(a[0] * 1.1, 1.15e-1,
-            "Shape is textbook Kiefer-Wolfowitz. The constants have never been "
-            "measured for this problem,\nand both published amplitudes were set by "
-            "trial and error.", fontsize=10.5, color=MUTED, linespacing=1.4)
     save(fig, path)
 
 
@@ -204,7 +206,7 @@ def identify(path):
             label="from $(cV, \\tilde C_Q)$")
     a2.set_xlim(0.4, 1.6)
     a2.set_ylim(0, 2.8)
-    style(a2, "rotor speed  $\\Omega$", "$T_{aero} = I\\dot\\Omega + \\tau_{gen}$",
+    style(a2, "rotor speed  $\\Omega$", "$\\tau_{aero} = I\\dot\\Omega + \\tau_g$",
           "...produce identical data")
     leg = a2.legend(loc="upper left", frameon=False, fontsize=10)
     for t in leg.get_texts():
