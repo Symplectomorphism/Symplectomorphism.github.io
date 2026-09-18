@@ -36,7 +36,7 @@
       vertical-align: middle;
     }
   </style>
-  <link rel="stylesheet" href="../../site_libs/revealjs/dist/theme/quarto-66bfa272d8925810456a5ca188cdb21b.css">
+  <link rel="stylesheet" href="../../site_libs/revealjs/dist/theme/quarto-af835542dd4516e730310c1c89a1739c.css">
   <link href="../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -153,9 +153,9 @@ Aykut C. Satici
 </div>
 
 </section>
-<section id="where-this-comes-from" class="slide level2 smaller">
-<h2>Where this comes from</h2>
-<p>Rotea’s opening message asked for gradient estimation “and if possible, Hessian.” Meyn’s stochastic approximation gives two answers to that, and they are very different in cost.</p>
+<section id="two-answers-and-only-one-needs-a-hessian" class="slide level2 smaller">
+<h2>Two answers, and only one needs a Hessian</h2>
+<p>Stochastic approximation offers two routes to the same asymptotic covariance. They differ entirely in what they cost to build.</p>
 <div class="cols2">
 <div class="card">
 <p><span class="cardh">Polyak-Ruppert averaging</span></p>
@@ -167,10 +167,11 @@ Aykut C. Satici
 </div>
 </div>
 <div class="claim">
-<p>If the goal is terminal variance, averaging already wins. This deck asks the other question: <strong>what does a matrix gain buy on a wind turbine, and can we even build one?</strong></p>
+<p>Both reach the optimal covariance <span class="math inline">\(\Sigma^{PR} = A^{-1}\Sigma_W A^{-\top}\)</span>. Averaging gets there for four lines of code and no curvature estimate at all. <strong>So if the case for a matrix gain is argued on terminal variance, it loses.</strong> What it can be argued on is transient behavior and conditioning, and this deck asks whether that survives contact with a turbine.</p>
 </div>
 <aside class="notes">
-<p>The honest framing is that Zap is not the cheapest route to low variance. What it offers is transient behaviour, stability under weak conditions, and conditioning in more than one dimension. Those are the goods worth chasing here, and they happen to line up with the complaint Rotea actually made, which was about tuning effort rather than about noise.</p>
+<p>The honest framing is that Zap is not the cheapest route to low variance. What it offers is transient behavior, stability under weak conditions, and conditioning in more than one dimension. Those are the goods worth chasing here, and they line up with a tuning-effort complaint rather than a noise complaint.</p>
+<p>This slide is here to set up that comparison, which the deck returns to and settles later under Zap against averaging.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -240,21 +241,24 @@ G_{n+1} &amp;= -\big[\varepsilon I + \hat A^{\!\top}_{n+1}\hat A_{n+1}\big]^{-1}
 </section>
 <section id="expand-around-the-operating-point" class="slide level2 smaller">
 <h2>Expand around the operating point</h2>
-<p>Put <span class="math inline">\(\theta(t) = \theta_n + a\sin\omega t\)</span> into a local quadratic model of <span class="math inline">\(y = \ln P\)</span>, with <span class="math inline">\(g\)</span> the slope and <span class="math inline">\(H\)</span> the curvature at <span class="math inline">\(\theta_n\)</span>:</p>
+<p><span class="math inline">\(\theta(t) = \theta_n + a\sin\omega t\)</span> is the <strong>ordinary ESC dither</strong>: <span class="math inline">\(\theta_n\)</span> the current estimate, held across the period, with the probe riding on it. It is <span class="math inline">\(d_1(t) = a\sin(\omega t)\)</span> of <a href="#/references">[KR22]</a> §2, nothing added. Put it into a local quadratic model of <span class="math inline">\(y = \ln P\)</span>, with <span class="math inline">\(g\)</span> the slope and <span class="math inline">\(H\)</span> the curvature at <span class="math inline">\(\theta_n\)</span>:</p>
 <p><span class="math display">\[y(t) \;=\; \text{const} \;+\; g\,a\sin\omega t \;+\; \tfrac12 H a^2 \sin^2\!\omega t\]</span></p>
 <p>Now use <span class="math inline">\(\sin^2\omega t = \tfrac12(1 - \cos 2\omega t)\)</span>:</p>
 <p><span class="math display">\[y(t) \;=\; \underbrace{\Big[\,\cdot\, + \tfrac14 H a^2\Big]}_{\text{DC}}
 \;+\; \underbrace{g\,a\,\sin\omega t}_{\text{first harmonic}}
 \;-\; \underbrace{\tfrac14 H a^2\cos 2\omega t}_{\text{second harmonic}}\]</span></p>
 <div class="claim">
-<p>The gradient sits at <span class="math inline">\(\omega\)</span>. The curvature sits at <span class="math inline">\(2\omega\)</span>. They are in the same record, separated in frequency, and one probe generates both.</p>
+<p>The gradient sits at <span class="math inline">\(\omega\)</span>. The curvature sits at <span class="math inline">\(2\omega\)</span>. Same record, separated in frequency, one probe generating both.</p>
+</div>
+<div class="warn">
+<p>This needs the dither to be a <strong>sinusoid</strong>. For the square wave of <a href="#/references">[CLR19]</a>, <span class="math inline">\(g(t) = \pm1\)</span> so <span class="math inline">\(g(t)^2 \equiv 1\)</span>: the quadratic term is a constant and <strong>carries no harmonic at all</strong>. The method applies to the <a href="#/references">[KR22]</a> line, which dithers sinusoidally, and not to the 2019 square-wave line.</p>
 </div>
 </section>
 <section id="in-the-spectrum" class="slide level2 smaller">
 <h2>In the spectrum</h2>
 
-<img data-src="assets/zap-harmonics.svg" alt="Power spectral density of log power. A red turbulence continuum falling as f to the minus five thirds, with a tall green line at the dither frequency labelled gradient and a shorter violet line at twice that frequency labelled curvature, both well inside the plant bandwidth." class="r-stretch"><aside class="notes">
-<p>Two things to note on this picture. The curvature line is smaller than the gradient line by roughly a over four times the distance from the peak, so close to the optimum it is the larger of the two. And because turbulence falls off as f to the minus five thirds, the noise floor under the second harmonic is about three times lower in power than under the first.</p>
+<img data-src="assets/zap-harmonics.svg" alt="Power spectral density of log power. A red turbulence continuum falling as f to the minus five thirds, with a tall green line at the dither frequency labeled gradient and a shorter violet line at twice that frequency labeled curvature, both well inside the plant bandwidth." class="r-stretch"><aside class="notes">
+<p>Two things to note on this picture. The curvature line is smaller than the gradient line by roughly a over four times the distance from the peak, so close to the optimum it is the larger of the two. And the second harmonic does sit in a quieter part of the spectrum than the first, which is a real advantage for the Hessian channel, though the deck should not lean on it: at 150 seconds the fundamental is already sitting on the peak of f S of f, so the comparison is between bad and slightly less bad.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -276,13 +280,19 @@ G_{n+1} &amp;= -\big[\varepsilon I + \hat A^{\!\top}_{n+1}\hat A_{n+1}\big]^{-1}
 \qquad
 N(t) = \frac{16}{a^2}\left(\sin^2\!\omega t - \frac12\right)
 \]</span></p>
-<p>Check the second one: <span class="math inline">\(N(t) = -\tfrac{8}{a^2}\cos 2\omega t\)</span>, and averaging it against <span class="math inline">\(-\tfrac14 H a^2\cos2\omega t\)</span> gives <span class="math inline">\(\tfrac14 H a^2 \cdot \tfrac{8}{a^2}\cdot\tfrac12 = H\)</span>.</p>
+<p>Check the second: <span class="math inline">\(N(t) = -\tfrac{8}{a^2}\cos 2\omega t\)</span>, averaged against the <span class="math inline">\(-\tfrac14 Ha^2\cos2\omega t\)</span> term of the expansion, gives <span class="math inline">\(\tfrac14 Ha^2\cdot\tfrac{8}{a^2}\cdot\tfrac12 = H\)</span>. For <span class="math inline">\(p\)</span> parameters the same construction is a matrix, Eqs. 20–21 of [GKN12]:</p>
+<p><span class="math display">\[N_{i,i}(t) = \frac{16}{a_i^2}\left(\sin^2\!\omega_i t - \frac12\right),
+\qquad
+N_{i,j}(t) = \frac{4}{a_ia_j}\sin\omega_i t\,\sin\omega_j t \quad (i \ne j)\]</span></p>
 <div class="claim">
-<p><span class="math inline">\(A_{n+1} = \hat H_n\)</span>. One extra correlation against a signal you already generate. No new sensor, no extra excitation, no additional load on the machine.</p>
+<p><span class="math inline">\(A_{n+1} = \hat H_n\)</span>. One extra correlation against a signal the loop already generates: no new sensor, no extra excitation, no additional load.</p>
+</div>
+<div class="warn">
+<p>Two conditions, both checked later by simulation. The dither must be a <strong>sinusoid</strong>, since a square wave has <span class="math inline">\(g(t)^2 \equiv 1\)</span> and no second harmonic at all. And <span class="math inline">\(2\omega\)</span> must sit inside the rotor’s passband, or <span class="math inline">\(\hat H\)</span> reads low: <span class="math inline">\(21\%\)</span> low at the published <span class="math inline">\(T = 150\)</span> s.</p>
 </div>
 <aside class="notes">
-<p>This demodulation pair is not new. It is the Newton-based extremum seeking of Ghaffari, Krstic and Nesic, Automatica 2012, which also supplies a Riccati filter that converges to the inverse of H without ever inverting a matrix. That paper is not in our literature folder and I am working from memory, so the attribution needs checking before it goes in a proposal.</p>
-<p>What is new here is the pairing: their demodulation supplies Zap’s missing Jacobian, and Zap supplies the asymptotic covariance theory and the regularized pseudo-inverse that their Riccati filter lacks.</p>
+<p>Say this one out loud before anything else. The demodulation pair is not new and neither is the conclusion that it takes the curvature out of the loop gain. Both are Ghaffari, Krstic and Nesic, Automatica 48 (2012) 1759 to 1767, verified, which also supplies a Riccati filter converging to the inverse of H without ever inverting a matrix, and which states the convergence rate becoming user-assignable as its headline result. Krstic is not someone to accidentally re-derive in front of this audience.</p>
+<p>What is not in that paper: the wind turbine feasibility gate on the next slides, the p-squared frequency budget for the multi-turbine yaw problem, and the pairing with Zap, whose asymptotic covariance theory and regularized pseudo-inverse their Riccati filter lacks. That is the honest boundary of the contribution.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -321,10 +331,10 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 </section>
 <section id="the-curvature-leaves-the-loop-gain" class="slide level2 smaller">
 <h2>The curvature leaves the loop gain</h2>
+<p>Write <span class="math inline">\(\delta = \theta - \theta^\star\)</span>, so <span class="math inline">\(g = H\delta\)</span> with <span class="math inline">\(H&lt;0\)</span> at a maximum. Gradient ascent linearizes to <span class="math inline">\(\dot\delta = \kappa H\delta\)</span>: <strong>the closed-loop rate is <span class="math inline">\(\kappa|H|\)</span>, so it inherits the plant’s curvature.</strong> Meyn’s gain carries its own sign, <span class="math inline">\(G = -H/(\varepsilon+H^2)\)</span>, and with <span class="math inline">\(\varepsilon\to0\)</span> the update gives <span class="math inline">\(\dot\delta = -\kappa\delta\)</span>, rate <span class="math inline">\(\kappa\)</span> regardless of <span class="math inline">\(H\)</span>.</p>
 
-<img data-src="assets/zap-rate.svg" alt="Closed-loop rate against curvature at the peak. Gradient ascent rises linearly so the rate is proportional to the curvature. The Newton step is a flat line at the design value." class="r-stretch"><p>Write <span class="math inline">\(\delta = \theta - \theta^\star\)</span>, so <span class="math inline">\(g = H\delta\)</span> with <span class="math inline">\(H&lt;0\)</span> at a maximum. Gradient ascent linearizes to <span class="math inline">\(\dot\delta = \kappa H\delta\)</span>, stable at rate <span class="math inline">\(\kappa|H|\)</span>. Meyn’s gain carries its own sign, <span class="math inline">\(G = -H/(\varepsilon+H^2)\)</span>, and with <span class="math inline">\(\varepsilon\to 0\)</span> the update gives <span class="math inline">\(\dot\delta = -\kappa\delta\)</span>.</p>
-<div class="claim">
-<p>2017 removed <span class="math inline">\(V\)</span> from the loop gain. This removes <span class="math inline">\(H\)</span>. What is left is <span class="math inline">\(\kappa\)</span>, which now <strong>is</strong> the settling time rather than merely influencing it.</p>
+<img data-src="assets/zap-rate.svg" class="fig-band r-stretch" alt="Closed-loop rate against the curvature at the peak, both normalized to the value the loop was tuned at. Gradient ascent is a rising diagonal, so a flatter peak makes it 2.5 times too slow and a sharper peak 2.5 times too fast. The Newton step is a flat line at one."><div class="claim">
+<p>Read the diagonal: tune at <span class="math inline">\(|H| = 1\)</span>, and if erosion or an off-design site flattens the peak to <span class="math inline">\(|H| = 0.4\)</span> the loop runs <span class="math inline">\(2.5\times\)</span> <strong>too slow</strong>; sharpen it to <span class="math inline">\(2.5\)</span> and it runs <span class="math inline">\(2.5\times\)</span> <strong>too fast</strong>, toward the stability edge. Nothing in the loop reports either. The flat line is what a Newton step buys: <span class="math inline">\(\kappa\)</span> <strong>is</strong> the settling time rather than merely influencing it.</p>
 </div>
 </section>
 <section id="which-is-the-tuning-complaint-answered" class="slide level2 smaller">
@@ -335,7 +345,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <p>A version of ESC that “converges very fast but it takes too long to tune its parameters.”</p>
 </div>
 <div class="card">
-<p><span class="cardh">What the TORQUE paper says</span></p>
+<p><span class="cardh">What <a href="#/references">[RKAJ24]</a> says</span></p>
 <p>“All parameters with the exception of dither frequency and amplitude were obtained by trial and error.”</p>
 </div>
 </div>
@@ -343,7 +353,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <p>Under gradient ascent, <span class="math inline">\(\kappa\)</span> has to be re-found whenever <span class="math inline">\(H\)</span> changes, and <span class="math inline">\(H\)</span> changes with the site, with the blade condition, and with the operating point. Under a matrix gain, <span class="math inline">\(\kappa\)</span> is set once from the settling time you want.</p>
 </div>
 <aside class="notes">
-<p>This is the strongest single argument in the deck, because it addresses the thing he actually complained about rather than the thing the literature is organised around. Note that it holds even in the scalar case, where the matrix gain is just division by an estimated number.</p>
+<p>This is the strongest single argument in the deck, because it addresses the thing he actually complained about rather than the thing the literature is organized around. Note that it holds even in the scalar case, where the matrix gain is just division by an estimated number.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -402,15 +412,30 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <h1>What it costs</h1>
 <p>Three objections. One of them is a hard gate.</p>
 </section>
-<section id="the-curvature-estimate-is-noisier-but-not-where-it-matters" class="slide level2 smaller">
-<h2>The curvature estimate is noisier, but not where it matters</h2>
-
-<img data-src="assets/zap-relerr.svg" alt="Relative error against distance from the peak, on log axes. The gradient's relative error rises steeply as the peak is approached; the curvature's is a flat line. They cross at about seven per cent from the peak." class="r-stretch"><p>In absolute terms <span class="math inline">\(\sigma(\hat H)/\sigma(\hat g) \approx (8/a)\,2^{-5/6} \approx 14\)</span> at the published dither amplitude.</p>
+<section id="why-the-curvature-is-better-conditioned-near-the-peak" class="slide level2 smaller">
+<h2>Why the curvature is better conditioned near the peak</h2>
+<p>Signal amplitudes are <span class="math inline">\(ga\)</span> at <span class="math inline">\(\omega\)</span> and <span class="math inline">\(\tfrac14Ha^2\)</span> at <span class="math inline">\(2\omega\)</span>; the demodulators divide by <span class="math inline">\(a\)</span> and <span class="math inline">\(a^2/8\)</span>. With <span class="math inline">\(D\)</span> the distance from the peak and <span class="math inline">\(g \approx HD\)</span> near it:</p>
+<p><span class="math display">\[\frac{\sigma(\hat H)}{\sigma(\hat g)} = \frac{8}{a}\,2^{-5/6},
+\qquad
+\frac{\text{rel}_H}{\text{rel}_g}
+= \frac{\sigma(\hat H)/|H|}{\sigma(\hat g)/|g|}
+= D\,\frac{\sigma(\hat H)}{\sigma(\hat g)}\]</span></p>
 <div class="claim">
-<p>But the gradient <strong>signal</strong> vanishes at the optimum and the curvature signal does not. In relative terms the two cross at about 7% of <span class="math inline">\(u_{opt}\)</span> from the peak, and inside that the curvature is the better conditioned of the two.</p>
+<p><span class="math inline">\(\text{rel}_g\)</span> <strong>diverges</strong> at the optimum because <span class="math inline">\(g \to 0\)</span> there. <span class="math inline">\(\text{rel}_H\)</span> does not, because <span class="math inline">\(H\)</span> does not. So there is always a neighborhood inside which the curvature is the better conditioned of the two, and it ends at <span class="math inline">\(D = a\,2^{5/6}/8 = 3.0\%\)</span> of <span class="math inline">\(u_{\text{opt}}\)</span>.</p>
+</div>
+<div class="warn">
+<p><span class="math inline">\(\sigma(\hat H)/\sigma(\hat g)\)</span> carries units of <span class="math inline">\(1/u\)</span>, so it is not a bare number: <span class="math inline">\(33\)</span> per <span class="math inline">\(u_{\text{opt}}\)</span>, <span class="math inline">\(15\)</span> per N<span class="math inline">\(\cdot\)</span>m<span class="math inline">\(\cdot\)</span>rpm<span class="math inline">\(^{-2}\)</span>. Only <span class="math inline">\(D\)</span> is unit-free.</p>
+</div>
+</section>
+<section id="the-crossover-and-where-the-loop-sits" class="slide level2 smaller">
+<h2>The crossover, and where the loop sits</h2>
+
+<img data-src="assets/zap-relerr.svg" class="fig-tall r-stretch" alt="Relative error against distance from the peak, on log axes. The gradient's relative error rises steeply as the peak is approached; the curvature's is a flat line. They cross at about three per cent from the peak."><div class="claim">
+<p>After convergence the loop sits about <span class="math inline">\(0.5\%\)</span> out, the finite-difference bias from Q1. That is comfortably inside the crossover. <strong>The regime where Newton methods are supposed to be impossible is the regime the turbine operates in.</strong></p>
 </div>
 <aside class="notes">
-<p>This is the result I did not expect. The received wisdom is that second-order information is hopeless under noise, and in absolute terms that is right. But a controller near convergence is estimating a gradient whose true value is approaching zero, so its relative error diverges, while the curvature it is trying to measure stays put. The regime where Newton methods are supposed to be impossible is the regime where the turbine actually operates.</p>
+<p>The spectral tilt is a secondary help, not the mechanism. Turbulence falling as f to the minus five thirds makes the second harmonic quieter than the first by two to the minus five sixths in amplitude, widening the crossover by a factor of 1.78. Flat noise would still give a crossover, at 1.7 per cent.</p>
+<p>So the received wisdom that second-order information is hopeless under noise is right in absolute terms and misleading here, because it compares the wrong quantity. What a Newton step needs is relative accuracy in H, not absolute.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -423,11 +448,50 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
           display:block!important;
       }</style></aside>
 </section>
-<section id="the-gate-2omega-must-fit-inside-the-plant" class="slide level2 smaller">
-<h2>The gate: <span class="math inline">\(2\omega\)</span> must fit inside the plant</h2>
+<section id="the-second-harmonic-has-to-fit-inside-the-rotor" class="slide level2 smaller">
+<h2>The second harmonic has to fit inside the rotor</h2>
 
 <img data-src="assets/zap-bandwidth.svg" alt="Plant gain at the second harmonic against the ratio of two omega to the plant bandwidth. The Kumar and Rotea 2022 setting sits at 0.32 with gain 0.95. The two wind tunnel settings sit at 1.6 and 2.0, with gains 0.53 and 0.45, inside a shaded region marked outside the passband." class="r-stretch"><div class="warn">
 <p>The rotor is a low-pass filter. If <span class="math inline">\(2\omega\)</span> falls outside its passband the second harmonic is attenuated and phase-shifted, and the curvature estimate is biased by an amount nobody is tracking.</p>
+</div>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(V\)</span></th>
+<th>rotor <span class="math inline">\(1/\tau\)</span></th>
+<th><span class="math inline">\((1/\tau)/2\omega\)</span> at <span class="math inline">\(T=150\)</span> s</th>
+<th><span class="math inline">\(T\)</span> needed for <span class="math inline">\(2\times\)</span> margin</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4 m/s</td>
+<td><span class="math inline">\(0.078\)</span></td>
+<td><span class="math inline">\(0.93\)</span></td>
+<td><span class="math inline">\(321\)</span> s</td>
+</tr>
+<tr class="even">
+<td>8 m/s</td>
+<td><span class="math inline">\(0.157\)</span></td>
+<td><span class="math inline">\(1.87\)</span></td>
+<td><span class="math inline">\(160\)</span> s</td>
+</tr>
+<tr class="odd">
+<td>12 m/s</td>
+<td><span class="math inline">\(0.235\)</span></td>
+<td><span class="math inline">\(2.80\)</span></td>
+<td><span class="math inline">\(107\)</span> s</td>
+</tr>
+</tbody>
+</table>
+<div class="warn">
+<p>At <span class="math inline">\(4\)</span> m/s the second harmonic is <strong>above</strong> the rotor corner: the Hessian channel is outside the plant. And shortening <span class="math inline">\(T\)</span> to converge faster pushes <span class="math inline">\(2\omega\)</span> further out, so speed and curvature pull in opposite directions.</p>
 </div>
 <aside class="notes">
 <p>The numbers decide feasibility case by case. For the torque-gain problem in Kumar and Rotea 2022, the plant time constant is 8 seconds and the dither is 0.02 radians per second, so two omega lands at 0.32 of the bandwidth: gain 0.95, phase lag 18 degrees. That is comfortably usable.</p>
@@ -445,15 +509,63 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
           display:block!important;
       }</style></aside>
 </section>
-<section id="the-timescales-are-the-wrong-way-round" class="slide level2 smaller">
-<h2>The timescales are the wrong way round</h2>
+<section id="the-timescales-are-reversed-and-that-is-mostly-good" class="slide level2 smaller">
+<h2>The timescales are reversed, and that is mostly good</h2>
 
-<img data-src="assets/zap-timescales.svg" class="fig-tall r-stretch" alt="Two boxes. Zap assumes epsilon over alpha tends to infinity so the Jacobian moves fast and the parameter slowly. This plant has theta-star drifting over minutes and H drifting over months, so the Jacobian is the slow variable. A note proposes reversing the ordering."><div class="warn">
-<p>Zap’s high-gain condition <span class="math inline">\(\varepsilon_n/\alpha_n \to \infty\)</span> puts the <strong>noisier</strong> estimate on the <strong>shorter</strong> averaging window. That is right when the Jacobian is cheap, as in Q-learning. It is backwards here.</p>
+<img data-src="assets/zap-timescales.svg" class="fig-tall r-stretch" alt="Two boxes: what Zap assumes, the Jacobian estimate fast and the parameter slow; and what this plant does, the optimum drifting over minutes and the curvature over months, so the Jacobian is the slow variable. A third box keeps Meyn's recursion and feeds it the demodulated Hessian as innovation."><div class="claim">
+<p>Zap’s separation is structurally unavailable here: <span class="math inline">\(\hat H\)</span> and <span class="math inline">\(\theta\)</span> both update once per dither period. It is also <strong>not needed</strong>, because <span class="math inline">\(H\)</span> barely moves where it matters, only a <span class="math inline">\(20\%\)</span> swing across the terminal scatter.</p>
+</div>
+</section>
+<section id="sizing-the-rolling-estimate" class="slide level2 smaller">
+<h2>Sizing the rolling estimate</h2>
+<p>Do not use the demodulated <span class="math inline">\(\hat H_n\)</span> as the gain. Use it as the <strong>innovation</strong> in Meyn’s own recursion, with a small <span class="math inline">\(\gamma\)</span>:</p>
+<p><span class="math display">\[\hat A_{n+1} = \hat A_n + \gamma\big(\hat H_n - \hat A_n\big),
+\qquad
+\operatorname{Var}(\hat A) = \frac{\gamma}{2-\gamma}\operatorname{Var}(\hat H),
+\qquad N_H = \frac{2}{\gamma}-1\]</span></p>
+<p>One period of <span class="math inline">\(\hat H\)</span> is far too noisy to use raw, so the recursion is not an optimization but the only thing that makes the estimate exist. Sizing it from the spectral argument, with <span class="math inline">\(\sigma(\hat H) = 7.1\,|H|\)</span> per period:</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>target rel. error</th>
+<th><span class="math inline">\(N_H\)</span></th>
+<th><span class="math inline">\(1/\gamma\)</span> (periods)</th>
+<th>wall clock at <span class="math inline">\(T=600\)</span> s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(50\%\)</span></td>
+<td>201</td>
+<td>101</td>
+<td><span class="math inline">\(17\)</span> h</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(20\%\)</span></td>
+<td>1255</td>
+<td>628</td>
+<td><span class="math inline">\(4.4\)</span> d</td>
+</tr>
+</tbody>
+</table>
+<div class="warn">
+<p>Simulation says this is <strong>optimistic by about <span class="math inline">\(4\times\)</span> in <span class="math inline">\(\sigma(\hat H)\)</span></strong>. The measured requirement is on the <em>Simulated</em> slides below. Quote those, not this table.</p>
+</div>
+<div class="claim">
+<p>Meyn’s structure survives intact; only the ordering flips. An estimator running at days against erosion at months is still a two-timescale separation, though the measured margin below is nearer <span class="math inline">\(5\)</span>–<span class="math inline">\(10\times\)</span> than <span class="math inline">\(100\times\)</span>.</p>
+</div>
+<div class="warn">
+<p>It cannot help the transient. Over <span class="math inline">\(u: 4.5\to2.2\)</span>, <span class="math inline">\(|H|\)</span> moves <span class="math inline">\(1.8\times\)</span> and not monotonically, dipping to <span class="math inline">\(0.72\times\)</span> near <span class="math inline">\(u=3\)</span>. A day-long estimator cannot track minutes, so early convergence stays uncalibrated.</p>
 </div>
 <aside class="notes">
-<p>The curvature of the C_P surface is a property of the blade. It changes as the blade erodes, over weeks and months. The optimum itself moves faster than that, with the operating point. So the natural design is the reverse of Zap: identify A slowly and carefully, and let theta move on the faster timescale.</p>
-<p>That is a defensible algorithm, but it is no longer Zap, and Meyn’s two-timescale convergence theory does not cover it. Something would have to be put in its place. This is the part of the proposal that is genuinely open rather than merely unimplemented.</p>
+<p>This is the shape of the proposal, and it is a much more modest object than “Zap on a turbine”. Keep the recursion, keep the regularized inverse, run the gain slowly, and claim only that a calibrated preconditioner beats an uncalibrated one. Meyn’s two-timescale convergence theory does not cover the reversed ordering and is not needed for that claim.</p>
+<p>Note the 26 hours is not a cost in lost production. The estimator rides the dither that is already there; it simply takes that long to average down. The turbine keeps operating throughout.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -475,11 +587,17 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 </div>
 <div class="card">
 <p><span class="cardh">What the matrix gain adds</span></p>
-<p>Gain calibration, transient behaviour, and conditioning in more than one dimension. It does <strong>not</strong> improve the terminal variance.</p>
+<p>Gain calibration, transient behavior, and conditioning in more than one dimension. It does <strong>not</strong> improve the terminal variance.</p>
 </div>
 </div>
+<p>Both reach the same asymptotic covariance, the one no unbiased scheme beats:</p>
+<p><span class="math display">\[\Sigma^{\text{PR}} = A^{-1}\Sigma_W A^{-\top},
+\qquad
+A = \nabla^2 J(\theta^\star), \quad \Sigma_W = \text{covariance of the estimator noise}\]</span></p>
+<p>Averaging gets there by keeping a running mean of the iterates, <span class="math inline">\(\bar\theta_n =
+\tfrac1n\sum_{k\le n}\theta_k\)</span>, and needs no <span class="math inline">\(A\)</span> at all. Zap gets there by estimating <span class="math inline">\(A\)</span> and inverting it.</p>
 <div class="claim">
-<p>So the case for Zap here has to rest on tuning effort and on the multivariable yaw problem. If it is argued on variance it will lose to four lines of averaging.</p>
+<p>So the case for a matrix gain here rests on <strong>tuning effort and conditioning</strong>, not on terminal variance. Argued on variance it loses to a running mean. And note neither is in the published turbine loops, which are constant-gain and so do not average down at all.</p>
 </div>
 </section></section>
 <section>
@@ -527,8 +645,8 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <p><strong>Two measurements, whatever <span class="math inline">\(p\)</span> is.</strong> That is the property the deterministic scheme cannot match, and it is the entire case for going stochastic on this plant.</p>
 </div>
 </section>
-<section id="where-a_n1-comes-from-now" class="slide level2 smaller">
-<h2>Where <span class="math inline">\(A_{n+1}\)</span> comes from now</h2>
+<section id="two-replacements-for-the-second-harmonic" class="slide level2 smaller">
+<h2>Two replacements for the second harmonic</h2>
 <p>The second harmonic is gone with the tone. Two replacements:</p>
 <div class="cols2">
 <div class="card">
@@ -565,7 +683,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <h2>The Bernoulli trap</h2>
 
 <img data-src="assets/zap-probes.svg" class="fig-tall r-stretch" alt="Four panels. Left column, a Bernoulli plus-minus-one probe and its square minus one, which is identically zero. Right column, a Gaussian probe and its square minus one, which fluctuates with variance two."><div class="warn">
-<p>The natural stochastic analogue of the 2019 square wave is a random <span class="math inline">\(\pm1\)</span> sign sequence. It gives the gradient, but <span class="math inline">\(\xi^2 \equiv 1\)</span>, so <span class="math inline">\(\mathrm{Var}(\xi^2)=0\)</span> and the Stein estimator <strong>divides by zero</strong>. Bernoulli probing carries no curvature information at all.</p>
+<p>The natural stochastic analogue of the <a href="#/references">[CLR19]</a> square wave is a random <span class="math inline">\(\pm1\)</span> sign sequence. It gives the gradient, but <span class="math inline">\(\xi^2 \equiv 1\)</span>, so <span class="math inline">\(\mathrm{Var}(\xi^2)=0\)</span> and the Stein estimator <strong>divides by zero</strong>. Bernoulli probing carries no curvature information at all.</p>
 </div>
 <aside class="notes">
 <p>Verified numerically: with a plus-minus-one probe, g-hat recovers the true gradient to four decimals while the curvature estimate is undefined. With a Gaussian probe of the same amplitude, both come back correct.</p>
@@ -582,12 +700,15 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
           display:block!important;
       }</style></aside>
 </section>
-<section id="what-it-costs-1" class="slide level2 smaller">
-<h2>What it costs</h2>
+<section id="where-each-scheme-weights-the-turbulence" class="slide level2 smaller">
+<h2>Where each scheme weights the turbulence</h2>
 
-<img data-src="assets/zap-spread.svg" alt="Turbulence spectrum on log axes. A violet bracket spans everything below the sign-sequence Nyquist frequency, labelled random signs weight all of this evenly. A green line at that frequency is labelled alternating signs weight only this bin. A gold arrow between them marks a factor of sixteen in noise power." class="r-stretch"><p>Both schemes difference two windows, so both reject DC. The difference is <em>where</em> each weights the turbulence.</p>
+<img data-src="assets/zap-spread.svg" alt="Turbulence spectrum on log axes. A violet bracket spans everything below the sign-sequence Nyquist frequency, labeled random signs weight all of this evenly. A green line at that frequency is labeled alternating signs weight only this bin. A gold arrow between them marks a factor of sixteen in noise power." class="r-stretch"><p>Both schemes difference two windows, so both reject DC. The difference is <em>where</em> each weights the turbulence.</p>
 <div class="warn">
-<p>An alternating sign sequence concentrates the estimator’s noise weighting in one bin, which you place above the spectral peak. A random sequence is white, so it weights everything below its Nyquist frequency evenly, including the energy-containing range. Roughly <span class="math inline">\(16\times\)</span> in noise power, <span class="math inline">\(4\times\)</span> in the scatter of <span class="math inline">\(\hat g\)</span>.</p>
+<p>An alternating sign sequence concentrates the estimator’s noise weighting in one bin; a random sequence is white and weights everything below its Nyquist evenly. The tone therefore <em>can</em> be placed clear of the energy-containing range.</p>
+<div class="warn">
+<p>Two problems with pressing this. The ratio depends entirely on how long each random sign is held, which sets how many independent samples a run contains, and it swings from <span class="math inline">\(0.4\times\)</span> at a <span class="math inline">\(28\)</span> s hold to <span class="math inline">\(2.3\times\)</span> at a full <span class="math inline">\(150\)</span> s hold. And the published tone is not placed clear of anything: Kaimal <span class="math inline">\(fS(f)\)</span> peaks at <span class="math inline">\(U/4L = 0.0059\)</span> Hz and the dither sits at <span class="math inline">\(0.0067\)</span> Hz. <strong>It is on the peak.</strong></p>
+</div>
 </div>
 <aside class="notes">
 <p>There is a second cost that does not show on this plot. ESC dithers continuously and treats the rotor response as part of a transfer function, with phase compensation absorbing the lag. Holding a perturbed operating point means waiting out the rotor, about six seconds of time constant, so roughly thirty seconds of dead time before the averaging window can even start. At four to six measurements per iteration that is two to three minutes of the budget spent settling rather than measuring.</p>
@@ -603,8 +724,8 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
           display:block!important;
       }</style></aside>
 </section>
-<section id="what-it-buys-1" class="slide level2 smaller">
-<h2>What it buys</h2>
+<section id="frequency-slots-against-measurements" class="slide level2 smaller">
+<h2>Frequency slots against measurements</h2>
 <p>The deterministic Hessian needs a separate channel for every entry of <span class="math inline">\(\nabla^2\Gamma\)</span>, at a distinct frequency product, none colliding with any <span class="math inline">\(\omega_k\)</span> or <span class="math inline">\(2\omega_k\)</span>, all inside the plant bandwidth.</p>
 <table class="caption-top">
 <thead>
@@ -764,7 +885,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <tr class="even">
 <td>scatter in <span class="math inline">\(\hat g\)</span></td>
 <td>reference</td>
-<td>about <span class="math inline">\(4\times\)</span> worse</td>
+<td><span class="math inline">\(0.4\)</span> to <span class="math inline">\(2.3\times\)</span>, hold-dependent</td>
 </tr>
 <tr class="odd">
 <td>settling dead time</td>
@@ -784,7 +905,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 </tbody>
 </table>
 <div class="claim">
-<p>The tone wins every row except one. That row is spectral demand, and it is the row that decides the farm-scale problem.</p>
+<p>The tone wins on orthogonality, measurement count and actuation smoothness, and loses on spectral demand, which is the row that decides the farm-scale problem. <strong>Noise weighting is a draw</strong>, not a win: it would favor the tone only if the tone were placed off the turbulence peak, and at <span class="math inline">\(T = 150\)</span> s it is not.</p>
 </div>
 </section>
 <section id="reading-the-table-honestly" class="slide level2 smaller">
@@ -800,7 +921,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 </div>
 </div>
 <div class="warn">
-<p>The load row deserves more weight than it usually gets. Kumar and Rotea 2022, Figure 13: the <strong>single</strong> step in torque gain when the controller switches on raises drivetrain torsion DEL by 70% at 4 m/s. SPSA makes a step like that every iteration, in both directions, and nobody has costed that out.</p>
+<p>The load row deserves more weight than it usually gets. Kumar and Rotea 2022, Figure 13 of <a href="#/references">[RKAJ24]</a>: the <strong>single</strong> step in torque gain when the controller switches on raises drivetrain torsion DEL by 70% at 4 m/s. SPSA makes a step like that every iteration, in both directions, and nobody has costed that out.</p>
 </div>
 </section>
 <section id="the-synthesis-this-points-to" class="slide level2 smaller">
@@ -837,13 +958,107 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
+</section></section>
+<section>
+<section id="simulated" class="title-slide slide level1 divider center">
+<h1>Simulated</h1>
+<p>Everything so far is algebra on a fitted curve. This section runs it.</p>
+</section>
+<section id="how-the-simulation-is-built" class="slide level2 smaller">
+<h2>How the simulation is built</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">The plant</span></p>
+<p>NREL 5 MW rotor. <span class="math inline">\(I_{\text{eff}}\dot\Omega = \tau_{\text{aero}}(V,\Omega) - k\Omega^2\)</span> integrated with <strong>diffrax</strong> (Tsit5, adaptive, rtol <span class="math inline">\(10^{-6}\)</span>). Heier <span class="math inline">\(C_P\)</span> remapped to <span class="math inline">\((\lambda^\star, C_P^{\max}) = (7.5, 0.49)\)</span>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">The loop</span></p>
+<p>Sinusoidal dither <span class="math inline">\(u_n + a\sin\omega t\)</span> at <span class="math inline">\(a = 13.6\%\)</span> of <span class="math inline">\(u^\star\)</span>, the [KR22] amplitude. Demodulate <span class="math inline">\(\ln P\)</span> at <span class="math inline">\(\omega\)</span> and <span class="math inline">\(2\omega\)</span> over each period, then update. Turbulence is an IEC Kaimal realization at <span class="math inline">\(\mathrm{TI} = 10\%\)</span>.</p>
+</div>
+</div>
+<div class="claim">
+<p>One knob, <code>sharpness</code>, scales the deviation of <span class="math inline">\(C_P\)</span> from its peak. It leaves <span class="math inline">\(\lambda^\star\)</span> and <span class="math inline">\(C_P^{\max}\)</span> untouched and multiplies <span class="math inline">\(|H|\)</span> at the optimum by exactly that factor, verified to three digits. That is how the plant curvature is varied without changing anything else.</p>
+</div>
+<aside class="notes">
+<p>Source is in the rotea repository under src, as a small JAX package plus four experiment scripts that write npz files. The figures on the next three slides read those files directly, so a slide cannot drift away from the number the simulation produced.</p>
+<p>One implementation note worth keeping. The equilibrium tip-speed ratio is found by bisection on phi of lambda equals C times u, and bisection is a chain of comparisons, so autodiff through it returns zero. The derivative is supplied instead by the implicit function theorem, as a custom JVP. Without that, every gradient and curvature in the model is silently zero.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="simulated-the-demodulator-and-what-the-rotor-does-to-it" class="slide level2 smaller">
+<h2>Simulated: the demodulator, and what the rotor does to it</h2>
+
+<img data-src="assets/sim-gate.svg" class="fig-hero r-stretch" alt="Error in the demodulated estimates against the second harmonic in units of the rotor pole, on a log x axis. The curvature error is within 5 percent for 2 omega tau below 0.27 and falls to minus 40 percent at 0.8. The published 150 second dither sits at 0.53, where the curvature reads 21 percent low. The gradient error has a floor near minus 6.4 percent."><div class="claim">
+<p>Gain held <span class="math inline">\(5\%\)</span> off the peak in steady wind, so the true <span class="math inline">\(J''\)</span> is known and the only error is the estimator’s. <span class="math inline">\(\hat H\)</span> is <strong>exact to <span class="math inline">\(0.8\%\)</span></strong> once <span class="math inline">\(2\omega\tau_{\text{rotor}} \lesssim 0.1\)</span>, so the identity survives the rotor dynamics. At the published <span class="math inline">\(T = 150\)</span> s, <span class="math inline">\(\hat H = 0.79\,J''\)</span>: right sign, right shape, magnitude a fifth too small.</p>
+</div>
+</section>
+<section id="why-it-reads-low-and-how-to-undo-it" class="slide level2 smaller">
+<h2>Why it reads low, and how to undo it</h2>
+<p>Fitting the whole sweep, the bias is <span class="math inline">\(\hat H/J'' = \big(1+(2\omega\tau)^2\big)^{-1} = |G(2\omega)|^2\)</span>, to <span class="math inline">\(1.2\)</span> percentage points rms. <strong>Two</strong> factors of <span class="math inline">\(|G|\)</span>, for two separate reasons:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">attenuation</span></p>
+<p>The rotor is a low-pass between torque gain and power, so the second harmonic arrives smaller by <span class="math inline">\(|G(2\omega)| = (1+(2\omega\tau)^2)^{-1/2}\)</span>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">phase mismatch</span></p>
+<p>It also arrives late, by <span class="math inline">\(\phi = -\arctan 2\omega\tau\)</span>. Correlating against an in-phase <span class="math inline">\(\cos2\omega t\)</span> recovers <span class="math inline">\(\cos\phi\)</span>, which is the same factor again.</p>
+</div>
+</div>
+<div class="warn">
+<p>The gradient is attenuated too, just less, so the two <strong>partly cancel</strong> in <span class="math inline">\(\hat g/\hat H\)</span>. Dynamic parts only: <span class="math inline">\(\hat g/g = 0.946\)</span>, <span class="math inline">\(\hat H/H = 0.791\)</span>, so the Newton step is inflated by <span class="math inline">\(1.20\times\)</span>, matching the predicted <span class="math inline">\(|G(\omega)|^2/|G(2\omega)|^2 = 1.199\)</span>.</p>
+</div>
+<div class="openq">
+<p>So <strong>divide it out</strong>: <span class="math inline">\(\hat H_{\text{corr}} = \hat H\,(1+(2\omega\tau)^2)\)</span>, with <span class="math inline">\(\tau\)</span> from the rotor model you already have. A calibration, not a stability threat: at the published <span class="math inline">\(K=0.4\)</span> the inflated gain is <span class="math inline">\(0.48\)</span> against a bound of <span class="math inline">\(2\)</span>. But left uncorrected it defeats the point of a matrix gain, which was to make <span class="math inline">\(\kappa\)</span> <strong>be</strong> the settling time.</p>
+</div>
+</section>
+<section id="simulated-the-curvature-does-leave-the-loop-gain" class="slide level2 smaller">
+<h2>Simulated: the curvature does leave the loop gain</h2>
+
+<img data-src="assets/sim-curvature.svg" class="fig-hero r-stretch" alt="Two panels of tip-speed ratio against dither period. Left, gradient ascent on three plants whose curvature differs by a factor of 0.6, 1.0 and 1.6: the three trajectories settle in 10, 5 and 2 periods respectively. Right, the Newton step on the same three plants: all three settle in 4 periods and lie on top of one another."><div class="claim">
+<p><span class="math inline">\(\kappa\)</span> tuned <strong>once</strong>, for <span class="math inline">\(K = 0.4\)</span> on the <span class="math inline">\(|H|\times1.0\)</span> plant, never retuned; all six runs start at <span class="math inline">\(1.2\,u^\star\)</span> in steady wind. Gradient ascent settles in <span class="math inline">\(10\)</span>, <span class="math inline">\(5\)</span> and <span class="math inline">\(2\)</span> periods as <span class="math inline">\(|H|\)</span> goes <span class="math inline">\(0.6 \to 1.0 \to 1.6\)</span>, a <strong><span class="math inline">\(5\times\)</span> spread</strong>. The Newton step settles in <span class="math inline">\(4\)</span> on all three, a <strong><span class="math inline">\(1.0\times\)</span> spread</strong>. The central claim of the deck, and it holds.</p>
+</div>
+</section>
+<section id="simulated-what-the-gain-estimate-costs" class="slide level2 smaller">
+<h2>Simulated: what the gain estimate costs</h2>
+
+<img data-src="assets/sim-rolling.svg" class="fig-hero r-stretch" alt="Scatter of the rolling curvature estimate against the number of periods it averages, on log axes. Measured points fall from 3000 percent at one period to 61 percent at 399, faster than the white-noise square-root line. Reaching 20 percent needs about 2100 periods, 15 days at a 600 second dither."><div class="warn">
+<p>Gain held at <span class="math inline">\(u^\star\)</span>, open loop, <span class="math inline">\(300\)</span> periods of Kaimal turbulence. One period’s <span class="math inline">\(\hat H\)</span> scatters by <strong><span class="math inline">\(3000\%\)</span></strong> of <span class="math inline">\(|H|\)</span>, four times the spectral estimate. Useless on its own.</p>
+</div>
+<div class="claim">
+<p>The rolling filter rescues it <strong>faster than white noise would</strong>, <span class="math inline">\(N_H^{-0.72}\)</span> against <span class="math inline">\(N_H^{-1/2}\)</span>, because consecutive errors are negatively correlated in band-limited turbulence. Reaching <span class="math inline">\(20\%\)</span> needs <span class="math inline">\(N_H \approx 2100\)</span> periods, about <strong>15 days</strong> at <span class="math inline">\(T = 600\)</span> s.</p>
+</div>
+<aside class="notes">
+<p>Fifteen days is the number that decides whether this is worth doing, and it is much worse than the 26 hours the spectral estimate suggested. It is still a separation against blade erosion at months, but perhaps five to ten times rather than a hundred, so it is a real constraint rather than a comfortable one.</p>
+<p>Two honest caveats on it. The 20 per cent target is a judgement, chosen because the plant curvature itself swings 20 per cent across the terminal scatter, so resolving finer buys nothing. And 2100 periods is extrapolated along the fitted slope from 399, which is the longest run made here.</p>
+<p>The turbine is not idle for those fifteen days. It rides the dither that is already there; the estimate simply takes that long to average down.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section id="verdict" class="slide level2 smaller">
 <h2>Verdict</h2>
 <div class="cols3">
 <div class="card">
 <p><span class="cardh">Tone, feasible now</span></p>
-<p>Single-turbine torque gain. <span class="math inline">\(2\omega\)</span> sits at 0.32 of the plant bandwidth at the published tuning, and with <span class="math inline">\(p=1\)</span> there is no frequency plan to solve.</p>
+<p>Single-turbine torque gain, <span class="math inline">\(p=1\)</span>, so no frequency plan to solve. But <strong>slow the dither</strong>: simulation puts <span class="math inline">\(2\omega\tau = 0.53\)</span> at <span class="math inline">\(T=150\)</span> s, where <span class="math inline">\(\hat H\)</span> reads <span class="math inline">\(21\%\)</span> low. <span class="math inline">\(T = 600\)</span> s brings that under <span class="math inline">\(1\%\)</span>.</p>
 </div>
 <div class="card">
 <p><span class="cardh">Tone, after retuning</span></p>
@@ -866,7 +1081,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <p>Run the existing LP-ESC at a fixed torque gain, demodulate at <span class="math inline">\(2\omega\)</span>, and compare <span class="math inline">\(\hat H\)</span> against the curvature of the simulator’s own <span class="math inline">\(C_P\)</span> surface. Pure measurement, no loop closed.</p>
 </div>
 <div class="card">
-<p><span class="cardh">The gate</span></p>
+<p><span class="cardh">Fitting <span class="math inline">\(2\omega\)</span> inside the rotor</span></p>
 <p>Does <span class="math inline">\(\hat H\)</span> converge to within, say, 20% over a plausible averaging window, and does its scatter match the <span class="math inline">\((8/a)2^{-5/6}\)</span> prediction?</p>
 </div>
 </div>
@@ -904,11 +1119,27 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 </div>
 </div>
 <div class="small">
-<p>Meyn, <em>Control Systems and Reinforcement Learning</em>, §8.5 · Ghaffari, Krstic &amp; Nesic, <em>Automatica</em> 2012 · Spall, <em>IEEE TAC</em> 2000 (both attributions to be checked) · Kumar &amp; Rotea, <em>Energies</em> 2022 · Rotea et al., <em>TORQUE</em> 2024</p>
+<p>Meyn, <em>Control Systems and Reinforcement Learning</em>, §8.5 · Ghaffari, Krstic &amp; Nesic, <em>Automatica</em> 2012 · Spall, <em>IEEE TAC</em> <strong>45</strong> (2000) 1839–1853 · Kumar &amp; Rotea, <em>Energies</em> 2022 · Rotea, Kumar, Aju &amp; Jin, <em>J. Phys. Conf. Ser.</em> 2767 (2024) 032043</p>
 </div>
+</div>
+</section>
+<section id="references" class="slide level2 smaller">
+<h2>References</h2>
+<div class="refs">
+<p><strong>[R17]</strong>&nbsp; M. A. Rotea, <em>Logarithmic power feedback for extremum seeking control of wind turbines</em>, IFAC-PapersOnLine <strong>50</strong>(1) (2017) 4504–4509. <a href="https://doi.org/10.1016/j.ifacol.2017.08.381">doi:10.1016/j.ifacol.2017.08.381</a></p>
+<p><strong>[CLR19]</strong>&nbsp; U. Ciri, S. Leonardi &amp; M. A. Rotea, <em>Evaluation of log-of-power extremum seeking control for wind turbines using large eddy simulations</em>, Wind Energy <strong>22</strong> (2019) 992–1002. <a href="https://doi.org/10.1002/we.2336">doi:10.1002/we.2336</a></p>
+<p><strong>[KR22]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Wind turbine power maximization using log-power proportional-integral extremum seeking</em>, Energies <strong>15</strong> (2022) 1004. <a href="https://doi.org/10.3390/en15031004">doi:10.3390/en15031004</a></p>
+<p><strong>[KR24]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Optimal tip-speed ratio for degraded blades</em>, Wind Energy Science <strong>9</strong> (2024) 2133–2146. <a href="https://doi.org/10.5194/wes-9-2133-2024">doi:10.5194/wes-9-2133-2024</a></p>
+<p><strong>[RKAJ24]</strong>&nbsp; M. A. Rotea, D. Kumar, E. J. Aju &amp; Y. Jin, <em>Multi-row extremum seeking for wind farm power maximization</em>, J. Phys. Conf. Ser. <strong>2767</strong> (2024) 032043. <a href="https://doi.org/10.1088/1742-6596/2767/3/032043">doi:10.1088/1742-6596/2767/3/032043</a></p>
+<p><strong>[MGR24]</strong>&nbsp; S. P. Mulders, N. Gallo &amp; M. A. Rotea, <em>Analysis of extremum seeking control for wind turbine torque controller optimization by aerodynamic and generator power objectives</em>, ACC (2024). <a href="https://arxiv.org/abs/2407.08059">arXiv:2407.08059</a></p>
+<p><strong>[GKN12]</strong>&nbsp; A. Ghaffari, M. Krstić &amp; D. Nešić, <em>Multivariable Newton-based extremum seeking</em>, Automatica <strong>48</strong> (2012) 1759–1767. <a href="https://doi.org/10.1016/j.automatica.2012.05.059">doi:10.1016/j.automatica.2012.05.059</a></p>
+<p><strong>[S00]</strong>&nbsp; J. C. Spall, <em>Adaptive stochastic approximation by the simultaneous perturbation method</em>, IEEE Trans. Automat. Contr. <strong>45</strong> (2000) 1839–1853. <a href="https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_TAC00.pdf">PDF</a></p>
+<p><strong>[LM23]</strong>&nbsp; C. Lauand &amp; S. Meyn, <em>Quasi-stochastic approximation: design principles with applications to extremum seeking control</em>, IEEE Control Systems Magazine <strong>43</strong> (2023). <a href="https://doi.org/10.1109/MCS.2023.3291884">doi:10.1109/MCS.2023.3291884</a></p>
+<p><strong>[A22]</strong>&nbsp; N. J. Abbas et al., <em>A reference open-source controller for fixed and floating offshore wind turbines</em>, Wind Energy Science <strong>7</strong> (2022) 53–73. <a href="https://doi.org/10.5194/wes-7-53-2022">doi:10.5194/wes-7-53-2022</a></p>
+<p><strong>[J09]</strong>&nbsp; J. Jonkman, S. Butterfield, W. Musial &amp; G. Scott, <em>Definition of a 5-MW reference wind turbine</em>, NREL/TP-500-38060 (2009). <a href="https://www.nrel.gov/docs/fy09osti/38060.pdf">PDF</a> &nbsp;·&nbsp; <strong>[IEC]</strong>&nbsp; IEC 61400-1 ed.&nbsp;3, normal turbulence model.</p>
 </div>
 <div class="footnote">
-<p>Companion to <a href="gradient-estimation.html">Gradient Estimation for Wind Turbine Control</a>.</p>
+<p>Companion to <a href="gradient-estimation.html">Extremum Seeking Control of Wind Turbines</a>.</p>
 </div>
 
 

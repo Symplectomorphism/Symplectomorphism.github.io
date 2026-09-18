@@ -11,7 +11,7 @@
   <meta name="generator" content="quarto-1.10.18">
 
   <meta name="author" content="Aykut C. Satici">
-  <title>Aykut C. Satici – What Is the Estimator Targeting?</title>
+  <title>Aykut C. Satici – Where Does the Torque Gain Converge?</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -36,7 +36,7 @@
       vertical-align: middle;
     }
   </style>
-  <link rel="stylesheet" href="../../site_libs/revealjs/dist/theme/quarto-66bfa272d8925810456a5ca188cdb21b.css">
+  <link rel="stylesheet" href="../../site_libs/revealjs/dist/theme/quarto-af835542dd4516e730310c1c89a1739c.css">
   <link href="../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -128,7 +128,7 @@
       margin-right: 0; 
     }
   </style>
-<meta property="og:title" content="What Is the Estimator Targeting? – Aykut C. Satici">
+<meta property="og:title" content="Where Does the Torque Gain Converge? – Aykut C. Satici">
 <meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
 <meta property="og:image" content="https://Symplectomorphism.github.io/research/wind-esc/images/robot-control-lab-social.png">
 <meta property="og:site_name" content="Aykut C. Satici">
@@ -138,8 +138,8 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">What Is the Estimator Targeting?</h1>
-  <p class="subtitle">A 0.35 offset in published simulations, and why the two obvious explanations do not account for it</p>
+  <h1 class="title">Where Does the Torque Gain Converge?</h1>
+  <p class="subtitle">Every published run lands a few per cent below the design value, and the two obvious explanations do not account for it</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -153,14 +153,16 @@ Aykut C. Satici
 </div>
 
 </section>
-<section id="the-quantity-in-question" class="slide level2 smaller">
-<h2>The quantity in question</h2>
-<p>Below rated wind speed a turbine holds its tip-speed ratio at the value that maximizes the rotor’s power coefficient. Extremum seeking finds that value online, by dithering the torque gain and climbing.</p>
+<section id="what-is-actually-being-adapted" class="slide level2 smaller">
+<h2>What is actually being adapted</h2>
+<p>The controller has <strong>one knob</strong>: the torque gain <span class="math inline">\(k\)</span> in <span class="math inline">\(\tau_g = k\Omega^2\)</span>. Everything else follows from it. Setting <span class="math inline">\(\dot\Omega = 0\)</span> gave</p>
+<p><span class="math display">\[\frac{C_P(\lambda)}{\lambda^3} = \frac{2k}{\rho\pi R^5}\]</span></p>
+<p>so choosing <span class="math inline">\(k\)</span> chooses the tip-speed ratio <span class="math inline">\(\lambda_{\text{eq}}(k)\)</span> the rotor settles at. Extremum seeking estimates <span class="math inline">\(\partial \ln P/\partial k\)</span> and integrates until that estimate is zero.</p>
 <div class="claim">
-<p>Every convergence claim in this line of work is scored against <span class="math inline">\(\lambda^\star = 7.5\)</span>, the peak of a blade-element design curve. This deck asks whether that is the number the algorithms are actually converging to.</p>
+<p>So the quantity that <strong>converges</strong> is <span class="math inline">\(k\)</span>. The tip-speed ratio is not adjusted, estimated, or held. It is what you read off afterwards, through the monotone map <span class="math inline">\(k \mapsto \lambda_{\text{eq}}\)</span>.</p>
 </div>
 <aside class="notes">
-<p>The reason to care is specific. The degraded-blade work asks the controller to detect a shift in lambda-star of about 0.2, which is what erosion and soiling produce. Any systematic offset larger than that swamps the effect being looked for.</p>
+<p>Worth being firm about this, because CLR19 reports lambda-bar and it is easy to read that as the thing being controlled. It is not. Lambda is a state. The algorithm never forms it, because forming it would need the wind speed, which is the whole reason extremum seeking is being used.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -173,14 +175,33 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
+<section id="what-it-is-scored-against" class="slide level2 smaller">
+<h2>What it is scored against</h2>
+<p>The reference value comes from the design power-coefficient curve:</p>
+<p><span class="math display">\[k_{\text{opt}} = \tfrac12\rho\pi R^5\,\frac{C_P^{\max}}{\lambda_\star^3}
+\;=\; 2.2, \qquad\text{from}\quad C_P^{\max} = 0.49,\ \ \lambda_\star = 7.5\]</span></p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">Where that curve comes from</span></p>
+<p><strong>Blade-element momentum</strong>: chop each blade into spanwise strips, look up the lift and drag of the airfoil at each strip’s angle of attack, and integrate. That gives <span class="math inline">\(C_P(\lambda,\beta)\)</span> for the NREL 5 MW reference rotor.</p>
+</div>
+<div class="card">
+<p><span class="cardh">What that makes it</span></p>
+<p>A prediction from blade geometry and airfoil tables, in steady uniform flow. Not a measurement of the rotor in the simulation.</p>
+</div>
+</div>
+<div class="warn">
+<p>So <span class="math inline">\(k_{\text{opt}} = 2.2\)</span> inherits whatever that curve gets wrong. If its peak sits at the wrong <span class="math inline">\(\lambda\)</span>, the reference is wrong and every convergence claim is scored against the wrong number.</p>
+</div>
+</section>
 <section id="the-anomaly" class="slide level2 smaller">
 <h2>The anomaly</h2>
 
 <img data-src="assets/q1-anomaly.svg" alt="Left, converged torque gain against design for six LES conditions, every bar negative, from half a per cent to eight per cent low. Right, converged tip-speed ratio for the same six, every point above the design value of 7.5, reaching 7.85." class="r-stretch"><div class="warn">
-<p>Every converged torque gain in the 2019 large-eddy simulations sits <strong>below</strong> the design value, and every tip-speed ratio sits <strong>above</strong> it. Two algorithms, three wind speeds, two inflow conditions, and the sign never changes.</p>
+<p>Every converged torque gain in the large-eddy simulations of <a href="#/references">[CLR19]</a> sits <strong>below</strong> the design value, and every tip-speed ratio sits <strong>above</strong> it. Two algorithms, three wind speeds, two inflow conditions, and the sign never changes.</p>
 </div>
 <aside class="notes">
-<p>This is not a criticism of the paper. The offsets are small enough to read as agreement, and nothing in that paper depends on them. They become interesting only once you want to resolve 0.2 in lambda.</p>
+<p>This is not a criticism of CLR19. The offsets are small enough to read as agreement, and nothing in it depends on them. They become interesting only once you want to resolve 0.2 in lambda.</p>
 <p>Six runs, two independent algorithms, sign never flips. That is bias, not scatter.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -194,44 +215,148 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
-<section id="three-things-it-could-mean" class="slide level2 smaller">
-<h2>Three things it could mean</h2>
-<div class="cols3">
+<section id="why-the-wind-does-not-cancel" class="slide level2 smaller">
+<h2>Why the wind does not cancel</h2>
+<p>One dither period produces one number, a correlation:</p>
+<p><span class="math display">\[\hat g \;=\; \frac{1}{aT}\int_0^T \ln P(t)\,g(t)\,dt,
+\qquad
+\ln P = \underbrace{\ln(\tfrac12\rho A)}_{\text{constant}}
++ \underbrace{3\ln V(t)}_{\text{the wind}}
++ \underbrace{\ln C_P(\lambda)}_{\text{the turbine}}\]</span></p>
+<div class="cols2">
 <div class="card">
-<p><span class="cardh">(a) the steady peak</span></p>
-<p><span class="math inline">\(\arg\max C_P(\lambda)\)</span> on the design curve. What every paper scores against.</p>
+<p><span class="cardh">the constant does cancel</span></p>
+<p><span class="math inline">\(\int_0^T g\,dt = 0\)</span> by symmetry, so a constant contributes exactly nothing.</p>
 </div>
 <div class="card">
-<p><span class="cardh">(b) the turbulent peak</span></p>
-<p><span class="math inline">\(\arg\max \mathbb{E}[\ln P]\)</span> under the actual inflow. Differs from (a) by a Jensen gap plus rotor lag.</p>
+<p><span class="cardh">the wind does not</span></p>
+<p><span class="math inline">\(3\ln V(t)\)</span> is not a constant. What survives is <span class="math inline">\(\tfrac{3}{aT}\int_0^T \ln V\,g\;dt\)</span>, which is zero <strong>in expectation</strong> and nonzero in <strong>any one window</strong>.</p>
+</div>
+</div>
+<div class="claim">
+<p>Flip a fair coin ten times: heads minus tails has expectation zero, and you still get <span class="math inline">\(+2\)</span> or <span class="math inline">\(-4\)</span>. Over 150 s the turbulence leans one way or the other against the square wave by chance. The wind does not <strong>bias</strong> the gradient. It adds <strong>scatter</strong>.</p>
+</div>
+</section>
+<section id="and-the-scatter-is-large" class="slide level2 smaller">
+<h2>And the scatter is large</h2>
+
+<img data-src="assets/channels.svg" class="fig-wide r-stretch" alt="Time series over ten minutes. The wind contribution to log power swings with standard deviation 0.30 nepers; the turbine's response to the probe is a small clean sinusoid of amplitude 0.02."><div class="warn">
+<p>In the raw record the irrelevant term is about <strong>fifteen times</strong> the signal: <span class="math inline">\(3\ln V\)</span> has <span class="math inline">\(\sigma \approx 3\,\mathrm{TI} = 0.30\)</span> nepers, against a probe response near <span class="math inline">\(0.02\)</span>.</p>
+</div>
+<aside class="notes">
+<p>Correlating against the dither over a window of length T shrinks that by roughly the square root of the correlation time over T, giving</p>
+<p>sigma of g-hat, about 3 times TI times root tau-c over T, divided by a.</p>
+<p>It falls as one over root T, which is exactly the averaging Rotea says is unavoidable, and as one over the dither amplitude. Neither ever drives it to zero.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="so-which-k-should-it-find" class="slide level2 smaller">
+<h2>So which <span class="math inline">\(k\)</span> should it find?</h2>
+<div class="cols3">
+<div class="card">
+<p><span class="cardh">(a) the design <span class="math inline">\(k\)</span></span></p>
+<p><span class="math inline">\(k_{\text{opt}} = 2.2\)</span>, the gain that peaks the blade-element curve in steady uniform flow. What every paper scores against.</p>
+</div>
+<div class="card">
+<p><span class="cardh">(b) the turbulent <span class="math inline">\(k\)</span></span></p>
+<p>The gain maximizing <span class="math inline">\(\mathbb{E}[\ln P]\)</span> under the inflow the machine actually sees. Differs from (a) by a Jensen gap plus rotor lag.</p>
 </div>
 <div class="card">
 <p><span class="cardh">(c) the algorithm’s fixed point</span></p>
-<p>Where the <em>estimate</em> vanishes, which adds the finite-difference bias of the demodulator.</p>
+<p>The gain where the <em>gradient estimate</em> vanishes, which adds whatever bias the demodulator carries.</p>
 </div>
 </div>
 <div class="claim">
-<p>These are three different numbers. Before asking how well the estimator performs, we have to say which one it is estimating.</p>
+<p>Three different numbers. The runs all land near <span class="math inline">\(2.03\)</span>. Asking “how accurate is the estimator” is premature until we say which of these it was supposed to hit.</p>
 </div>
+<aside class="notes">
+<p>And note the reporting convention. The papers quote lambda-bar rather than k-bar, because lambda is the interpretable coordinate. But the two are the same fact: a torque gain 7.7 per cent below design puts the rotor at a tip-speed ratio about 0.19 above design, and that is most of the 0.35 offset in the figures.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
 <section id="candidate-one-estimator-bias" class="slide level2 smaller">
 <h2>Candidate one: estimator bias</h2>
-<p>The 2019 scheme is a square-wave two-point difference, so what it returns is</p>
-<p><span class="math display">\[\hat g \;=\; \frac{J(q+a)-J(q-a)}{2a} \;=\; J'(q) + \frac{a^2}{6}J'''(q) + O(a^4)\]</span></p>
-<p>The algorithm stops where <span class="math inline">\(\hat g = 0\)</span>, not where <span class="math inline">\(J' = 0\)</span>, so its fixed point sits at</p>
-<p><span class="math display">\[q^\star - q_{opt} \;\approx\; -\frac{a^2}{6}\,\frac{J'''}{J''}\]</span></p>
-<div class="claim">
-<p>Nonzero whenever the log-<span class="math inline">\(C_P\)</span> curve is asymmetric at the peak, which it is. And <span class="math inline">\(a\)</span> was <span class="math inline">\(0.3\)</span> against a design gain of <span class="math inline">\(2.2\)</span>, so about 14%. Not a small perturbation.</p>
+<p><a href="#/references">[CLR19]</a> dithers with a square wave, so the correlation is a two-point central difference. The slides that follow derive <span class="math inline">\(\hat g = J' + \tfrac{a^2}{6}J''' + O(a^4)\)</span> and the displacement <span class="math inline">\(\Delta u = -\tfrac{a^2}{6}\,J'''/J''\)</span> it leaves; the numbers are below.</p>
+<p>Every term is computable: invert <span class="math inline">\(\varphi(\lambda) = C_P(\lambda)/\lambda^3 = c\,u\)</span> for <span class="math inline">\(\lambda_{\text{eq}}(u)\)</span>, with <span class="math inline">\(c\)</span> pinned by <span class="math inline">\(\varphi(\lambda_\star) = c\,u_{\text{opt}}\)</span>; form <span class="math inline">\(J(u) = \ln C_P(\lambda_{\text{eq}}(u))\)</span> and differentiate at the peak. Units below are Ciri et al.’s, <span class="math inline">\(u_{\text{opt}} = 2.2\)</span> N<span class="math inline">\(\cdot\)</span>m<span class="math inline">\(\cdot\)</span>rpm<span class="math inline">\(^{-2}\)</span>.</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">read off the curve</span></p>
+<table class="caption-top">
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(J''\)</span></td>
+<td><span class="math inline">\(-0.145\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(J'''\)</span></td>
+<td><span class="math inline">\(0.108\)</span></td>
+</tr>
+<tr class="odd">
+<td>ratio</td>
+<td><span class="math inline">\(-0.748\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(d\lambda/du\)</span></td>
+<td><span class="math inline">\(-1.13\)</span> <span class="math inline">\(\;(=-\lambda_\star/3u_{\text{opt}})\)</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(a\)</span> (Ciri 2019)</td>
+<td><span class="math inline">\(13.6\%\)</span> of <span class="math inline">\(k_{\text{opt}}\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="card">
+<p><span class="cardh">the result</span></p>
+<p><span class="math display">\[\Delta u = +0.0112\]</span></p>
+<p><span class="math display">\[\Delta\lambda = \Delta u\cdot\frac{d\lambda}{du} = -0.013\]</span></p>
+<p>Against an observed <span class="math inline">\(+0.35\)</span>, and with the wrong sign.</p>
+</div>
 </div>
 </section>
 <section id="candidate-two-the-peak-moved" class="slide level2 smaller">
 <h2>Candidate two: the peak moved</h2>
-<p>Rotor inertia is <span class="math inline">\(3.5\times10^7\)</span> kg m², so <span class="math inline">\(\lambda\)</span> cannot track the wind. It swings rather than sits. Expanding the objective under that swing,</p>
-<p><span class="math display">\[\mathbb{E}\big[C_P(\bar\lambda + \delta)\big] \approx C_P(\bar\lambda) + \tfrac12 \sigma_\lambda^2\,C_P''(\bar\lambda)\]</span></p>
-<p>and maximizing over <span class="math inline">\(\bar\lambda\)</span> moves the optimum to</p>
-<p><span class="math display">\[\bar\lambda^\star - \lambda^\star \;\approx\; -\frac{\sigma_\lambda^2}{2}\,\frac{C_P'''}{C_P''}\]</span></p>
+<p>Rotor inertia is <span class="math inline">\(3.5\times10^7\)</span> kg m², so <span class="math inline">\(\lambda\)</span> swings rather than sits. Expanding <span class="math inline">\(\mathbb{E}[C_P(\bar\lambda+\delta)] \approx C_P + \tfrac12\sigma_\lambda^2 C_P''\)</span> and maximizing over <span class="math inline">\(\bar\lambda\)</span>,</p>
+<p><span class="math display">\[\Delta\lambda \;=\; -\frac{\sigma_\lambda^2}{2}\,\frac{C_P'''}{C_P''},
+\qquad C_P'' = -0.0551,\quad C_P''' = 0.0065\]</span></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th><span class="math inline">\(\sigma_\lambda\)</span></th>
+<th><span class="math inline">\(0.3\)</span></th>
+<th><span class="math inline">\(0.5\)</span></th>
+<th><span class="math inline">\(0.8\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(\Delta\lambda\)</span></td>
+<td><span class="math inline">\(+0.005\)</span></td>
+<td><span class="math inline">\(+0.015\)</span></td>
+<td><span class="math inline">\(+0.037\)</span></td>
+</tr>
+</tbody>
+</table>
 <div class="claim">
-<p>Same structure as candidate one: a third derivative over a second, scaled by a variance. But the implications are opposite. One says the algorithm misses a fixed target; the other says the algorithm is right and the target moved.</p>
+<p>Same shape as candidate one, a third derivative over a second scaled by a variance, but opposite in meaning: one says the algorithm misses a fixed target, the other says the target moved. Note <span class="math inline">\(\sigma_\lambda\)</span> is <strong>estimated</strong>, from the share of turbulence energy above the rotor’s own pole, not measured.</p>
 </div>
 </section>
 <section id="the-arithmetic" class="slide level2 smaller">
@@ -241,8 +366,398 @@ Aykut C. Satici
 <p>Both fail, by more than an order of magnitude. Adding a third effect, that the reported <span class="math inline">\(\bar\lambda\)</span> is a time average and <span class="math inline">\(\lambda(u)\)</span> is curved, brings the total to <span class="math inline">\(0.042\)</span> against an observed <span class="math inline">\(0.350\)</span>.</p>
 </div>
 <aside class="notes">
-<p>Computed on the map from normalized torque gain to settled tip-speed ratio, using the dither amplitude the 2019 paper actually used.</p>
+<p>Computed on the map from normalized torque gain to settled tip-speed ratio, using the dither amplitude <a href="#/references">[CLR19]</a> actually used (Appendix A2, <span class="math inline">\(a = 0.3\)</span>).</p>
 <p>The honest caveat, and it should be said out loud: the third derivative comes from an analytic surface fitted through the peak, not from the NREL tables. So quote the sensitivity rather than the number. To explain the whole gap by finite-difference bias you would need that third derivative about 28 times larger. A fitted surface can be wrong by a factor of two or three. Not by 28.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section>
+<section id="costing-it-out" class="title-slide slide level1 divider center">
+<h1>Costing it out</h1>
+<p>Where the <span class="math inline">\(a^2/6\)</span>, the <span class="math inline">\(-1/3\)</span> and the amplitude trade actually come from.</p>
+</section>
+<section id="splitting-the-objective" class="slide level2 smaller">
+<h2>Splitting the objective</h2>
+<p><span class="math inline">\(C_P\)</span> is naturally a function of <span class="math inline">\(\lambda\)</span>, but <span class="math inline">\(\lambda\)</span> is not settable. You turn the gain <span class="math inline">\(u\)</span>, and <span class="math inline">\(\lambda\)</span> follows through <span class="math inline">\(\lambda_{\text{eq}}(u)\)</span>. So split <span class="math inline">\(\ln P\)</span> into the part that moves with <span class="math inline">\(u\)</span> and the part that does not:</p>
+<p><span class="math display">\[\ln P(t) \;=\; \underbrace{\ln(\tfrac12\rho A) + 3\ln V(t)}_{C(t),\ \text{no } u \text{ in it}}
+\;+\; \underbrace{\ln C_P\big(\lambda_{\text{eq}}(u)\big)}_{J(u)}\]</span></p>
+<p>A term with no <span class="math inline">\(u\)</span> in it has zero derivative in <span class="math inline">\(u\)</span>, so</p>
+<p><span class="math display">\[\frac{\partial^n(\ln P)}{\partial u^n} = \frac{\partial^n J}{\partial u^n}
+\qquad\text{for every } n\ge 1\]</span></p>
+<div class="claim">
+<p><span class="math inline">\(\ln P\)</span> needs the wind and cannot be evaluated; <span class="math inline">\(J\)</span> needs only the <span class="math inline">\(C_P\)</span> curve. They have identical derivatives, so <strong>derivatives</strong> may be taken on <span class="math inline">\(J\)</span> alone. That is not the same as saying <span class="math inline">\(C\)</span> disappears from the estimator.</p>
+</div>
+</section>
+<section id="what-the-estimator-actually-returns" class="slide level2 smaller">
+<h2>What the estimator actually returns</h2>
+<p>The 2019 dither is a <strong>square wave</strong>: the knob sits at <span class="math inline">\(u+a\)</span> for the first half-period, <span class="math inline">\(u-a\)</span> for the second. The correlation is a difference of two half-period means, <span class="math inline">\(\hat g = \big[\bar y(u{+}a) - \bar y(u{-}a)\big]/2a\)</span>. Substituting the split:</p>
+<p><span class="math display">\[\hat g \;=\;
+\underbrace{\frac{J(u{+}a) - J(u{-}a)}{2a}}_{\text{the turbine}}
+\;+\;
+\underbrace{\frac{\bar C^{+} - \bar C^{-}}{2a}}_{\text{the wind}}\]</span></p>
+<div class="warn">
+<p><span class="math inline">\(\bar C^{\pm}\)</span> are means of the <strong>same</strong> <span class="math inline">\(C(t)\)</span> over <strong>different</strong> windows, so they do not cancel. This is the coin-flip term: zero mean, nonzero variance. It is where all the scatter comes from, and it is not part of any Taylor series.</p>
+</div>
+<div class="claim">
+<p>Bias from the first term, scatter from the second. The next slides take them in turn.</p>
+</div>
+</section>
+<section id="why-the-bias-is-a26" class="slide level2 smaller">
+<h2>Why the bias is <span class="math inline">\(a^2/6\)</span></h2>
+<p>Taylor-expand the turbine term about <span class="math inline">\(u\)</span>:</p>
+<p><span class="math display">\[J(u+a) = J + aJ' + \tfrac{a^2}{2}J'' + \tfrac{a^3}{6}J''' + \tfrac{a^4}{24}J'''' + \cdots\]</span> <span class="math display">\[J(u-a) = J - aJ' + \tfrac{a^2}{2}J'' - \tfrac{a^3}{6}J''' + \tfrac{a^4}{24}J'''' - \cdots\]</span></p>
+<p>Subtracting, <strong>every even power cancels</strong>, which is what “central” difference means. Then divide by <span class="math inline">\(2a\)</span>: every term drops one order, <span class="math inline">\(O(a^5)\)</span> included.</p>
+<p><span class="math display">\[J(u{+}a) - J(u{-}a) = 2aJ' + \tfrac{a^3}{3}J''' + O(a^5)
+\;\;\Longrightarrow\;\;
+\frac{J(u{+}a) - J(u{-}a)}{2a} = J' + \frac{a^2}{6}J''' + O(a^4)\]</span></p>
+<p>That is the turbine term alone. Adding back the wind term from the previous slide gives the whole estimator:</p>
+<p><span class="math display">\[\hat g \;=\; J' + \frac{a^2}{6}J''' + O(a^4)
+\;+\; \underbrace{\frac{\bar C^{+} - \bar C^{-}}{2a}}_{\text{the wind}}\]</span></p>
+<div class="claim">
+<p>The algorithm stops where <span class="math inline">\(\hat g = 0\)</span>, not where <span class="math inline">\(J' = 0\)</span>. Linearizing <span class="math inline">\(J' \approx J''\Delta u\)</span> gives <span class="math inline">\(\Delta u = -\tfrac{a^2}{6}\,J'''/J''\)</span>.</p>
+</div>
+<aside class="notes">
+<p>The leading error is a-squared rather than a because the even terms cancel. A one-sided difference would be order a and far worse.</p>
+<p>And the bias is not an artifact of the square wave. Sinusoidal dithering, as in Kumar and Rotea 2022, expands J of u plus a sine and demodulates against a sine, picking up the fourth moment of a sine, three eighths, and gives a-squared over eight instead of over six. Same order, different constant.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="from-a-gain-error-to-a-tip-speed-ratio" class="slide level2 smaller">
+<h2>From a gain error to a tip-speed ratio</h2>
+<p>The bias lives in <span class="math inline">\(u\)</span>, the torque gain the algorithm turns; Ciri et al.&nbsp;report <span class="math inline">\(\lambda\)</span>. The equilibrium relation converts between them. With <span class="math inline">\(\varphi(\lambda) := C_P(\lambda)/\lambda^3\)</span> it reads <span class="math inline">\(\varphi(\lambda_{\text{eq}}) = c\,u\)</span>, where <span class="math inline">\(c\)</span> is a rotor constant that also carries whatever units <span class="math inline">\(u\)</span> is quoted in. Differentiate implicitly:</p>
+<p><span class="math display">\[\varphi'(\lambda)\,\frac{d\lambda}{du} = c
+\qquad\Longrightarrow\qquad
+\frac{d\lambda}{du} = \frac{c}{\varphi'(\lambda)}\]</span></p>
+<p>You never have to evaluate <span class="math inline">\(c\)</span>: the optimum pins it, <span class="math inline">\(c = \varphi(\lambda_\star)/u_{\text{opt}}\)</span>. And at the peak <span class="math inline">\(C_P' = 0\)</span>, so <span class="math inline">\(\varphi'(\lambda_\star) = -3C_P^{\max}/\lambda_\star^4\)</span>. Everything cancels:</p>
+<p><span class="math display">\[\frac{d\lambda}{du}\bigg|_\star
+= \frac{C_P^{\max}\big/(\lambda_\star^3\,u_{\text{opt}})}{-3C_P^{\max}\big/\lambda_\star^4}
+= -\frac{\lambda_\star}{3\,u_{\text{opt}}}
+\qquad\Longleftrightarrow\qquad
+\frac{d\ln\lambda}{d\ln u}\bigg|_\star = -\frac13\]</span></p>
+<div class="claim">
+<p>Negative: more braking torque, slower rotor, lower <span class="math inline">\(\lambda\)</span>. And the leverage is <strong>exactly</strong> <span class="math inline">\(-1/3\)</span> in elastic terms, free of <span class="math inline">\(c\)</span>, <span class="math inline">\(\rho\)</span>, <span class="math inline">\(R\)</span>, the gearbox and the choice of units. With Ciri et al.’s <span class="math inline">\(u_{\text{opt}} = 2.2\)</span> N<span class="math inline">\(\cdot\)</span>m<span class="math inline">\(\cdot\)</span>rpm<span class="math inline">\(^{-2}\)</span> that is <span class="math inline">\(d\lambda/du = -1.14\)</span>.</p>
+</div>
+<aside class="notes">
+<p>Where the one third comes from: at the peak C_P is flat, so near it phi is essentially C_P-max over lambda cubed. The equilibrium then says u goes like lambda to the minus three, and inverting a cube root is where the third comes from. Nothing about the blades enters.</p>
+<p>This is also why quoting a slope in absolute units is a trap. Minus 1.14 per newton-meter-per-rpm-squared sounds small and minus 39.8 would sound large, but they are the same physical statement in two unit systems. The elasticity is the number that means something.</p>
+<p>Linearizing is safe here. At the predicted bias, half a per cent in u, linear and exact agree to three decimals at minus 0.012. At the observed anomaly, 7.7 per cent, linear gives 0.191 and exact 0.196.</p>
+<p>And the sign is the point. The anomaly has the gain landing low, so lambda high. The bias predicts delta-u positive, gain high, lambda low. Opposite sign. That conclusion survives any error in the magnitude.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="sizing-the-scatter" class="slide level2 smaller">
+<h2>Sizing the scatter</h2>
+<p>The wind term is <span class="math inline">\((\bar C^{+} - \bar C^{-})/2a\)</span>. Let <span class="math inline">\(\sigma_y\)</span> be the standard deviation of the fluctuating part of <span class="math inline">\(y = \ln P\)</span>, and let <span class="math inline">\(\tau_c\)</span> be its <strong>correlation time</strong>: the lag beyond which the signal has forgotten itself, so a window of length <span class="math inline">\(T_w\)</span> carries about <span class="math inline">\(T_w/\tau_c\)</span> independent samples rather than <span class="math inline">\(T_w/\Delta t\)</span>. Each half-period average has <span class="math inline">\(T_w = T/2\)</span>:</p>
+<p><span class="math display">\[\operatorname{Var}(\bar C^{\pm})
+= \frac{\sigma_y^2}{\underbrace{(T/2)/\tau_c}_{\text{independent samples}}}
+= \frac{2\sigma_y^2\tau_c}{T}\]</span></p>
+<p>The two windows are disjoint, so treat them as independent and add variances. Then divide by <span class="math inline">\(2a\)</span>:</p>
+<p><span class="math display">\[\operatorname{Var}(\hat g_{\text{noise}}) = \frac{1}{4a^2}\cdot\frac{4\sigma_y^2\tau_c}{T}
+\;\;\Longrightarrow\;\;
+\boxed{\;\sigma_{\hat g} = \frac{\sigma_y}{a}\sqrt{\frac{\tau_c}{T}}\;}\]</span></p>
+<div class="claim">
+<p>The <span class="math inline">\(1/a\)</span> is the whole difficulty: the wind does not care how hard you dither, so shrinking the probe to kill bias amplifies the noise one for one. The <span class="math inline">\(\sqrt{\tau_c/T}\)</span> is weaker than it looks, and <strong>only holds for <span class="math inline">\(\tau_c \ll T/2\)</span></strong>, which this turbine does not satisfy.</p>
+</div>
+<aside class="notes">
+<p>Sigma-y: log-power is a constant plus three log V plus J, so its fluctuation is three times delta-V over V, three times the turbulence intensity. At ten per cent that is 0.30 nepers. It is an upper bound, because the rotor averages over the whole disk and its own inertia filters, so rotor-effective wind is smoother than a point measurement. Tau-c gets its own slide next.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="choosing-tau_c" class="slide level2 smaller">
+<h2>Choosing <span class="math inline">\(\tau_c\)</span></h2>
+<p>Taylor’s frozen-turbulence picture: eddies of size <span class="math inline">\(L\)</span> sweep past at <span class="math inline">\(U\)</span>, so the signal decorrelates in <span class="math inline">\(\tau_{\text{int}} = L/U\)</span>. IEC 61400-1 fixes <span class="math inline">\(L\)</span> from hub height <a href="#/references">[IEC]</a>: <span class="math inline">\(\Lambda_1 = 0.7\min(z,60)\)</span> m, <span class="math inline">\(L = 8.1\Lambda_1\)</span>. At <span class="math inline">\(h = 90\)</span> m <span class="math inline">\(\ge 60\)</span> m the scale parameter is <span class="math inline">\(\Lambda_1 = 42\)</span> m and the longitudinal integral length is <span class="math inline">\(L = 8.1\Lambda_1\)</span>:</p>
+<p><span class="math display">\[L = 8.1(42) = 340\ \text{m}
+\;\;\Longrightarrow\;\;
+\tau_{\text{int}} = \frac{340}{8} = 42.5\ \text{s}
+\;\;\Longrightarrow\;\;
+\tau_c = 2\tau_{\text{int}} = 85\ \text{s}\]</span></p>
+<p>The factor of two is the convention: independent samples sit <span class="math inline">\(2\tau_{\text{int}}\)</span> apart, not <span class="math inline">\(\tau_{\text{int}}\)</span>.</p>
+<div class="warn">
+<p><span class="math inline">\(\tau_c = 85\)</span> s exceeds the half-period <span class="math inline">\(T/2 = 75\)</span> s, so <span class="math inline">\(\sigma_{\hat g}\)</span> is outside the regime it was derived in. Wind slower than <span class="math inline">\(T\)</span> is <strong>common to both half-windows and cancels in their difference</strong>, so the formula over-states the scatter: exactly, by <span class="math inline">\(1.5\times\)</span> at <span class="math inline">\(\tau_{\text{int}} = 42.5\)</span> s and <span class="math inline">\(2.4\times\)</span> at <span class="math inline">\(85\)</span> s.</p>
+</div>
+<div class="claim">
+<p><span class="math inline">\(L\)</span> is a design standard, not a measurement of this inflow, so <span class="math inline">\(\tau_c\)</span> is good to a factor of two. That costs <span class="math inline">\(12\%\)</span> in the answer, since <span class="math inline">\(a_\star \propto \tau_c^{1/6}\)</span>.</p>
+</div>
+<aside class="notes">
+<p>Sanity check against the simulation domain of Ciri, Leonardi and Rotea. Their Appendix A1 of <a href="#/references">[CLR19]</a> gives a precursor box of 9.6 rotor diameters streamwise, 1210 meters, which caps the largest eddy it can hold; at eight meters per second that is a 151-second flow-through. So 340 meters is comfortably inside what the box can represent, and the IEC number is not contradicted by the simulation setup.</p>
+<p>The exponents are what make this reportable. Tau-c enters the scatter as a square root and the optimal amplitude as a sixth root, so a scale estimate is enough where a measurement would be needed if it entered linearly.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="how-big-should-the-dither-be" class="slide level2 smaller">
+<h2>How big should the dither be?</h2>
+<p><strong>Bias</strong>, from the previous slides, converted to <span class="math inline">\(\lambda\)</span>:</p>
+<p><span class="math display">\[|\Delta\lambda| = \underbrace{\tfrac16\left|\tfrac{J'''}{J''}\right|\left|\tfrac{d\lambda}{du}\right|}_{K_b}\,a^2
+= \tfrac16(0.748)(1.13)\,a^2 = 0.141\,a^2
+\;\;\longrightarrow\;\; 0.68\,\alpha^2\]</span></p>
+<p><strong>Scatter.</strong> One period gives gradient noise <span class="math inline">\(\sigma_y\sqrt{\tau_c/T}/a\)</span>; a gradient error displaces the settled gain by <span class="math inline">\(\delta g/|J''|\)</span>; <span class="math inline">\(N\)</span> periods average it down:</p>
+<p><span class="math display">\[\sigma_\lambda = \underbrace{\frac{\sigma_y\sqrt{\tau_c/T}}{|J''|}\left|\tfrac{d\lambda}{du}\right|}_{K_v}\,\frac{1}{a\sqrt N}
+\;\;\longrightarrow\;\; \frac{K_v/u_{\text{opt}}}{\alpha\sqrt N}\]</span></p>
+<p>Writing <span class="math inline">\(a = \alpha\,u_{\text{opt}}\)</span> puts both in the units the figure plots: <span class="math inline">\(\alpha\)</span> is the dither as a fraction of the optimal gain. <span class="math inline">\(K_b\)</span> follows from the <span class="math inline">\(C_P\)</span> curve alone. <span class="math inline">\(K_v\)</span> does not, and the next slide is why.</p>
+<div class="claim">
+<p><span class="math inline">\(K_b\)</span> carries no <span class="math inline">\(N\)</span>; <span class="math inline">\(K_v\)</span> does. <strong>Bias survives averaging, scatter does not.</strong></p>
+</div>
+<aside class="notes">
+<p>Inputs, all in the units of Ciri et al.&nbsp;2019 where u-opt is 2.2: J-triple-prime over J-double-prime is minus 0.748 and d-lambda-d-u is minus 1.13, both from the fitted surface. Sigma-y is three times turbulence intensity, 0.30 nepers. Tau-c 85 seconds from the previous slide, T the 150-second period, J-double-prime 0.145.</p>
+<p>The alpha forms are the ones to trust. Rescaling u multiplies K-b and K-v by compensating powers, so the alpha-form coefficients are the same whatever units anyone quotes the gain in. K-b over u-opt squared is 0.68 from the curve; K-v over u-opt is at most 0.033 from the data.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="k_v-has-to-be-calibrated-not-predicted" class="slide level2 smaller">
+<h2><span class="math inline">\(K_v\)</span> has to be calibrated, not predicted</h2>
+<p>Feeding <span class="math inline">\(\sigma_y = 3\,\text{TI} = 0.30\)</span> and <span class="math inline">\(\tau_c = 85\)</span> s into <span class="math inline">\(\sigma_{\hat g}\)</span> gives <span class="math inline">\(K_v/u_{\text{opt}} = 0.80\)</span>, hence <span class="math inline">\(\sigma_\lambda = 3.4\)</span> at their dither. The rotor would wander the whole curve. The converged tip-speed ratios reported in <a href="#/references">[CLR19]</a> say otherwise:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>converged <span class="math inline">\(\bar\lambda\)</span></th>
+<th><span class="math inline">\(U=4\)</span></th>
+<th><span class="math inline">\(U=8\)</span></th>
+<th><span class="math inline">\(U=12\)</span></th>
+<th>spread</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong><a href="#/references">[CLR19]</a> Table 4</strong>, shear <span class="math inline">\(+\)</span> <span class="math inline">\(10\%\)</span> TI</td>
+<td>7.72, 7.75</td>
+<td>7.85, 7.85</td>
+<td>7.85</td>
+<td><span class="math inline">\(0.13\)</span></td>
+</tr>
+<tr class="even">
+<td><strong><a href="#/references">[CLR19]</a> Table 3</strong>, uniform inflow</td>
+<td>7.60, 7.60</td>
+<td>7.75, 7.73</td>
+<td>7.70</td>
+<td><span class="math inline">\(0.15\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Each cell is ESC then LP-ESC; at <span class="math inline">\(U=12\)</span> only LP-ESC is listed, because plain ESC did not converge there.</p>
+<div class="warn">
+<p>Turbulence adds <strong>nothing</strong> to the spread of the converged means. The 40-minute mean covers <span class="math inline">\(\approx 2\)</span> independent realizations, so <span class="math inline">\(\sigma_\lambda \lesssim 0.14\)</span> and <span class="math inline">\(K_v/u_{\text{opt}} \lesssim 0.033\)</span>: the prediction is too big by <span class="math inline">\(\mathbf{24}\)</span> to <span class="math inline">\(\mathbf{40\times}\)</span>.</p>
+</div>
+<div class="claim">
+<p>The demodulator rejects far more of the wind than <span class="math inline">\(\sigma_y\sqrt{\tau_c/T}\)</span> allows for, because that form counts the whole spectrum while the correlation sees a narrow band at <span class="math inline">\(1/T\)</span>, sited in a spectral valley on purpose. <strong>Quantifying that rejection is the open problem</strong>, and until it is done <span class="math inline">\(K_v\)</span> is an upper bound read off the data.</p>
+</div>
+<aside class="notes">
+<p>Both rows are <a href="#/references">[CLR19]</a>: Table 3 is the uniform-inflow campaign, Table 4 the shear-plus-turbulence one, same three wind speeds and same two algorithms.</p>
+<p>Two things not to overstate. The spread across runs is a bound, not a measurement: the three wind speeds genuinely converge to different lambda, so some of the 0.13 is physics rather than noise, which only makes the bound tighter. And no standard deviations are published, which is the whole reason a bound is the best available.</p>
+<p>Redoing the demodulator against a Kaimal spectrum instead of a single correlation time brings sigma-g-hat from 0.75 to 0.43. That is the right method and it closes only a factor of 1.7 of the 24. The rest is in sigma-y.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="trading-bias-against-scatter" class="slide level2 smaller">
+<h2>Trading bias against scatter</h2>
+<p>Bias and scatter are now both errors in <span class="math inline">\(\lambda\)</span>, so they are comparable. What a run actually delivers is the <strong>mean-squared error</strong>, bias squared plus variance:</p>
+<p><span class="math display">\[M(a) = \underbrace{\big(K_b a^2\big)^2}_{\text{bias}^2}
++ \underbrace{\left(\frac{K_v}{a\sqrt N}\right)^2}_{\text{variance}}
+= K_b^2 a^4 + \frac{K_v^2}{a^2 N}\]</span></p>
+<p>One term climbs with <span class="math inline">\(a\)</span> and the other falls, so the minimum is interior. Set the derivative to zero:</p>
+<p><span class="math display">\[\frac{dM}{da} = 4K_b^2a^3 - \frac{2K_v^2}{a^3N} = 0
+\;\;\Longrightarrow\;\;
+a_\star^6 = \frac{K_v^2}{2K_b^2N}
+\;\;\Longrightarrow\;\;
+a_\star \propto N^{-1/6}\]</span></p>
+<p>Substituting <span class="math inline">\(a_\star\)</span> back gives what that amplitude actually achieves:</p>
+<p><span class="math display">\[M(a_\star) = \left(2^{-2/3} + 2^{1/3}\right)K_b^{2/3}K_v^{4/3}N^{-2/3}
+\;\;\Longrightarrow\;\;
+\sqrt{M(a_\star)} \propto N^{-1/3}\]</span></p>
+<div class="claim">
+<p>Both limits are bad: <span class="math inline">\(a\to0\)</span> kills the bias but sends the scatter to infinity, <span class="math inline">\(a\to\infty\)</span> does the reverse. Two different exponents fall out and they are easy to confuse: the <strong>amplitude</strong> goes as <span class="math inline">\(N^{-1/6}\)</span>, the <strong>error it buys</strong> goes as <span class="math inline">\(N^{-1/3}\)</span>.</p>
+</div>
+<aside class="notes">
+<p>The sixth root is the part with teeth. It says you cannot buy your way out of a badly chosen dither by running longer: thirty times the run length moves the optimum by less than a factor of two. Amplitude is a design choice that has to be made correctly up front.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="the-loop-is-a-constant-gain-recursion" class="slide level2 smaller">
+<h2>The loop is a constant-gain recursion</h2>
+<p>Equations 11 and 12 of Ciri, Leonardi &amp; Rotea <a href="#/references">[CLR19]</a> take one step per dither period:</p>
+<p><span class="math display">\[u_{n+1} = u_n + \kappa\int_0^{T} y(t)\,g_c(t)\,dt\]</span></p>
+<p>The demodulator <span class="math inline">\(g_c\)</span> is <span class="math inline">\(+1\)</span> on the first half-period and <span class="math inline">\(-1\)</span> on the second, blanked for <span class="math inline">\(T_r\)</span> after each step. So the integral is exactly the half-window difference from before, <span class="math inline">\((\tfrac T2 - T_r)(\bar y^{+} - \bar y^{-})\)</span>, and since <span class="math inline">\(\hat g = (\bar y^{+}-\bar y^{-})/2a\)</span>:</p>
+<p><span class="math display">\[u_{n+1} = u_n + \kappa_{\text{eff}}\,\hat g_n,
+\qquad \kappa_{\text{eff}} := 2a\kappa\left(\tfrac T2 - T_r\right)\]</span></p>
+<div class="claim">
+<p>The correlate-and-step loop <strong>is</strong> a gradient ascent whose step size is <span class="math inline">\(\kappa_{\text{eff}}\)</span>. There is no <span class="math inline">\(1/n\)</span> anywhere, so the step never decays.</p>
+</div>
+<aside class="notes">
+<p>Worth noting the units do not quite close in Table 2 of <a href="#/references">[CLR19]</a>. The LP-ESC integrand is log-power, which is dimensionless, so its kappa should be gain per second. The table lists watts per rpm squared for both rows, which is what the plain-ESC row needs. That is why the value of kappa-eff below is pinned from the reported settling time rather than read off the table.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="linearizing-about-the-peak" class="slide level2 smaller">
+<h2>Linearizing about the peak</h2>
+<p><span class="math inline">\(\hat g_n\)</span> is an estimate of <span class="math inline">\(J'(u_n)\)</span>, and two facts turn the update into a linear recursion. First, at the peak <span class="math inline">\(J'(u^\star)=0\)</span>, so for <span class="math inline">\(\tilde u_n := u_n - u^\star\)</span> small,</p>
+<p><span class="math display">\[J'(u_n) = J'(u^\star) + J''\tilde u_n + O(\tilde u_n^2) \approx J''\,\tilde u_n\]</span></p>
+<p>Second, the estimator does not return <span class="math inline">\(J'\)</span> cleanly. It returns it plus the wind term derived earlier, which is what <span class="math inline">\(w_n\)</span> is:</p>
+<p><span class="math display">\[\hat g_n = J''\tilde u_n + \underbrace{w_n}_{(\bar C^{+}-\bar C^{-})/2a},
+\qquad \mathbb{E}[w_n]=0,
+\qquad \operatorname{Var}(w_n) = \sigma_{\hat g}^2 = \frac{\sigma_y^2\tau_c}{a^2T}\]</span></p>
+<p>Substitute into the update and subtract <span class="math inline">\(u^\star\)</span> from both sides:</p>
+<p><span class="math display">\[\tilde u_{n+1} = \big(1 + \kappa_{\text{eff}}J''\big)\tilde u_n + \kappa_{\text{eff}}w_n
+= \rho\,\tilde u_n + \kappa_{\text{eff}}w_n,
+\qquad \rho := 1 - g,\;\; g := \kappa_{\text{eff}}|J''|\]</span></p>
+<div class="claim">
+<p><span class="math inline">\(J''&lt;0\)</span> at a maximum, which is why <span class="math inline">\(1+\kappa_{\text{eff}}J''\)</span> is <span class="math inline">\(1-g\)</span>. The loop is a scalar AR(1) driven by gradient-estimate noise.</p>
+</div>
+</section>
+<section id="what-n-is-and-what-it-is-not" class="slide level2 smaller">
+<h2>What <span class="math inline">\(N\)</span> is, and what it is not</h2>
+<p>An AR(1) has a stationary variance. Take variances of both sides, use independence of <span class="math inline">\(w_n\)</span> from <span class="math inline">\(\tilde u_n\)</span>, and set <span class="math inline">\(V_{n+1}=V_n=V\)</span>:</p>
+<p><span class="math display">\[V = \rho^2 V + \kappa_{\text{eff}}^2\sigma_{\hat g}^2
+\;\;\Longrightarrow\;\;
+V = \frac{\kappa_{\text{eff}}^2\sigma_{\hat g}^2}{1-\rho^2}
+= \frac{g}{2-g}\cdot\frac{\sigma_{\hat g}^2}{J''^2}\]</span></p>
+<p>using <span class="math inline">\(\kappa_{\text{eff}} = g/|J''|\)</span> and <span class="math inline">\(1-\rho^2 = g(2-g)\)</span>. Averaging <span class="math inline">\(N\)</span> periods instead would give <span class="math inline">\(\sigma_{\hat g}^2/(N J''^2)\)</span>. Equating the two:</p>
+<p><span class="math display">\[\boxed{\;N_{\text{eff}} = \frac{2}{g} - 1\;}\]</span></p>
+<div class="claim">
+<p><span class="math inline">\(N\)</span> is a <strong>tuning</strong>, not a run length. Table 2 of <a href="#/references">[CLR19]</a>, with <span class="math inline">\(k\)</span> going <span class="math inline">\(4.5 \to 2.2\)</span> and <span class="math inline">\(99\%\)</span> of steady power in 10 min <span class="math inline">\(=\)</span> 4 periods, gives <span class="math inline">\(g \approx 0.49\)</span>, so <span class="math inline">\(N_{\text{eff}} \approx 3\)</span>. An hour instead of ten minutes changes nothing.</p>
+</div>
+<aside class="notes">
+<p>This is the part that is easy to get wrong and worth saying out loud on Friday. A constant-gain stochastic approximation does not converge to a point. It converges to a stationary distribution whose spread is set by the gain alone. Halving the gain halves the variance and doubles the settling time, which is the trade the tuning actually makes.</p>
+<p>Only a decaying gain, or Polyak-Ruppert averaging of the iterates on top of a constant gain, turns run length into accuracy. Neither is in this algorithm, which is one of the concrete things to propose.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="and-the-answer" class="slide level2 smaller">
+<h2>And the answer</h2>
+
+<img data-src="assets/biasvar.svg" class="fig-band r-stretch" alt="Log-log plot of error in lambda against dither amplitude as a fraction of the optimal torque gain. Bias rises as the square of amplitude, scatter falls as one over amplitude, and the total has a minimum near 27 per cent. The published value of 13.6 per cent is marked to the left of it."><div class="claim">
+<p>With <span class="math inline">\(K_v\)</span> bounded from Table 4 of <a href="#/references">[CLR19]</a> and <span class="math inline">\(N_{\text{eff}} = 3\)</span>: <span class="math inline">\(a_\star \lesssim 27\%\)</span> of <span class="math inline">\(k_{\text{opt}}\)</span>, against the published <span class="math inline">\(13.6\%\)</span>. <strong>Within a factor of two</strong>, and scatter still beats bias by <span class="math inline">\(11\times\)</span> there, so the loop is variance-limited but not wildly mistuned.</p>
+</div>
+<div class="warn">
+<p><span class="math inline">\(a_\star\)</span> is an upper bound, because <span class="math inline">\(K_v\)</span> is. The honest statement is that the published amplitude is on the small side of optimal and that nobody, here included, can yet compute <span class="math inline">\(K_v\)</span> from the turbulence.</p>
+</div>
+<aside class="notes">
+<p>The sixth root is what makes this survivable. K-v is known only as an upper bound, and a-star goes as K-v to the one third, so even an order of magnitude of slack in K-v is about a factor of two in the amplitude. That is why a bound is still worth quoting.</p>
+<p>A separate point about the reported numbers, worth raising on Friday. In that same paper the steady-state statistics are averaged from twenty to sixty minutes, forty minutes, over a precursor that repeats every twenty. So every quoted mean, including the converged lambda-bar of 7.85 that Q1 is about, rests on two independent wind realizations. That is not a criticism of the simulations, it is the reason the published numbers carry no error bars and the concrete argument for rerunning with non-repeating seeds.</p>
+<p>Three soft spots. K-b inherits the fitted C-P surface through a third derivative, which is what a fit reproduces worst, and that one cuts both ways. The root-N averaging assumes independent periods, but the period is 150 seconds against a correlation time of 85, a ratio of 1.8, so consecutive periods are correlated and the effective N is below 3, which pushes a-star up further. And the step from gradient scatter to gain scatter is a linearization in the curvature.</p>
+<p>The obvious defence of a small dither is loads. Nobody states that trade either.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="how-wrong-would-the-curve-have-to-be" class="slide level2 smaller">
+<h2>How wrong would the curve have to be?</h2>
+<p>Both estimates hinge on a third derivative, and third derivatives are what a fitted surface reproduces worst.</p>
+<div class="warn">
+<p>To explain the whole <span class="math inline">\(0.35\)</span> by estimator bias you would need the ratio <span class="math inline">\(J'''/J''\)</span> to be <span class="math inline">\(-20.8\)</span>, against the fitted <span class="math inline">\(-0.748\)</span>. <strong>A factor of 28.</strong></p>
+</div>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">What is solid</span></p>
+<p>The formulas, the inversion of the equilibrium relation, and the dither amplitude, read straight out of <a href="#/references">[CLR19]</a>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">What is not</span></p>
+<p>The <span class="math inline">\(C_P\)</span> surface. These figures use Heier’s analytic curve remapped onto <span class="math inline">\((7.5,\,0.49)\)</span>, not the NREL table, and both third derivatives inherit that.</p>
+</div>
+</div>
+<div class="claim">
+<p>An order-of-magnitude argument, good to a factor of a few, not verified against the real rotor. Enough to motivate the test, which settles the question without needing either curve.</p>
+</div>
+<aside class="notes">
+<p>What would firm this up is recomputing the two derivatives from the actual NREL 5 MW power-coefficient table rather than an analytic fit. Those tables are in the reference-turbine reports, which our own scoping note already lists under missing and wanted. Worth chasing for this alone.</p>
+<p>A fit that matches the peak’s location and curvature being wrong by a factor of 28 in the third derivative is implausible. But implausible is not verified, and it should be said that way rather than glossed.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -259,16 +774,16 @@ Aykut C. Satici
 <h2>What survives</h2>
 <div class="cols2">
 <div class="card">
-<p><span class="cardh">Where the gap actually lives</span></p>
-<p>The torque gain lands <span class="math inline">\(7.7\%\)</span> low, and that alone moves <span class="math inline">\(\lambda_{eq}\)</span> by <span class="math inline">\(+0.19\)</span>. So the question is why <span class="math inline">\(k\)</span> is low, not why <span class="math inline">\(\lambda\)</span> is high.</p>
+<p><span class="cardh">The decisive split</span></p>
+<p><a href="#/references">[CLR19]</a> Table 3 runs the same machine in <strong>uniform</strong> inflow: no turbulence, no peak shift, negligible scatter. The offset is still <span class="math inline">\(+0.10\)</span> to <span class="math inline">\(+0.25\)</span>.</p>
 </div>
 <div class="card">
-<p><span class="cardh">The one candidate left</span></p>
-<p>The simulated rotor’s own <span class="math inline">\(C_P\)</span> peak is not at <span class="math inline">\(7.5\)</span>. Its realized <span class="math inline">\(C_P\)</span> is already known to be <span class="math inline">\(0.44\)</span> rather than <span class="math inline">\(0.49\)</span>.</p>
+<p><span class="cardh">What that leaves</span></p>
+<p>Turbulence can account for at most the difference between the two campaigns, about <span class="math inline">\(0.1\)</span>. The rest is present when nothing stochastic is happening at all.</p>
 </div>
 </div>
 <div class="claim">
-<p>The design curve is <strong>already established to be wrong about the level</strong>. Nobody has checked whether it is also wrong about the location, and that is the explanation the arithmetic cannot rule out.</p>
+<p>Neither candidate can act in uniform inflow, yet most of the gap is already there. The design curve is <strong>already known to be wrong about the level</strong>, <span class="math inline">\(0.44\)</span> realized against <span class="math inline">\(0.49\)</span>. Nobody has checked whether it is also wrong about the <strong>location</strong>, and that is the one explanation the arithmetic cannot touch.</p>
 </div>
 <aside class="notes">
 <p>This inverts what I would have proposed a week ago. The obvious experiment was to vary the dither amplitude and look for an a-squared scaling in the offset. I now expect that experiment to return nothing, because the predicted effect is 0.012 and seed-to-seed scatter will be larger.</p>
@@ -320,19 +835,19 @@ Aykut C. Satici
 </div>
 </div>
 <div class="claim">
-<p>Cheapest of the open questions, and the one the others rest on.</p>
+<p>Cheapest of the open questions, and the one the others rest on. <strong>Worked through, it closes</strong>: most of the offset survives in uniform inflow where no estimator effect can act, so the residual is in the reference, not the algorithm. What it leaves behind is a measurement, not a research program.</p>
 </div>
 </section>
-<section id="what-is-the-estimator-targeting" class="slide level2 smaller">
-<h2>What is the estimator targeting?</h2>
+<section id="where-does-the-torque-gain-converge" class="slide level2 smaller">
+<h2>Where does the torque gain converge?</h2>
 <div class="closing">
 <div class="lead">
-<p>Two explanations, costed out, and both are dead by an order of magnitude.</p>
+<p>Two explanations, costed out, both dead by an order of magnitude, and most of the offset survives in inflow where neither can act.</p>
 </div>
 <div class="cols2">
 <div class="card">
 <p><span class="cardh">The claim</span></p>
-<p>The <span class="math inline">\(0.35\)</span> offset is not estimator bias and not a Jensen shift. What remains is that the simulated rotor’s peak is somewhere other than <span class="math inline">\(7.5\)</span>.</p>
+<p>The offset is not estimator bias, not a Jensen shift, and not scatter: the scatter is bounded at <span class="math inline">\(\sigma_\lambda \lesssim 0.14\)</span> by the run-to-run spread. What remains is that the simulated rotor’s peak is not at <span class="math inline">\(7.5\)</span>.</p>
 </div>
 <div class="card">
 <p><span class="cardh">The caveat</span></p>
@@ -340,19 +855,35 @@ Aykut C. Satici
 </div>
 </div>
 <div class="small">
-<p>Ciri, Leonardi &amp; Rotea, <em>Wind Energy</em> 2019, Tables 3 and 4 · Kumar &amp; Rotea, <em>WES</em> 2024</p>
+<p>Sources: <a href="#/references">[CLR19]</a> Tables 2–4 and Appendices A1–A2; <a href="#/references">[IEC]</a> for the turbulence length scale. Full list on the next slide.</p>
 </div>
+</div>
+</section>
+<section id="references" class="slide level2 smaller">
+<h2>References</h2>
+<div class="refs">
+<p><strong>[R17]</strong>&nbsp; M. A. Rotea, <em>Logarithmic power feedback for extremum seeking control of wind turbines</em>, IFAC-PapersOnLine <strong>50</strong>(1) (2017) 4504–4509. <a href="https://doi.org/10.1016/j.ifacol.2017.08.381">doi:10.1016/j.ifacol.2017.08.381</a></p>
+<p><strong>[CLR19]</strong>&nbsp; U. Ciri, S. Leonardi &amp; M. A. Rotea, <em>Evaluation of log-of-power extremum seeking control for wind turbines using large eddy simulations</em>, Wind Energy <strong>22</strong> (2019) 992–1002. <a href="https://doi.org/10.1002/we.2336">doi:10.1002/we.2336</a></p>
+<p><strong>[KR22]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Wind turbine power maximization using log-power proportional-integral extremum seeking</em>, Energies <strong>15</strong> (2022) 1004. <a href="https://doi.org/10.3390/en15031004">doi:10.3390/en15031004</a></p>
+<p><strong>[KR24]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Optimal tip-speed ratio for degraded blades</em>, Wind Energy Science <strong>9</strong> (2024) 2133–2146. <a href="https://doi.org/10.5194/wes-9-2133-2024">doi:10.5194/wes-9-2133-2024</a></p>
+<p><strong>[RKAJ24]</strong>&nbsp; M. A. Rotea, D. Kumar, E. J. Aju &amp; Y. Jin, <em>Multi-row extremum seeking for wind farm power maximization</em>, J. Phys. Conf. Ser. <strong>2767</strong> (2024) 032043. <a href="https://doi.org/10.1088/1742-6596/2767/3/032043">doi:10.1088/1742-6596/2767/3/032043</a></p>
+<p><strong>[MGR24]</strong>&nbsp; S. P. Mulders, N. Gallo &amp; M. A. Rotea, <em>Analysis of extremum seeking control for wind turbine torque controller optimization by aerodynamic and generator power objectives</em>, ACC (2024). <a href="https://arxiv.org/abs/2407.08059">arXiv:2407.08059</a></p>
+<p><strong>[GKN12]</strong>&nbsp; A. Ghaffari, M. Krstić &amp; D. Nešić, <em>Multivariable Newton-based extremum seeking</em>, Automatica <strong>48</strong> (2012) 1759–1767. <a href="https://doi.org/10.1016/j.automatica.2012.05.059">doi:10.1016/j.automatica.2012.05.059</a></p>
+<p><strong>[S00]</strong>&nbsp; J. C. Spall, <em>Adaptive stochastic approximation by the simultaneous perturbation method</em>, IEEE Trans. Automat. Contr. <strong>45</strong> (2000) 1839–1853. <a href="https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_TAC00.pdf">PDF</a></p>
+<p><strong>[LM23]</strong>&nbsp; C. Lauand &amp; S. Meyn, <em>Quasi-stochastic approximation: design principles with applications to extremum seeking control</em>, IEEE Control Systems Magazine <strong>43</strong> (2023). <a href="https://doi.org/10.1109/MCS.2023.3291884">doi:10.1109/MCS.2023.3291884</a></p>
+<p><strong>[A22]</strong>&nbsp; N. J. Abbas et al., <em>A reference open-source controller for fixed and floating offshore wind turbines</em>, Wind Energy Science <strong>7</strong> (2022) 53–73. <a href="https://doi.org/10.5194/wes-7-53-2022">doi:10.5194/wes-7-53-2022</a></p>
+<p><strong>[J09]</strong>&nbsp; J. Jonkman, S. Butterfield, W. Musial &amp; G. Scott, <em>Definition of a 5-MW reference wind turbine</em>, NREL/TP-500-38060 (2009). <a href="https://www.nrel.gov/docs/fy09osti/38060.pdf">PDF</a> &nbsp;·&nbsp; <strong>[IEC]</strong>&nbsp; IEC 61400-1 ed.&nbsp;3, normal turbulence model.</p>
 </div>
 <div class="footnote">
-<p>One of three: see also <a href="q2-speed-limit.html">the speed limit</a> and <a href="q3-probing.html">whether probing is needed</a>.</p>
+<p>See also <a href="q4-matrix-gain.html">the matrix gain</a>.</p>
 </div>
 
 
-</section>
+</section></section>
     </div>
   <div class="quarto-auto-generated-content" style="display: none;">
 <div class="footer footer-default">
-<p><a href="../../research/wind-esc/index.html">← Wind Turbine Control</a> · Q1, the Estimand</p>
+<p><a href="../../research/wind-esc/index.html">← Wind Turbine Control</a> · Q1, Where k Lands</p>
 </div>
 </div></div>
 
