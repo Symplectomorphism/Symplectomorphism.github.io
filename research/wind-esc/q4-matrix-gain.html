@@ -292,7 +292,7 @@ N_{i,j}(t) = \frac{4}{a_ia_j}\sin\omega_i t\,\sin\omega_j t \quad (i \ne j)\]</s
 </div>
 <aside class="notes">
 <p>Say this one out loud before anything else. The demodulation pair is not new and neither is the conclusion that it takes the curvature out of the loop gain. Both are Ghaffari, Krstic and Nesic, Automatica 48 (2012) 1759 to 1767, verified, which also supplies a Riccati filter converging to the inverse of H without ever inverting a matrix, and which states the convergence rate becoming user-assignable as its headline result. Krstic is not someone to accidentally re-derive in front of this audience.</p>
-<p>What is not in that paper: the wind turbine feasibility gate on the next slides, the p-squared frequency budget for the multi-turbine yaw problem, and the pairing with Zap, whose asymptotic covariance theory and regularized pseudo-inverse their Riccati filter lacks. That is the honest boundary of the contribution.</p>
+<p>What is not in that paper: the wind turbine feasibility limit on the next slides, the p-squared frequency budget for the multi-turbine yaw problem, and the pairing with Zap, whose asymptotic covariance theory and regularized pseudo-inverse their Riccati filter lacks. That is the honest boundary of the contribution.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -410,7 +410,7 @@ N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
 <section>
 <section id="what-it-costs" class="title-slide slide level1 divider center">
 <h1>What it costs</h1>
-<p>Three objections. One of them is a hard gate.</p>
+<p>Three objections. One of them is a hard precondition, not a matter of degree.</p>
 </section>
 <section id="why-the-curvature-is-better-conditioned-near-the-peak" class="slide level2 smaller">
 <h2>Why the curvature is better conditioned near the peak</h2>
@@ -599,6 +599,47 @@ A = \nabla^2 J(\theta^\star), \quad \Sigma_W = \text{covariance of the estimator
 <div class="claim">
 <p>So the case for a matrix gain here rests on <strong>tuning effort and conditioning</strong>, not on terminal variance. Argued on variance it loses to a running mean. And note neither is in the published turbine loops, which are constant-gain and so do not average down at all.</p>
 </div>
+</section>
+<section id="what-averaging-cannot-do" class="slide level2 smaller">
+<h2>What averaging cannot do</h2>
+<p>Averaging is optimal in exactly one respect and silent on the rest. Four shortcomings, in rising order of how much they matter here:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">1 · it is asymptotic</span></p>
+<p><span class="math inline">\(\Sigma^{\text{PR}}\)</span> is a central-limit statement as <span class="math inline">\(n\to\infty\)</span>. The <strong>transient</strong> is still governed by the raw iterate, whose rate is <span class="math inline">\(\kappa|H|\)</span> and therefore still uncalibrated.</p>
+</div>
+<div class="card">
+<p><span class="cardh">2 · it needs a decaying step</span></p>
+<p>Textbook Polyak-Ruppert wants <span class="math inline">\(\alpha_n \to 0\)</span>. A turbine has to keep <strong>tracking</strong> a <span class="math inline">\(\lambda^\star\)</span> that drifts with blade condition, and a decaying gain eventually stops tracking anything.</p>
+</div>
+</div>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">3 · it does not straighten the path</span></p>
+<p>With <span class="math inline">\(p&gt;1\)</span> and an ill-conditioned <span class="math inline">\(H\)</span>, steepest ascent takes a curved route and its slowest mode is set by the <strong>smallest</strong> eigenvalue. Averaging quiets the scatter around that route without shortening it. [GKN12] sells exactly this: straight trajectories on elongated level sets.</p>
+</div>
+<div class="card">
+<p><span class="cardh">4 · it never tells you <span class="math inline">\(\kappa\)</span></span></p>
+<p>You still have to choose the step size, and <span class="math inline">\(K = \kappa|H| &lt; 2\)</span> needs <span class="math inline">\(|H|\)</span>. <strong>This is the actual complaint</strong> — retuning effort — and averaging leaves it untouched.</p>
+</div>
+</div>
+<div class="claim">
+<p>So the two are <strong>complementary, not competing</strong>. Averaging buys terminal variance and no calibration; the Hessian buys calibration and no variance. Zap with a Polyak-Ruppert tail is both, and costs one extra correlation plus the <span class="math inline">\(15\)</span> days of averaging that <span class="math inline">\(\hat A\)</span> needs.</p>
+</div>
+<aside class="notes">
+<p>Point two is the one specific to this plant and the easiest to miss. Every convergence result for Polyak-Ruppert assumes a stationary optimum. Blade erosion moves lambda-star by about 0.2 over the life of the blade, so the problem is not stationary, and a scheme whose step size decays to zero stops following. Constant gain plus averaging tracks, but then the average is taken across the drift and is biased toward where the optimum used to be. That is a bias-variance trade in the averaging window, and nobody has written it down for this problem either.</p>
+<p>Point three is the one that decides the farm-scale case, because that is where p is large enough for conditioning to dominate.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section></section>
 <section>
 <section id="without-extremum-seeking" class="title-slide slide level1 divider center">
@@ -1041,6 +1082,144 @@ A = \nabla^2 J(\theta^\star), \quad \Sigma_W = \text{covariance of the estimator
 <p>Fifteen days is the number that decides whether this is worth doing, and it is much worse than the 26 hours the spectral estimate suggested. It is still a separation against blade erosion at months, but perhaps five to ten times rather than a hundred, so it is a real constraint rather than a comfortable one.</p>
 <p>Two honest caveats on it. The 20 per cent target is a judgement, chosen because the plant curvature itself swings 20 per cent across the terminal scatter, so resolving finer buys nothing. And 2100 periods is extrapolated along the fitted slope from 399, which is the longest run made here.</p>
 <p>The turbine is not idle for those fifteen days. It rides the dither that is already there; the estimate simply takes that long to average down.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="simulated-what-happens-if-hat-a-is-under-averaged" class="slide level2 smaller">
+<h2>Simulated: what happens if <span class="math inline">\(\hat A\)</span> is under-averaged</h2>
+<p>A Newton step uses <span class="math inline">\(G = -\hat A/(\varepsilon + \hat A^2)\)</span>. If <span class="math inline">\(\hat A\)</span> comes back with the <strong>wrong sign</strong>, <span class="math inline">\(G\)</span> reverses and the loop runs <em>downhill</em>. Two ingredients, neither from a closed-loop run:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">algebra</span></p>
+<p>Sign correctness needs <span class="math inline">\(\sigma(\hat A) &lt; |H|\)</span>, i.e.&nbsp;relative error under <span class="math inline">\(100\%\)</span>. Nothing about the turbine enters.</p>
+</div>
+<div class="card">
+<p><span class="cardh">the previous slide</span></p>
+<p>That slide’s curve is an <strong>open-loop</strong> measurement, gain held fixed, no feedback to saturate. It converts the <span class="math inline">\(100\%\)</span> into a period count.</p>
+</div>
+</div>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>what it buys</th>
+<th><span class="math inline">\(\sigma(\hat A)/\lvert H\rvert\)</span></th>
+<th><span class="math inline">\(N_H\)</span></th>
+<th>at <span class="math inline">\(T = 600\)</span> s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>sign correct at <span class="math inline">\(1\sigma\)</span></td>
+<td><span class="math inline">\(100\%\)</span></td>
+<td><span class="math inline">\(229\)</span></td>
+<td><span class="math inline">\(1.6\)</span> days</td>
+</tr>
+<tr class="even">
+<td>sign safe at <span class="math inline">\(2\sigma\)</span></td>
+<td><span class="math inline">\(50\%\)</span></td>
+<td><span class="math inline">\(597\)</span></td>
+<td><span class="math inline">\(4.1\)</span> days</td>
+</tr>
+<tr class="odd">
+<td>gain calibrated to a fifth</td>
+<td><span class="math inline">\(20\%\)</span></td>
+<td><span class="math inline">\(2121\)</span></td>
+<td><span class="math inline">\(14.7\)</span> days</td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>So <strong>1.6 days is the hard minimum</strong>, not the 15. Below it the matrix gain is not merely imprecise, it is occasionally the wrong sign, and a plain gradient loop is strictly better. Above it the calibration improves smoothly.</p>
+</div>
+<div class="warn">
+<p>A closed-loop run at <span class="math inline">\(\gamma = 0.05\)</span> (<span class="math inline">\(N_H = 39\)</span>, <span class="math inline">\(\sigma(\hat A)/|H| \approx 3.6\)</span>) shows the failure concretely: <span class="math inline">\(\hat A\)</span> ran from <span class="math inline">\(+7.9\)</span> to <span class="math inline">\(-5.5\)</span> times <span class="math inline">\(H_{\text{true}}\)</span> and flipped sign 10 times in 60 periods. That run is only an <strong>illustration</strong> — its loop gain was also far too high and it saturated — so no number is taken from it. Rerun below with both fixed.</p>
+</div>
+<aside class="notes">
+<p>Worth being straight about this one in the room. The experiment was run to test whether the two recursions compound and it failed to answer that, because the gain estimate was too noisy to keep its sign and both loops ran into their limits. What it did produce is better than what it was aimed at: a first-principles floor on the averaging, from the sign of the gain rather than from a target accuracy someone picked.</p>
+<p>It also reverses the naive reading. Under-averaged, a matrix gain is worse than no matrix gain, because a sign error sends the loop the wrong way while a badly-scaled gradient step only sends it the wrong distance.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="simulated-what-a-polyak-ruppert-tail-buys" class="slide level2 smaller">
+<h2>Simulated: what a Polyak-Ruppert tail buys</h2>
+
+<img data-src="assets/sim-averaging.svg" class="fig-hero r-stretch" alt="Reduction in scatter against averaging window, log axes. The square-root-of-W line rises to 14 at W equals 200. The AR(1) prediction with white driving noise rises only to 1.5. The two measured curves, gradient and Newton loops, lie between at about 2.6 and 3.8."><p><span class="math inline">\(K = 0.015\)</span> so the loop holds its optimum (<span class="math inline">\(0\%\)</span> of updates on the limits), <span class="math inline">\(\gamma = 0.005\)</span> so <span class="math inline">\(\hat A\)</span> keeps its sign. <span class="math inline">\(420\)</span> periods, started at <span class="math inline">\(u^\star\)</span>.</p>
+<div class="claim">
+<p>Averaging helps <strong>both</strong> loops, <span class="math inline">\(2.6\times\)</span> and <span class="math inline">\(3.8\times\)</span> at <span class="math inline">\(W = 200\)</span>. The <span class="math inline">\(1.07\times\)</span> from the earlier run was entirely the saturation artifact. But it is nowhere near the <span class="math inline">\(\sqrt{W} = 14\times\)</span> of independent samples, because the iterate is strongly autocorrelated: <span class="math inline">\(1/K = 67\)</span> periods.</p>
+</div>
+</section>
+<section id="reading-that-honestly" class="slide level2 smaller">
+<h2>Reading that honestly</h2>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th><span class="math inline">\(W\)</span></th>
+<th><span class="math inline">\(\sqrt{W}\)</span> ideal</th>
+<th>AR(1), white noise</th>
+<th>gradient</th>
+<th>Newton</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>25</td>
+<td><span class="math inline">\(5.0\times\)</span></td>
+<td><span class="math inline">\(1.06\times\)</span></td>
+<td><span class="math inline">\(1.12\times\)</span></td>
+<td><span class="math inline">\(1.12\times\)</span></td>
+</tr>
+<tr class="even">
+<td>100</td>
+<td><span class="math inline">\(10.0\times\)</span></td>
+<td><span class="math inline">\(1.25\times\)</span></td>
+<td><span class="math inline">\(2.07\times\)</span></td>
+<td><span class="math inline">\(1.94\times\)</span></td>
+</tr>
+<tr class="odd">
+<td>200</td>
+<td><span class="math inline">\(14.1\times\)</span></td>
+<td><span class="math inline">\(1.49\times\)</span></td>
+<td><span class="math inline">\(2.58\times\)</span></td>
+<td><span class="math inline">\(3.79\times\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>The measurement sits <strong>between</strong> the two predictions, and beats the AR(1) one for the same reason <span class="math inline">\(\hat A\)</span> averaged down faster than <span class="math inline">\(N_H^{-1/2}\)</span> earlier: the driving noise is negatively correlated in band-limited turbulence, so the iterate is less persistent than <span class="math inline">\(\rho = 1-K\)</span> implies. Both of my predictions were too pessimistic, and both assumed white driving noise.</p>
+</div>
+<div class="warn">
+<p>The comparison that matters: raw scatter is <span class="math inline">\(0.082\,u^\star\)</span> for the gradient loop and <span class="math inline">\(0.219\,u^\star\)</span> for the Newton loop at matched design gain. The matrix gain is <strong><span class="math inline">\(2.7\times\)</span> noisier</strong>, because <span class="math inline">\(\hat A\)</span>’s own error modulates the step size. After averaging at <span class="math inline">\(W=200\)</span> the gradient loop still wins, <span class="math inline">\(0.032\)</span> against <span class="math inline">\(0.058\)</span>.</p>
+</div>
+<div class="openq">
+<p>So on terminal variance the matrix gain <strong>costs</strong> rather than buys, measured, not argued. Its case rests entirely on rate calibration and conditioning. That is the same conclusion as the earlier slide, now with numbers behind it.</p>
+</div>
+<aside class="notes">
+<p>Worth saying plainly in the room. We set out to test whether stacking the two compounds, and the answer is that they do not conflict but the matrix gain enters the variance budget on the wrong side. It buys a settling time you can predict and pays for it in scatter, and the scatter it costs is roughly what a 200-period average buys back.</p>
+<p>The honest residual is that all of this is at one operating point, one turbulence realization and one wind speed.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
