@@ -142,3 +142,85 @@ def sim_rolling(path):
     for t in leg.get_texts():
         t.set_color(INK)
     save(fig, path)
+
+
+def sim_averaging(path):
+    """What a Polyak-Ruppert tail actually buys on a correlated iterate."""
+    d = _load("exp4_averaging.npz")
+    W = d["windows"].astype(float)
+    K = float(d["K"])
+    red = {m: float(d[f"{m}_sd_raw"]) / np.array([float(d[f"{m}_sd_{int(w)}"]) for w in W])
+           for m in ("gradient", "newton")}
+
+    def ar1(w, rho):
+        k = np.arange(1, int(w))
+        return 1 / np.sqrt((w + 2 * np.sum((w - k) * rho ** k)) / w ** 2)
+
+    fig, ax = figure(11.6, 3.9)
+    ax.loglog(W, np.sqrt(W), color=FAINT, linewidth=2.2, linestyle=(0, (5, 3)),
+              label=r"$\sqrt{W}$: if the iterates were independent")
+    ax.loglog(W, [ar1(w, 1 - K) for w in W], color=GOLD, linewidth=2.2,
+              linestyle=(0, (2, 3)),
+              label=r"AR(1) with white driving noise")
+    ax.loglog(W, red["gradient"], "o-", color=HOT, linewidth=2.8, markersize=9,
+              label="measured, gradient loop")
+    ax.loglog(W, red["newton"], "s-", color=VIOLET, linewidth=2.8, markersize=8,
+              label="measured, Newton loop")
+
+    ax.annotate("independence is worth\n$14\\times$ and you get $3$",
+                xy=(W[-1], np.sqrt(W[-1])), xytext=(W[-1] * 0.60, 7.6),
+                fontsize=10.5, color=MUTED, linespacing=1.4, ha="center",
+                arrowprops=dict(arrowstyle="->", color=MUTED, linewidth=1.2))
+
+    ax.set_xticks(W)
+    ax.set_xticklabels([f"{int(w)}" for w in W])
+    ax.set_xlim(22, 240)
+    ax.set_ylim(0.9, 20)
+    ax.set_yticks([1, 2, 5, 10, 20])
+    ax.set_yticklabels(["1", "2", "5", "10", "20"])
+    style(ax, r"averaging window $W$   (periods; the loop's own correlation time is $1/K = 67$)",
+          "reduction in scatter")
+    leg = ax.legend(loc="upper left", frameon=False, fontsize=10.5)
+    for t in leg.get_texts():
+        t.set_color(INK)
+    save(fig, path)
+
+
+def sim_period(path):
+    """Both the gradient noise and the curvature bias want a longer dither."""
+    import matplotlib.pyplot as plt
+    TI, L, U, tau = 0.10, 340.0, 8.0, 6.36
+    S = lambda f: TI**2 * (4 * L / U) / (1 + 6 * f * L / U) ** (5 / 3)
+    T = np.logspace(np.log10(70), np.log10(2000), 500)
+    noise = 3 * np.sqrt(S(1 / T) / T)                  # sigma(ghat) * a
+    bias = 100 * (1 / (1 + (2 * (2 * np.pi / T) * tau) ** 2) - 1)
+    corner = 6 * L / U
+
+    fig, ax = figure(11.6, 3.9)
+    ax.semilogx(T, noise / noise.max(), color=HOT, linewidth=2.8,
+                label=r"gradient noise $\sigma(\hat g)\,a$, normalized")
+    ax.axvline(corner, color=FAINT, linewidth=1.4, linestyle=(0, (4, 3)))
+    ax.text(corner * 1.07, 0.88, f"Kaimal corner\n$6L/U = {corner:.0f}$ s",
+            fontsize=10, color=MUTED, linespacing=1.35, va="top")
+    ax.axvline(150, color=GOLD, linewidth=2.0, linestyle=(0, (6, 3)))
+    ax.annotate("published\n$T = 150$ s", xy=(150, 0.995), xytext=(96, 0.70),
+                fontsize=10.5, color=GOLD, ha="center", linespacing=1.35,
+                arrowprops=dict(arrowstyle="->", color=GOLD, linewidth=1.3))
+
+    ax2 = ax.twinx()
+    ax2.semilogx(T, bias, color=VIOLET, linewidth=2.8,
+                 label=r"curvature bias $\hat H/J''-1$")
+    ax2.set_ylabel(r"curvature bias  [%]", color=VIOLET, fontsize=12)
+    ax2.tick_params(axis="y", colors=VIOLET)
+    ax2.set_ylim(-46, 5)
+    ax2.grid(False)
+
+    ax.set_xlim(70, 2000)
+    ax.set_ylim(0.42, 1.10)
+    style(ax, "dither period $T$  [s]", "gradient noise, relative to its worst")
+    lines = ax.get_lines()[:1] + ax2.get_lines()[:1]
+    leg = ax.legend(lines, [l.get_label() for l in lines], loc="lower center",
+                    frameon=False, fontsize=10.5, ncols=2)
+    for t in leg.get_texts():
+        t.set_color(INK)
+    save(fig, path)

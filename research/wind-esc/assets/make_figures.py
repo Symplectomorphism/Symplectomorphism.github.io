@@ -21,6 +21,7 @@ import fig_zap      # noqa: E402
 import fig_open     # noqa: E402
 import fig_setup    # noqa: E402
 import fig_sim      # noqa: E402
+import fig_wind     # noqa: E402
 
 JOBS = [
     (fig_setup.regions, "regions.svg"),
@@ -52,9 +53,15 @@ JOBS = [
     (fig_zap.spread, "zap-spread.svg"),
     (fig_zap.multiplex, "zap-multiplex.svg"),
     (fig_zap.sidon, "zap-sidon.svg"),
+    (fig_wind.kaimal, "wind-kaimal.svg"),
+    (fig_wind.window, "wind-window.svg"),
+    (fig_wind.roadmap, "wind-roadmap.svg"),
+    (fig_wind.validate, "wind-validate.svg"),
     (fig_sim.sim_gate, "sim-gate.svg"),
     (fig_sim.sim_curvature, "sim-curvature.svg"),
     (fig_sim.sim_rolling, "sim-rolling.svg"),
+    (fig_sim.sim_averaging, "sim-averaging.svg"),
+    (fig_sim.sim_period, "sim-period.svg"),
     (fig_three.anomaly, "q1-anomaly.svg"),
     (fig_three.budget, "q1-budget.svg"),
 ]

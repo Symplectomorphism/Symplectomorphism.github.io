@@ -217,7 +217,7 @@ without ever inverting a matrix, and which states the convergence rate becoming
 user-assignable as its headline result. Krstic is not someone to accidentally
 re-derive in front of this audience.
 
-What is not in that paper: the wind turbine feasibility gate on the next
+What is not in that paper: the wind turbine feasibility limit on the next
 slides, the p-squared frequency budget for the multi-turbine yaw problem, and
 the pairing with Zap, whose asymptotic covariance theory and regularized
 pseudo-inverse their Riccati filter lacks. That is the honest boundary of the
@@ -343,7 +343,7 @@ property that makes the method usable.
 
 # What it costs {.divider}
 
-Three objections. One of them is a hard gate.
+Three objections. One of them is a hard precondition, not a matter of degree.
 
 ## Why the curvature is better conditioned near the peak {.smaller}
 
@@ -523,6 +523,69 @@ So the case for a matrix gain here rests on **tuning effort and conditioning**,
 not on terminal variance. Argued on variance it loses to a running mean. And
 note neither is in the published turbine loops, which are constant-gain and so
 do not average down at all.
+:::
+
+## What averaging cannot do {.smaller}
+
+Averaging is optimal in exactly one respect and silent on the rest. Four
+shortcomings, in rising order of how much they matter here:
+
+::: {.cols2}
+::: {.card}
+[1 · it is asymptotic]{.cardh}
+
+$\Sigma^{\text{PR}}$ is a central-limit statement as $n\to\infty$. The
+**transient** is still governed by the raw iterate, whose rate is $\kappa|H|$
+and therefore still uncalibrated.
+:::
+
+::: {.card}
+[2 · it needs a decaying step]{.cardh}
+
+Textbook Polyak-Ruppert wants $\alpha_n \to 0$. A turbine has to keep
+**tracking** a $\lambda^\star$ that drifts with blade condition, and a decaying
+gain eventually stops tracking anything.
+:::
+:::
+
+::: {.cols2}
+::: {.card}
+[3 · it does not straighten the path]{.cardh}
+
+With $p>1$ and an ill-conditioned $H$, steepest ascent takes a curved route and
+its slowest mode is set by the **smallest** eigenvalue. Averaging quiets the
+scatter around that route without shortening it. [GKN12] sells exactly this:
+straight trajectories on elongated level sets.
+:::
+
+::: {.card}
+[4 · it never tells you $\kappa$]{.cardh}
+
+You still have to choose the step size, and $K = \kappa|H| < 2$ needs $|H|$.
+**This is the actual complaint** — retuning effort — and averaging leaves it
+untouched.
+:::
+:::
+
+::: claim
+So the two are **complementary, not competing**. Averaging buys terminal
+variance and no calibration; the Hessian buys calibration and no variance. Zap
+with a Polyak-Ruppert tail is both, and costs one extra correlation plus the
+$15$ days of averaging that $\hat A$ needs.
+:::
+
+::: {.notes}
+Point two is the one specific to this plant and the easiest to miss. Every
+convergence result for Polyak-Ruppert assumes a stationary optimum. Blade
+erosion moves lambda-star by about 0.2 over the life of the blade, so the
+problem is not stationary, and a scheme whose step size decays to zero stops
+following. Constant gain plus averaging tracks, but then the average is taken
+across the drift and is biased toward where the optimum used to be. That is a
+bias-variance trade in the averaging window, and nobody has written it down for
+this problem either.
+
+Point three is the one that decides the farm-scale case, because that is where
+p is large enough for conditioning to dominate.
 :::
 
 # Without extremum seeking {.divider}
@@ -982,6 +1045,238 @@ slope from 399, which is the longest run made here.
 
 The turbine is not idle for those fifteen days. It rides the dither that is
 already there; the estimate simply takes that long to average down.
+:::
+
+## Simulated: what happens if $\hat A$ is under-averaged {.smaller}
+
+A Newton step uses $G = -\hat A/(\varepsilon + \hat A^2)$. If $\hat A$ comes back
+with the **wrong sign**, $G$ reverses and the loop runs *downhill*. Two
+ingredients, neither from a closed-loop run:
+
+::: {.cols2}
+::: {.card}
+[algebra]{.cardh}
+
+Sign correctness needs $\sigma(\hat A) < |H|$, i.e. relative error under
+$100\%$. Nothing about the turbine enters.
+:::
+
+::: {.card}
+[the previous slide]{.cardh}
+
+That slide's curve is an **open-loop** measurement, gain held fixed, no feedback
+to saturate. It converts the $100\%$ into a period count.
+:::
+:::
+
+| what it buys | $\sigma(\hat A)/\lvert H\rvert$ | $N_H$ | at $T = 600$ s |
+|---|---|---|---|
+| sign correct at $1\sigma$ | $100\%$ | $229$ | $1.6$ days |
+| sign safe at $2\sigma$ | $50\%$ | $597$ | $4.1$ days |
+| gain calibrated to a fifth | $20\%$ | $2121$ | $14.7$ days |
+
+::: claim
+So **1.6 days is the hard minimum**, not the 15. Below it the matrix gain is not
+merely imprecise, it is occasionally the wrong sign, and a plain gradient loop
+is strictly better. Above it the calibration improves smoothly.
+:::
+
+::: {.warn}
+A closed-loop run at $\gamma = 0.05$ ($N_H = 39$, $\sigma(\hat A)/|H| \approx 3.6$)
+shows the failure concretely: $\hat A$ ran from $+7.9$ to $-5.5$ times
+$H_{\text{true}}$ and flipped sign 10 times in 60 periods. That run is only an
+**illustration** — its loop gain was also far too high and it saturated — so no
+number is taken from it. Rerun below with both fixed.
+:::
+
+::: {.notes}
+Worth being straight about this one in the room. The experiment was run to test
+whether the two recursions compound and it failed to answer that, because the
+gain estimate was too noisy to keep its sign and both loops ran into their
+limits. What it did produce is better than what it was aimed at: a
+first-principles floor on the averaging, from the sign of the gain rather than
+from a target accuracy someone picked.
+
+It also reverses the naive reading. Under-averaged, a matrix gain is worse than
+no matrix gain, because a sign error sends the loop the wrong way while a
+badly-scaled gradient step only sends it the wrong distance.
+:::
+
+## Simulated: what a Polyak-Ruppert tail buys {.smaller}
+
+![](assets/sim-averaging.svg){.fig-hero fig-alt="Reduction in scatter against averaging window, log axes. The square-root-of-W line rises to 14 at W equals 200. The AR(1) prediction with white driving noise rises only to 1.5. The two measured curves, gradient and Newton loops, lie between at about 2.6 and 3.8."}
+
+$K = 0.015$ so the loop holds its optimum ($0\%$ of updates on the limits),
+$\gamma = 0.005$ so $\hat A$ keeps its sign. $420$ periods, started at $u^\star$.
+
+::: claim
+Averaging helps **both** loops, $2.6\times$ and $3.8\times$ at $W = 200$. The
+$1.07\times$ from the earlier run was entirely the saturation artifact. But it
+is nowhere near the $\sqrt{W} = 14\times$ of independent samples, because the
+iterate is strongly autocorrelated: $1/K = 67$ periods.
+:::
+
+## Reading that honestly {.smaller}
+
+| $W$ | $\sqrt{W}$ ideal | AR(1), white noise | gradient | Newton |
+|---|---|---|---|---|
+| 25 | $5.0\times$ | $1.06\times$ | $1.12\times$ | $1.12\times$ |
+| 100 | $10.0\times$ | $1.25\times$ | $2.07\times$ | $1.94\times$ |
+| 200 | $14.1\times$ | $1.49\times$ | $2.58\times$ | $3.79\times$ |
+
+::: claim
+The measurement sits **between** the two predictions, and beats the AR(1) one
+for the same reason $\hat A$ averaged down faster than $N_H^{-1/2}$ earlier:
+the driving noise is negatively correlated in band-limited turbulence, so the
+iterate is less persistent than $\rho = 1-K$ implies. Both of my predictions
+were too pessimistic, and both assumed white driving noise.
+:::
+
+::: {.warn}
+The comparison that matters: raw scatter is $0.082\,u^\star$ for the gradient
+loop and $0.219\,u^\star$ for the Newton loop at matched design gain. The matrix
+gain is **$2.7\times$ noisier**, because $\hat A$'s own error modulates the step
+size. After averaging at $W=200$ the gradient loop still wins, $0.032$ against
+$0.058$.
+:::
+
+::: {.openq}
+So on terminal variance the matrix gain **costs** rather than buys, measured,
+not argued. Its case rests entirely on rate calibration and conditioning. That
+is the same conclusion as the earlier slide, now with numbers behind it.
+:::
+
+::: {.notes}
+Worth saying plainly in the room. We set out to test whether stacking the two
+compounds, and the answer is that they do not conflict but the matrix gain
+enters the variance budget on the wrong side. It buys a settling time you can
+predict and pays for it in scatter, and the scatter it costs is roughly what a
+200-period average buys back.
+
+The honest residual is that all of this is at one operating point, one
+turbulence realization and one wind speed.
+:::
+
+# Modeling the wind as a process {.divider}
+
+Rotea's suggestion: write $V = \bar V(1+\varepsilon)$ with $\varepsilon$ a
+Kaimal process, and push it through analytically.
+
+## Step 1: what is actually noisy {.smaller}
+
+From Q1, $\ln P = \ln(\tfrac12\rho A) + 3\ln V + \ln C_P(\lambda)$. Split the
+wind into mean and fluctuation, $V = \bar V(1+\varepsilon)$ with
+$\varepsilon = \tilde v/\bar V$, so $\sigma_\varepsilon = \mathrm{TI} = 0.10$:
+
+$$3\ln V = 3\ln\bar V + 3\ln(1+\varepsilon)
+= \underbrace{3\ln\bar V}_{\text{constant}} + 3\varepsilon
+\underbrace{- \tfrac32\varepsilon^2 + \cdots}_{\sim 1\%,\ \text{drop}}$$
+
+The tip-speed ratio fluctuates too, so $\ln C_P(\lambda)$ ought to contribute.
+It does not, to first order:
+
+$$\ln C_P(\bar\lambda + \delta\lambda)
+= \ln C_P(\bar\lambda) + \underbrace{\frac{C_P'}{C_P}}_{=\,0\ \text{at the peak}}\delta\lambda
++ O(\delta\lambda^2)$$
+
+::: claim
+**Near the optimum the entire first-order noise in $y$ is $3\varepsilon(t)$.**
+That is the simplification the whole calculation rests on, and it is a
+consequence of sitting at a maximum.
+:::
+
+## Step 2: push it through the demodulator {.smaller}
+
+$$\hat g = \frac{1}{T}\int_0^T y(t)\,\frac{2}{a}\sin\omega t\,dt
+\qquad\Longrightarrow\qquad
+\hat g_{\text{noise}} = \frac{6}{aT}\underbrace{\int_0^T \varepsilon(t)\sin\omega t\,dt}_{=:\,I}$$
+
+$I$ is a linear functional of $\varepsilon$, so by Parseval, with
+$w(t) = \sin\omega t$ on $[0,T]$ and $\hat w$ its transform,
+
+$$\operatorname{Var}(I) = \int_{-\infty}^{\infty} S^{2s}_\varepsilon(f)\,|\hat w(f)|^2\,df,
+\qquad
+\int|\hat w|^2 df = \int_0^T\!\sin^2\omega t\,dt = \frac{T}{2}$$
+
+For $T$ a whole number of dither periods $|\hat w|^2$ is sharply peaked at
+$f = \pm f_1$, so that energy $T/2$ splits as $T/4$ at each. $S_\varepsilon$ is
+smooth there, so it comes outside:
+
+$$\operatorname{Var}(I) = 2\cdot S^{2s}_\varepsilon(f_1)\cdot\frac{T}{4}
+= S_\varepsilon(f_1)\,\frac{T}{4}
+\quad\text{using } S^{2s} = \tfrac12 S \text{ (one-sided)}$$
+
+## Step 3: assemble, and check it {.smaller}
+
+$$\operatorname{Var}(\hat g) = \left(\frac{6}{aT}\right)^{\!2}\!\cdot S_\varepsilon(f_1)\frac{T}{4}
+= \frac{9\,S_\varepsilon(f_1)}{a^2T}
+\qquad\Longrightarrow\qquad
+\boxed{\;\sigma(\hat g) = \frac{3}{a}\sqrt{\frac{S_\varepsilon(1/T)}{T}}\;}$$
+
+with $S_\varepsilon(f) = \mathrm{TI}^2\,(4L/\bar V)\big/(1+6fL/\bar V)^{5/3}$,
+the IEC Kaimal form divided by $\bar V^2$, and $L = 8.1\Lambda_1 = 340$ m at a
+$90$ m hub.
+
+| $T$ | $S_\varepsilon(1/T)$ | predicted | simulated | ratio |
+|---|---|---|---|---|
+| 150 s | $0.325$ | $4.59\times10^{-7}$ | $5.48\times10^{-7}$ | $1.19$ |
+| 300 s | $0.610$ | $4.45\times10^{-7}$ | $5.09\times10^{-7}$ | $1.14$ |
+| 600 s | $0.942$ | $3.91\times10^{-7}$ | $3.83\times10^{-7}$ | $0.98$ |
+
+::: claim
+Within $20\%$ across a $4\times$ range of $T$, **with nothing fitted**. This is
+the $K_v$ that $\sigma_y\sqrt{\tau_c/T}$ was groping at: what matters is the
+spectral density **at the dither frequency**, not a total variance and a
+correlation time.
+:::
+
+## And it says to slow the dither {.smaller}
+
+![](assets/sim-period.svg){.fig-hero fig-alt="Two curves against dither period on a log axis. Gradient noise, normalized, peaks near 175 seconds and falls away on both sides. Curvature bias rises from minus 50 percent at 70 seconds toward zero beyond 600. The published 150 second period sits essentially on the noise maximum."}
+
+Below the Kaimal corner $S_\varepsilon \propto f^{-5/3}$, so
+$\sigma \propto T^{1/3}$; above it $S_\varepsilon$ flattens and
+$\sigma \propto T^{-1/2}$. The turnover is a **maximum**, at $T \approx 6L/U$.
+
+::: claim
+The published $T = 150$ s sits essentially **on the worst point for gradient
+noise**. Longer *and* shorter are quieter, and longer also fixes the curvature
+bias. For once the two constraints agree: $T = 600$ s is $15\%$ quieter on the
+gradient and moves $\hat H$ from $-21\%$ to $-2\%$.
+:::
+
+## What it does not do: close the gap {.smaller}
+
+::: {.warn}
+Feeding the published setup through the same closed form gives
+$\sigma_\lambda = 2.1$, against the $\lesssim 0.14$ the LES implies. **A factor
+of 15, now analytic rather than simulated**, so it is not an artifact of my
+solver.
+:::
+
+Two candidate explanations tested and eliminated:
+
+::: {.cols2}
+::: {.card}
+[the inflow spectrum]{.cardh}
+
+For consistency $S_\varepsilon(1/150\,\text{s})$ would have to be $227\times$
+smaller, i.e. a turbulence intensity of $0.7\%$ against the stated $10\%$.
+:::
+
+::: {.card}
+[the power signal]{.cardh}
+
+Demodulating generator power $k\Omega^3$ rather than aerodynamic
+$\tau_{\text{aero}}\Omega$ changes $\sigma(\hat g)$ by $2\%$. Not this either.
+:::
+:::
+
+::: {.openq}
+What is left: $|J''|$ wrong by $15\times$, an effective $N$ far larger than the
+settling time implies, or the LES inflow genuinely much quieter at
+$1/150$ Hz than IEC Kaimal at $10\%$. **The cheapest discriminator is their own
+Figure 3**, which plots the inflow PSD: read its value at $6.7\times10^{-3}$ Hz.
 :::
 
 ## Verdict {.smaller}
