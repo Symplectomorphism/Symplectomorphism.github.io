@@ -8,7 +8,7 @@
 - Preserve the PDF's chapter numbering and four main parts. Existing LectureNN and WeekNN directories are supporting material, not the new chapter numbering.
 - First delivery: landing page and complete Chapter 1. User requested lecture content, without discussion questions and suggested-answer notes.
 - Speaker notes contain source attribution and necessary technical qualifications only.
-- Preview on codex/kinematics-course before merging or publishing.
+- Chapter 1 was reviewed and published. Preview Chapters 5–7 together on codex/kinematics-chapters05-07 before merging or publishing.
 
 ## Chapter 1 coverage
 
@@ -38,10 +38,12 @@ The topology wording clarifies mixed open/closed mechanisms instead of treating 
 
 Use one deck per textbook chapter initially. Split a long chapter into explicitly labeled parts only when reviewing that chapter, retaining its textbook chapter number.
 
-1. Basic notions, Chapters 1–4: definitions, mobility, four-bar classification, slider-crank/quick-return mechanisms.
-2. Kinematics, Chapters 5–7: rigid motion, position analysis, velocity and acceleration.
-3. Dynamics, Chapters 8–11: mass distribution, generalized forces, equations of motion, friction and impact.
-4. Components, Chapters 12–13: gears and cams.
+Build order requested by the instructor on 2026-09-20 (textbook numbering stays unchanged):
+
+1. Kinematics, Chapters 5–7: rigid motion, position analysis, velocity and acceleration. Build and review these three together.
+2. Dynamics, Chapters 8–11: mass distribution, generalized forces, equations of motion, friction and impact.
+3. Components, Chapters 12–13: gears and cams.
+4. Return to Chapters 2–4: mobility, four-bar classification, slider-crank/quick-return mechanisms.
 
 Chapter 11 includes complementarity problems, measure differential inclusions, and numerical methods. Decide with the instructor whether to cover the full treatment or separate foundational undergraduate material from advanced extensions before building that deck. Appendices A–C are potential support notes, not currently promised slide decks.
 
