@@ -8,7 +8,7 @@
 - Preserve the PDF's chapter numbering and four main parts. Existing LectureNN and WeekNN directories are supporting material, not the new chapter numbering.
 - First delivery: landing page and complete Chapter 1. User requested lecture content, without discussion questions and suggested-answer notes.
 - Speaker notes contain source attribution and necessary technical qualifications only.
-- Chapter 1 was reviewed and published. Preview Chapters 5–7 together on codex/kinematics-chapters05-07 before merging or publishing.
+- Chapters 1 and 5–7 were reviewed and published. Preview Chapters 8–11 together on codex/kinematics-chapters08-11 before merging or publishing.
 
 ## Chapter 1 coverage
 
@@ -45,6 +45,10 @@ Build order requested by the instructor on 2026-09-20 (textbook numbering stays 
 3. Components, Chapters 12–13: gears and cams.
 4. Return to Chapters 2–4: mobility, four-bar classification, slider-crank/quick-return mechanisms.
 
-Chapter 11 includes complementarity problems, measure differential inclusions, and numerical methods. Decide with the instructor whether to cover the full treatment or separate foundational undergraduate material from advanced extensions before building that deck. Appendices A–C are potential support notes, not currently promised slide decks.
+The instructor approved the full Chapter 11 sequence, including complementarity problems, measure differential inclusions, and numerical methods. A dedicated warning slide marks the start of advanced material after the introductory friction and impact slides. Appendices A–C are potential support notes, not currently promised slide decks.
 
 For each chapter: inventory every PDF section, compare the matching lecture sources, keep notation consistent, add worked examples where the source supports them, cite figures, render and inspect every slide, then review before proceeding.
+
+## Dynamics batch
+
+Chapters 8–11 follow the coverage and correction log in [chapters08-11-coverage.md](chapters08-11-coverage.md). The landing page also includes the original Fall 2021 syllabus and the instructor-provided Dynamics and Robotics reference links.
