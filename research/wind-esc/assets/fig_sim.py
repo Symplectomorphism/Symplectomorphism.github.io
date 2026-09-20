@@ -191,8 +191,22 @@ def sim_period(path):
     import matplotlib.pyplot as plt
     TI, L, U, tau = 0.10, 340.0, 8.0, 6.36
     S = lambda f: TI**2 * (4 * L / U) / (1 + 6 * f * L / U) ** (5 / 3)
-    T = np.logspace(np.log10(70), np.log10(2000), 500)
-    noise = 3 * np.sqrt(S(1 / T) / T)                  # sigma(ghat) * a
+    T = np.logspace(np.log10(70), np.log10(2000), 300)
+
+    def what2(f, T):                                    # |w-hat|^2, A.3 closed form
+        a, b = 2 * np.pi / T, 2 * np.pi * f
+        near = np.abs(np.abs(b) - a) < 1e-9
+        z = (a * (1 - np.exp(-1j * b * T))) / (a**2 - np.where(near, 1, b**2))
+        out = np.abs(z) ** 2
+        out[near] = (T / 2) ** 2
+        return out
+
+    def sigma_exact(T):                                 # sigma(ghat) * a, exact integral
+        f = np.linspace(-60 / T, 60 / T, 120_001)
+        return 6 / T * np.sqrt(np.trapezoid(0.5 * S(np.abs(f)) * what2(f, T), f))
+
+    noise = np.array([sigma_exact(t) for t in T])
+    print(f"    sim_period: noise maximum at T = {T[noise.argmax()]:.0f} s")
     bias = 100 * (1 / (1 + (2 * (2 * np.pi / T) * tau) ** 2) - 1)
     corner = 6 * L / U
 
