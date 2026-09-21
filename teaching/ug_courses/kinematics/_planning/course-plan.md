@@ -8,7 +8,7 @@
 - Preserve the PDF's chapter numbering and four main parts. Existing LectureNN and WeekNN directories are supporting material, not the new chapter numbering.
 - First delivery: landing page and complete Chapter 1. User requested lecture content, without discussion questions and suggested-answer notes.
 - Speaker notes contain source attribution and necessary technical qualifications only.
-- Chapters 1 and 5–7 were reviewed and published. Preview Chapters 8–11 together on codex/kinematics-chapters08-11 before merging or publishing.
+- Chapters 1 and 5–11 were reviewed and published. On 2026-09-21 the instructor authorized completing Chapters 2–4 and 12–13, merging to master, and publishing without a separate review.
 
 ## Chapter 1 coverage
 
@@ -47,8 +47,12 @@ Build order requested by the instructor on 2026-09-20 (textbook numbering stays 
 
 The instructor approved the full Chapter 11 sequence, including complementarity problems, measure differential inclusions, and numerical methods. A dedicated warning slide marks the start of advanced material after the introductory friction and impact slides. Appendices A–C are potential support notes, not currently promised slide decks.
 
-For each chapter: inventory every PDF section, compare the matching lecture sources, keep notation consistent, add worked examples where the source supports them, cite figures, render and inspect every slide, then review before proceeding.
+For each chapter: inventory every PDF section, compare the matching lecture sources, keep notation consistent, add worked examples where the source supports them, cite figures, render and inspect every slide, then follow the instructor's current review/publication instruction.
 
 ## Dynamics batch
 
 Chapters 8–11 follow the coverage and correction log in [chapters08-11-coverage.md](chapters08-11-coverage.md). The landing page also includes the original Fall 2021 syllabus and the instructor-provided Dynamics and Robotics reference links.
+
+## Final chapter batch
+
+Chapters 2–4 and 12–13 complete all thirteen textbook chapter decks. See [remaining-chapters-coverage.md](remaining-chapters-coverage.md) for source coverage, additions, and corrections.
