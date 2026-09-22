@@ -12,7 +12,7 @@ format:
     footer: "[← Course Home](index.qmd) · Systems Architecture · Chapter 6"
     logo: /images/monogram_solid-blk.png
     chalkboard: false
-    css: revealjs-styles.css
+    css: [revealjs-styles.css, chapter06-tables.css]
 ---
 
 ## Form, Function, and Architecture
@@ -81,7 +81,7 @@ Functional architecture (left) + formal structure (right) combine into system ar
 - Jobs: pushes back on "design = aesthetics": design is fundamentally about function, how something works
 - Wright: goes further: form and function shouldn't be reconciled, they should be **unified**, "one"
 - Relate benefit to the delivered function and cost to building, procuring, and maintaining the system's form.
-- A good architecture (lots of desired function, minimal form) is nearly synonymous with good value: maximizes benefit-to-cost by definition. This is why "elegant"/"efficient" mappings matter later: not aesthetics, value
+- A good architecture (lots of desired function, minimal form) is nearly synonymous with good value: seeks valued benefit at acceptable cost; this does not prescribe a numerical benefit/cost ratio. This is why "elegant"/"efficient" mappings matter later: not aesthetics, value
 :::
 
 # 6.2 System Architecture: Form and Function
@@ -91,7 +91,7 @@ Functional architecture (left) + formal structure (right) combine into system ar
 How would we describe the architectural difference between two bridges with the *same* external function (carrying vehicles) and *similar* form (towers, roadbed, cables)?
 
 ::: {.fragment .callout-tip}
-The roadbed of a cable-stay bridge carries load in **compression**; a suspension bridge's roadbed does not. The suspension bridge's anchors react to cable loads directly: letting it span much farther.
+In the idealized cable-stayed arrangement, inclined stays introduce **deck compression**. In a conventional earth-anchored suspension bridge, the main cables transfer loads to towers and end anchorages. Different load paths mean different mappings of form to function.
 :::
 
 ::: {.notes}
@@ -118,28 +118,33 @@ A suspension bridge (left) and a cable-stay bridge (right): same function, simil
 - Must understand the internal load path (force flow: roadbed → cables → anchors/towers) to see these are two fundamentally different architectures wearing similar-looking clothes
 :::
 
-## Table 6.1 · Questions for Defining Architecture {.smaller}
+## Table 6.1 · Questions for Defining Architecture {.smaller .chapter06-detail}
 
-| Question | Produces |
+::: {.architecture-table}
+| Question | Analytical result |
 |---|---|
-| 6a. How are instruments mapped to internal processes? | The idealized architecture |
-| 6b. What non-idealities require added operands/processes/instruments? | The realistic architecture |
-| 6c. What supporting functions and instruments support the value path? | Layers near the value pathway |
-| 6d. What are the interfaces at the system boundaries? | Formal/functional interface definitions |
-| 6e–g. What is the execution sequence? Parallel threads? Timing? | A sequence diagram; timing constraints |
+| **6a.** Which instruments enable which processes? How does structure support interaction and emergence? | Idealized form–process–operand architecture |
+| **6b.** Which non-idealities require added operands, processes, or instruments? | Realistic value pathway |
+| **6c.** What supports the value-pathway instruments? | Supporting processes and instruments |
+| **6d.** What crosses each boundary, through which process and compatible instruments? | Formal and functional interface definition |
+| **6e.** In what order do processes execute? | Ordered actions and state changes |
+| **6f.** Which activities execute in parallel? | Interacting threads of activity |
+| **6g.** What clock-time constraints matter? | Durations, latency, overlap, and deadlines |
+:::
 
 ::: {.side-caption}
-**Question 6a** connects the analyses of form and function from Chapters 4 and 5.
+Adapted from Table 6.1. Question 6a includes both allocation and the structural relationships needed for the interactions.
 :::
 
 ::: {.notes}
-- **Literal outline of the rest of the chapter**: every remaining section answers one row
-- **6a**: instrument→process mapping, functional interaction, emergence → **idealized architecture**. Crux of Part 2, and of the whole text. Rest of Section 6.2 develops this
-- **6b**: non-idealities requiring extra operands/processes/instruments → **realistic architecture** (Section 6.3)
-- **6c**: supporting functions/instruments keeping value-pathway instruments working (structural/energetic/informatic) → layered picture (Section 6.3)
-- **6d**: interfaces at system boundaries (Section 6.3)
-- **6e–g**: execution sequence, parallel threads, timing → operational behavior (Section 6.4)
-- Useful beyond this course: working through these seven questions in order is a reliable, comprehensive procedure for analyzing any system's architecture
+Keep 6e, 6f, and 6g separate: ordering, concurrency, and clock time are different questions. The result of 6a is not merely an equipment list. A map of enabling instruments must also explain how their processes can interact through operands.
+
+**Discussion:** Which question would expose two processes that are correctly allocated but cannot exchange their operand?
+
+**Suggested answer:** 6a's structural-interaction question. Then use 6d to specify an interface if the interaction crosses the chosen boundary.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 126, Table 6.1.
 :::
 
 ## The Simplest Case: One-to-One Flow-Through {.smaller}
@@ -252,6 +257,27 @@ Left to right, top to bottom: (a) no instrument, (b) operand-as-instrument, (c) 
 - Many-to-many mapping is common, not a rare exception: precisely because it's common, it demands real, deliberate attention from the architect
 :::
 
+## A Procedure for Mapping Form to Function {.smaller .chapter06-detail}
+
+1. List the important **elements of form** from Chapter 4.
+2. List the value-related **processes and operands** from Chapter 5.
+3. For each process, identify every instrument needed to execute it.
+4. Draw the instrument–process links; allow one-to-many and many-to-one mappings.
+5. Investigate **unassigned elements of form**: what omitted process explains their role?
+
+**Pump:** the impeller enables Accelerating; the housing enables both Diffusing and Outflowing. The remaining seal, shaft, and motor prompt further analysis.
+
+::: {.notes}
+This procedure is a reverse-engineering method, not permission to invent equipment. A missing instrument may reveal an incomplete parts list, an implicit environmental enabler, or an inappropriate abstraction. The pressure measurement example in the book reveals an instrument absent from the original list.
+
+**Discussion:** Is an unassigned element automatically unnecessary?
+
+**Suggested answer:** No. It may manage a non-ideality, support another instrument, or participate in an interface. Investigate those roles before proposing removal.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, pp. 131–132, Identifying Form-to-Process Mapping.
+:::
+
 ## Figure 6.8 · The Pump's Idealized Architecture
 
 ![](assets/chapter06/fig6_8_pump_primary_secondary.jpg){height=370px fig-align="center"}
@@ -262,7 +288,7 @@ Cover, impeller, and housing map (nearly) one-to-one onto inflowing/accelerating
 
 ::: {.notes}
 - **Return to the pump** (running example, Ch. 4–5): apply the mapping ideas developed so far
-- **Primary value pathway**: cover→inflowing, impeller→accelerating, housing→diffusing *and* outflowing (housing maps to two processes, another many-to-one instance)
+- **Primary value pathway**: cover→inflowing, impeller→accelerating, housing→diffusing *and* outflowing (housing maps to two processes: one-to-many from form to process)
 - Secondary value-related functions also appear: measuring (should have a sensor: book flags none was on Ch. 4's original parts list, an interesting gap) and deflecting (water slinger, protects motor from leaked water)
 - The seal, O-ring, motor, shaft, screws, locking nut, and power supply still need functions assigned to them.
 - Not an oversight: natural result of identifying only the *idealized* architecture (Question 6a). Sets up Section 6.3's non-idealities discussion
@@ -279,16 +305,87 @@ Importing, looping, testing, and exporting each map to a single line of code; th
 ::: {.notes}
 - **Same mapping analysis, applied to bubblesort** (Ch. 5's other running example)
 - Most processes map cleanly to one line of code: importing, the two looping processes, testing, exporting
-- Exception: exchanging spans three lines (temp-variable swap sequence): one process, multiple instrument lines. Mirror image of the pump housing's many-to-one
+- Exception: exchanging spans three lines (temp-variable swap sequence): one process, multiple instrument lines. Mirror image of the pump housing's one-to-many mapping
 - **Where emergent sorting actually comes from**: `if` creates *conditional* exchanging; the two nested `for` loops add a full repeated sweep
 - Conditional exchange + repeated sweep = emergent sorting. A fully precise, mechanistic "emergence from mapping" example: good anchor when the fuzzier pump examples feel hand-wavy
+:::
+
+## How Structure Enables Functional Interaction {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Structural relationship | What it can enable or influence |
+|---|---|
+| A connecting passage | Transfer of an operand between processes |
+| Proximity and alignment | Fluid or other ballistic transfer without mechanical attachment |
+| Sequence and shared variable access | Software control and data interactions |
+| Intangible relationships, such as trust | Performance of organizational interactions |
+:::
+
+**Test each functional link:** which structural relationship makes it possible, and which properties affect how well it works?
+
+Connections are common enablers, but **mechanical attachment is not required for every interaction**.
+
+::: {.notes}
+The book distinguishes enabling function from influencing performance, while giving exceptions to a simple connection-versus-location rule. Heart/lung connections enable blood movement; proximity can reduce the burden of moving blood. In software, sequence can itself enable the correct function. Proximity and alignment can also enable a fluid transfer.
+
+**Discussion:** Does a line between two objects on a parts drawing establish a functional interaction?
+
+**Suggested answer:** No. Identify the relationship represented by the line and the operand/process interaction it supports. Conversely, absence of a mechanical connection does not prove absence of functional interaction.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, pp. 133–135, Formal Structure and Functional Interaction.
+:::
+
+## The Pump · A Fluid Path without a Mechanical Joint {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Functional handoff (Figure 6.8) | Enabling form | Structural question |
+|---|---|---|
+| Inflowing → Accelerating, via low-pressure flow | Cover → Impeller | Can inlet flow reach the rotating impeller? |
+| Accelerating → Diffusing, via high-velocity flow | Impeller → Housing | Can discharged flow enter the housing passage? |
+:::
+
+- **Figure 4.16:** mechanical connectivity does not show these fluid handoffs as direct attachments.
+- **Figure 4.14 / Table 4.7:** spatial proximity and arrangement supply the missing explanation.
+- A hose aimed into a nearby bucket transfers water without a joint. Pump clearances likewise matter to transfer and performance.
+
+::: {.notes}
+Revisit the already-taught Chapter 4 spatial and connectivity diagrams. Do not add a mechanical joint between a rotating impeller and the stationary cover merely to make the connectivity graph match the flow pathway. The physical geometry makes the fluid interaction possible, and the gap affects leakage and pressure performance.
+
+**Discussion:** What should be specified beyond “close to” for engineering analysis?
+
+**Suggested answer:** The relevant gap, alignment, passage geometry, and operating conditions. “Close to” identifies a relationship but is not a quantitative performance specification.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, pp. 134–135, with Ch. 4, Figs. 4.14/4.16 and Table 4.7.
+:::
+
+## Checking Structure against the Functional Model {.smaller .chapter06-detail}
+
+1. Identify the important structural relationships.
+2. Identify the functional interactions among the allocated processes.
+3. For each interaction, ask **what structure enables it**.
+4. Ask which structural properties influence performance and other emergent qualities.
+5. Reconcile discrepancies in the model; revise the design only when justified.
+
+**Bubblesort:** shared variable access enables data exchange; nesting, sequence, and conditional control enable the intended execution. Shared access alone does not prove that a value is actually passed.
+
+::: {.notes}
+The procedure links Chapter 4's static relationships to Chapter 5's dynamic interactions. For reverse engineering, first correct incomplete descriptions; for synthesis, consider changing the actual relationships. OPM enabling links do not by themselves record every connection between a formal relationship and a functional interaction.
+
+**Discussion:** Why is the swap block's access to array entries insufficient to establish sorting?
+
+**Suggested answer:** Correct tests, loop bounds, sequencing, and conditional execution must cause appropriate exchanges. Static access permits an interaction; the behavioral model determines whether and when it occurs.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, pp. 134–135, Identifying How Formal Structure Enables Function and Performance.
 :::
 
 ## Section 6.2 Summary {.smaller}
 
 - The system architecture consists of instrument objects mapped onto internal processes; processes interact through shared or exchanged operands
 - The mapping can be **one-to-one** (the simple, assumed case), **many-to-one**, or **one instrument to many processes**: an operand existing prior to a process can even act as its own instrument
-- **Structure supports emergence**: connections enable functional interaction directly; location/placement and intangible relationships (Ch. 4) inform and influence it
+- **Structure supports emergence**: connections often enable interaction; spatial arrangement and software sequence can also enable it. Other relationships influence performance
 - Structure also **informs performance**: how well the system executes its functions
 
 ::: {.notes}
@@ -320,6 +417,31 @@ Bubblesort, being a deterministic digital system, has *no* non-idealities in Fig
 
 **Suggested answer:** Examples: seal/O-ring contain water to prevent leakage; screws and the locking nut maintain required attachment and alignment; motor, shaft, and power supply provide and transmit the energy needed to rotate the impeller. These are different supporting contributions, not all instances of containment. Ask which necessary condition would fail without the object. For software, an idealized sorting diagram can omit memory movement and storage even though a real execution requires them; this does not establish that real software has no failures or resource constraints.
 
+:::
+
+## Non-Idealities · Performance and Robustness {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Need beyond the idealized pathway | Book example | Added contribution |
+|---|---|---|
+| Contain or direct an operand | Pump seals; circulatory check valves | Limit leakage or reverse flow |
+| Store and control information | Team document system | Keep information available and controlled |
+| Improve performance | Electronic design tools for Team X | Support design work |
+| Improve reliability | Monitor dough moisture | Reveal conditions affecting baking |
+| Compensate for bias | Operational amplifier | Offset a non-ideal response |
+:::
+
+Ask **which condition or limitation** each added function addresses. Keep this distinct from directly delivering the primary benefit.
+
+::: {.notes}
+The existing slide emphasizes containment; the book also discusses added performance and robustness. Monitoring reveals a condition but does not, by itself, correct it: any corrective action would need its own allocation. Do not assume every unused part is a seal-like containment device.
+
+**Discussion:** Is monitoring dough moisture the primary function of a bread-making system?
+
+**Suggested answer:** No. It can support reliable delivery of the bread outcome. The primary value-related output remains the specified bread or slices.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 136, Non-idealities in System Architecture.
 :::
 
 ## Supporting Functions and Layers in Architecture {.smaller}
@@ -402,6 +524,34 @@ Flowing (hose ↔ cover), supplying (plug ↔ socket), transmitting-measurement 
 - Unifying pattern: every relationship is specifically "connected" (Ch. 4 vocabulary): interfaces aren't new machinery, just the same form/function/relationship framework applied at the boundary crossing
 :::
 
+## Software Interfaces · Calling Bubblesort {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Interface | Operand passed/shared | Process | Instruments of form |
+|---|---|---|---|
+| Entry | External array and array length | Importing | Caller’s call statement + routine’s entry/parameter declaration |
+| Exit | Sorted array | Exporting | Routine’s return mechanism + receiving caller; or shared storage for an in-place model |
+:::
+
+- Specify compatible **representation, dimensions, and calling convention**.
+- State whether the array is returned, copied, or modified in place.
+- The diagram’s logical interface is not automatically a physical memory copy.
+
+::: {.side-caption}
+Based on the book’s interface analysis; implementation choices must be stated explicitly.
+:::
+
+::: {.notes}
+The book identifies the array and its length at import and the sorted array at export; it notes that the array may remain at its original address. Representation, dimensions, and calling convention are practical ways to make compatibility checkable, rather than assumptions about the book's particular implementation.
+
+**Discussion:** Can a routine complete its sorting process while the caller still receives an unusable result?
+
+**Suggested answer:** Yes, if the interface contract is inconsistent—for example, the caller expects a returned copy while the model only guarantees modification in place. Specify the shared operand and how the caller observes its final state.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 138, System Interfaces in Form and Function.
+:::
+
 ## Section 6.3 Summary {.smaller}
 
 - Even though there is nominally an idealized value delivery pathway, **non-idealities** must be accommodated: usually associated with containing, moving, or storing operands
@@ -465,23 +615,80 @@ Flowing (hose ↔ cover), supplying (plug ↔ socket), transmitting-measurement 
 - Behavior = sequence of functions + associated state changes a system executes to deliver value: the *events*, not just static capability
 - **Operations sequence**: relative, qualitative ordering: strict, overlapping, or optional. Car example: must start before driving (strict); mirrors can be adjusted before or after starting (optional)
 - **Dynamic behavior (timing)**: quantitative, actual clock time: not "before/after" but "within how many milliseconds." Brakes must deploy within X ms of pedal press: a timing constraint, not just a sequencing one
-- Qualitative sequence vs. quantitative timing matters hugely in real-time/safety-critical systems: comes back with the corkscrew's own sequence diagram next
+- Qualitative sequence vs. quantitative timing matters hugely in real-time/safety-critical systems: is applied in the OPM corkscrew walkthrough next
 :::
 
-## Figure 6.14 · Corkscrew Operations Sequence {.smaller}
+## Corkscrew Operations · An OPM View {.smaller .chapter06-detail}
 
-![](assets/chapter06/fig6_14_corkscrew_sequence.jpg){height=420px fig-align="center"}
+![](assets/chapter06/corkscrew_opm.svg){width=96% fig-alt="OPM state change: Extracting moves Cork from in bottle to out of bottle, enabled by the operator and corkscrew."}
+
+- **Operand:** cork; **state change:** in bottle → out of bottle.
+- **Process:** Extracting; **instruments:** operator and corkscrew.
+- Before extraction, the screw must engage the cork and the bottle must be restrained.
 
 ::: {.side-caption}
-A sequence-line diagram: states to the left, processes to the right. The corkscrew itself cycles from storage through use and back to cleaning: the full operational lifecycle (Ch. 8). Source: Crawley, Cameron & Selva (2016), Fig. 6.14.
+Course OPM adaptation of the operational example on pp. 140–142. Pointed arrows show the state change; round-ended links identify enabling instruments.
 :::
 
 ::: {.notes}
-- **Concrete representation of the operations sequence**, applied to the corkscrew
-- Diagram convention: states down the left, processes causing transitions down the right: a variant of a SysML sequence diagram, adapted to a single object's timeline
-- Book shows three parallel sequence lines (bottle, cork, corkscrew): a complete "opening a wine bottle" picture needs all three, not just the corkscrew alone
-- **Trace the corkscrew's full sequence**: storage → moved onto bottle → rotates (twisted in) → translates (driven into cork) → rotates/translates again (levers extract cork) → moved to and cleaned in a sink
-- That final "cleaning" state previews Ch. 8's operational lifecycle: behavior includes the whole cycle, not just moments of active value delivery
+The before and after states are states of the same persistent cork, not different objects and not a claim of material creation/destruction. The operator and device jointly enable the process. The operational conditions are stated in prose here; they are not depicted as extra OPM links in this focused diagram.
+
+**Discussion:** Why does the static allocation not fully specify an operation?
+
+**Suggested answer:** It says what enables Extracting but not whether engagement and restraint are established at the necessary times. Execution requires the state and ordering conditions as well as the enabling objects.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, pp. 140–142, operational example (OPM adaptation).
+:::
+
+## Corkscrew Operations · Trace the Operand States {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Stage | Process | Object/state evidence |
+|---|---|---|
+| Prepare | Move device; restrain bottle | Corkscrew on bottle; bottle held |
+| Engage | Rotate screw into cork | Cork remains in bottle; screw engaged |
+| Extract | Translate screw and cork | Cork moves out while bottle remains restrained |
+| Release | Disengage cork | Cork free of device; bottle open |
+| Restore | Move and clean device | Device at cleaning location, then clean and ready for storage |
+:::
+
+Track **all three objects**: bottle, cork, and corkscrew. The operation includes preparation and restoration as well as the value-producing extraction.
+
+::: {.notes}
+This is an OPM-oriented execution walkthrough, not an additional modeling notation. Each row can be expanded into processes, objects, states, and enabling instruments. The final readiness-for-storage state extends the book's cleaning endpoint to make the next-use condition explicit.
+
+**Discussion:** Which process must overlap extraction rather than simply happen before it?
+
+**Suggested answer:** Restraining the bottle. Establishing restraint once is not enough; it must persist while the cork is extracted. This motivates the distinction between ordering and concurrent conditions.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, pp. 140–142, operational behavior (adapted walkthrough).
+:::
+
+## Parallel Activity · Order Is Not Enough {.smaller .chapter06-detail}
+
+**Corkscrew:** the operator maintains bottle restraint while the cork moves. One activity must continue during another.
+
+**Illustrative controller requirement** *(assumed numbers for this exercise)*:
+
+- A sensor sample arrives every **20 ms**.
+- Processing takes **8 ms** and actuation takes **5 ms**, sequentially.
+- The response deadline is **15 ms after sample arrival**.
+
+With no waiting, 8 + 5 = **13 ms**: the deadline is met. A parallel logging task that blocks processing for 4 ms makes the response **17 ms**: the deadline is missed.
+
+Correct ordering does not guarantee timely execution when activities share resources.
+
+::: {.notes}
+This numerical exercise is a course illustration of the book's timing discussion, not a textbook claim about a particular device. Assume one blocking delay before processing, no other overhead, and the stated deadline reference. The period and response deadline are different quantities.
+
+**Discussion:** How much blocking can be tolerated under these assumptions?
+
+**Suggested answer:** At most 2 ms, because 15 − 8 − 5 = 2. The architecture must account for scheduling or resource isolation if a concurrent activity could block longer. This is timing analysis alongside an OPM allocation, not a new diagram language.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 142, dynamic behavior and parallel threads.
 :::
 
 ## Operations Cost {.smaller}
@@ -545,24 +752,129 @@ Compare with Figure 6.10: the value pathway is fully preserved; the motor shaft'
 - Simplification doesn't just shrink the diagram: the motor shaft's dual role (support + drive) actually stands out *more clearly* here than buried in Fig. 6.10. Done well, simplification can improve comprehension, not just compress it
 :::
 
-## Table 6.2 · The Architecture as an Array {.smaller}
+## Table 6.2 · Combined Process–Operand and Process–Form Array {.smaller .chapter06-detail}
 
-![](assets/chapter06/table6_2_pf_array.jpg){height=400px fig-align="center"}
+**[ PO | PF ]:** each process row records its relationships with both operands and form objects.
+
+::: {.architecture-table}
+| Block | Columns | What to record |
+|---|---|---|
+| **PO** | Flow operands O1–O5 | Created (`c′`), consumed (`d`), or affected (`a`) |
+| **PF** | Cover, impeller, housing, motor, shaft, pipes, power supply | Instrument (`I`), or affected (`a`) when that form object is acted upon |
+:::
+
+- A form object can enable one process and be an **operand of another**.
+- The next two slides split Table 6.2 by process rows for readability.
+- Together they represent the same simplified architecture as Figure 6.15.
+
+::: {.notes}
+Do not call the entire table a PF array. Its left block is PO and its right block is PF. O1, O2, and O3 are internal low-pressure, high-velocity, and high-pressure flow; O4 and O5 are external low-pressure and high-pressure flow. The flow-stage object identities match the flow-through representation from Chapter 5.
+
+**Discussion:** Why can an a appear in the PF block?
+
+**Suggested answer:** The corresponding element of form is acted upon by that process. For example, the shaft enables driving while the impeller is affected. Object identity does not confine it to the instrument role in every relation.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 144, Table 6.2.
+:::
+
+## Table 6.2 · Value-Pathway Rows P1–P5 {.smaller .chapter06-detail}
+
+::: {.wide-array}
+| Process | O1 | O2 | O3 | O4 | O5 | Cover | Impeller | Housing | Pipe in | Pipe out |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| P1 Inflowing | c′ | | | d | | I | | | I | |
+| P2 Accelerating | d | c′ | | | | | I | | | |
+| P3 Diffusing | | d | c′ | | | | | I | | |
+| P4 Outflowing | | | d | | c′ | | | I | | I |
+| P5 Guiding / containing | a | a | a | | | I | | I | | |
+:::
+
+**O1–O3:** internal low-p, high-v, high-p flow. **O4–O5:** external low-p, high-p flow. p = pressure; v = velocity.
+
+**Read P2:** the impeller enables Accelerating, which consumes O1 and creates O2. **P5:** cover and housing also guide/contain the flow.
 
 ::: {.side-caption}
-The **process-form (PF) array**: rows are processes, columns are operands (O1–O5) and instruments. **c′** = produce, **d** = consume, **a** = affect, **I** = instrument-of. Contains exactly the same information as Figure 6.15: just tabulated. Source: Crawley, Cameron & Selva (2016), Table 6.2.
+Table 6.2, rows P1–P5. Motor, shaft, and supply columns are entirely blank here and omitted; blank cells mean no direct modeled relationship.
 :::
 
 ::: {.notes}
-- **Matrix/array representation: same content as Fig. 6.15, organized differently**
-- Rows = processes; columns split into operands (O1–O5, flow states) then instruments of form (cover, impeller, housing, motor...)
-- **Relationship codes**: c′ = produces, d = consumes, a = affects, I = instrument-of
-- Trade-off: graphical (Fig. 6.15) easier to develop/visualize by hand; matrix more compact and far easier to compute on: exactly what the next slide's "combined array" idea depends on
+The three entirely blank form columns are omitted for readability; restore them as blank columns to reconstruct the full table. The motor, shaft, and power supply appear in supporting rows, not as direct instruments of P2 in this allocation.
+
+**Discussion:** Why is the housing marked I in more than one row?
+
+**Suggested answer:** It enables Diffusing, Outflowing, and Guiding/containing. One object of form can participate in several processes, so replacing it with one process name would hide part of the architecture.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 144, Table 6.2.
+:::
+
+
+## Table 6.2 · Supporting Rows P6–P11 {.smaller .chapter06-detail}
+
+::: {.support-array}
+| Process | Cover | Impeller | Housing | Motor | Shaft | Pipe in | Pipe out | Supply |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| P6 Supporting (rotating) | | a | | | I | | | |
+| P7 Driving (shaft) | | a | | | I | | | |
+| P8 Supporting (housing) | a | | I | | | | | |
+| P9 Supporting (motor) | | | a | I | a | | | |
+| P10 Driving (motor) | | | | I | a | | | |
+| P11 Powering | | | | a | | | | I |
+:::
+
+All five **PO columns are blank** for these rows in Table 6.2; they are omitted here to enlarge the PF block.
+
+**Read P7:** shaft = instrument (`I`); impeller = affected object (`a`). In P2, that same impeller is the instrument of Accelerating.
+
+::: {.side-caption}
+Table 6.2, rows P6–P11. Process labels follow the book; use I/a entries to identify the instrument and affected object.
+:::
+
+::: {.notes}
+Walk backward from impeller to shaft to motor to supply. P6 and P7 share the same relation pattern, but represent different processes: supporting rotation and driving. Their distinction cannot be recovered from I/a codes alone; the process labels matter.
+
+**Discussion:** Does an affected impeller cease to be an element of form?
+
+**Suggested answer:** No. It remains the same object. Relative to Driving it is acted upon; relative to Accelerating it enables the process. Distinguish identity from role.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 144, Table 6.2.
+:::
+
+## Table 6.3 · The Full System DSM {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Rows ↓ / Columns → | Processes P | Operands O | Form F |
+|---|:---:|:---:|:---:|
+| **Processes P** | PP | PO | PF |
+| **Operands O** | OP | OO | OF |
+| **Form F** | FP | FO | FF |
+:::
+
+- `PO` and `PF` are the adjacent blocks shown in Table 6.2.
+- Here `PP`, `OO`, and `FF` contain diagonal entity identifiers.
+- `OF` and `FO` are generally zero in this construction: processes mediate the relationships.
+- This `FF` is **not** Chapter 4's mechanical-connectivity DSM.
+
+::: {.side-caption}
+Table 6.3. With m processes, n operands, and k form objects, the full matrix is (m+n+k) × (m+n+k).
+:::
+
+::: {.notes}
+The row/column entity sets determine each block's dimensions. PO is m×n, PF is m×k, OP is n×m, and FP is k×m. Reverse blocks use the Chapter 5 symbolic relationship convention; they should not be treated as arbitrary numerical codes.
+
+**Discussion:** Where would the impeller's enabling relationship to Accelerating appear?
+
+**Suggested answer:** In PF at row Accelerating, column Impeller, with the instrument entry; the reverse relation appears in FP. A mechanical attachment between two parts belongs in a separately defined structural representation, not automatically this diagonal FF block.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 145, Table 6.3; Ch. 5, Box 5.8.
 :::
 
 ## The Design Structure Matrix, Generalized {.smaller}
 
-- Box 5.11 defined **PP**, **PO**, **OP**, **OO** (relationships among processes and operands); this chapter adds **PF** (process↔form) and, by analogy, **FP**
+- Box 5.8 defined **PP**, **PO**, **OP**, **OO** (relationships among processes and operands); this chapter adds **PF** (process↔form) and, by analogy, **FP**
 - **FF** is generally a diagonal: just an identifier for each element of form (it does *not* duplicate the structural connections of Ch. 4)
 - **OF** and **FO** are generally zero: operands rarely connect directly to form: there's always an intervening process
 
@@ -571,8 +883,8 @@ Graphical views (Figures) are easier to develop and visualize; matrix views (Tab
 :::
 
 ::: {.notes}
-- **Generalize Table 6.2's PF array into the fuller Design Structure Matrix (DSM) framework**
-- Remind students of Ch. 5 Box 5.11's four arrays: **PP, PO, OP, OO** (purely functional). This chapter adds **PF** and its transpose **FP**
+- **Generalize Table 6.2's combined PO/PF array into the fuller Design Structure Matrix (DSM) framework**
+- Remind students of Ch. 5 Box 5.8's four arrays: **PP, PO, OP, OO** (purely functional). This chapter adds **PF** and its transpose **FP**
 - **FF** (form-to-form): generally just a diagonal: an identifier label per form element, does *not* duplicate Ch. 4's structural connections
 - **OF, FO**: generally zero: operands never connect directly to form, always an intervening process
 - Practical trade-off: graphical views easier to develop/visualize by hand; matrix views more compact and far easier to compute on: essential once projections are derived algorithmically. Use both, not one exclusively
@@ -604,6 +916,59 @@ Left: the full OPM view. Right: projected onto objects: flour/dough/bread/slices
 - Left: familiar full OPM view (objects as boxes, processes as ovals)
 - Right: same architecture, projected: process ovals vanish, become *labels* on the arrows connecting flour/dough/bread/slices to mixer/oven/cutter
 - Same information, re-encoded: processes as edge labels, not nodes. Have students trace one path (flour to dough) on both diagrams to confirm
+:::
+
+## Figure 6.17 · Constructing an Object Projection {.smaller .chapter06-detail}
+
+![](assets/chapter06/fig6_17_projection_method_objects.png){width=94% fig-alt="OPM paths through processes become labeled links between operand and form objects."}
+
+1. Isolate an object: an operand or an instrument.
+2. Follow its link to a process, then to another connected object.
+3. Replace that path with an object-to-object link **labeled by the process and relationship**.
+
+Keep the full model available: the new link compresses information rather than removing its meaning.
+
+::: {.side-caption}
+Source: Figure 6.17. Letters A/B denote processes; numbered rectangles denote objects.
+:::
+
+::: {.notes}
+Trace one original two-link path and its resulting projected edge. The figure illustrates both an instrument/operand relationship and two instruments participating in a process. A projected association is not necessarily a physical attachment or a causal flow.
+
+**Discussion:** If an oven enables Baking that consumes Dough, what survives in the projection?
+
+**Suggested answer:** Oven and Dough remain explicit objects, with a link encoding the Baking relationship. Dropping the process label would make the edge ambiguous.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 146, Fig. 6.17.
+:::
+
+## Object Projection · Read the Matrix Paths {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Endpoints retained | Symbolic path through a process |
+|---|---|
+| Operand ↔ Operand | OP × PP × PO |
+| Operand ↔ Form | OP × PP × PF |
+| Form ↔ Operand | FP × PP × PO |
+| Form ↔ Form | FP × PP × PF |
+:::
+
+`PP` retains the process identifier in the resulting link. These are **symbolic products**, not numerical weights.
+
+**Worked path:** Dough — Baking — Oven becomes a Dough/Oven relationship labeled by Baking and the consume/instrument roles.
+
+Retaining all terms shows associations; the book's prime-filtering convention can make causal direction more explicit.
+
+::: {.notes}
+For n operands, m processes, k form objects, OP×PP×PF has dimensions n×m times m×m times m×k, resulting in n×k. The link labels retain the process and relation types. A shared instrument does not prove that two activities run in parallel or in a particular order.
+
+**Discussion:** Why retain a process identifier instead of drawing only an unlabeled line?
+
+**Suggested answer:** The identifier distinguishes relationships such as mixing, storing, or heating that might connect the same objects. It provides a route back to the full architecture.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 146, object-projection construction.
 :::
 
 ## Figure 6.18 · Pump Value Stream, Projected onto Objects {.smaller}
@@ -648,6 +1013,30 @@ Compare with Figure 6.16: now mixer → oven → cutter are linked directly, eac
 - Have students compare visual density to Fig. 6.16: fewer nodes, each arrow doing much more explanatory work
 :::
 
+## Figure 6.20 · Two Ways to Project onto Form {.smaller .chapter06-detail}
+
+![](assets/chapter06/fig6_20_projection_method_form.png){width=85% fig-alt="Two projection paths: shared process between instruments, and process-operand-process between instruments."}
+
+- **Shared process:** FP × PP × PF.
+- **Through an operand:** FP × PP × PO × OO × OP × PP × PF.
+
+The second path explains a handoff; the first can identify instruments that jointly enable an activity. Neither alone asserts mechanical connectivity.
+
+::: {.side-caption}
+Source: Figure 6.20. The two contributions can be combined in a form-to-form DSM.
+:::
+
+::: {.notes}
+Walk the left path from form 1 to process B to form 2; both are instruments of B. Walk the right path from form 1 through A, operand 101, and B to form 2. Read the resulting relation with its process/operand labels rather than assuming every edge means the same thing.
+
+**Discussion:** Which path explains a mixer–oven handoff through dough?
+
+**Suggested answer:** The operand-mediated path: Mixer enables Mixing, which produces Dough; Baking consumes Dough and is enabled by Oven. Both processes and the operand belong in the interpretation of the compact link.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 148, Fig. 6.20.
+:::
+
 ## Figure 6.21 · Pump Value Stream, Projected onto Form {.smaller}
 
 ![](assets/chapter06/fig6_21_projection_value_stream_form.jpg){height=400px fig-align="center"}
@@ -663,29 +1052,64 @@ Left: form-to-form links only (FP × PP × PF). Right: the fuller projection tha
 - Ties to Table 6.3's full nine-array DSM structure: deriving a new useful array (form-to-form) by multiplying primitive arrays. Directly analogous to multi-step reachability/path composition in graph theory via matrix multiplication, worth naming explicitly if it helps it land
 :::
 
-## Table 6.4 · Classes of Operand Interactions {.smaller}
+## Table 6.4 · Matter and Energy Interactions {.smaller .chapter06-detail}
 
-| Category | Subtype | Example interaction |
-|---|---|---|
-| **Matter** | Mechanical | Mass exchange, force/momentum |
-| | Biochemical | Chemical reaction, biological replication |
-| **Energy** | | Work, thermal (heating) |
-| **Information** | Signal | Data transfer, command/trigger |
-| | Thought | Exchanging ideas, imparting beliefs |
+::: {.architecture-table}
+| Category | Subtype | Interaction | Example relation |
+|---|---|---|---|
+| Matter | Mechanical | Mass exchange | Passes flow to |
+| Matter | Mechanical | Force / momentum | Pushes on |
+| Matter | Biochemical | Chemical | Reacts with |
+| Matter | Biochemical | Biological | Replicates |
+| Energy | — | Work | Carries electricity |
+| Energy | — | Thermal energy | Heats |
+:::
 
-::: {.fragment .callout-tip}
-A useful checklist when identifying what, exactly, an operand link represents.
+Use the table to label **what the relationship means**, not merely that two elements are “connected.”
+
+::: {.side-caption}
+Table 6.4, matter and energy rows; retains the book's classification and example phrases.
 :::
 
 ::: {.notes}
-- Ask students which category describes the interaction represented by each link.
-- **Matter**: mechanical (mass exchange, force/momentum), biochemical (chemical reaction, biological replication)
-- **Energy**: work, thermal (heating)
-- **Information**: signal (data transfer, command), thought (exchanging ideas, imparting beliefs): this last category lets the framework apply to organizational/social systems like Team X, not just hardware
-- Run through this checklist any time labeling a link or pinning down an ambiguous arrow: matter, energy, or information: which subtype?
+The categories are a modeling checklist, not a claim that physical phenomena fit mutually exclusive boxes. An electrical interface can transfer energy and information; a shaft can carry torque and mechanical work. Specify the relevant quantity and required properties for the chosen interaction.
 
-**Suggested answer:** A hose carries water as a matter flow; a shaft transmits mechanical work and torque as an energy/mechanical interaction; a hot surface transfers thermal energy; a sensor cable carries a measurement signal as information; an instruction can convey a command or a belief. The same physical interface can carry several interaction types, such as a cable supplying power and data. Name the specific exchanged quantity and its required properties rather than labeling every link merely “connected.”
+**Discussion:** What extra detail turns “hose connected to cover” into a functional interface statement?
 
+**Suggested answer:** Identify water flow, direction, and relevant pressure/flow conditions, along with the compatible interface form. A connection label by itself does not specify the interaction.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 149, Table 6.4.
+:::
+
+## Table 6.4 · Information Interactions {.smaller .chapter06-detail}
+
+::: {.architecture-table}
+| Category | Subtype | Interaction | Example relation |
+|---|---|---|---|
+| Information | Signal | Data | Transfers file |
+| Information | Signal | Commands | Triggers |
+| Information | Thought | Cognitive thought | Exchanges ideas |
+| Information | Thought | Affective thought | Imparts beliefs |
+:::
+
+- **Data is not a command:** having a sensor value does not itself authorize an action.
+- Organizational systems also exchange ideas and beliefs; their interactions belong in the architecture.
+- A physical interface may support several kinds of interaction.
+
+::: {.side-caption}
+Table 6.4, information rows. Label the particular interaction represented by each edge.
+:::
+
+::: {.notes}
+Tie signal data/commands to Chapter 5's bubblesort data/control operands. The thought categories extend the framework to Team X and other human systems. Retain the book's terminology while asking what observable evidence would support a claimed information transfer.
+
+**Discussion:** Classify a measurement file and a shutdown authorization.
+
+**Suggested answer:** The file is data; the authorization is a command. Both are information, but the latter carries permission or control that changes what executes.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 6, p. 149, Table 6.4.
 :::
 
 ## Section 6.5 Summary {.smaller}
