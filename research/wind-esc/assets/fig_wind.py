@@ -19,113 +19,117 @@ def S_eps(f):
 
 
 def kaimal(path):
-    """What the Kaimal spectrum is, and where the dither sits in it."""
-    import matplotlib.pyplot as plt
-    f = np.logspace(-4.2, -0.7, 800)
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(11.6, 4.0))
-
-    a1.loglog(f, S_eps(f), color=PRIMARY, linewidth=2.8)
-    a1.axvline(U / (6 * L), color=FAINT, linewidth=1.4, linestyle=(0, (4, 3)))
-    a1.text(U / (6 * L) * 1.15, 3e-3, f"corner\n$U/6L$", fontsize=10,
+    """The Kaimal density, with the dither frequencies compared in the Design section."""
+    f = np.logspace(-4.2, -0.9, 800)
+    fig, ax = figure(11.6, 3.9)
+    ax.loglog(f, S_eps(f), color=PRIMARY, linewidth=2.8)
+    ax.axvline(U / (6 * L), color=FAINT, linewidth=1.4, linestyle=(0, (4, 3)))
+    ax.text(U / (6 * L) * 1.12, 2.4e-2, "corner\n$f = \\bar V/6L$", fontsize=10.5,
             color=MUTED, linespacing=1.3)
-    a1.text(2.0e-4, 2.0, "flat:  $S \\to \\mathrm{TI}^2\\,4L/U$", fontsize=10.5,
+    ax.text(1.2e-4, 0.42, "flat:  $S_\\varepsilon \\to \\mathrm{TI}^2\\,4L/\\bar V$", fontsize=11,
             color=PRIMARY)
-    a1.text(2.2e-2, 2.0e-2, "$\\propto f^{-5/3}$", fontsize=11.5, color=PRIMARY,
-            ha="right")
-    for T, lab in ((150.0, "$T=150$ s"), (600.0, "$T=600$ s")):
-        a1.plot([1 / T], [S_eps(1 / T)], "o", color=GOLD, markersize=10, zorder=6)
-        a1.annotate(lab, xy=(1 / T, S_eps(1 / T)), xytext=(1 / T, S_eps(1 / T) * 7),
-                    fontsize=10, color=GOLD, ha="center",
+    ax.text(6e-2, 5e-2, "$\\propto f^{-5/3}$", fontsize=12, color=PRIMARY, ha="right")
+    for T, dy in ((600.0, 6), (150.0, 6), (60.0, 6)):
+        ax.plot([1 / T], [S_eps(1 / T)], "o", color=GOLD, markersize=10, zorder=6)
+        ax.annotate(f"$T={T:.0f}$ s", xy=(1 / T, S_eps(1 / T)), xytext=(1 / T * 1.6, S_eps(1 / T) * dy),
+                    fontsize=10.5, color=GOLD, ha="left",
                     arrowprops=dict(arrowstyle="->", color=GOLD, linewidth=1.1))
-    a1.set_ylim(2e-3, 30)
-    style(a1, "frequency $f$  [Hz]", "$S_\\varepsilon(f)$   [1/Hz]",
-          "the density: how much variance per Hz")
-
-    a2.semilogx(f, f * S_eps(f), color=HOT, linewidth=2.8)
-    pk = f[int(np.argmax(f * S_eps(f)))]
-    a2.axvline(pk, color=HOT, linewidth=1.2, linestyle=(0, (3, 3)))
-    a2.text(pk * 1.2, 0.85 * np.max(f * S_eps(f)),
-            f"most energy sits here,\n$f = U/4L = {U/(4*L):.4f}$ Hz",
-            fontsize=10, color=HOT, linespacing=1.35)
-    for T in (150.0, 600.0):
-        a2.plot([1 / T], [(1 / T) * S_eps(1 / T)], "o", color=GOLD, markersize=10,
-                zorder=6)
-    style(a2, "frequency $f$  [Hz]", "$f\\,S_\\varepsilon(f)$",
-          "energy per decade: area under this is variance")
-    fig.tight_layout()
+    ax.set_ylim(4e-3, 12)
+    style(ax, "frequency $f$  [Hz]", "$S_\\varepsilon(f)$   [1/Hz]")
     save(fig, path)
 
 
-def window(path):
-    """The demodulation window is not narrow, so S cannot be pulled out."""
-    T = 150.0
-    f = np.linspace(1e-6, 8 / T, 4000)
-    a = 2 * np.pi / T
-    b = 2 * np.pi * f
-    z = (a - a * np.exp(-1j * b * T) * np.cos(a * T)
-         - 1j * b * np.exp(-1j * b * T) * np.sin(a * T)) / (a**2 - b**2)
-    w2 = np.abs(z) ** 2
-    w2 /= w2.max()
+def _w2(f, T, N=1):
+    """|w_hat_N(f)|^2 for sin(2 pi t / T) on [0, N T]."""
+    a, b = 2 * np.pi / T, 2 * np.pi * np.asarray(f, dtype=float)
+    near = np.abs(np.abs(b) - a) < 1e-9
+    z = np.abs(a * (1 - np.exp(-1j * b * N * T)) / (a**2 - np.where(near, 1, b**2))) ** 2
+    return np.where(near, (N * T / 2) ** 2, z)
 
+
+def window(path):
+    """One period's window spans the whole lobe; N periods' window narrows onto f_1."""
+    T = 150.0
+    f = np.linspace(1e-6, 3.2 / T, 6000)
     fig, ax = figure(11.6, 3.9)
-    ax.fill_between(f * T, 0, w2, color=SOFT, zorder=0)
-    ax.plot(f * T, w2, color=VIOLET, linewidth=2.8,
-            label=r"$|\hat w(f)|^2$, the demodulation window, normalized")
     ax.plot(f * T, S_eps(f) / S_eps(1 / T), color=PRIMARY, linewidth=2.6,
-            label=r"$S_\varepsilon(f)/S_\varepsilon(1/T)$, the spectrum it samples")
-    ax.axvline(1.0, color=GOLD, linewidth=2.0, linestyle=(0, (6, 3)))
-    ax.text(1.08, 1.02, "dither\n$f_1 = 1/T$", fontsize=10.5, color=GOLD,
-            linespacing=1.35)
-    ax.annotate("", xy=(0.02, 0.14), xytext=(2.0, 0.14),
-                arrowprops=dict(arrowstyle="<|-|>", color=MUTED, linewidth=1.5))
-    ax.text(1.62, 0.20, "main lobe spans $0$ to $2f_1$", fontsize=10.5,
-            color=MUTED, ha="center")
-    ax.text(3.4, 1.75, "Across that lobe $S_\\varepsilon$ falls $12\\times$,\n"
-            "so it is not flat and cannot be\npulled out of the integral.",
-            fontsize=10.5, color=PRIMARY, linespacing=1.45)
-    ax.set_xlim(0, 5)
-    ax.set_ylim(0, 3.1)
-    style(ax, "frequency, in units of the dither frequency $f/f_1$",
-          "normalized")
-    leg = ax.legend(loc="upper center", frameon=False, fontsize=10.5)
+            label=r"wind density $S_\varepsilon(f)/S_\varepsilon(f_1)$")
+    for N, col, lw in ((1, VIOLET, 2.8), (4, HOT, 2.2)):
+        w = _w2(f, T, N) / (N * T / 4) / T      # unit area over f/f_1 > 0
+        lab = ("one period, $N = 1$" if N == 1 else f"$N = {N}$ periods") + r": window weight $|\hat w_N|^2$, unit area"
+        ax.plot(f * T, w, color=col, linewidth=lw, label=lab)
+    ax.axvline(1.0, color=GOLD, linewidth=1.6, linestyle=(0, (6, 3)))
+    ax.text(1.05, 5.1, "$f_1 = 1/T$", fontsize=10.5, color=GOLD)
+    ax.set_xlim(0, 3.2)
+    ax.set_ylim(0, 5.6)
+    style(ax, "frequency, in units of the dither frequency $f/f_1$", "normalized")
+    leg = ax.legend(loc="upper right", frameon=False, fontsize=10.5)
     for t in leg.get_texts():
         t.set_color(INK)
     save(fig, path)
 
 
 def roadmap(path):
-    """The four links, what each needs, and what each produces."""
+    """From the wind's density to the power lost: the chain of the deck."""
     from windkit import blank, box
-    fig, ax = figure(11.6, 4.3)
+    fig, ax = figure(11.6, 3.3)
     blank(ax)
-    ax.set_xlim(-0.05, 11.7)
-    ax.set_ylim(0, 4.6)
-
+    ax.set_xlim(-0.05, 11.75)
+    ax.set_ylim(0.0, 3.2)
     steps = [
-        ("A", "reduce the\nrandomness", r"$y-\bar y = 3\varepsilon$",
-         r"needs $P,\ C_P,\ \lambda$", PRIMARY),
-        ("B", "make it a\nlinear functional", r"$\hat g_{\rm noise}=\frac{6}{aT}Z$",
-         "needs the estimator", VIOLET),
-        ("C", "variance of a\nlinear functional", r"$\sigma^2_Z$ from $S$ and $\hat w$",
-         "needs Wiener-Khinchin", BLUE),
-        ("D", "put in the real\nspectrum", "a number",
-         r"needs Kaimal and $L$", HOT),
+        ("Link A", r"$y - \mathbb{E}y = 3\varepsilon$", "one random\nprocess", PRIMARY),
+        ("Link B", r"$\hat g_{\rm noise} = \frac{6}{aT}Z$", "a linear\nfunctional", VIOLET),
+        ("Link C", r"$\mathrm{Var}\,Z = \int S^{2s}|\hat w|^2 df$", "its variance", BLUE),
+        ("Link D", r"Kaimal $S_\varepsilon$", "a number,\nchecked", HOT),
+        ("Loop, Design", r"loss$(T, a, \tau_c)$", "the parameters", GOLD),
     ]
-    W, GAP = 2.62, 0.38
-    for i, (tag, title, out, needs, col) in enumerate(steps):
+    W, GAP = 2.0, 0.36
+    for i, (tag, out, what, col) in enumerate(steps):
         x = i * (W + GAP)
-        box(ax, x, 1.45, W, 2.45,
-            f"{tag}.  {title}\n\n{out}\n\n{needs}", ec=col, fs=10.5)
-        if i < 3:
-            ax.annotate("", xy=(x + W + GAP - 0.04, 2.67),
-                        xytext=(x + W + 0.04, 2.67),
+        box(ax, x, 0.35, W, 2.5, f"{tag}\n\n{out}\n\n{what}", ec=col, fs=10.5)
+        if i < len(steps) - 1:
+            ax.annotate("", xy=(x + W + GAP - 0.04, 1.6), xytext=(x + W + 0.04, 1.6),
                         arrowprops=dict(arrowstyle="-|>", color=MUTED, linewidth=1.6))
-
-    box(ax, 0.0, 0.18, 4 * W + 3 * GAP, 1.05,
-        r"Goal: $\sigma(\hat g)$, the scatter of one period's gradient estimate."
-        "\nIt fixes the dither amplitude, the averaging time, and the terminal error.",
-        fc=SOFT, ec=PRIMARY, fs=11, lw=1.3)
     save(fig, path, pad=0.05)
+
+
+def design(path):
+    """Least power lost at a one-day tracking time, against the dither period."""
+    TAU, TAUC = 6.36, 86400.0
+    T = np.geomspace(15, 900, 400)
+    R = 9 * 0.5 * S_eps(1 / T)
+    G1 = 1 / (1 + (2 * np.pi * TAU / T) ** 2)
+    fig, ax = figure(11.6, 3.9)
+    ax.axvspan(15, 45, color=SOFT, zorder=0)
+    ax.text(16.5, 0.505, "period nearing the rotor's\n6.4 s time constant", fontsize=10,
+            color=MUTED, linespacing=1.3, va="top")
+    ax.semilogx(T, 100 * np.sqrt(R / (2 * TAUC * G1)), color=PRIMARY, linewidth=2.8,
+                label=r"in-phase demodulation: $\sqrt{R/(2\tau_c G_1)}$")
+    ax.semilogx(T, 100 * np.sqrt(R / (2 * TAUC)), color=BLUE, linewidth=2.0,
+                linestyle=(0, (6, 3)), label=r"phase-compensated: $\sqrt{R/(2\tau_c)}$")
+    Rp = 9 * 0.5 * S_eps(1 / 150.0); Gp = 1 / (1 + (2 * np.pi * TAU / 150.0) ** 2)
+    a = 0.136 * 1.0; J2 = 0.7022
+    su2 = Rp / (a**2 * Gp**2 * TAUC * J2**2)
+    pub = 100 * (0.5 * J2 * su2 + 0.25 * J2 * Gp * a**2)
+    ax.plot([150], [pub], "s", color=HOT, markersize=10, zorder=6)
+    ax.annotate(f"published: $T = 150$ s, $a = 13.6\\%$\n{pub:.2f}%", xy=(150, pub), xytext=(62, 0.44),
+                fontsize=10.5, color=HOT, linespacing=1.3,
+                arrowprops=dict(arrowstyle="->", color=HOT, linewidth=1.1))
+    for Tm in (60.0, 150.0):
+        Rm = 9 * 0.5 * S_eps(1 / Tm); Gm = 1 / (1 + (2 * np.pi * TAU / Tm) ** 2)
+        v = 100 * np.sqrt(Rm / (2 * TAUC * Gm))
+        ax.plot([Tm], [v], "o", color=PRIMARY, markersize=9, zorder=6)
+        ax.annotate(f"{v:.2f}%", xy=(Tm, v), xytext=(Tm * 1.06, v - 0.045), fontsize=10.5,
+                    color=PRIMARY, ha="left")
+    ax.set_xlim(15, 900)
+    ax.set_ylim(0.0, 0.55)
+    ax.set_xticks([20, 30, 60, 150, 300, 600], ["20", "30", "60", "150", "300", "600"])
+    ax.minorticks_off()
+    style(ax, "dither period $T$  [s]", "power lost  [%]\n(at the best amplitude)")
+    leg = ax.legend(loc="lower right", frameon=False, fontsize=10.5)
+    for t in leg.get_texts():
+        t.set_color(INK)
+    save(fig, path)
 
 
 def validate(path):
