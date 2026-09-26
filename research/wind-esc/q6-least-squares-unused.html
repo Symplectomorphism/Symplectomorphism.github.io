@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Aykut C. Satici">
+
+<title>Least Squares for the Gradient – Aykut C. Satici</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../images/robot-arm-favicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-09b469177ad55450d94bd915a4dae986.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script>
+window.MathJax = {
+  loader: {
+    load: ['[tex]/boldsymbol', '[tex]/mathtools']
+  },
+  tex: {
+    packages: {'[+]': ['boldsymbol', 'mathtools']}
+  }
+};
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="../../assets/mathjax/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../research.css">
+<meta property="og:title" content="Least Squares for the Gradient – Aykut C. Satici">
+<meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
+<meta property="og:image" content="https://Symplectomorphism.github.io/research/wind-esc/assets/rls-phase.svg">
+<meta property="og:site_name" content="Aykut C. Satici">
+<meta property="og:image:alt" content="One dither period. The dashed dither is a unit sine. The power response, nearly coincident with it, is split into an in-phase sine of amplitude 0.984 and a quadrature cosine of amplitude 0.125.">
+</head>
+
+<body class="nav-sidebar nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Aykut C. Satici</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../research/index.html"> 
+<span class="menu-text">Research</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../publications.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../teaching/index.html"> 
+<span class="menu-text">Teaching</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../people/index.html"> 
+<span class="menu-text">People</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../news/index.html"> 
+<span class="menu-text">News</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../positions/index.html"> 
+<span class="menu-text">Opportunities</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-miscellaneous" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Miscellaneous</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-miscellaneous">    
+        <li>
+    <a class="dropdown-item" href="../../fun/index.html">
+ <span class="dropdown-text">Fun</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../chiasson/index.html">
+ <span class="dropdown-text">John Chiasson</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+    <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="q6-least-squares.html"><i class="bi bi-file-slides"></i>RevealJS</a></li></ul></div></div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+<div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
+$$
+% Define your custom commands here
+\newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\vectornorm}[1]{\left|\left|#1\right|\right|}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\nicefrac}[2]{{}^{#1}\!/_{\!#2}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\dd}{\operatorname{d}\!}
+$$
+</div>
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Least Squares for the Gradient</h1>
+<p class="subtitle lead">What the LP-PIESC estimator computes, and what a model of the wind noise adds to it</p>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliation</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Aykut C. Satici </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Robot Control Lab · Systems Engineering · UT Dallas
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-question" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-question">The question</h2>
+<p>LP-PIESC <a href="#references">[KR22]</a> replaces the demodulation of extremum seeking with a <strong>recursive least-squares</strong> fit, built on the estimator of Guay and Dochain <a href="#references">[GD17]</a>. The wind deck (<a href="q5-wind-process.html">Wind as a Stochastic Process</a>) gives the variance of the wind’s effect on the measured power. Two questions:</p>
+<ol type="1">
+<li><strong>What does the least-squares estimate <span class="math inline">\(\hat\theta_1\)</span> measure</strong> on the turbine, with the published tuning?</li>
+<li><strong>What does a model of the noise variance add</strong> to a least-squares estimator?</li>
+</ol>
+<div class="claim">
+<p><strong>Answers, derived below and checked by simulation.</strong></p>
+<ul>
+<li>With the published tuning, <span class="math inline">\(\hat\theta_1\)</span> reads only the part of the power’s response that lags the dither by a quarter period, <span class="math inline">\(12.5\%\)</span> of the whole response. For equal signal it needs <span class="math inline">\(62\)</span> times the averaging time of an estimator that reads the in-phase part.</li>
+<li>Regressing the power itself, instead of its time derivative, reads the in-phase part.</li>
+<li>Given the wind’s noise density at the dither frequency, the estimator’s own matrix <span class="math inline">\(\Sigma^{-1}\)</span> becomes the covariance of its estimate, to within <span class="math inline">\(2\%\)</span>, and its memory and ridge follow by formula.</li>
+</ul>
+</div>
+</section>
+<section id="what-this-deck-takes-from-the-wind-deck" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-this-deck-takes-from-the-wind-deck">What this deck takes from the wind deck</h2>
+<p>Four facts, each derived there:</p>
+<ol type="1">
+<li><strong>The wind’s fluctuation.</strong> <span class="math inline">\(V(t) = \bar V(1 + \varepsilon(t))\)</span>, with <span class="math inline">\(\varepsilon\)</span> a stationary random process of mean zero and standard deviation <span class="math inline">\(\sigma_\varepsilon = \mathrm{TI} = 0.10\)</span>, and two-sided spectral density <span class="math inline">\(S^{2s}(f)\)</span>: the Kaimal density, <span class="math inline">\(S^{2s}(f) = \tfrac12\mathrm{TI}^2\,(4L/\bar V)\,(1 + 6|f|L/\bar V)^{-5/3}\)</span>, <span class="math inline">\(L = 340\)</span> m.</li>
+<li><strong>The wind’s effect on log-power.</strong> Near the optimum, the wind adds <span class="math inline">\(3\varepsilon(t)\)</span> to <span class="math inline">\(y = \ln P\)</span> (Link A). The objective is <span class="math inline">\(J(u) := \ln C_P(\lambda_{\text{eq}}(u))\)</span> and its derivative <span class="math inline">\(J'\)</span> is the gradient extremum seeking drives to zero.</li>
+<li><strong>The variance rule.</strong> For a fixed weight <span class="math inline">\(w(t)\)</span> and <span class="math inline">\(X := \int w(t)\,\varepsilon(t)\,dt\)</span>, <span class="math display">\[\operatorname{Var}(X) = \int_{\mathbb{R}} S^{2s}(f)\,|\hat w(f)|^2\,df,
+\qquad \hat w(f) := \int w(t)\,e^{-i2\pi ft}\,dt \qquad\text{(Link C)}\]</span></li>
+<li><strong>What a slow average sees.</strong> Averaged over many dither periods, the demodulated noise depends on the density at the dither frequency <span class="math inline">\(f_1\)</span> alone (<em>The noise a slow loop averages</em>).</li>
+</ol>
+</section>
+<section id="part-1-least-squares-from-first-principles" class="level1 divider">
+<h1 class="divider">Part 1: least squares from first principles</h1>
+<p><strong>Goal.</strong> The estimator of LP-PIESC is a least-squares fit. Its equations, from the cost they minimize, so that what it computes can be read off.</p>
+<section id="the-fit-and-the-normal-equations" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-fit-and-the-normal-equations">The fit and the normal equations</h2>
+<ul>
+<li><strong>Data and model.</strong> A measured signal <span class="math inline">\(y(t)\)</span> and a known <strong>regressor</strong> <span class="math inline">\(\phi(t) \in \mathbb{R}^2\)</span>; <span class="math inline">\(y(t) = \phi(t)^T\theta + v(t)\)</span>, with <span class="math inline">\(\theta\)</span> the unknown <strong>parameters</strong> and <span class="math inline">\(v\)</span> the <strong>noise</strong>.</li>
+<li><strong>Example used throughout.</strong> Extremum seeking dithers the gain, <span class="math inline">\(u(t) = \hat u + d(t)\)</span> with <span class="math inline">\(d(t) = a\sin\omega t\)</span>. With <span class="math inline">\(\phi = [1,\ d]^T\)</span> and <span class="math inline">\(\theta = [\theta_0,\ \theta_1]^T\)</span>, the model <span class="math inline">\(y = \theta_0 + \theta_1 d + v\)</span> is a straight line in <span class="math inline">\(d\)</span>: <span class="math inline">\(\theta_1\)</span> is the slope of <span class="math inline">\(y\)</span> with respect to the gain, the gradient extremum seeking needs.</li>
+<li><strong>Units.</strong> <span class="math inline">\(y = \ln(P/P_{\text{rated}})\)</span>; <span class="math inline">\(u\)</span> is the normalized gain of <a href="#references">[KR22]</a>, optimum <span class="math inline">\(u^\star = 0.061\)</span>; published dither <span class="math inline">\(a = 0.005\)</span> (<span class="math inline">\(8.2\%\)</span> of <span class="math inline">\(u^\star\)</span>) at <span class="math inline">\(\omega = 0.02\)</span> rad/s, period <span class="math inline">\(T = 2\pi/\omega = 314\)</span> s.</li>
+</ul>
+<ol type="1">
+<li><strong>The cost.</strong> <span class="math inline">\(C(\theta) = \int_0^t \big(y(s) - \phi(s)^T\theta\big)^2\,ds\)</span>.</li>
+<li><strong>Set its derivative to zero:</strong> <span class="math inline">\(-2\int_0^t\phi\,(y - \phi^T\theta)\,ds = 0\)</span>, so <span class="math display">\[\underbrace{\int_0^t \phi\,\phi^T\,ds}_{=:\ A}\;\hat\theta = \underbrace{\int_0^t \phi\,y\,ds}_{=:\ b},
+\qquad\text{the normal equations}\]</span></li>
+<li><strong>When <span class="math inline">\(A\)</span> is invertible.</strong> <span class="math inline">\(A\)</span> is a sum of rank-one matrices <span class="math inline">\(\phi\phi^T\)</span>, invertible only if <span class="math inline">\(\phi\)</span> points in two different directions over the record: <span class="math inline">\(d\)</span> must vary, or the level <span class="math inline">\(\theta_0\)</span> and the slope <span class="math inline">\(\theta_1\)</span> cannot be separated.</li>
+</ol>
+</section>
+<section id="forgetting-the-ridge-and-the-recursion" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="forgetting-the-ridge-and-the-recursion">Forgetting, the ridge, and the recursion</h2>
+<ol type="1">
+<li><strong>Forgetting.</strong> Weight recent data more, with <span class="math inline">\(w(s) := e^{-k_T(t-s)}\)</span>; the <strong>memory</strong> is <span class="math inline">\(1/k_T\)</span>.</li>
+<li><strong>Ridge penalty</strong> <span class="math inline">\(\sigma|\theta|^2\)</span>, <span class="math inline">\(\sigma &gt; 0\)</span>. The cost and its minimizer: <span class="math display">\[C(\theta) = \int_0^t w\Big[\big(y - \phi^T\theta\big)^2 + \sigma\,|\theta|^2\Big]ds,
+\qquad \Sigma\,\hat\theta = b,\quad \Sigma := A + \sigma mI\]</span> with <span class="math inline">\(A = \int_0^t w\,\phi\phi^Tds\)</span>, <span class="math inline">\(b = \int_0^t w\,\phi\,y\,ds\)</span>, <span class="math inline">\(m = \int_0^t w\,ds \approx 1/k_T\)</span>. The added <span class="math inline">\(\sigma mI\)</span> makes <span class="math inline">\(\Sigma\)</span> invertible even when <span class="math inline">\(A\)</span> is not; where <span class="math inline">\(A\)</span> is small, <span class="math inline">\(\sigma\)</span> decides the answer.</li>
+<li><strong>The recursion.</strong> Differentiating <span class="math inline">\(\Sigma\hat\theta = b\)</span> in <span class="math inline">\(t\)</span> (A.1): <span class="math display">\[\dot\Sigma = \phi\phi^T - k_T\,\Sigma + \sigma I,
+\qquad
+\dot{\hat\theta} = \Sigma^{-1}\Big(\phi\,\big(y - \phi^T\hat\theta\big) - \sigma\,\hat\theta\Big)\]</span> This is <strong>recursive least squares</strong> (RLS) in continuous time: the first equation accumulates information and forgets it at rate <span class="math inline">\(k_T\)</span>; the second corrects <span class="math inline">\(\hat\theta\)</span> in proportion to the prediction error, most strongly where little is known.</li>
+</ol>
+</section>
+</section>
+<section id="part-2-how-uncertain-the-estimate-is" class="level1 divider">
+<h1 class="divider">Part 2: how uncertain the estimate is</h1>
+<p><strong>Goal.</strong> The covariance of <span class="math inline">\(\hat\theta\)</span>, which RLS knows only up to one number, the noise density <span class="math inline">\(R\)</span>, and that number for the turbine.</p>
+<section id="the-error-and-its-covariance-for-white-noise" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-error-and-its-covariance-for-white-noise">The error, and its covariance for white noise</h2>
+<p>Take <span class="math inline">\(\sigma\)</span> negligible, so <span class="math inline">\(\Sigma = A\)</span>.</p>
+<ol type="1">
+<li><strong>The error is a weighted integral of the noise.</strong> Substituting <span class="math inline">\(y = \phi^T\theta + v\)</span> into <span class="math inline">\(b\)</span> gives <span class="math inline">\(b = A\theta + \int_0^t w\,\phi\,v\,ds\)</span>, so <span class="math display">\[\hat\theta - \theta = \Sigma^{-1}\int_0^t w(s)\,\phi(s)\,v(s)\,ds\]</span> the structure of <span class="math inline">\(Z\)</span> in the wind deck: noise integrated against a known weight.</li>
+<li><strong>White noise</strong> of intensity <span class="math inline">\(R\)</span>: <span class="math inline">\(\mathbb{E}[v(s)v(s')] = R\,\delta(s - s')\)</span>, a flat density <span class="math inline">\(S_v^{2s} = R\)</span>. Then <span class="math display">\[\operatorname{Cov}(\hat\theta) = \Sigma^{-1}\Big[\iint w(s)w(s')\,\phi(s)\phi(s')^T\,\mathbb{E}[v(s)v(s')]\,ds\,ds'\Big]\Sigma^{-1}
+= R\,\Sigma^{-1}\Big[\int_0^t w^2\,\phi\phi^T ds\Big]\Sigma^{-1}\]</span></li>
+<li><strong>The squared weight</strong> <span class="math inline">\(w^2 = e^{-2k_T(t-s)}\)</span> has half the memory, so <span class="math inline">\(\int w^2\phi\phi^Tds \approx \tfrac12\Sigma\)</span> when <span class="math inline">\(\phi\phi^T\)</span> averages to the same matrix over either memory (A.3): <span class="math display">\[\boxed{\;\operatorname{Cov}(\hat\theta) \approx \frac{R}{2}\,\Sigma^{-1}\;}\]</span></li>
+</ol>
+<div class="claim">
+<p>RLS computes <span class="math inline">\(\Sigma^{-1}\)</span> but never <span class="math inline">\(R\)</span>: it knows the covariance of its own estimate only up to the noise intensity. Supplying <span class="math inline">\(R\)</span> is what a noise model can do.</p>
+</div>
+</section>
+<section id="for-the-wind-r-is-the-density-at-the-dither-frequency" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="for-the-wind-r-is-the-density-at-the-dither-frequency">For the wind, <span class="math inline">\(R\)</span> is the density at the dither frequency</h2>
+<ol type="1">
+<li><strong>The slope error</strong> is <span class="math inline">\(\frac{1}{\Sigma_{22}}\int w\,d\,v\,ds\)</span> with <span class="math inline">\(d = a\sin\omega t\)</span>, once the memory spans a dither period (then the off-diagonal entries of <span class="math inline">\(\Sigma\)</span> are small).</li>
+<li><strong>Its variance,</strong> by the variance rule, is <span class="math inline">\(\frac{1}{\Sigma_{22}^2}\int S_v^{2s}(f)\,|W(f)|^2df\)</span>, with <span class="math inline">\(W\)</span> the transform of <span class="math inline">\(w(s)\,d(s)\)</span>: two bands at <span class="math inline">\(\pm f_1\)</span> (<span class="math inline">\(f_1 := 1/T\)</span>), each about <span class="math inline">\(k_T/2\pi\)</span> wide.</li>
+<li><strong>Only the density in those bands enters.</strong> The wind noise then acts as white noise with <span class="math display">\[R = S_v^{2s}(f_1),\qquad S_v^{2s} = 9\,S^{2s}\ \text{(fact 2: } v = 3\varepsilon\text{)}\]</span> the same <span class="math inline">\(R\)</span> the wind deck’s slow loop sees. With memory one period the flat-density value and the exact integral differ by <span class="math inline">\(0.5\%\)</span> (A.3).</li>
+<li><strong>For the turbine,</strong> at <span class="math inline">\(f_1 = 1/314\)</span> s <span class="math inline">\(= 3.18\times10^{-3}\)</span> Hz, <span class="math inline">\(\mathrm{TI} = 0.10\)</span>, <span class="math inline">\(L = 340\)</span> m, <span class="math inline">\(\bar V = 8\)</span> m/s: <span class="math display">\[S^{2s}(f_1) = \tfrac12\cdot0.01\cdot\frac{4\cdot340/8}{(1 + 6\cdot3.18\times10^{-3}\cdot340/8)^{5/3}} = 0.316\ \text{Hz}^{-1},
+\qquad \boxed{\;R = 9\times0.316 = 2.84\ \text{Hz}^{-1}\;}\]</span></li>
+</ol>
+</section>
+</section>
+<section id="part-3-the-lp-piesc-estimator" class="level1 divider">
+<h1 class="divider">Part 3: the LP-PIESC estimator</h1>
+<p><strong>Goal.</strong> What LP-PIESC fits, and why it is built that way.</p>
+<section id="the-estimator-of-kr22" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-estimator-of-kr22">The estimator of <a href="#references">[KR22]</a></h2>
+<p>The model is written for the <strong>time derivative</strong> of <span class="math inline">\(y\)</span> <a href="#references">[GD17]</a>:</p>
+<p><span class="math display">\[\dot y = \theta_0 + \theta_1\,\big(u - \hat u\big) = \phi^T\theta,
+\qquad \phi = \begin{bmatrix}1\\ u - \hat u\end{bmatrix}\]</span></p>
+<p><span class="math inline">\(\dot y\)</span> is not measured, so the estimator runs on a <strong>filtered regressor</strong> <span class="math inline">\(c\)</span> and a predictor <span class="math inline">\(\hat y\)</span> (Eqs. 6 to 11 of <a href="#references">[KR22]</a>, projection omitted):</p>
+<p><span class="math display">\[\dot c = -Kc + \phi,\qquad
+\dot{\hat y} = \phi^T\hat\theta + Ke + c^T\dot{\hat\theta},\qquad e = y - \hat y\]</span> <span class="math display">\[\dot\Sigma = cc^T - k_T\Sigma + \sigma I,\qquad
+\dot{\hat\theta} = \Sigma^{-1}\big(c\,e - \sigma\hat\theta\big)\]</span></p>
+<ul>
+<li><strong>Published values</strong> (Table 3 of <a href="#references">[KR22]</a>): <span class="math inline">\(K = k_T = 20\)</span> rad/s, <span class="math inline">\(\sigma = 10^{-6}\)</span>, dither <span class="math inline">\(a = 0.005\)</span> at <span class="math inline">\(\omega = 0.02\)</span> rad/s.</li>
+<li><strong>The control law</strong> that uses the estimate (Eq. 5 of <a href="#references">[KR22]</a>): <span class="math inline">\(u = -k_p\hat\theta_1 + \hat u + d(t)\)</span>, <span class="math inline">\(\dot{\hat u} = -\hat\theta_1/\tau_I\)</span>: a proportional and an integral path in <span class="math inline">\(\hat\theta_1\)</span>, with gains <span class="math inline">\(k_p\)</span>, <span class="math inline">\(\tau_I\)</span> tuned by trial and error.</li>
+</ul>
+</section>
+<section id="why-dot-y-and-why-the-filtered-regressor" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="why-dot-y-and-why-the-filtered-regressor">Why <span class="math inline">\(\dot y\)</span>, and why the filtered regressor</h2>
+<ul>
+<li><strong>Why <span class="math inline">\(\dot y\)</span>.</strong> The gain enters the rotor’s equation of motion directly, <span class="math inline">\(I\dot\Omega = \tau_{\text{aero}}(\Omega, V) - u\,\Omega^2\)</span>, and <span class="math inline">\(y\)</span> depends on <span class="math inline">\(u\)</span> only through <span class="math inline">\(\Omega\)</span>. Differentiating, <span class="math inline">\(\dot y = \frac{\partial y}{\partial\Omega}\dot\Omega + \frac{\partial y}{\partial V}\dot V\)</span> is exactly affine in <span class="math inline">\(u\)</span> at every instant: <span class="math inline">\(\theta_0\)</span> collects everything that does not multiply <span class="math inline">\(u\)</span>, <span class="math inline">\(\theta_1 = -\frac{\Omega^2}{I}\frac{\partial y}{\partial\Omega}\)</span>.</li>
+<li><strong>Why the filter.</strong> Differentiating a turbulent measured <span class="math inline">\(y\)</span> to obtain <span class="math inline">\(\dot y\)</span> would amplify the noise. The filter <span class="math inline">\(c\)</span> and the predictor <span class="math inline">\(\hat y\)</span> are built so that the measurable error obeys <span class="math inline">\(e = c^T(\theta - \hat\theta)\)</span> after a transient of duration <span class="math inline">\(1/K\)</span>; the gradient-estimation deck derives this (<a href="gradient-estimation.html">What the estimator is fitting</a>).</li>
+<li><strong>What it is, then.</strong> For signals slow compared with <span class="math inline">\(K = 20\)</span> rad/s, <span class="math inline">\(c \approx \phi/K\)</span> and <span class="math inline">\(e + c^T\hat\theta \approx \dot y/K\)</span>. The recursion is then Part 1’s RLS applied to the regression of <span class="math inline">\(\dot y\)</span> on <span class="math inline">\(\phi\)</span>, with memory <span class="math inline">\(1/k_T\)</span> and ridge coefficient <span class="math inline">\(\gamma := \sigma K^2\)</span> (A.1): <span class="math display">\[\text{minimize}\ \int_0^t w\Big[\big(\dot y - \phi^T\theta\big)^2 + \gamma\,|\theta|^2\Big]ds,
+\qquad \gamma = 10^{-6}\times20^2 = 4\times10^{-4}\]</span></li>
+</ul>
+</section>
+</section>
+<section id="part-4-what-it-computes-on-the-turbine" class="level1 divider">
+<h1 class="divider">Part 4: what it computes on the turbine</h1>
+<p><strong>Goal.</strong> Evaluate the published estimator on the turbine. With a <span class="math inline">\(50\)</span> ms memory and a <span class="math inline">\(314\)</span> s dither, the fit cannot separate level from slope; the ridge decides, and the answer is a quadrature demodulation.</p>
+<section id="rank-one-so-the-ridge-picks-the-minimum-norm-solution" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="rank-one-so-the-ridge-picks-the-minimum-norm-solution">Rank one, so the ridge picks the minimum-norm solution</h2>
+<ol type="1">
+<li><strong>Over one memory,</strong> <span class="math inline">\(1/k_T = 0.05\)</span> s, the dither changes by at most <span class="math inline">\(a\omega/k_T = 5\times10^{-6}\)</span>, a thousandth of its amplitude: <span class="math inline">\(\phi = [1, d]^T\)</span> is constant over the memory, and <span class="math inline">\(A \approx \phi\phi^T/k_T\)</span> is <strong>rank one</strong>. The data cannot separate <span class="math inline">\(\theta_0\)</span> from <span class="math inline">\(\theta_1\)</span>.</li>
+<li><strong>Only the ridge makes <span class="math inline">\(\Sigma\)</span> invertible.</strong> In the slope direction the ridge adds <span class="math inline">\(\sigma/k_T = 5\times10^{-8}\)</span>, <span class="math inline">\(16\)</span> times the information, at most <span class="math inline">\(a^2/(K^2k_T) = 3.1\times10^{-9}\)</span>. The simulation reads <span class="math inline">\(\Sigma^{-1}_{22} = 2.0000\times10^7 = k_T/\sigma\)</span> exactly, independent of the data.</li>
+<li><strong>Solve.</strong> With <span class="math inline">\(b \approx \phi\,\dot y/k_T\)</span> the equations are <span class="math inline">\((\phi\phi^T + \gamma I)\hat\theta = \phi\,\dot y\)</span>, and <span class="math inline">\((\phi\phi^T + \gamma I)^{-1}\phi = \phi/(|\phi|^2 + \gamma)\)</span> (A.2), so <span class="math display">\[\hat\theta_1 = \frac{d(t)\,\dot y(t)}{1 + d^2 + \gamma} = d(t)\,\dot y(t)\,\big(1 - 4\times10^{-4}\big)\]</span></li>
+<li><strong>Read it.</strong> Of all <span class="math inline">\(\theta\)</span> that fit the single equation <span class="math inline">\(\dot y = \theta_0 + \theta_1 d\)</span>, the ridge picks the shortest; since <span class="math inline">\(|d| \ll 1\)</span>, nearly all of <span class="math inline">\(\dot y\)</span> goes to <span class="math inline">\(\theta_0\)</span>, and <span class="math inline">\(\hat\theta_1\)</span> is the product <span class="math inline">\(d\,\dot y\)</span>: a demodulation of <span class="math inline">\(\dot y\)</span> by the dither, updated every <span class="math inline">\(50\)</span> ms.</li>
+</ol>
+</section>
+<section id="what-ddot-y-averages-to" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-ddot-y-averages-to">What <span class="math inline">\(d\,\dot y\)</span> averages to</h2>
+<p>The control law integrates <span class="math inline">\(\hat\theta_1\)</span> (the <span class="math inline">\(\dot{\hat u}\)</span> equation), so what matters is its average over a dither period, <span class="math inline">\(\langle d\,\dot y\rangle := \frac1T\int_0^T d\,\dot y\,dt\)</span>.</p>
+<ol type="1">
+<li><strong>Split <span class="math inline">\(y\)</span></strong> into the response to the dither, <span class="math inline">\(y_{\text{det}}\)</span>, and the wind’s part.</li>
+<li><strong>The response to a slow dither</strong> (A.4): the rotor follows the gain through a first-order lag with time constant <span class="math inline">\(\tau = 6.36\)</span> s, <span class="math inline">\(G := 1/(1 + i\omega\tau)\)</span>, so <span class="math display">\[y_{\text{det}}(t) = J'\,a\,\big[\operatorname{Re}G\,\sin\omega t + \operatorname{Im}G\,\cos\omega t\big]\]</span> with <span class="math inline">\(J'\)</span> the gradient of the objective, <span class="math inline">\(\operatorname{Re}G = \frac{1}{1+(\omega\tau)^2}\)</span>, <span class="math inline">\(\operatorname{Im}G = \frac{-\omega\tau}{1+(\omega\tau)^2}\)</span>.</li>
+<li><strong>Differentiate and average</strong> with <span class="math inline">\(\langle\sin^2\rangle = \langle\cos^2\rangle = \tfrac12\)</span>, <span class="math inline">\(\langle\sin\cos\rangle = 0\)</span>: <span class="math display">\[\dot y_{\text{det}} = J'a\omega\big[\operatorname{Re}G\cos\omega t - \operatorname{Im}G\sin\omega t\big],
+\qquad
+\langle d\,\dot y_{\text{det}}\rangle = \frac{a^2\omega}{2}\,J'\,|\operatorname{Im}G|\]</span> Only the <strong>quadrature</strong> part, <span class="math inline">\(\operatorname{Im}G\cos\omega t\)</span>, survives: the in-phase part of <span class="math inline">\(y\)</span> becomes <span class="math inline">\(\cos\omega t\)</span> in <span class="math inline">\(\dot y\)</span>, orthogonal to <span class="math inline">\(d\)</span>.</li>
+</ol>
+</section>
+<section id="the-rotor-splits-the-response-into-two-parts" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-rotor-splits-the-response-into-two-parts">The rotor splits the response into two parts</h2>
+<p><img src="assets/rls-phase.svg" class="fig-hero img-fluid" alt="One dither period. The dashed dither is a unit sine. The power response, nearly coincident with it, is split into an in-phase sine of amplitude 0.984 and a quadrature cosine of amplitude 0.125."></p>
+<ul>
+<li><strong>In phase</strong> with the dither (green): amplitude <span class="math inline">\(\operatorname{Re}G = 0.984\)</span>. Read by correlating <span class="math inline">\(y\)</span> with <span class="math inline">\(\sin\omega t\)</span>, which is what demodulation does.</li>
+<li><strong>In quadrature</strong> (red): amplitude <span class="math inline">\(|\operatorname{Im}G| = \omega\tau/(1+(\omega\tau)^2) = 0.125\)</span>, present only because the rotor lags. This is all the published estimator reads.</li>
+</ul>
+</section>
+<section id="so-hattheta_1-is-a-scaled-quadrature-demodulation" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="so-hattheta_1-is-a-scaled-quadrature-demodulation">So <span class="math inline">\(\hat\theta_1\)</span> is a scaled quadrature demodulation</h2>
+<ol type="1">
+<li><strong>Its mean.</strong> From the last two slides, <span class="math display">\[\langle\hat\theta_1\rangle = \frac{a^2\omega}{2}\,J'\,\frac{\omega\tau}{1+(\omega\tau)^2}
+= \underbrace{2.5\times10^{-7}}_{a^2\omega/2}\times\underbrace{0.125}_{|\operatorname{Im}G|}\times J'\]</span> At <span class="math inline">\(u = 0.9\,u^\star\)</span>, <span class="math inline">\(J' = 1.28\)</span> gives <span class="math inline">\(4.00\times10^{-8}\)</span>; the simulation reads <span class="math inline">\(4.02\times10^{-8}\)</span>.</li>
+<li><strong>Its noise.</strong> Integrating by parts over a period (<span class="math inline">\(d(0) = d(T) = 0\)</span>), <span class="math inline">\(\langle d\,\dot y\rangle = -\langle\dot d\,y\rangle = -a\omega\,\langle y\cos\omega t\rangle\)</span>: the correlation of <span class="math inline">\(y\)</span> with <span class="math inline">\(\cos\omega t\)</span>. The wind enters through the same correlation, so the noise is that of a demodulator reading <span class="math inline">\(\cos\omega t\)</span>.</li>
+<li><strong>Name the two channels.</strong> Per period, <span class="math display">\[\hat g_{\sin} := \frac{2}{a}\langle y\sin\omega t\rangle \to J'\operatorname{Re}G,
+\qquad
+\hat g_{\cos} := \frac{2}{a}\langle y\cos\omega t\rangle \to J'\operatorname{Im}G,
+\qquad
+\langle\hat\theta_1\rangle = -\frac{a^2\omega}{2}\,\hat g_{\cos}\]</span></li>
+</ol>
+<div class="claim">
+<p>The published <span class="math inline">\(\hat\theta_1\)</span> is the cosine channel times the constant <span class="math inline">\(-a^2\omega/2 = -2.5\times10^{-7}\)</span>. That constant is absorbed by the PI gains, set by trial and error in <a href="#references">[KR22]</a>.</p>
+</div>
+</section>
+<section id="the-cost-62-times-the-variance" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-cost-62-times-the-variance">The cost: <span class="math inline">\(62\)</span> times the variance</h2>
+<ol type="1">
+<li><strong>Signal.</strong> The two channels read <span class="math inline">\(J'\operatorname{Re}G\)</span> and <span class="math inline">\(J'|\operatorname{Im}G|\)</span>; their ratio is <span class="math inline">\(|\operatorname{Im}G|/\operatorname{Re}G = \omega\tau = 0.127\)</span> exactly.</li>
+<li><strong>Noise, as the loop sees it.</strong> The control law integrates <span class="math inline">\(\hat\theta_1\)</span> over many periods, so its noise is the long-run variance. Averaged over <span class="math inline">\(N\)</span> periods, both the sine and the cosine window gather their weight at <span class="math inline">\(\pm f_1\)</span>, where both have magnitude <span class="math inline">\(T/2\)</span> (A.5): the two channels carry the <strong>same</strong> long-run noise, <span class="math inline">\(2R/(a^2T)\)</span> per period.</li>
+<li><strong>Hence</strong> the variance for equal signal is <span class="math inline">\(1/(\omega\tau)^2 = 62\)</span> times larger in quadrature: <span class="math inline">\(62\)</span> times the averaging time, or <span class="math inline">\(7.9\)</span> times the dither amplitude, for the same scatter.</li>
+</ol>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>per period, <span class="math inline">\(T = 314\)</span> s</th>
+<th>in phase, <span class="math inline">\(\hat g_{\sin}\)</span></th>
+<th>quadrature, <span class="math inline">\(\hat g_{\cos}\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>signal per unit <span class="math inline">\(J'\)</span></td>
+<td><span class="math inline">\(\operatorname{Re}G = 0.984\)</span></td>
+<td><span class="math inline">\(\vert\operatorname{Im}G\vert = 0.125\)</span></td>
+</tr>
+<tr class="even">
+<td>noise <span class="math inline">\(\sigma\)</span>, long run</td>
+<td><span class="math inline">\(26.9\)</span></td>
+<td><span class="math inline">\(26.9\)</span></td>
+</tr>
+<tr class="odd">
+<td>noise <span class="math inline">\(\sigma\)</span>, one period alone</td>
+<td><span class="math inline">\(28.9\)</span></td>
+<td><span class="math inline">\(25.2\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>The factor is <span class="math inline">\(1/(\omega\tau)^2\)</span>: a property of reading <span class="math inline">\(\dot y\)</span> with a dither slower than the rotor. Over a single period the two windows admit different low-frequency wind and the factor is <span class="math inline">\(47\)</span>; over the long averaging the integrator performs, it is <span class="math inline">\(62\)</span>.</p>
+</div>
+</section>
+</section>
+<section id="part-5-the-fix-and-what-r-adds" class="level1 divider">
+<h1 class="divider">Part 5: the fix, and what <span class="math inline">\(R\)</span> adds</h1>
+<p><strong>Goal.</strong> Recover the in-phase channel, then use <span class="math inline">\(R\)</span> for error bars and for the tuning.</p>
+<section id="regress-y-not-dot-y" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="regress-y-not-dot-y">Regress <span class="math inline">\(y\)</span>, not <span class="math inline">\(\dot y\)</span></h2>
+<ol type="1">
+<li><strong>The model the time scales justify.</strong> With <span class="math inline">\(\omega\tau = 0.127 \ll 1\)</span> the rotor follows the dither nearly at once, so <span class="math inline">\(y\)</span> is nearly a static function of the gain: <span class="math inline">\(y = \theta_0 + \theta_1 d + v\)</span>, the fitting problem of Part 1, with <span class="math inline">\(\theta_1 = J'\operatorname{Re}G\)</span> (and a quadrature remainder of relative size <span class="math inline">\(0.125\)</span> that the fit averages out).</li>
+<li><strong>The estimator.</strong> Part 1’s RLS on <span class="math inline">\(y\)</span> with <span class="math inline">\(\phi = [1, d]^T\)</span>. <span class="math inline">\(y\)</span> is measured, so no filtered regressor is needed.</li>
+<li><strong>The memory</strong> must span at least a dither period, so that <span class="math inline">\(d\)</span> varies within it and <span class="math inline">\(A\)</span> has full rank. Then the off-diagonal entries of <span class="math inline">\(\Sigma\)</span> average out, <span class="math inline">\(\Sigma_{22} \approx a^2/(2k_T)\)</span>, and the slope is identified from the data.</li>
+<li><strong>Recover <span class="math inline">\(J'\)</span>.</strong> Divide by the known <span class="math inline">\(\operatorname{Re}G = 0.984\)</span> (the rotor time constant is a turbine constant, wind deck A.0c).</li>
+</ol>
+<div class="claim">
+<p>With memory one period and negligible ridge, the simulation gives <span class="math inline">\(\hat\theta_1 = 1.259\)</span> at <span class="math inline">\(0.9\,u^\star\)</span>, against <span class="math inline">\(1.260\)</span> from sine demodulation of the same record.</p>
+</div>
+</section>
+<section id="what-r-adds-error-bars-and-the-tuning" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-r-adds-error-bars-and-the-tuning">What <span class="math inline">\(R\)</span> adds: error bars, and the tuning</h2>
+<ol type="1">
+<li><strong>Calibrated error bars.</strong> The estimator computes <span class="math inline">\(\Sigma^{-1}\)</span> at every instant; multiplying by <span class="math inline">\(R/2\)</span> turns it into the variance of its estimate, <span class="math display">\[\hat s(t) := \sqrt{\tfrac{R}{2}\,\Sigma^{-1}_{22}(t)},\qquad R = 2.84\ \text{Hz}^{-1}\]</span> which updates with <span class="math inline">\(\mathrm{TI}\)</span> and <span class="math inline">\(\bar V\)</span> through the Kaimal formula if those are measured.</li>
+<li><strong>The ridge</strong> shrinks the slope: with <span class="math inline">\(\Sigma_{22} = a^2/(2k_T) + \sigma/k_T\)</span> and <span class="math inline">\(b_2 \approx \theta_1a^2/(2k_T)\)</span>, <span class="math display">\[\hat\theta_1 = \frac{a^2/2}{a^2/2 + \sigma}\,\theta_1\]</span> A shrinkage below <span class="math inline">\(1\%\)</span> needs <span class="math inline">\(\sigma \le 0.01\,a^2/2 = 1.25\times10^{-7}\)</span>; the published <span class="math inline">\(\sigma = 10^{-6}\)</span> would shrink this estimator by <span class="math inline">\(7\%\)</span>.</li>
+<li><strong>The memory.</strong> <span class="math inline">\(\operatorname{Var}(\hat\theta_1) \approx \tfrac{R}{2}\Sigma^{-1}_{22} = Rk_T/a^2\)</span>, the variance of the wind deck’s loop with tracking time <span class="math inline">\(\tau_c = 1/k_T\)</span> (wind deck, <em>Design, the requirement</em>): the memory is the tracking time, and the wind deck’s Design section chooses it, and <span class="math inline">\(a\)</span> and <span class="math inline">\(T\)</span> with it.</li>
+<li><strong>At memory one period,</strong> <span class="math inline">\(k_T = 1/T\)</span>: <span class="math inline">\(\sqrt{Rk_T/a^2} = \sqrt{2.84/(314\times2.5\times10^{-5})} = 19.0\)</span>.</li>
+</ol>
+<div class="claim">
+<p>Tested in Part 6: over 400 dither periods at <span class="math inline">\(u^\star\)</span> the actual scatter of <span class="math inline">\(\hat\theta_1\)</span> is <span class="math inline">\(18.9\)</span>, and the reported <span class="math inline">\(\hat s\)</span> averages <span class="math inline">\(19.3\)</span>. Told <span class="math inline">\(R\)</span>, the estimator knows its own error to within <span class="math inline">\(2\%\)</span>.</p>
+</div>
+</section>
+</section>
+<section id="part-6-simulations" class="level1 divider">
+<h1 class="divider">Part 6: simulations</h1>
+<p><strong>Goal.</strong> Check every claim above on the NREL 5 MW rotor under synthesized Kaimal inflow.</p>
+<section id="how-the-simulations-are-set-up" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="how-the-simulations-are-set-up">How the simulations are set up</h2>
+<ul>
+<li><strong>Plant.</strong> The rotor <span class="math inline">\(I\dot\Omega = \tau_{\text{aero}}(\Omega, V) - u\Omega^2\)</span> of the wind deck, Euler step <span class="math inline">\(5\)</span> ms; <span class="math inline">\(y = \ln(\tau_{\text{aero}}\Omega/P_{\text{rated}})\)</span>. Wind: Kaimal, <span class="math inline">\(\bar V = 8\)</span> m/s, <span class="math inline">\(\mathrm{TI} = 0.10\)</span>.</li>
+<li><strong>Open loop.</strong> <span class="math inline">\(\hat u\)</span> is held fixed and <span class="math inline">\(u = \hat u + a\sin\omega t\)</span> with the published <span class="math inline">\(a\)</span> and <span class="math inline">\(\omega\)</span>, so each estimator is tested alone.</li>
+<li><strong>Three estimators on the same record:</strong> the published one (Eqs. 6 to 11 of <a href="#references">[KR22]</a>, <span class="math inline">\(K = k_T = 20\)</span> rad/s, <span class="math inline">\(\sigma = 10^{-6}\)</span>); Part 1’s RLS on <span class="math inline">\(y\)</span> with memory one period and <span class="math inline">\(\sigma = 10^{-12}\)</span>; and sine and cosine demodulation of <span class="math inline">\(y\)</span> per period.</li>
+<li><strong>Runs.</strong> Calm wind (<span class="math inline">\(\mathrm{TI} \to 0\)</span>) at <span class="math inline">\(0.9\,u^\star\)</span> and <span class="math inline">\(1.1\,u^\star\)</span>, 12 periods each, for the signal; turbulent wind at <span class="math inline">\(u^\star\)</span>, 400 periods, for the noise; and, for the long-run noise, <span class="math inline">\(24\)</span> synthesized wind records of <span class="math inline">\(20\)</span> days demodulated period by period.</li>
+<li><strong>Code.</strong> <code>rotea/src/experiments/exp7_piesc_estimator.py</code>, <code>exp9_long_run.py</code>.</li>
+</ul>
+</section>
+<section id="the-published-estimate-is-the-minimum-norm-product" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-published-estimate-is-the-minimum-norm-product">The published estimate is the minimum-norm product</h2>
+<div class="cols2">
+<div>
+<p><img src="assets/rls-identity.svg" class="img-fluid" alt="Scatter of 400 dither periods: the period mean of the published theta-1-hat against the period mean of (u minus u-hat) times y-dot, lying on the identity line, correlation 0.997."></p>
+</div>
+<div>
+<p><strong>Turbulent wind at <span class="math inline">\(u^\star\)</span></strong> (left): period by period, the published estimate equals the minimum-norm product <span class="math inline">\(d\,\dot y\)</span>, correlation <span class="math inline">\(0.997\)</span>.</p>
+<p><strong>Calm wind</strong> (no noise), the mean response:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><span class="math inline">\(0.9\,u^\star\)</span></th>
+<th><span class="math inline">\(1.1\,u^\star\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(\langle\hat\theta_1\rangle\)</span>, published</td>
+<td><span class="math inline">\(4.016\times10^{-8}\)</span></td>
+<td><span class="math inline">\(-3.349\times10^{-8}\)</span></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(\langle d\,\dot y\rangle\)</span></td>
+<td><span class="math inline">\(4.011\times10^{-8}\)</span></td>
+<td><span class="math inline">\(-3.344\times10^{-8}\)</span></td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(\frac{a^2\omega}{2}J'|\operatorname{Im}G|\)</span>, predicted</td>
+<td><span class="math inline">\(4.00\times10^{-8}\)</span></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(\Sigma^{-1}_{22}\)</span></td>
+<td><span class="math inline">\(2.0000\times10^7\)</span></td>
+<td><span class="math inline">\(2.0000\times10^7\)</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="in-phase-against-quadrature" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="in-phase-against-quadrature">In phase against quadrature</h2>
+<p><img src="assets/rls-channels.svg" class="fig-band img-fluid" alt="Left, signal: the in-phase channel responds 1.15 per 0.1 u-star offset, the quadrature channel 0.147, against 0.146 predicted from the in-phase value times omega tau. Right, noise per period: over one period 29.8 in phase and 26.1 in quadrature against 28.9 and 25.2 predicted; in the long run 26.8 and 26.9 against 26.9 predicted for both."></p>
+<ul>
+<li><strong>Signal ratio</strong> in phase over quadrature: <span class="math inline">\(7.83\)</span> measured, <span class="math inline">\(1/(\omega\tau) = 7.87\)</span> predicted.</li>
+<li><strong>Noise:</strong> one period, <span class="math inline">\(29.8\)</span> and <span class="math inline">\(26.1\)</span> against <span class="math inline">\(28.9\)</span> and <span class="math inline">\(25.2\)</span> predicted; long run, <span class="math inline">\(26.8\)</span> and <span class="math inline">\(26.9\)</span> against <span class="math inline">\(26.9\)</span> for both.</li>
+<li><strong>Variance ratio</strong> for equal signal: <span class="math inline">\(62\)</span> in the long run (measured <span class="math inline">\(7.83^2\times(26.9/26.8)^2 = 61.8\)</span>); <span class="math inline">\(47.5\)</span> measured over one period, <span class="math inline">\(47\)</span> predicted.</li>
+</ul>
+</section>
+<section id="the-static-map-rls-unbiased-and-calibrated" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-static-map-rls-unbiased-and-calibrated">The static-map RLS: unbiased and calibrated</h2>
+<p><img src="assets/rls-calibration.svg" class="fig-hero img-fluid" alt="Left, 40 dither periods of the static-map estimate at u-star wandering inside a band of plus and minus one and two reported standard deviations. Right, the histogram of 400 periods matching a normal density with the reported standard deviation."></p>
+<ul>
+<li><strong>Signal:</strong> <span class="math inline">\(1.259\)</span> at <span class="math inline">\(0.9\,u^\star\)</span> and <span class="math inline">\(-1.042\)</span> at <span class="math inline">\(1.1\,u^\star\)</span>, against sine demodulation’s <span class="math inline">\(1.260\)</span> and <span class="math inline">\(-1.042\)</span>.</li>
+<li><strong>Error bar:</strong> actual scatter <span class="math inline">\(18.9\)</span>, reported <span class="math inline">\(\sqrt{(R/2)\Sigma^{-1}_{22}} = 19.3\)</span>, with <span class="math inline">\(R = 2.84\)</span> from Kaimal.</li>
+</ul>
+</section>
+<section id="using-the-error-bar-in-the-step-a-fixed-gain-does-better" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="using-the-error-bar-in-the-step-a-fixed-gain-does-better">Using the error bar in the step: a fixed gain does better</h2>
+<ul>
+<li><strong>The idea.</strong> Move <span class="math inline">\(u\)</span> in proportion to how sure the gradient is: with <span class="math inline">\(m_n\)</span> an exponential average of the per-period estimates (memory <span class="math inline">\(M\)</span> periods) and <span class="math inline">\(v\)</span> its variance from the noise model, step with gain <span class="math inline">\(K_{\max}\,w_n\)</span>, <span class="math inline">\(w_n := \max\big(0,\ 1 - c\,v/m_n^2\big)\)</span> (the positive-part James-Stein weight).</li>
+<li><strong>The test.</strong> Per-period loop on the turbine’s nonlinear <span class="math inline">\(J(u)\)</span>, noise from synthesized wind, 200 runs from <span class="math inline">\(0.6\,u^\star\)</span>; power loss over the first two days and over days 5 to 15 (<code>exp8_snr_gain.py</code>).</li>
+</ul>
+<p><img src="assets/rls-schedule.svg" class="fig-band img-fluid" alt="Transient loss against steady-state loss. Fixed gains trace a curve from 1 hour to 72 hours of tracking time; every signal-to-noise-scheduled variant is beaten in both losses by some fixed gain."></p>
+<div class="claim">
+<p>Every scheduled variant is beaten in both losses by a fixed gain (best scheduled: <span class="math inline">\(1.47\%\)</span> and <span class="math inline">\(1.01\%\)</span>; fixed at <span class="math inline">\(12\)</span> h: <span class="math inline">\(1.16\%\)</span> and <span class="math inline">\(0.67\%\)</span>). Near <span class="math inline">\(u^\star\)</span> the per-period signal-to-noise is too low (noise <span class="math inline">\(2.5\,u^\star\)</span> per period) for the weight to separate “at the optimum” from “not yet”.</p>
+</div>
+</section>
+<section id="bottom-line" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="bottom-line">Bottom line</h2>
+<ol type="1">
+<li><strong>The published estimator reads the quadrature channel.</strong> With a <span class="math inline">\(50\)</span> ms memory and a <span class="math inline">\(314\)</span> s dither, the least-squares problem is rank one; the ridge returns <span class="math inline">\(\hat\theta_1 = d\,\dot y\)</span>, whose average is <span class="math inline">\(-\frac{a^2\omega}{2}\hat g_{\cos}\)</span>.</li>
+<li><strong>That costs a factor <span class="math inline">\(62\)</span> in variance</strong>, <span class="math inline">\(1/(\omega\tau)^2\)</span>, because the dither is slower than the rotor and both channels carry the same long-run noise.</li>
+<li><strong>Regressing <span class="math inline">\(y\)</span> with a memory of at least a period</strong> reads the in-phase channel: an unbiased slope, <span class="math inline">\(J'\operatorname{Re}G\)</span>.</li>
+<li><strong>The wind model supplies <span class="math inline">\(R = 9\,S^{2s}(f_1) = 2.84\)</span> Hz<span class="math inline">\(^{-1}\)</span></strong>, which turns the estimator’s <span class="math inline">\(\Sigma^{-1}\)</span> into its covariance (<span class="math inline">\(2\%\)</span>) and sets <span class="math inline">\(\sigma\)</span> and <span class="math inline">\(k_T\)</span> by formula: the memory is the tracking time of the wind deck’s Design section.</li>
+<li><strong>A fixed gain beats a step scaled by the error bar</strong> here.</li>
+</ol>
+</section>
+</section>
+<section id="appendices" class="level1 divider">
+<h1 class="divider">Appendices</h1>
+<p>The derivations the main line cites.</p>
+<section id="a.1-from-the-cost-to-the-recursion" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="a.1-from-the-cost-to-the-recursion">A.1: From the cost to the recursion</h2>
+<ol type="1">
+<li><strong>The minimizer.</strong> <span class="math inline">\(\Sigma\hat\theta = b\)</span> with <span class="math inline">\(\Sigma = A + \sigma mI\)</span>, <span class="math inline">\(A = \int_0^t w\phi\phi^T\)</span>, <span class="math inline">\(b = \int_0^t w\phi y\)</span>, <span class="math inline">\(m = \int_0^t w\)</span>, <span class="math inline">\(w = e^{-k_T(t-s)}\)</span>.</li>
+<li><strong>Differentiate in <span class="math inline">\(t\)</span>.</strong> The upper limit contributes the integrand at <span class="math inline">\(s = t\)</span> (where <span class="math inline">\(w = 1\)</span>); the weight contributes <span class="math inline">\(-k_T\)</span> times the integral: <span class="math display">\[\dot A = \phi\phi^T - k_TA,\qquad \dot b = \phi y - k_Tb,\qquad \dot m = 1 - k_Tm\]</span> so <span class="math inline">\(\dot\Sigma = \dot A + \sigma\dot m I = \phi\phi^T - k_T\Sigma + \sigma I\)</span>.</li>
+<li><strong>The parameter.</strong> Differentiate <span class="math inline">\(\Sigma\hat\theta = b\)</span>: <span class="math inline">\(\dot\Sigma\hat\theta + \Sigma\dot{\hat\theta} = \dot b\)</span>, so <span class="math display">\[\dot{\hat\theta} = \Sigma^{-1}\big(\dot b - \dot\Sigma\hat\theta\big)
+= \Sigma^{-1}\big(\phi y - k_Tb - \phi\phi^T\hat\theta + k_T\Sigma\hat\theta - \sigma\hat\theta\big)
+= \Sigma^{-1}\big(\phi(y - \phi^T\hat\theta) - \sigma\hat\theta\big)\]</span> using <span class="math inline">\(k_T\Sigma\hat\theta = k_Tb\)</span>.</li>
+<li><strong>LP-PIESC.</strong> The same steps with <span class="math inline">\(c\)</span> for <span class="math inline">\(\phi\)</span> and <span class="math inline">\(z := e + c^T\hat\theta\)</span> for <span class="math inline">\(y\)</span> give Eqs. 6 and 11 of <a href="#references">[KR22]</a>. With <span class="math inline">\(c \approx \phi/K\)</span> and <span class="math inline">\(Kz \approx \dot y\)</span>, the cost <span class="math inline">\(\int w[(z - c^T\theta)^2 + \sigma|\theta|^2]\)</span> equals <span class="math inline">\(\frac{1}{K^2}\int w[(\dot y - \phi^T\theta)^2 + \sigma K^2|\theta|^2]\)</span>: the regression of <span class="math inline">\(\dot y\)</span> with ridge <span class="math inline">\(\gamma = \sigma K^2\)</span>.</li>
+</ol>
+</section>
+<section id="a.2-the-minimum-norm-solution" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="a.2-the-minimum-norm-solution">A.2: The minimum-norm solution</h2>
+<ol type="1">
+<li><strong>Claim.</strong> For a vector <span class="math inline">\(\phi\)</span> and <span class="math inline">\(\gamma &gt; 0\)</span>, <span class="math inline">\((\phi\phi^T + \gamma I)^{-1}\phi = \phi/(|\phi|^2 + \gamma)\)</span>.</li>
+<li><strong>Proof.</strong> Multiply the candidate by the matrix: <span class="math display">\[(\phi\phi^T + \gamma I)\,\frac{\phi}{|\phi|^2 + \gamma} = \frac{\phi\,(\phi^T\phi) + \gamma\phi}{|\phi|^2 + \gamma} = \phi\]</span></li>
+<li><strong>Meaning.</strong> The equation <span class="math inline">\(\dot y = \phi^T\theta\)</span> has a line of solutions. As <span class="math inline">\(\gamma \to 0\)</span>, <span class="math inline">\(\hat\theta = \phi\dot y/(|\phi|^2 + \gamma)\)</span> tends to <span class="math inline">\(\phi\dot y/|\phi|^2\)</span>, the solution of smallest length <span class="math inline">\(|\theta|\)</span>: the ridge chooses the shortest parameter vector consistent with the data.</li>
+</ol>
+</section>
+<section id="a.3-covariance-with-exponential-weights" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="a.3-covariance-with-exponential-weights">A.3: Covariance with exponential weights</h2>
+<ol type="1">
+<li><strong>White noise.</strong> With <span class="math inline">\(\phi\phi^T\)</span> replaced by its average <span class="math inline">\(\overline{\phi\phi^T}\)</span> over a memory, <span class="math display">\[\int_0^t w\,\phi\phi^T ds \approx \frac{1}{k_T}\overline{\phi\phi^T},\qquad
+\int_0^t w^2\,\phi\phi^T ds \approx \frac{1}{2k_T}\overline{\phi\phi^T} = \frac12\int_0^t w\,\phi\phi^T ds\]</span> since <span class="math inline">\(\int_0^\infty e^{-k_Ts}ds = 1/k_T\)</span> and <span class="math inline">\(\int_0^\infty e^{-2k_Ts}ds = 1/(2k_T)\)</span>. With <span class="math inline">\(\sigma\)</span> negligible, <span class="math inline">\(\operatorname{Cov}(\hat\theta) = R\,\Sigma^{-1}(\tfrac12\Sigma)\Sigma^{-1} = \tfrac{R}{2}\Sigma^{-1}\)</span>.</li>
+<li><strong>Colored noise, the slope.</strong> With <span class="math inline">\(\Sigma_{22} \approx a^2/(2k_T)\)</span> and <span class="math inline">\(d = a\sin\omega(t-s)\)</span>, the phase-averaged <span class="math inline">\(|W(f)|^2 = \frac{a^2}{4}\big[\ell(f - f_1) + \ell(f + f_1)\big]\)</span> with <span class="math inline">\(\ell(\Delta) = 1/(k_T^2 + (2\pi\Delta)^2)\)</span>, so <span class="math display">\[\operatorname{Var}(\hat\theta_1) = \frac{k_T^2}{a^2}\int_{\mathbb{R}} S_v^{2s}(f)\big[\ell(f-f_1) + \ell(f+f_1)\big]df\]</span> For flat <span class="math inline">\(S_v^{2s} = R\)</span>, <span class="math inline">\(\int\ell = 1/(2k_T)\)</span> and this is <span class="math inline">\(Rk_T/a^2 = \tfrac{R}{2}\Sigma^{-1}_{22}\)</span>.</li>
+<li><strong>Numbers at memory one period.</strong> Exact integral with Kaimal: <span class="math inline">\(\sigma = 19.12\)</span>; flat value: <span class="math inline">\(19.02\)</span>.</li>
+</ol>
+</section>
+<section id="a.4-the-rotors-response-at-the-dither-frequency" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="a.4-the-rotors-response-at-the-dither-frequency">A.4: The rotor’s response at the dither frequency</h2>
+<ol type="1">
+<li><strong>Linearize</strong> the rotor about its equilibrium (wind deck A.0c): <span class="math inline">\(\tau\,\delta\dot\Omega + \delta\Omega = \beta\,\delta u\)</span> for a constant <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\tau = \tau_{\text{rotor}} = 6.36\)</span> s at <span class="math inline">\(8\)</span> m/s.</li>
+<li><strong><span class="math inline">\(y\)</span> depends on <span class="math inline">\(u\)</span> only through <span class="math inline">\(\Omega\)</span></strong> (aerodynamic power <span class="math inline">\(\tau_{\text{aero}}\Omega\)</span>), so <span class="math inline">\(\delta y = y_\Omega\,\delta\Omega\)</span> with <span class="math inline">\(y_\Omega := \partial y/\partial\Omega\)</span>.</li>
+<li><strong>Static limit.</strong> For slow <span class="math inline">\(\delta u\)</span>, <span class="math inline">\(\delta\Omega = \beta\,\delta u\)</span> and <span class="math inline">\(\delta y = J'\delta u\)</span> by definition of <span class="math inline">\(J\)</span>, so <span class="math inline">\(y_\Omega\beta = J'\)</span>.</li>
+<li><strong>At frequency <span class="math inline">\(\omega\)</span>.</strong> For <span class="math inline">\(\delta u = a\sin\omega t = a\operatorname{Im}e^{i\omega t}\)</span> the steady response is <span class="math inline">\(\delta\Omega = \beta\,a\operatorname{Im}\big(G\,e^{i\omega t}\big)\)</span> with <span class="math inline">\(G = 1/(1 + i\omega\tau)\)</span>, hence <span class="math display">\[y_{\text{det}} = J'a\operatorname{Im}\big(G e^{i\omega t}\big) = J'a\big[\operatorname{Re}G\sin\omega t + \operatorname{Im}G\cos\omega t\big]\]</span></li>
+<li><strong>Values.</strong> <span class="math inline">\(\omega\tau = 0.02\times6.36 = 0.127\)</span>: <span class="math inline">\(\operatorname{Re}G = 1/(1 + 0.0162) = 0.984\)</span>, <span class="math inline">\(\operatorname{Im}G = -0.127/1.0162 = -0.125\)</span>.</li>
+</ol>
+</section>
+<section id="a.5-the-two-windows" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="a.5-the-two-windows">A.5: The two windows</h2>
+<p>The per-period channels are <span class="math inline">\(\hat g_{\sin} = \frac{2}{aT}\int_0^T y\sin\omega t\,dt\)</span> and <span class="math inline">\(\hat g_{\cos} = \frac{2}{aT}\int_0^T y\cos\omega t\,dt\)</span>. Their wind parts are <span class="math inline">\(\frac{6}{aT}\int_0^T\varepsilon\,w\,dt\)</span> with <span class="math inline">\(w = \sin\omega t\)</span> or <span class="math inline">\(\cos\omega t\)</span> on <span class="math inline">\([0, T]\)</span>.</p>
+<ol type="1">
+<li><strong>Transforms</strong> (as in wind deck A.3, with <span class="math inline">\(\beta = 2\pi f\)</span>), over <span class="math inline">\(N\)</span> periods: <span class="math display">\[\hat w_{\sin,N}(f) = \frac{\omega\,(1 - e^{-i\beta NT})}{\omega^2 - \beta^2},\qquad
+\hat w_{\cos,N}(f) = \frac{i\beta\,(1 - e^{-i\beta NT})}{\omega^2 - \beta^2}\]</span> Both have magnitude <span class="math inline">\(NT/2\)</span> at <span class="math inline">\(f = \pm f_1\)</span>; for <span class="math inline">\(N = 1\)</span> they differ in how much of the low-frequency wind they admit.</li>
+<li><strong>One period,</strong> by the variance rule with the Kaimal density at <span class="math inline">\(T = 314\)</span> s: <span class="math inline">\(\sigma(\hat g_{\sin}) = \frac{6}{aT}\sqrt{\int S^{2s}|\hat w_{\sin}|^2df} = 28.9\)</span>, <span class="math inline">\(\sigma(\hat g_{\cos}) = 25.2\)</span>.</li>
+<li><strong>Long run.</strong> As <span class="math inline">\(N\)</span> grows both windows gather their area, <span class="math inline">\(NT/2\)</span>, at <span class="math inline">\(\pm f_1\)</span> (wind deck, <em>The noise a slow loop averages</em>), so both channels have the long-run variance <span class="math inline">\(\big(\frac{6}{aT}\big)^2S^{2s}(f_1)\,\frac T2 = \frac{2R}{a^2T}\)</span> per period: <span class="math inline">\(\sigma = 26.9\)</span>.</li>
+</ol>
+</section>
+<section id="references" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="references">References</h2>
+<div class="refs">
+<p><strong>[KR22]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Wind turbine power maximization using log-power proportional-integral extremum seeking</em>, Energies <strong>15</strong> (2022) 1004. <a href="https://doi.org/10.3390/en15031004">doi:10.3390/en15031004</a></p>
+<p><strong>[GD17]</strong>&nbsp; M. Guay &amp; D. Dochain, <em>A proportional-integral extremum-seeking controller design technique</em>, Automatica <strong>77</strong> (2017) 61–67. <a href="https://doi.org/10.1016/j.automatica.2016.11.018">doi:10.1016/j.automatica.2016.11.018</a></p>
+</div>
+<div class="footnote">
+<p>Companion to <a href="gradient-estimation.html">Extremum Seeking Control of Wind Turbines</a> and <a href="q5-wind-process.html">Wind as a Stochastic Process</a>.</p>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Aykut C. Satici · Robot Control Lab · UT Dallas</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="mailto:aykut.satici@utdallas.edu">
+<p>Email</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/symplectomorphism">
+<p>GitHub</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="../../positions/index.html">
+<p>Opportunities</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

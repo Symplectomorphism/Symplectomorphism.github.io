@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Aykut C. Satici">
+
+<title>A Matrix Gain for Extremum Seeking – Aykut C. Satici</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../images/robot-arm-favicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-09b469177ad55450d94bd915a4dae986.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script>
+window.MathJax = {
+  loader: {
+    load: ['[tex]/boldsymbol', '[tex]/mathtools']
+  },
+  tex: {
+    packages: {'[+]': ['boldsymbol', 'mathtools']}
+  }
+};
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="../../assets/mathjax/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="../research.css">
+<meta property="og:title" content="A Matrix Gain for Extremum Seeking – Aykut C. Satici">
+<meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
+<meta property="og:image" content="https://Symplectomorphism.github.io/research/wind-esc/assets/zap-dictionary.svg">
+<meta property="og:site_name" content="Aykut C. Satici">
+<meta property="og:image:alt" content="Four rows mapping Zap objects to turbine quantities: theta is the torque gain or yaw vector; f is one demodulated gradient estimate per dither period; A is the curvature of log C_P read off the second harmonic; A-hat is the Hessian at the operating point.">
+</head>
+
+<body class="nav-sidebar nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Aykut C. Satici</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../research/index.html"> 
+<span class="menu-text">Research</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../publications.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../teaching/index.html"> 
+<span class="menu-text">Teaching</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../people/index.html"> 
+<span class="menu-text">People</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../news/index.html"> 
+<span class="menu-text">News</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../positions/index.html"> 
+<span class="menu-text">Opportunities</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-miscellaneous" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Miscellaneous</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-miscellaneous">    
+        <li>
+    <a class="dropdown-item" href="../../fun/index.html">
+ <span class="dropdown-text">Fun</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../chiasson/index.html">
+ <span class="dropdown-text">John Chiasson</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+    <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="q4-matrix-gain.html"><i class="bi bi-file-slides"></i>RevealJS</a></li></ul></div></div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+<div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
+$$
+% Define your custom commands here
+\newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\vectornorm}[1]{\left|\left|#1\right|\right|}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\nicefrac}[2]{{}^{#1}\!/_{\!#2}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\dd}{\operatorname{d}\!}
+$$
+</div>
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">A Matrix Gain for Extremum Seeking</h1>
+<p class="subtitle lead">Zap stochastic approximation on a wind turbine: what each object becomes, and whether it works</p>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliation</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">Aykut C. Satici </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            Robot Control Lab · Systems Engineering · UT Dallas
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="two-answers-and-only-one-needs-a-hessian" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="two-answers-and-only-one-needs-a-hessian">Two answers, and only one needs a Hessian</h2>
+<p>Stochastic approximation offers two routes to the same asymptotic covariance. They differ entirely in what they cost to build.</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">Polyak-Ruppert averaging</span></p>
+<p>Average the iterates. Attains the optimal asymptotic covariance with no curvature estimate anywhere.</p>
+</div>
+<div class="card">
+<p><span class="cardh">Zap stochastic approximation</span></p>
+<p>Estimate the Jacobian on a fast timescale, invert it, use it as a matrix gain. A stochastic Newton-Raphson method.</p>
+</div>
+</div>
+<div class="claim">
+<p>Both reach the optimal covariance <span class="math inline">\(\Sigma^{PR} = A^{-1}\Sigma_W A^{-\top}\)</span>. Averaging gets there for four lines of code and no curvature estimate at all. <strong>So if the case for a matrix gain is argued on terminal variance, it loses.</strong> What it can be argued on is transient behavior and conditioning, and this deck asks whether that survives contact with a turbine.</p>
+</div>
+<div class="notes">
+<p>The honest framing is that Zap is not the cheapest route to low variance. What it offers is transient behavior, stability under weak conditions, and conditioning in more than one dimension. Those are the goods worth chasing here, and they line up with a tuning-effort complaint rather than a noise complaint.</p>
+<p>This slide is here to set up that comparison, which the deck returns to and settles later under Zap against averaging.</p>
+</div>
+</section>
+<section id="zap-in-four-lines" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="zap-in-four-lines">Zap in four lines</h2>
+<p><span class="math display">\[
+\begin{aligned}
+\hat A_{n+1} &amp;= \hat A_n + \varepsilon_{n+1}\big[A_{n+1} - \hat A_n\big] \\[0.15em]
+\theta_{n+1} &amp;= \theta_n + \alpha_{n+1}\, G_{n+1}\, f_{n+1}(\theta_n) \\[0.15em]
+A_{n+1} &amp;= \partial_\theta f_{n+1}(\theta_n) \\[0.15em]
+G_{n+1} &amp;= -\big[\varepsilon I + \hat A^{\!\top}_{n+1}\hat A_{n+1}\big]^{-1}\hat A_{n+1}
+\end{aligned}
+\]</span></p>
+<p>with the two step sizes satisfying <span class="math inline">\(\varepsilon_n/\alpha_n \to \infty\)</span>.</p>
+<div class="warn">
+<p>Line three is the whole problem. <code>A</code> is the Jacobian of the <strong>sample</strong> update direction, differentiated in the parameter. In Q-learning <span class="math inline">\(f_{n+1}\)</span> is piecewise linear in <span class="math inline">\(\theta\)</span>, so that derivative is free and rank one. A demodulated gradient estimate has no such closed form.</p>
+</div>
+</section>
+<section id="the-dictionary" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-dictionary">The dictionary</h2>
+<p><img src="assets/zap-dictionary.svg" class="fig-tall img-fluid" alt="Four rows mapping Zap objects to turbine quantities: theta is the torque gain or yaw vector; f is one demodulated gradient estimate per dither period; A is the curvature of log C_P read off the second harmonic; A-hat is the Hessian at the operating point."></p>
+<div class="notes">
+<p>Read the third row twice. It is the claim that makes the rest of the deck possible, and the next three slides are its derivation.</p>
+</div>
+</section>
+<section id="what-f-is-precisely" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-f-is-precisely">What <span class="math inline">\(f\)</span> is, precisely</h2>
+<p>The objective is the turbulence-averaged log-power, <span class="math inline">\(\Gamma(\theta) = \mathbb{E}\big[\ln P(\theta)\big]\)</span>, and because <span class="math inline">\(3\ln V\)</span> does not depend on <span class="math inline">\(\theta\)</span> this equals <span class="math inline">\(\mathbb{E}[\ln C_P]\)</span> up to a constant.</p>
+<p>The mean field is <span class="math inline">\(\bar f(\theta) = \nabla\Gamma(\theta)\)</span>. The sample is one dither period of demodulation:</p>
+<p><span class="math display">\[f_{n+1}(\theta_n) \;=\; \hat g_n \;=\; \frac{2}{aT}\int_{nT}^{(n+1)T}\ln P(t)\,\sin\omega t\;dt\]</span></p>
+<div class="claim">
+<p>So <span class="math inline">\(f\)</span> is exactly what LP-ESC already computes. Nothing changes in the forward path. Zap only changes what multiplies <span class="math inline">\(\hat g_n\)</span> before it reaches the integrator.</p>
+</div>
+</section>
+<section id="what-a-is-precisely" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-a-is-precisely">What <span class="math inline">\(A\)</span> is, precisely</h2>
+<p><span class="math display">\[A(\theta) \;=\; \partial_\theta \bar f(\theta) \;=\; \nabla^2\Gamma(\theta)\]</span></p>
+<p>For the torque-gain problem this is the scalar <span class="math inline">\(\partial^2 \ln C_P/\partial u^2\)</span> at the operating point. It is the <strong>same number</strong> that appears in Rotea’s 2017 crossover frequency,</p>
+<p><span class="math display">\[\nu_c \;=\; \frac{\kappa}{C_P^{\max}}\left|\frac{\partial^2 C_P}{\partial u^2}(u_o)\right|\]</span></p>
+<div class="claim">
+<p>The curvature is not a new quantity being introduced. It is already in the tuning formula, taken on faith from a design curve. Zap proposes to measure it instead.</p>
+</div>
+</section>
+<section id="where-a_n1-comes-from" class="level1 divider">
+<h1 class="divider">Where <span class="math inline">\(A_{n+1}\)</span> comes from</h1>
+<p>The probe already writes the curvature into the data. Nobody reads it.</p>
+<section id="expand-around-the-operating-point" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="expand-around-the-operating-point">Expand around the operating point</h2>
+<p><span class="math inline">\(\theta(t) = \theta_n + a\sin\omega t\)</span> is the <strong>ordinary ESC dither</strong>: <span class="math inline">\(\theta_n\)</span> the current estimate, held across the period, with the probe riding on it. It is <span class="math inline">\(d_1(t) = a\sin(\omega t)\)</span> of <a href="#references">[KR22]</a> §2, nothing added. Put it into a local quadratic model of <span class="math inline">\(y = \ln P\)</span>, with <span class="math inline">\(g\)</span> the slope and <span class="math inline">\(H\)</span> the curvature at <span class="math inline">\(\theta_n\)</span>:</p>
+<p><span class="math display">\[y(t) \;=\; \text{const} \;+\; g\,a\sin\omega t \;+\; \tfrac12 H a^2 \sin^2\!\omega t\]</span></p>
+<p>Now use <span class="math inline">\(\sin^2\omega t = \tfrac12(1 - \cos 2\omega t)\)</span>:</p>
+<p><span class="math display">\[y(t) \;=\; \underbrace{\Big[\,\cdot\, + \tfrac14 H a^2\Big]}_{\text{DC}}
+\;+\; \underbrace{g\,a\,\sin\omega t}_{\text{first harmonic}}
+\;-\; \underbrace{\tfrac14 H a^2\cos 2\omega t}_{\text{second harmonic}}\]</span></p>
+<div class="claim">
+<p>The gradient sits at <span class="math inline">\(\omega\)</span>. The curvature sits at <span class="math inline">\(2\omega\)</span>. Same record, separated in frequency, one probe generating both.</p>
+</div>
+<div class="warn">
+<p>This needs the dither to be a <strong>sinusoid</strong>. For the square wave of <a href="#references">[CLR19]</a>, <span class="math inline">\(g(t) = \pm1\)</span> so <span class="math inline">\(g(t)^2 \equiv 1\)</span>: the quadratic term is a constant and <strong>carries no harmonic at all</strong>. The method applies to the <a href="#references">[KR22]</a> line, which dithers sinusoidally, and not to the 2019 square-wave line.</p>
+</div>
+</section>
+<section id="in-the-spectrum" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="in-the-spectrum">In the spectrum</h2>
+<p><img src="assets/zap-harmonics.svg" class="img-fluid" alt="Power spectral density of log power. A red turbulence continuum falling as f to the minus five thirds, with a tall green line at the dither frequency labeled gradient and a shorter violet line at twice that frequency labeled curvature, both well inside the plant bandwidth."></p>
+<div class="notes">
+<p>Two things to note on this picture. The curvature line is smaller than the gradient line by roughly a over four times the distance from the peak, so close to the optimum it is the larger of the two. And the second harmonic does sit in a quieter part of the spectrum than the first, which is a real advantage for the Hessian channel, though the deck should not lean on it: at 150 seconds the fundamental is already sitting on the peak of f S of f, so the comparison is between bad and slightly less bad.</p>
+</div>
+</section>
+<section id="the-two-demodulators" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-two-demodulators">The two demodulators</h2>
+<p><span class="math display">\[
+\hat g_n \;=\; \Big\langle\, y\cdot \tfrac{2}{a}\sin\omega t \,\Big\rangle,
+\qquad
+\hat H_n \;=\; \big\langle\, y \cdot N(t) \,\big\rangle,
+\qquad
+N(t) = \frac{16}{a^2}\left(\sin^2\!\omega t - \frac12\right)
+\]</span></p>
+<p>Check the second: <span class="math inline">\(N(t) = -\tfrac{8}{a^2}\cos 2\omega t\)</span>, averaged against the <span class="math inline">\(-\tfrac14 Ha^2\cos2\omega t\)</span> term of the expansion, gives <span class="math inline">\(\tfrac14 Ha^2\cdot\tfrac{8}{a^2}\cdot\tfrac12 = H\)</span>. For <span class="math inline">\(p\)</span> parameters the same construction is a matrix, Eqs. 20–21 of [GKN12]:</p>
+<p><span class="math display">\[N_{i,i}(t) = \frac{16}{a_i^2}\left(\sin^2\!\omega_i t - \frac12\right),
+\qquad
+N_{i,j}(t) = \frac{4}{a_ia_j}\sin\omega_i t\,\sin\omega_j t \quad (i \ne j)\]</span></p>
+<div class="claim">
+<p><span class="math inline">\(A_{n+1} = \hat H_n\)</span>. One extra correlation against a signal the loop already generates: no new sensor, no extra excitation, no additional load.</p>
+</div>
+<div class="warn">
+<p>Two conditions, both checked later by simulation. The dither must be a <strong>sinusoid</strong>, since a square wave has <span class="math inline">\(g(t)^2 \equiv 1\)</span> and no second harmonic at all. And <span class="math inline">\(2\omega\)</span> must sit inside the rotor’s passband, or <span class="math inline">\(\hat H\)</span> reads low: <span class="math inline">\(21\%\)</span> low at the published <span class="math inline">\(T = 150\)</span> s.</p>
+</div>
+<div class="notes">
+<p>Say this one out loud before anything else. The demodulation pair is not new and neither is the conclusion that it takes the curvature out of the loop gain. Both are Ghaffari, Krstic and Nesic, Automatica 48 (2012) 1759 to 1767, verified, which also supplies a Riccati filter converging to the inverse of H without ever inverting a matrix, and which states the convergence rate becoming user-assignable as its headline result. Krstic is not someone to accidentally re-derive in front of this audience.</p>
+<p>What is not in that paper: the wind turbine feasibility limit on the next slides, the p-squared frequency budget for the multi-turbine yaw problem, and the pairing with Zap, whose asymptotic covariance theory and regularized pseudo-inverse their Riccati filter lacks. That is the honest boundary of the contribution.</p>
+</div>
+</section>
+<section id="more-than-one-parameter" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="more-than-one-parameter">More than one parameter</h2>
+<p>For <span class="math inline">\(\theta \in \mathbb{R}^p\)</span>, dither each component at its own frequency and demodulate with a matrix:</p>
+<p><span class="math display">\[
+N_{ii}(t) = \frac{16}{a_i^2}\left(\sin^2\!\omega_i t - \frac12\right),
+\qquad
+N_{ij}(t) = \frac{4}{a_i a_j}\,\sin\omega_i t\,\sin\omega_j t \quad (i\neq j)
+\]</span></p>
+<div class="openq">
+<p>The frequencies must satisfy the usual separation conditions, and now also <span class="math inline">\(2\omega_i\)</span> must not collide with any <span class="math inline">\(\omega_j\)</span> or <span class="math inline">\(\omega_j \pm \omega_k\)</span>. For six yawed turbines that is a real combinatorial constraint on a narrow usable band.</p>
+</div>
+</section>
+<section id="the-loop-assembled" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-loop-assembled">The loop, assembled</h2>
+<p><img src="assets/zap-demod.svg" class="fig-tall img-fluid" alt="Block diagram. Log power splits into two demodulation branches. The upper one produces H-hat which feeds the averaged Jacobian and then the regularized matrix gain. The lower one produces g-hat. Both meet at the parameter update, which feeds back through the dither to the turbine."></p>
+<div class="claim">
+<p>The lower path is LP-ESC exactly as published. Everything added is a second correlation and two recursions, all on signals already in hand.</p>
+</div>
+</section>
+</section>
+<section id="what-it-buys" class="level1 divider">
+<h1 class="divider">What it buys</h1>
+<p>Three things, and only one of them is about noise.</p>
+<section id="the-curvature-leaves-the-loop-gain" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-curvature-leaves-the-loop-gain">The curvature leaves the loop gain</h2>
+<p>Write <span class="math inline">\(\delta = \theta - \theta^\star\)</span>, so <span class="math inline">\(g = H\delta\)</span> with <span class="math inline">\(H&lt;0\)</span> at a maximum. Gradient ascent linearizes to <span class="math inline">\(\dot\delta = \kappa H\delta\)</span>: <strong>the closed-loop rate is <span class="math inline">\(\kappa|H|\)</span>, so it inherits the plant’s curvature.</strong> Meyn’s gain carries its own sign, <span class="math inline">\(G = -H/(\varepsilon+H^2)\)</span>, and with <span class="math inline">\(\varepsilon\to0\)</span> the update gives <span class="math inline">\(\dot\delta = -\kappa\delta\)</span>, rate <span class="math inline">\(\kappa\)</span> regardless of <span class="math inline">\(H\)</span>.</p>
+<p><img src="assets/zap-rate.svg" class="fig-band img-fluid" alt="Closed-loop rate against the curvature at the peak, both normalized to the value the loop was tuned at. Gradient ascent is a rising diagonal, so a flatter peak makes it 2.5 times too slow and a sharper peak 2.5 times too fast. The Newton step is a flat line at one."></p>
+<div class="claim">
+<p>Read the diagonal: tune at <span class="math inline">\(|H| = 1\)</span>, and if erosion or an off-design site flattens the peak to <span class="math inline">\(|H| = 0.4\)</span> the loop runs <span class="math inline">\(2.5\times\)</span> <strong>too slow</strong>; sharpen it to <span class="math inline">\(2.5\)</span> and it runs <span class="math inline">\(2.5\times\)</span> <strong>too fast</strong>, toward the stability edge. Nothing in the loop reports either. The flat line is what a Newton step buys: <span class="math inline">\(\kappa\)</span> <strong>is</strong> the settling time rather than merely influencing it.</p>
+</div>
+</section>
+<section id="which-is-the-tuning-complaint-answered" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="which-is-the-tuning-complaint-answered">Which is the tuning complaint, answered</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">What Rotea wrote</span></p>
+<p>A version of ESC that “converges very fast but it takes too long to tune its parameters.”</p>
+</div>
+<div class="card">
+<p><span class="cardh">What <a href="#references">[RKAJ24]</a> says</span></p>
+<p>“All parameters with the exception of dither frequency and amplitude were obtained by trial and error.”</p>
+</div>
+</div>
+<div class="claim">
+<p>Under gradient ascent, <span class="math inline">\(\kappa\)</span> has to be re-found whenever <span class="math inline">\(H\)</span> changes, and <span class="math inline">\(H\)</span> changes with the site, with the blade condition, and with the operating point. Under a matrix gain, <span class="math inline">\(\kappa\)</span> is set once from the settling time you want.</p>
+</div>
+<div class="notes">
+<p>This is the strongest single argument in the deck, because it addresses the thing he actually complained about rather than the thing the literature is organized around. Note that it holds even in the scalar case, where the matrix gain is just division by an estimated number.</p>
+</div>
+</section>
+<section id="where-a-matrix-really-pays" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="where-a-matrix-really-pays">Where a matrix really pays</h2>
+<p><img src="assets/zap-conditioning.svg" class="img-fluid" alt="Two contour plots of farm power against two row yaw angles, with a long narrow tilted ridge. Left, gradient ascent crawls along the ridge in many small steps. Right, the matrix gain reaches the peak in a few."></p>
+<div class="claim">
+<p>Gradient methods converge at a rate set by the <strong>smallest</strong> Hessian eigenvalue. The measured farm power maps in the twelve-turbine tunnel experiment are long narrow ridges in the yaw angles, which is precisely the case where that hurts.</p>
+</div>
+<div class="notes">
+<p>In the scalar torque-gain problem a matrix gain is a convenience. In the yaw problem it is the difference between converging and crawling, because the wake interaction makes the objective strongly anisotropic and there is no reason the principal axes should line up with individual turbines.</p>
+</div>
+</section>
+<section id="regularization-is-doing-real-work" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="regularization-is-doing-real-work">Regularization is doing real work</h2>
+<p>In the scalar case <span class="math inline">\(G = -\hat A/(\varepsilon + \hat A^2)\)</span>, so the effective rate is</p>
+<p><span class="math display">\[\kappa\,\frac{H^2}{\varepsilon + H^2}\]</span></p>
+<div class="claim">
+<p>On a flat peak <span class="math inline">\(\hat A \to 0\)</span> and an unregularized Newton step would explode. This form does the opposite: it backs off to a small step, degrading gracefully into gradient ascent exactly where curvature cannot be seen.</p>
+</div>
+<div class="notes">
+<p>Worth stressing because the C_P peak is flat by design and gets flatter as the blades degrade. A naive inverse-Hessian method on this plant would be dangerous. The epsilon in Meyn’s formula is not a numerical detail here, it is the safety property that makes the method usable.</p>
+</div>
+</section>
+</section>
+<section id="what-it-costs" class="level1 divider">
+<h1 class="divider">What it costs</h1>
+<p>Three objections. One of them is a hard precondition, not a matter of degree.</p>
+<section id="why-the-curvature-is-better-conditioned-near-the-peak" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="why-the-curvature-is-better-conditioned-near-the-peak">Why the curvature is better conditioned near the peak</h2>
+<p>Signal amplitudes are <span class="math inline">\(ga\)</span> at <span class="math inline">\(\omega\)</span> and <span class="math inline">\(\tfrac14Ha^2\)</span> at <span class="math inline">\(2\omega\)</span>; the demodulators divide by <span class="math inline">\(a\)</span> and <span class="math inline">\(a^2/8\)</span>. With <span class="math inline">\(D\)</span> the distance from the peak and <span class="math inline">\(g \approx HD\)</span> near it:</p>
+<p><span class="math display">\[\frac{\sigma(\hat H)}{\sigma(\hat g)} = \frac{8}{a}\,2^{-5/6},
+\qquad
+\frac{\text{rel}_H}{\text{rel}_g}
+= \frac{\sigma(\hat H)/|H|}{\sigma(\hat g)/|g|}
+= D\,\frac{\sigma(\hat H)}{\sigma(\hat g)}\]</span></p>
+<div class="claim">
+<p><span class="math inline">\(\text{rel}_g\)</span> <strong>diverges</strong> at the optimum because <span class="math inline">\(g \to 0\)</span> there. <span class="math inline">\(\text{rel}_H\)</span> does not, because <span class="math inline">\(H\)</span> does not. So there is always a neighborhood inside which the curvature is the better conditioned of the two, and it ends at <span class="math inline">\(D = a\,2^{5/6}/8 = 3.0\%\)</span> of <span class="math inline">\(u_{\text{opt}}\)</span>.</p>
+</div>
+<div class="warn">
+<p><span class="math inline">\(\sigma(\hat H)/\sigma(\hat g)\)</span> carries units of <span class="math inline">\(1/u\)</span>, so it is not a bare number: <span class="math inline">\(33\)</span> per <span class="math inline">\(u_{\text{opt}}\)</span>, <span class="math inline">\(15\)</span> per N<span class="math inline">\(\cdot\)</span>m<span class="math inline">\(\cdot\)</span>rpm<span class="math inline">\(^{-2}\)</span>. Only <span class="math inline">\(D\)</span> is unit-free.</p>
+</div>
+</section>
+<section id="the-crossover-and-where-the-loop-sits" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-crossover-and-where-the-loop-sits">The crossover, and where the loop sits</h2>
+<p><img src="assets/zap-relerr.svg" class="fig-tall img-fluid" alt="Relative error against distance from the peak, on log axes. The gradient's relative error rises steeply as the peak is approached; the curvature's is a flat line. They cross at about three percent from the peak."></p>
+<div class="claim">
+<p>After convergence the loop sits about <span class="math inline">\(0.5\%\)</span> out, the finite-difference bias from Q1. That is comfortably inside the crossover. <strong>The regime where Newton methods are supposed to be impossible is the regime the turbine operates in.</strong></p>
+</div>
+<div class="notes">
+<p>The spectral tilt is a secondary help, not the mechanism. Turbulence falling as f to the minus five thirds makes the second harmonic quieter than the first by two to the minus five sixths in amplitude, widening the crossover by a factor of 1.78. Flat noise would still give a crossover, at 1.7 percent.</p>
+<p>So the received wisdom that second-order information is hopeless under noise is right in absolute terms and misleading here, because it compares the wrong quantity. What a Newton step needs is relative accuracy in H, not absolute.</p>
+</div>
+</section>
+<section id="the-second-harmonic-has-to-fit-inside-the-rotor" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-second-harmonic-has-to-fit-inside-the-rotor">The second harmonic has to fit inside the rotor</h2>
+<p><img src="assets/zap-bandwidth.svg" class="img-fluid" alt="Plant gain at the second harmonic against the ratio of two omega to the plant bandwidth. The Kumar and Rotea 2022 setting sits at 0.32 with gain 0.95. The two wind tunnel settings sit at 1.6 and 2.0, with gains 0.53 and 0.45, inside a shaded region marked outside the passband."></p>
+<div class="warn">
+<p>The rotor is a low-pass filter. If <span class="math inline">\(2\omega\)</span> falls outside its passband the second harmonic is attenuated and phase-shifted, and the curvature estimate is biased by an amount nobody is tracking.</p>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(V\)</span></th>
+<th>rotor <span class="math inline">\(1/\tau\)</span></th>
+<th><span class="math inline">\((1/\tau)/2\omega\)</span> at <span class="math inline">\(T=150\)</span> s</th>
+<th><span class="math inline">\(T\)</span> needed for <span class="math inline">\(2\times\)</span> margin</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>4 m/s</td>
+<td><span class="math inline">\(0.078\)</span></td>
+<td><span class="math inline">\(0.93\)</span></td>
+<td><span class="math inline">\(321\)</span> s</td>
+</tr>
+<tr class="even">
+<td>8 m/s</td>
+<td><span class="math inline">\(0.157\)</span></td>
+<td><span class="math inline">\(1.87\)</span></td>
+<td><span class="math inline">\(160\)</span> s</td>
+</tr>
+<tr class="odd">
+<td>12 m/s</td>
+<td><span class="math inline">\(0.235\)</span></td>
+<td><span class="math inline">\(2.80\)</span></td>
+<td><span class="math inline">\(107\)</span> s</td>
+</tr>
+</tbody>
+</table>
+<div class="warn">
+<p>At <span class="math inline">\(4\)</span> m/s the second harmonic is <strong>above</strong> the rotor corner: the Hessian channel is outside the plant. And shortening <span class="math inline">\(T\)</span> to converge faster pushes <span class="math inline">\(2\omega\)</span> further out, so speed and curvature pull in opposite directions.</p>
+</div>
+<div class="notes">
+<p>The numbers decide feasibility case by case. For the torque-gain problem in Kumar and Rotea 2022, the plant time constant is 8 seconds and the dither is 0.02 radians per second, so two omega lands at 0.32 of the bandwidth: gain 0.95, phase lag 18 degrees. That is comfortably usable.</p>
+<p>For the wind tunnel yaw work the plant time constant is 2 seconds and the dither is 0.4 to 0.5 radians per second, so two omega lands at 1.6 to 2.0 times the bandwidth: gain 0.45 to 0.53, phase lag close to 60 degrees. Not usable as tuned. The dither would have to be slowed by roughly a factor of three, which costs convergence time and partly undoes the reason LP-PIESC was attractive there.</p>
+<p>This also sharpens the earlier observation about dither frequencies creeping upward across this line of work. Reading the second harmonic halves the usable dither band.</p>
+</div>
+</section>
+<section id="the-timescales-are-reversed-and-that-is-mostly-good" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-timescales-are-reversed-and-that-is-mostly-good">The timescales are reversed, and that is mostly good</h2>
+<p><img src="assets/zap-timescales.svg" class="fig-tall img-fluid" alt="Two boxes: what Zap assumes, the Jacobian estimate fast and the parameter slow; and what this plant does, the optimum drifting over minutes and the curvature over months, so the Jacobian is the slow variable. A third box keeps Meyn's recursion and feeds it the demodulated Hessian as innovation."></p>
+<div class="claim">
+<p>Zap’s separation is structurally unavailable here: <span class="math inline">\(\hat H\)</span> and <span class="math inline">\(\theta\)</span> both update once per dither period. It is also <strong>not needed</strong>, because <span class="math inline">\(H\)</span> barely moves where it matters, only a <span class="math inline">\(20\%\)</span> swing across the terminal scatter.</p>
+</div>
+</section>
+<section id="sizing-the-rolling-estimate" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="sizing-the-rolling-estimate">Sizing the rolling estimate</h2>
+<p>Do not use the demodulated <span class="math inline">\(\hat H_n\)</span> as the gain. Use it as the <strong>innovation</strong> in Meyn’s own recursion, with a small <span class="math inline">\(\gamma\)</span>:</p>
+<p><span class="math display">\[\hat A_{n+1} = \hat A_n + \gamma\big(\hat H_n - \hat A_n\big),
+\qquad
+\operatorname{Var}(\hat A) = \frac{\gamma}{2-\gamma}\operatorname{Var}(\hat H),
+\qquad N_H = \frac{2}{\gamma}-1\]</span></p>
+<p>One period of <span class="math inline">\(\hat H\)</span> is far too noisy to use raw, so the recursion is not an optimization but the only thing that makes the estimate exist. Sizing it from the spectral argument, with <span class="math inline">\(\sigma(\hat H) = 7.1\,|H|\)</span> per period:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>target rel. error</th>
+<th><span class="math inline">\(N_H\)</span></th>
+<th><span class="math inline">\(1/\gamma\)</span> (periods)</th>
+<th>wall clock at <span class="math inline">\(T=600\)</span> s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(50\%\)</span></td>
+<td>201</td>
+<td>101</td>
+<td><span class="math inline">\(17\)</span> h</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(20\%\)</span></td>
+<td>1255</td>
+<td>628</td>
+<td><span class="math inline">\(4.4\)</span> d</td>
+</tr>
+</tbody>
+</table>
+<div class="warn">
+<p>Simulation says this is <strong>optimistic by about <span class="math inline">\(4\times\)</span> in <span class="math inline">\(\sigma(\hat H)\)</span></strong>. The measured requirement is on the <em>Simulated</em> slides below. Quote those, not this table.</p>
+</div>
+<div class="claim">
+<p>Meyn’s structure survives intact; only the ordering flips. An estimator running at days against erosion at months is still a two-timescale separation, though the measured margin below is nearer <span class="math inline">\(5\)</span>–<span class="math inline">\(10\times\)</span> than <span class="math inline">\(100\times\)</span>.</p>
+</div>
+<div class="warn">
+<p>It cannot help the transient. Over <span class="math inline">\(u: 4.5\to2.2\)</span>, <span class="math inline">\(|H|\)</span> moves <span class="math inline">\(1.8\times\)</span> and not monotonically, dipping to <span class="math inline">\(0.72\times\)</span> near <span class="math inline">\(u=3\)</span>. A day-long estimator cannot track minutes, so early convergence stays uncalibrated.</p>
+</div>
+<div class="notes">
+<p>This is the shape of the proposal, and it is a much more modest object than “Zap on a turbine”. Keep the recursion, keep the regularized inverse, run the gain slowly, and claim only that a calibrated preconditioner beats an uncalibrated one. Meyn’s two-timescale convergence theory does not cover the reversed ordering and is not needed for that claim.</p>
+<p>Note the 26 hours is not a cost in lost production. The estimator rides the dither that is already there; it simply takes that long to average down. The turbine keeps operating throughout.</p>
+</div>
+</section>
+<section id="zap-against-averaging" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="zap-against-averaging">Zap against averaging</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">What averaging gives you</span></p>
+<p>The optimal asymptotic covariance. Free. No Jacobian, no second demodulator, no frequency budget, no bandwidth constraint.</p>
+</div>
+<div class="card">
+<p><span class="cardh">What the matrix gain adds</span></p>
+<p>Gain calibration, transient behavior, and conditioning in more than one dimension. It does <strong>not</strong> improve the terminal variance.</p>
+</div>
+</div>
+<p>Both reach the same asymptotic covariance, the one no unbiased scheme beats:</p>
+<p><span class="math display">\[\Sigma^{\text{PR}} = A^{-1}\Sigma_W A^{-\top},
+\qquad
+A = \nabla^2 J(\theta^\star), \quad \Sigma_W = \text{covariance of the estimator noise}\]</span></p>
+<p>Averaging gets there by keeping a running mean of the iterates, <span class="math inline">\(\bar\theta_n =
+\tfrac1n\sum_{k\le n}\theta_k\)</span>, and needs no <span class="math inline">\(A\)</span> at all. Zap gets there by estimating <span class="math inline">\(A\)</span> and inverting it.</p>
+<div class="claim">
+<p>So the case for a matrix gain here rests on <strong>tuning effort and conditioning</strong>, not on terminal variance. Argued on variance it loses to a running mean. And note neither is in the published turbine loops, which are constant-gain and so do not average down at all.</p>
+</div>
+</section>
+<section id="what-averaging-cannot-do" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-averaging-cannot-do">What averaging cannot do</h2>
+<p>Averaging is optimal in exactly one respect and silent on the rest. Four shortcomings, in rising order of how much they matter here:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">1 · it is asymptotic</span></p>
+<p><span class="math inline">\(\Sigma^{\text{PR}}\)</span> is a central-limit statement as <span class="math inline">\(n\to\infty\)</span>. The <strong>transient</strong> is still governed by the raw iterate, whose rate is <span class="math inline">\(\kappa|H|\)</span> and therefore still uncalibrated.</p>
+</div>
+<div class="card">
+<p><span class="cardh">2 · it needs a decaying step</span></p>
+<p>Textbook Polyak-Ruppert wants <span class="math inline">\(\alpha_n \to 0\)</span>. A turbine has to keep <strong>tracking</strong> a <span class="math inline">\(\lambda^\star\)</span> that drifts with blade condition, and a decaying gain eventually stops tracking anything.</p>
+</div>
+</div>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">3 · it does not straighten the path</span></p>
+<p>With <span class="math inline">\(p&gt;1\)</span> and an ill-conditioned <span class="math inline">\(H\)</span>, steepest ascent takes a curved route and its slowest mode is set by the <strong>smallest</strong> eigenvalue. Averaging quiets the scatter around that route without shortening it. [GKN12] sells exactly this: straight trajectories on elongated level sets.</p>
+</div>
+<div class="card">
+<p><span class="cardh">4 · it never tells you <span class="math inline">\(\kappa\)</span></span></p>
+<p>You still have to choose the step size, and <span class="math inline">\(K = \kappa|H| &lt; 2\)</span> needs <span class="math inline">\(|H|\)</span>. <strong>This is the actual complaint</strong>, retuning effort, and averaging leaves it untouched.</p>
+</div>
+</div>
+<div class="claim">
+<p>So the two are <strong>complementary, not competing</strong>. Averaging buys terminal variance and no calibration; the Hessian buys calibration and no variance. Zap with a Polyak-Ruppert tail is both, and costs one extra correlation plus the <span class="math inline">\(15\)</span> days of averaging that <span class="math inline">\(\hat A\)</span> needs.</p>
+</div>
+<div class="notes">
+<p>Point two is the one specific to this plant and the easiest to miss. Every convergence result for Polyak-Ruppert assumes a stationary optimum. Blade erosion moves lambda-star by about 0.2 over the life of the blade, so the problem is not stationary, and a scheme whose step size decays to zero stops following. Constant gain plus averaging tracks, but then the average is taken across the drift and is biased toward where the optimum used to be. That is a bias-variance trade in the averaging window, and nobody has written it down for this problem either.</p>
+<p>Point three is the one that decides the farm-scale case, because that is where p is large enough for conditioning to dominate.</p>
+</div>
+</section>
+</section>
+<section id="without-extremum-seeking" class="level1 divider">
+<h1 class="divider">Without extremum seeking</h1>
+<p>Drop the demodulation apparatus and run stochastic approximation directly.</p>
+<section id="what-is-left-when-esc-goes" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-is-left-when-esc-goes">What is left when ESC goes</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">What gets deleted</span></p>
+<p>The dither frequency, the phase compensation <span class="math inline">\(\theta\)</span>, the high-pass and low-pass filters, the lock-in multiplier, the requirement that <span class="math inline">\(2\omega\)</span> fit inside the plant passband.</p>
+</div>
+<div class="card">
+<p><span class="cardh">What is left</span></p>
+<p><span class="math display">\[\theta_{n+1} = \theta_n + \alpha_n\,G_n\,\hat g_n\]</span></p>
+<p>Perturb, hold, measure, update. The SA recursion with nothing wrapped around it.</p>
+</div>
+</div>
+<div class="claim">
+<p>An iteration is now a small number of <strong>held operating points</strong>, each averaged long enough to see through the turbulence, rather than a continuous sinusoid the machine rides.</p>
+</div>
+<div class="notes">
+<p>This is a different algorithm, not extremum seeking with the tone replaced by noise. Worth being clear about, because the objection from the QSA literature is aimed at the second thing and does not transfer cleanly to the first.</p>
+</div>
+</section>
+<section id="the-gradient-spsa" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-gradient-spsa">The gradient: SPSA</h2>
+<p>Draw <span class="math inline">\(\Delta_n\)</span> with independent <span class="math inline">\(\pm1\)</span> entries, perturb <strong>every</strong> parameter at once, and take one difference:</p>
+<p><span class="math display">\[\hat g_n \;=\; \frac{\bar y(\theta_n + c\Delta_n) - \bar y(\theta_n - c\Delta_n)}{2c}
+\begin{bmatrix}\Delta_{n1}^{-1}\\ \vdots \\ \Delta_{np}^{-1}\end{bmatrix}\]</span></p>
+<p>where <span class="math inline">\(\bar y\)</span> is the mean of <span class="math inline">\(\ln P\)</span> over a held window.</p>
+<div class="claim">
+<p><strong>Two measurements, whatever <span class="math inline">\(p\)</span> is.</strong> That is the property the deterministic scheme cannot match, and it is the entire case for going stochastic on this plant.</p>
+</div>
+</section>
+<section id="two-replacements-for-the-second-harmonic" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="two-replacements-for-the-second-harmonic">Two replacements for the second harmonic</h2>
+<p>The second harmonic is gone with the tone. Two replacements:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">Spall’s 2SPSA</span></p>
+<p>A second perturbation <span class="math inline">\(\tilde\Delta_n\)</span>, two more gradient estimates, and a symmetrized outer product</p>
+<p><span class="math display">\[\hat H_n = \tfrac12\Big[\tfrac{\delta \hat g_n}{2\tilde c}\tilde\Delta_n^{-\top} + (\cdot)^{\!\top}\Big]\]</span></p>
+<p>Rank two per iteration, four measurements.</p>
+</div>
+<div class="card">
+<p><span class="cardh">Gaussian probe and Stein</span></p>
+<p>For <span class="math inline">\(\xi \sim N(0,I)\)</span>, the second-order Stein identity gives</p>
+<p><span class="math display">\[\mathbb{E}\big[\,y\,(\xi\xi^{\!\top} - I)\,\big] = a^2\,\nabla^2\Gamma\]</span></p>
+<p>so <span class="math inline">\(\hat H_n = \langle y(\xi\xi^{\!\top}-I)\rangle/a^2\)</span>. No second perturbation.</p>
+</div>
+</div>
+<div class="claim">
+<p>Either way <span class="math inline">\(A_{n+1} = \hat H_n\)</span>, the running average is Zap’s (8.51a), and the regularized inverse is unchanged. <strong>Spall’s 2SPSA is Zap with SPSA supplying the Jacobian.</strong></p>
+</div>
+<div class="notes">
+<p>The 2SPSA measurement count needs checking against Spall’s 2000 TAC paper, which is not in our folder. I have it as four per iteration with reuse, but the accounting varies between presentations.</p>
+</div>
+</section>
+<section id="the-bernoulli-trap" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-bernoulli-trap">The Bernoulli trap</h2>
+<p><img src="assets/zap-probes.svg" class="fig-tall img-fluid" alt="Four panels. Left column, a Bernoulli plus-minus-one probe and its square minus one, which is identically zero. Right column, a Gaussian probe and its square minus one, which fluctuates with variance two."></p>
+<div class="warn">
+<p>The natural stochastic analogue of the <a href="#references">[CLR19]</a> square wave is a random <span class="math inline">\(\pm1\)</span> sign sequence. It gives the gradient, but <span class="math inline">\(\xi^2 \equiv 1\)</span>, so <span class="math inline">\(\mathrm{Var}(\xi^2)=0\)</span> and the Stein estimator <strong>divides by zero</strong>. Bernoulli probing carries no curvature information at all.</p>
+</div>
+<div class="notes">
+<p>Verified numerically: with a plus-minus-one probe, g-hat recovers the true gradient to four decimals while the curvature estimate is undefined. With a Gaussian probe of the same amplitude, both come back correct.</p>
+<p>So the choice of perturbation distribution is not cosmetic. If you want the Hessian for one extra correlation rather than four extra measurements, the probe must have a non-degenerate fourth moment.</p>
+</div>
+</section>
+<section id="where-each-scheme-weights-the-turbulence" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="where-each-scheme-weights-the-turbulence">Where each scheme weights the turbulence</h2>
+<p><img src="assets/zap-spread.svg" class="img-fluid" alt="Turbulence spectrum on log axes. A violet bracket spans everything below the sign-sequence Nyquist frequency, labeled random signs weight all of this evenly. A green line at that frequency is labeled alternating signs weight only this bin. A gold arrow between them marks a factor of sixteen in noise power."></p>
+<p>Both schemes difference two windows, so both reject DC. The difference is <em>where</em> each weights the turbulence.</p>
+<div class="warn">
+<p>An alternating sign sequence concentrates the estimator’s noise weighting in one bin; a random sequence is white and weights everything below its Nyquist evenly. The tone therefore <em>can</em> be placed clear of the energy-containing range.</p>
+<div class="warn">
+<p>Two problems with pressing this. The ratio depends entirely on how long each random sign is held, which sets how many independent samples a run contains, and it swings from <span class="math inline">\(0.4\times\)</span> at a <span class="math inline">\(28\)</span> s hold to <span class="math inline">\(2.3\times\)</span> at a full <span class="math inline">\(150\)</span> s hold. And the published tone is not placed clear of anything: Kaimal <span class="math inline">\(fS(f)\)</span> peaks at <span class="math inline">\(U/4L = 0.0059\)</span> Hz and the dither sits at <span class="math inline">\(0.0067\)</span> Hz. <strong>It is on the peak.</strong></p>
+</div>
+</div>
+<div class="notes">
+<p>There is a second cost that does not show on this plot. ESC dithers continuously and treats the rotor response as part of a transfer function, with phase compensation absorbing the lag. Holding a perturbed operating point means waiting out the rotor, about six seconds of time constant, so roughly thirty seconds of dead time before the averaging window can even start. At four to six measurements per iteration that is two to three minutes of the budget spent settling rather than measuring.</p>
+</div>
+</section>
+<section id="frequency-slots-against-measurements" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="frequency-slots-against-measurements">Frequency slots against measurements</h2>
+<p>The deterministic Hessian needs a separate channel for every entry of <span class="math inline">\(\nabla^2\Gamma\)</span>, at a distinct frequency product, none colliding with any <span class="math inline">\(\omega_k\)</span> or <span class="math inline">\(2\omega_k\)</span>, all inside the plant bandwidth.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>parameters <span class="math inline">\(p\)</span></th>
+<th>frequency slots needed</th>
+<th>2SPSA measurements</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1, torque gain</td>
+<td>2</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>2, torque and pitch</td>
+<td>6</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>6, yaw, optimized jointly</td>
+<td><strong>58</strong></td>
+<td><strong>4</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>At <span class="math inline">\(p=1\)</span> the tone wins on every axis. At <span class="math inline">\(p=6\)</span> the plan needs 58 slots, so the averaging window has to stretch to 49 minutes before noise is even considered, and the stochastic version becomes the only one that runs.</p>
+</div>
+</section>
+</section>
+<section id="the-two-hessians-compared" class="level1 divider">
+<h1 class="divider">The two Hessians, compared</h1>
+<p>Same matrix, two ways of measuring it, and the difference is combinatorial.</p>
+<section id="why-frequencies-at-all" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="why-frequencies-at-all">Why frequencies at all</h2>
+<p><img src="assets/zap-multiplex.svg" class="fig-tall img-fluid" alt="Three stacked panels showing how three parameters can be separated in one scalar measurement: frequency division with three tones, time division with one parameter active per block, and code division with three overlapping random sign sequences."></p>
+<div class="claim">
+<p>There is one measurement, <span class="math inline">\(\ln P(t)\)</span>, and <span class="math inline">\(p\)</span> unknowns. The dither frequencies are a <strong>multiplexing scheme</strong>, nothing more. Distinct <span class="math inline">\(\omega_i\)</span> make the demodulation channels orthogonal, since <span class="math inline">\(\langle \sin\omega_i t\,\sin\omega_j t\rangle = \tfrac12\delta_{ij}\)</span>.</p>
+</div>
+<div class="notes">
+<p>Share a frequency between two parameters and the cross term stops vanishing, so you read back the sum of two gradient components with no way to split them. Same tone means same channel.</p>
+<p>Seen this way the whole tone-versus-random question is a choice of multiplexing. Frequency division is exactly orthogonal but needs spectral room. Code division needs none, but random codes are orthogonal only in expectation, so the leakage between parameters survives in any finite sample and appears as variance. That leakage is the extra scatter we costed out two slides ago.</p>
+</div>
+</section>
+<section id="what-the-hessian-costs-in-frequency" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-the-hessian-costs-in-frequency">What the Hessian costs in frequency</h2>
+<p>The quadratic term produces products, and <span class="math inline">\(\sin\omega_i t \sin\omega_j t = \tfrac12[\cos(\omega_i-\omega_j)t - \cos(\omega_i+\omega_j)t]\)</span>. So <span class="math inline">\(H_{ij}\)</span> appears at <strong>sum and difference</strong> frequencies and <span class="math inline">\(H_{ii}\)</span> at <span class="math inline">\(2\omega_i\)</span>. Every member of</p>
+<p><span class="math display">\[\{\omega_k\} \;\cup\; \{2\omega_k\} \;\cup\; \{\omega_i \pm \omega_j\}\]</span></p>
+<p>must be distinct, and all of it must fit below <span class="math inline">\(\omega_{plant}\)</span>.</p>
+<div class="warn">
+<p>That is stronger than a Sidon set, because the gradient tones must also avoid every second-order product. A plain Golomb ruler is necessary and not sufficient.</p>
+</div>
+</section>
+<section id="and-it-grows-quadratically" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="and-it-grows-quadratically">And it grows quadratically</h2>
+<p><img src="assets/zap-sidon.svg" class="img-fluid" alt="Left, the frequency plan for three parameters: three gradient tones, six sum and double frequencies, and three difference frequencies sitting down near DC where turbulence is strongest, all below the plant bandwidth. Right, the minimum averaging window rising from two minutes at one parameter to forty-nine minutes at six."></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th><span class="math inline">\(p\)</span></th>
+<th>a valid tone set</th>
+<th>widest product</th>
+<th>minimum window</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td><span class="math inline">\(\{1\}\)</span></td>
+<td>2</td>
+<td>101 s</td>
+</tr>
+<tr class="even">
+<td>3</td>
+<td><span class="math inline">\(\{4,5,7\}\)</span></td>
+<td>14</td>
+<td>704 s</td>
+</tr>
+<tr class="odd">
+<td>6</td>
+<td><span class="math inline">\(\{4,10,17,26,28,29\}\)</span></td>
+<td>58</td>
+<td><strong>2915 s</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="notes">
+<p>Computed by exhaustive search over the full condition, not from the asymptotic Sidon bound, with the widest product required to sit inside a plant bandwidth of 0.125 radians per second.</p>
+<p>Two things to take from the left panel. The band fills from both ends, and the difference frequencies land close to DC, which is exactly where turbulence is strongest. So the off-diagonal Hessian channels are placed in the worst part of the spectrum by the algebra rather than by choice.</p>
+<p>And note where 314 seconds sits on the right panel. The published tuning has room for two parameters and no more.</p>
+</div>
+</section>
+<section id="head-to-head" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="head-to-head">Head to head</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>ESC, second harmonic</th>
+<th>SA, 2SPSA or Stein</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>separation</td>
+<td>frequency division</td>
+<td>code division</td>
+</tr>
+<tr class="even">
+<td>orthogonality</td>
+<td>exact, over one period</td>
+<td>in expectation only</td>
+</tr>
+<tr class="odd">
+<td>measurements per update</td>
+<td>0 extra, same window</td>
+<td>4 extra</td>
+</tr>
+<tr class="even">
+<td>spectral demand</td>
+<td>grows as <span class="math inline">\(p^2\)</span></td>
+<td>none</td>
+</tr>
+<tr class="odd">
+<td>noise weighting</td>
+<td>one chosen bin</td>
+<td>whole band below Nyquist</td>
+</tr>
+<tr class="even">
+<td>scatter in <span class="math inline">\(\hat g\)</span></td>
+<td>reference</td>
+<td><span class="math inline">\(0.4\)</span> to <span class="math inline">\(2.3\times\)</span>, hold-dependent</td>
+</tr>
+<tr class="odd">
+<td>settling dead time</td>
+<td>none, rides continuously</td>
+<td>about <span class="math inline">\(5\tau\)</span> per held point</td>
+</tr>
+<tr class="even">
+<td>perturbation seen by the drivetrain</td>
+<td>smooth sinusoid</td>
+<td>step changes</td>
+</tr>
+<tr class="odd">
+<td>degenerate cases</td>
+<td>tones colliding with products</td>
+<td>Bernoulli probe, <span class="math inline">\(\mathrm{Var}(\xi^2)=0\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>The tone wins on orthogonality, measurement count and actuation smoothness, and loses on spectral demand, which is the row that decides the farm-scale problem. <strong>Noise weighting is a draw</strong>, not a win: it would favor the tone only if the tone were placed off the turbulence peak, and at <span class="math inline">\(T = 150\)</span> s it is not.</p>
+</div>
+</section>
+<section id="reading-the-table-honestly" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="reading-the-table-honestly">Reading the table honestly</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh"><span class="math inline">\(p \le 2\)</span></span></p>
+<p>The frequency plan is trivial and the tone is better on every axis that matters. There is no argument for random probing here.</p>
+</div>
+<div class="card">
+<p><span class="cardh"><span class="math inline">\(p \ge 4\)</span></span></p>
+<p>The plan needs a 20 to 50 minute window before noise even enters. Random probing is not merely competitive, it is the only scheme that runs.</p>
+</div>
+</div>
+<div class="warn">
+<p>The load row deserves more weight than it usually gets. Kumar and Rotea 2022, Figure 13 of <a href="#references">[RKAJ24]</a>: the <strong>single</strong> step in torque gain when the controller switches on raises drivetrain torsion DEL by 70% at 4 m/s. SPSA makes a step like that every iteration, in both directions, and nobody has costed that out.</p>
+</div>
+</section>
+<section id="the-synthesis-this-points-to" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="the-synthesis-this-points-to">The synthesis this points to</h2>
+<p>Both columns assume the Hessian must be measured at the same rate as the gradient. Nothing in the problem requires that.</p>
+<div class="cols3">
+<div class="card">
+<p><span class="cardh">Gradient</span></p>
+<p>Keep the tone. Continuous, gentle, low-noise, and only <span class="math inline">\(p\)</span> frequencies are needed when no products have to be resolved.</p>
+</div>
+<div class="card">
+<p><span class="cardh">Curvature</span></p>
+<p>A deliberate experiment, run rarely. <span class="math inline">\(H\)</span> drifts with erosion, over months. Once a week is often enough.</p>
+</div>
+<div class="card">
+<p><span class="cardh">In between</span></p>
+<p>Use the last estimate as a slowly refreshed preconditioner, which is Zap with the timescales put the right way round.</p>
+</div>
+</div>
+<div class="claim">
+<p>Run rarely, the curvature experiment can be <strong>time-division multiplexed</strong>: sweep one parameter at a time. No frequency plan, no <span class="math inline">\(2\omega\)</span> constraint, no <span class="math inline">\(p^2\)</span> bandwidth, and no random probing either.</p>
+</div>
+<div class="notes">
+<p>This is the answer the two halves of the deck converge on. The whole tone-against-noise argument is a fight over how to squeeze p-squared channels through a narrow band every single iteration, and the premise of that fight is wrong. The gradient needs to be fast because it is chasing a moving optimum. The curvature does not, because it is tracking blade wear.</p>
+<p>Separate the two rates and the combinatorial problem dissolves, because sequential excitation is admissible once you are not in a hurry.</p>
+</div>
+</section>
+</section>
+<section id="simulated" class="level1 divider">
+<h1 class="divider">Simulated</h1>
+<p>Everything so far is algebra on a fitted curve. This section runs it.</p>
+<section id="how-the-simulation-is-built" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="how-the-simulation-is-built">How the simulation is built</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">The plant</span></p>
+<p>NREL 5 MW rotor. <span class="math inline">\(I_{\text{eff}}\dot\Omega = \tau_{\text{aero}}(V,\Omega) - k\Omega^2\)</span> integrated with <strong>diffrax</strong> (Tsit5, adaptive, rtol <span class="math inline">\(10^{-6}\)</span>). Heier <span class="math inline">\(C_P\)</span> remapped to <span class="math inline">\((\lambda^\star, C_P^{\max}) = (7.5, 0.49)\)</span>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">The loop</span></p>
+<p>Sinusoidal dither <span class="math inline">\(u_n + a\sin\omega t\)</span> at <span class="math inline">\(a = 13.6\%\)</span> of <span class="math inline">\(u^\star\)</span>, the [KR22] amplitude. Demodulate <span class="math inline">\(\ln P\)</span> at <span class="math inline">\(\omega\)</span> and <span class="math inline">\(2\omega\)</span> over each period, then update. Turbulence is an IEC Kaimal realization at <span class="math inline">\(\mathrm{TI} = 10\%\)</span>.</p>
+</div>
+</div>
+<div class="claim">
+<p>One knob, <code>sharpness</code>, scales the deviation of <span class="math inline">\(C_P\)</span> from its peak. It leaves <span class="math inline">\(\lambda^\star\)</span> and <span class="math inline">\(C_P^{\max}\)</span> untouched and multiplies <span class="math inline">\(|H|\)</span> at the optimum by exactly that factor, verified to three digits. That is how the plant curvature is varied without changing anything else.</p>
+</div>
+<div class="notes">
+<p>Source is in the rotea repository under src, as a small JAX package plus four experiment scripts that write npz files. The figures on the next three slides read those files directly, so a slide cannot drift away from the number the simulation produced.</p>
+<p>One implementation note worth keeping. The equilibrium tip-speed ratio is found by bisection on phi of lambda equals C times u, and bisection is a chain of comparisons, so autodiff through it returns zero. The derivative is supplied instead by the implicit function theorem, as a custom JVP. Without that, every gradient and curvature in the model is silently zero.</p>
+</div>
+</section>
+<section id="simulated-the-demodulator-and-what-the-rotor-does-to-it" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="simulated-the-demodulator-and-what-the-rotor-does-to-it">Simulated: the demodulator, and what the rotor does to it</h2>
+<p><img src="assets/sim-gate.svg" class="fig-hero img-fluid" alt="Error in the demodulated estimates against the second harmonic in units of the rotor pole, on a log x axis. The curvature error is within 5 percent for 2 omega tau below 0.27 and falls to minus 40 percent at 0.8. The published 150 second dither sits at 0.53, where the curvature reads 21 percent low. The gradient error has a floor near minus 6.4 percent."></p>
+<div class="claim">
+<p>Gain held <span class="math inline">\(5\%\)</span> off the peak in steady wind, so the true <span class="math inline">\(J''\)</span> is known and the only error is the estimator’s. <span class="math inline">\(\hat H\)</span> is <strong>exact to <span class="math inline">\(0.8\%\)</span></strong> once <span class="math inline">\(2\omega\tau_{\text{rotor}} \lesssim 0.1\)</span>, so the identity survives the rotor dynamics. At the published <span class="math inline">\(T = 150\)</span> s, <span class="math inline">\(\hat H = 0.79\,J''\)</span>: right sign, right shape, magnitude a fifth too small.</p>
+</div>
+</section>
+<section id="why-it-reads-low-and-how-to-undo-it" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="why-it-reads-low-and-how-to-undo-it">Why it reads low, and how to undo it</h2>
+<p>Fitting the whole sweep, the bias is <span class="math inline">\(\hat H/J'' = \big(1+(2\omega\tau)^2\big)^{-1} = |G(2\omega)|^2\)</span>, to <span class="math inline">\(1.2\)</span> percentage points rms. <strong>Two</strong> factors of <span class="math inline">\(|G|\)</span>, for two separate reasons:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">attenuation</span></p>
+<p>The rotor is a low-pass between torque gain and power, so the second harmonic arrives smaller by <span class="math inline">\(|G(2\omega)| = (1+(2\omega\tau)^2)^{-1/2}\)</span>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">phase mismatch</span></p>
+<p>It also arrives late, by <span class="math inline">\(\phi = -\arctan 2\omega\tau\)</span>. Correlating against an in-phase <span class="math inline">\(\cos2\omega t\)</span> recovers <span class="math inline">\(\cos\phi\)</span>, which is the same factor again.</p>
+</div>
+</div>
+<div class="warn">
+<p>The gradient is attenuated too, just less, so the two <strong>partly cancel</strong> in <span class="math inline">\(\hat g/\hat H\)</span>. Dynamic parts only: <span class="math inline">\(\hat g/g = 0.946\)</span>, <span class="math inline">\(\hat H/H = 0.791\)</span>, so the Newton step is inflated by <span class="math inline">\(1.20\times\)</span>, matching the predicted <span class="math inline">\(|G(\omega)|^2/|G(2\omega)|^2 = 1.199\)</span>.</p>
+</div>
+<div class="openq">
+<p>So <strong>divide it out</strong>: <span class="math inline">\(\hat H_{\text{corr}} = \hat H\,(1+(2\omega\tau)^2)\)</span>, with <span class="math inline">\(\tau\)</span> from the rotor model you already have. A calibration, not a stability threat: at the published <span class="math inline">\(K=0.4\)</span> the inflated gain is <span class="math inline">\(0.48\)</span> against a bound of <span class="math inline">\(2\)</span>. But left uncorrected it defeats the point of a matrix gain, which was to make <span class="math inline">\(\kappa\)</span> <strong>be</strong> the settling time.</p>
+</div>
+</section>
+<section id="simulated-the-curvature-does-leave-the-loop-gain" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="simulated-the-curvature-does-leave-the-loop-gain">Simulated: the curvature does leave the loop gain</h2>
+<p><img src="assets/sim-curvature.svg" class="fig-hero img-fluid" alt="Two panels of tip-speed ratio against dither period. Left, gradient ascent on three plants whose curvature differs by a factor of 0.6, 1.0 and 1.6: the three trajectories settle in 10, 5 and 2 periods respectively. Right, the Newton step on the same three plants: all three settle in 4 periods and lie on top of one another."></p>
+<div class="claim">
+<p><span class="math inline">\(\kappa\)</span> tuned <strong>once</strong>, for <span class="math inline">\(K = 0.4\)</span> on the <span class="math inline">\(|H|\times1.0\)</span> plant, never retuned; all six runs start at <span class="math inline">\(1.2\,u^\star\)</span> in steady wind. Gradient ascent settles in <span class="math inline">\(10\)</span>, <span class="math inline">\(5\)</span> and <span class="math inline">\(2\)</span> periods as <span class="math inline">\(|H|\)</span> goes <span class="math inline">\(0.6 \to 1.0 \to 1.6\)</span>, a <strong><span class="math inline">\(5\times\)</span> spread</strong>. The Newton step settles in <span class="math inline">\(4\)</span> on all three, a <strong><span class="math inline">\(1.0\times\)</span> spread</strong>. The central claim of the deck, and it holds.</p>
+</div>
+</section>
+<section id="simulated-what-the-gain-estimate-costs" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="simulated-what-the-gain-estimate-costs">Simulated: what the gain estimate costs</h2>
+<p><img src="assets/sim-rolling.svg" class="fig-hero img-fluid" alt="Scatter of the rolling curvature estimate against the number of periods it averages, on log axes. Measured points fall from 3000 percent at one period to 61 percent at 399, faster than the white-noise square-root line. Reaching 20 percent needs about 2100 periods, 15 days at a 600 second dither."></p>
+<div class="warn">
+<p>Gain held at <span class="math inline">\(u^\star\)</span>, open loop, <span class="math inline">\(300\)</span> periods of Kaimal turbulence. One period’s <span class="math inline">\(\hat H\)</span> scatters by <strong><span class="math inline">\(3000\%\)</span></strong> of <span class="math inline">\(|H|\)</span>, four times the spectral estimate. Useless on its own.</p>
+</div>
+<div class="claim">
+<p>The rolling filter rescues it <strong>faster than white noise would</strong>, <span class="math inline">\(N_H^{-0.72}\)</span> against <span class="math inline">\(N_H^{-1/2}\)</span>, because consecutive errors are negatively correlated in band-limited turbulence. Reaching <span class="math inline">\(20\%\)</span> needs <span class="math inline">\(N_H \approx 2100\)</span> periods, about <strong>15 days</strong> at <span class="math inline">\(T = 600\)</span> s.</p>
+</div>
+<div class="notes">
+<p>Fifteen days is the number that decides whether this is worth doing, and it is much worse than the 26 hours the spectral estimate suggested. It is still a separation against blade erosion at months, but perhaps five to ten times rather than a hundred, so it is a real constraint rather than a comfortable one.</p>
+<p>Two honest caveats on it. The 20 percent target is a judgement, chosen because the plant curvature itself swings 20 percent across the terminal scatter, so resolving finer buys nothing. And 2100 periods is extrapolated along the fitted slope from 399, which is the longest run made here.</p>
+<p>The turbine is not idle for those fifteen days. It rides the dither that is already there; the estimate simply takes that long to average down.</p>
+</div>
+</section>
+<section id="simulated-what-happens-if-hat-a-is-under-averaged" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="simulated-what-happens-if-hat-a-is-under-averaged">Simulated: what happens if <span class="math inline">\(\hat A\)</span> is under-averaged</h2>
+<p>A Newton step uses <span class="math inline">\(G = -\hat A/(\varepsilon + \hat A^2)\)</span>. If <span class="math inline">\(\hat A\)</span> comes back with the <strong>wrong sign</strong>, <span class="math inline">\(G\)</span> reverses and the loop runs <em>downhill</em>. Two ingredients, neither from a closed-loop run:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">algebra</span></p>
+<p>Sign correctness needs <span class="math inline">\(\sigma(\hat A) &lt; |H|\)</span>, i.e.&nbsp;relative error under <span class="math inline">\(100\%\)</span>. Nothing about the turbine enters.</p>
+</div>
+<div class="card">
+<p><span class="cardh">the previous slide</span></p>
+<p>That slide’s curve is an <strong>open-loop</strong> measurement, gain held fixed, no feedback to saturate. It converts the <span class="math inline">\(100\%\)</span> into a period count.</p>
+</div>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>what it buys</th>
+<th><span class="math inline">\(\sigma(\hat A)/\lvert H\rvert\)</span></th>
+<th><span class="math inline">\(N_H\)</span></th>
+<th>at <span class="math inline">\(T = 600\)</span> s</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>sign correct at <span class="math inline">\(1\sigma\)</span></td>
+<td><span class="math inline">\(100\%\)</span></td>
+<td><span class="math inline">\(229\)</span></td>
+<td><span class="math inline">\(1.6\)</span> days</td>
+</tr>
+<tr class="even">
+<td>sign safe at <span class="math inline">\(2\sigma\)</span></td>
+<td><span class="math inline">\(50\%\)</span></td>
+<td><span class="math inline">\(597\)</span></td>
+<td><span class="math inline">\(4.1\)</span> days</td>
+</tr>
+<tr class="odd">
+<td>gain calibrated to a fifth</td>
+<td><span class="math inline">\(20\%\)</span></td>
+<td><span class="math inline">\(2121\)</span></td>
+<td><span class="math inline">\(14.7\)</span> days</td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>So <strong>1.6 days is the hard minimum</strong>, not the 15. Below it the matrix gain is not merely imprecise, it is occasionally the wrong sign, and a plain gradient loop is strictly better. Above it the calibration improves smoothly.</p>
+</div>
+<div class="warn">
+<p>A closed-loop run at <span class="math inline">\(\gamma = 0.05\)</span> (<span class="math inline">\(N_H = 39\)</span>, <span class="math inline">\(\sigma(\hat A)/|H| \approx 3.6\)</span>) shows the failure concretely: <span class="math inline">\(\hat A\)</span> ran from <span class="math inline">\(+7.9\)</span> to <span class="math inline">\(-5.5\)</span> times <span class="math inline">\(H_{\text{true}}\)</span> and flipped sign 10 times in 60 periods. That run is only an <strong>illustration</strong>, since its loop gain was also far too high and it saturated, so no number is taken from it. Rerun below with both fixed.</p>
+</div>
+<div class="notes">
+<p>Worth being straight about this one in the room. The experiment was run to test whether the two recursions compound and it failed to answer that, because the gain estimate was too noisy to keep its sign and both loops ran into their limits. What it did produce is better than what it was aimed at: a first-principles floor on the averaging, from the sign of the gain rather than from a target accuracy someone picked.</p>
+<p>It also reverses the naive reading. Under-averaged, a matrix gain is worse than no matrix gain, because a sign error sends the loop the wrong way while a badly-scaled gradient step only sends it the wrong distance.</p>
+</div>
+</section>
+<section id="simulated-what-a-polyak-ruppert-tail-buys" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="simulated-what-a-polyak-ruppert-tail-buys">Simulated: what a Polyak-Ruppert tail buys</h2>
+<p><img src="assets/sim-averaging.svg" class="fig-hero img-fluid" alt="Reduction in scatter against averaging window, log axes. The square-root-of-W line rises to 14 at W equals 200. The AR(1) prediction with white driving noise rises only to 1.5. The two measured curves, gradient and Newton loops, lie between at about 2.6 and 3.8."></p>
+<p><span class="math inline">\(K = 0.015\)</span> so the loop holds its optimum (<span class="math inline">\(0\%\)</span> of updates on the limits), <span class="math inline">\(\gamma = 0.005\)</span> so <span class="math inline">\(\hat A\)</span> keeps its sign. <span class="math inline">\(420\)</span> periods, started at <span class="math inline">\(u^\star\)</span>.</p>
+<div class="claim">
+<p>Averaging helps <strong>both</strong> loops, <span class="math inline">\(2.6\times\)</span> and <span class="math inline">\(3.8\times\)</span> at <span class="math inline">\(W = 200\)</span>. The <span class="math inline">\(1.07\times\)</span> from the earlier run was entirely the saturation artifact. But it is nowhere near the <span class="math inline">\(\sqrt{W} = 14\times\)</span> of independent samples, because the iterate is strongly autocorrelated: <span class="math inline">\(1/K = 67\)</span> periods.</p>
+</div>
+</section>
+<section id="reading-that-honestly" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="reading-that-honestly">Reading that honestly</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th><span class="math inline">\(W\)</span></th>
+<th><span class="math inline">\(\sqrt{W}\)</span> ideal</th>
+<th>AR(1), white noise</th>
+<th>gradient</th>
+<th>Newton</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>25</td>
+<td><span class="math inline">\(5.0\times\)</span></td>
+<td><span class="math inline">\(1.06\times\)</span></td>
+<td><span class="math inline">\(1.12\times\)</span></td>
+<td><span class="math inline">\(1.12\times\)</span></td>
+</tr>
+<tr class="even">
+<td>100</td>
+<td><span class="math inline">\(10.0\times\)</span></td>
+<td><span class="math inline">\(1.25\times\)</span></td>
+<td><span class="math inline">\(2.07\times\)</span></td>
+<td><span class="math inline">\(1.94\times\)</span></td>
+</tr>
+<tr class="odd">
+<td>200</td>
+<td><span class="math inline">\(14.1\times\)</span></td>
+<td><span class="math inline">\(1.49\times\)</span></td>
+<td><span class="math inline">\(2.58\times\)</span></td>
+<td><span class="math inline">\(3.79\times\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>The measurement sits <strong>between</strong> the two predictions, and beats the AR(1) one for the same reason <span class="math inline">\(\hat A\)</span> averaged down faster than <span class="math inline">\(N_H^{-1/2}\)</span> earlier: the driving noise is negatively correlated in band-limited turbulence, so the iterate is less persistent than <span class="math inline">\(\rho = 1-K\)</span> implies. Both of my predictions were too pessimistic, and both assumed white driving noise.</p>
+</div>
+<div class="warn">
+<p>The comparison that matters: raw scatter is <span class="math inline">\(0.082\,u^\star\)</span> for the gradient loop and <span class="math inline">\(0.219\,u^\star\)</span> for the Newton loop at matched design gain. The matrix gain is <strong><span class="math inline">\(2.7\times\)</span> noisier</strong>, because <span class="math inline">\(\hat A\)</span>’s own error modulates the step size. After averaging at <span class="math inline">\(W=200\)</span> the gradient loop still wins, <span class="math inline">\(0.032\)</span> against <span class="math inline">\(0.058\)</span>.</p>
+</div>
+<div class="openq">
+<p>So on terminal variance the matrix gain <strong>costs</strong> rather than buys, measured, not argued. Its case rests entirely on rate calibration and conditioning. That is the same conclusion as the earlier slide, now with numbers behind it.</p>
+</div>
+<div class="notes">
+<p>Worth saying plainly in the room. We set out to test whether stacking the two compounds, and the answer is that they do not conflict but the matrix gain enters the variance budget on the wrong side. It buys a settling time you can predict and pays for it in scatter, and the scatter it costs is roughly what a 200-period average buys back.</p>
+<p>The honest residual is that all of this is at one operating point, one turbulence realization and one wind speed.</p>
+</div>
+</section>
+</section>
+<section id="modeling-the-wind-as-a-process" class="level1 divider">
+<h1 class="divider">Modeling the wind as a process</h1>
+<p>Rotea’s suggestion: write <span class="math inline">\(V = \bar V(1+\varepsilon)\)</span> with <span class="math inline">\(\varepsilon\)</span> a Kaimal process, and push it through analytically.</p>
+<section id="step-1-what-is-actually-noisy" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="step-1-what-is-actually-noisy">Step 1: what is actually noisy</h2>
+<p>From Q1, <span class="math inline">\(\ln P = \ln(\tfrac12\rho A) + 3\ln V + \ln C_P(\lambda)\)</span>. Split the wind into mean and fluctuation, <span class="math inline">\(V = \bar V(1+\varepsilon)\)</span> with <span class="math inline">\(\varepsilon = \tilde v/\bar V\)</span>, so <span class="math inline">\(\sigma_\varepsilon = \mathrm{TI} = 0.10\)</span>:</p>
+<p><span class="math display">\[3\ln V = 3\ln\bar V + 3\ln(1+\varepsilon)
+= \underbrace{3\ln\bar V}_{\text{constant}} + 3\varepsilon
+\underbrace{- \tfrac32\varepsilon^2 + \cdots}_{\sim 1\%,\ \text{drop}}\]</span></p>
+<p>The tip-speed ratio fluctuates too, so <span class="math inline">\(\ln C_P(\lambda)\)</span> ought to contribute. It does not, to first order:</p>
+<p><span class="math display">\[\ln C_P(\bar\lambda + \delta\lambda)
+= \ln C_P(\bar\lambda) + \underbrace{\frac{C_P'}{C_P}}_{=\,0\ \text{at the peak}}\delta\lambda
++ O(\delta\lambda^2)\]</span></p>
+<div class="claim">
+<p><strong>Near the optimum the entire first-order noise in <span class="math inline">\(y\)</span> is <span class="math inline">\(3\varepsilon(t)\)</span>.</strong> That is the simplification the whole calculation rests on, and it is a consequence of sitting at a maximum.</p>
+</div>
+</section>
+<section id="step-2-push-it-through-the-demodulator" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="step-2-push-it-through-the-demodulator">Step 2: push it through the demodulator</h2>
+<p><span class="math display">\[\hat g = \frac{1}{T}\int_0^T y(t)\,\frac{2}{a}\sin\omega t\,dt
+\qquad\Longrightarrow\qquad
+\hat g_{\text{noise}} = \frac{6}{aT}\underbrace{\int_0^T \varepsilon(t)\sin\omega t\,dt}_{=:\,I}\]</span></p>
+<p><span class="math inline">\(I\)</span> is a linear functional of <span class="math inline">\(\varepsilon\)</span>, so by Parseval, with <span class="math inline">\(w(t) = \sin\omega t\)</span> on <span class="math inline">\([0,T]\)</span> and <span class="math inline">\(\hat w\)</span> its transform,</p>
+<p><span class="math display">\[\operatorname{Var}(I) = \int_{-\infty}^{\infty} S^{2s}_\varepsilon(f)\,|\hat w(f)|^2\,df,
+\qquad
+\int|\hat w|^2 df = \int_0^T\!\sin^2\omega t\,dt = \frac{T}{2}\]</span></p>
+<p>For <span class="math inline">\(T\)</span> a whole number of dither periods <span class="math inline">\(|\hat w|^2\)</span> is sharply peaked at <span class="math inline">\(f = \pm f_1\)</span>, so that energy <span class="math inline">\(T/2\)</span> splits as <span class="math inline">\(T/4\)</span> at each. <span class="math inline">\(S_\varepsilon\)</span> is smooth there, so it comes outside:</p>
+<p><span class="math display">\[\operatorname{Var}(I) = 2\cdot S^{2s}_\varepsilon(f_1)\cdot\frac{T}{4}
+= S_\varepsilon(f_1)\,\frac{T}{4}
+\quad\text{using } S^{2s} = \tfrac12 S \text{ (one-sided)}\]</span></p>
+</section>
+<section id="step-3-assemble-and-check-it" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="step-3-assemble-and-check-it">Step 3: assemble, and check it</h2>
+<p><span class="math display">\[\operatorname{Var}(\hat g) = \left(\frac{6}{aT}\right)^{\!2}\!\cdot S_\varepsilon(f_1)\frac{T}{4}
+= \frac{9\,S_\varepsilon(f_1)}{a^2T}
+\qquad\Longrightarrow\qquad
+\boxed{\;\sigma(\hat g) = \frac{3}{a}\sqrt{\frac{S_\varepsilon(1/T)}{T}}\;}\]</span></p>
+<p>with <span class="math inline">\(S_\varepsilon(f) = \mathrm{TI}^2\,(4L/\bar V)\big/(1+6fL/\bar V)^{5/3}\)</span>, the IEC Kaimal form divided by <span class="math inline">\(\bar V^2\)</span>, and <span class="math inline">\(L = 8.1\Lambda_1 = 340\)</span> m at a <span class="math inline">\(90\)</span> m hub.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th><span class="math inline">\(T\)</span></th>
+<th><span class="math inline">\(S_\varepsilon(1/T)\)</span></th>
+<th>predicted</th>
+<th>simulated</th>
+<th>ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>150 s</td>
+<td><span class="math inline">\(0.325\)</span></td>
+<td><span class="math inline">\(4.59\times10^{-7}\)</span></td>
+<td><span class="math inline">\(5.48\times10^{-7}\)</span></td>
+<td><span class="math inline">\(1.19\)</span></td>
+</tr>
+<tr class="even">
+<td>300 s</td>
+<td><span class="math inline">\(0.610\)</span></td>
+<td><span class="math inline">\(4.45\times10^{-7}\)</span></td>
+<td><span class="math inline">\(5.09\times10^{-7}\)</span></td>
+<td><span class="math inline">\(1.14\)</span></td>
+</tr>
+<tr class="odd">
+<td>600 s</td>
+<td><span class="math inline">\(0.942\)</span></td>
+<td><span class="math inline">\(3.91\times10^{-7}\)</span></td>
+<td><span class="math inline">\(3.83\times10^{-7}\)</span></td>
+<td><span class="math inline">\(0.98\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="claim">
+<p>Within <span class="math inline">\(20\%\)</span> across a <span class="math inline">\(4\times\)</span> range of <span class="math inline">\(T\)</span>, <strong>with nothing fitted</strong>. This is the <span class="math inline">\(K_v\)</span> that <span class="math inline">\(\sigma_y\sqrt{\tau_c/T}\)</span> was groping at: what matters is the spectral density <strong>at the dither frequency</strong>, not a total variance and a correlation time.</p>
+</div>
+</section>
+<section id="and-it-says-to-slow-the-dither" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="and-it-says-to-slow-the-dither">And it says to slow the dither</h2>
+<p><img src="assets/sim-period.svg" class="fig-hero img-fluid" alt="Two curves against dither period on a log axis. Gradient noise, normalized, peaks near 175 seconds and falls away on both sides. Curvature bias rises from minus 50 percent at 70 seconds toward zero beyond 600. The published 150 second period sits essentially on the noise maximum."></p>
+<p>Below the Kaimal corner <span class="math inline">\(S_\varepsilon \propto f^{-5/3}\)</span>, so <span class="math inline">\(\sigma \propto T^{1/3}\)</span>; above it <span class="math inline">\(S_\varepsilon\)</span> flattens and <span class="math inline">\(\sigma \propto T^{-1/2}\)</span>. The turnover is a <strong>maximum</strong>, at <span class="math inline">\(T \approx 6L/U\)</span>.</p>
+<div class="claim">
+<p>The published <span class="math inline">\(T = 150\)</span> s sits essentially <strong>on the worst point for gradient noise</strong>. Longer <em>and</em> shorter are quieter, and longer also fixes the curvature bias. For once the two constraints agree: <span class="math inline">\(T = 600\)</span> s is <span class="math inline">\(15\%\)</span> quieter on the gradient and moves <span class="math inline">\(\hat H\)</span> from <span class="math inline">\(-21\%\)</span> to <span class="math inline">\(-2\%\)</span>.</p>
+</div>
+</section>
+<section id="what-it-does-not-do-close-the-gap" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-it-does-not-do-close-the-gap">What it does not do: close the gap</h2>
+<div class="warn">
+<p>Feeding the published setup through the same closed form gives <span class="math inline">\(\sigma_\lambda = 2.1\)</span>, against the <span class="math inline">\(\lesssim 0.14\)</span> the LES implies. <strong>A factor of 15, now analytic rather than simulated</strong>, so it is not an artifact of my solver.</p>
+</div>
+<p>Two candidate explanations tested and eliminated:</p>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">the inflow spectrum</span></p>
+<p>For consistency <span class="math inline">\(S_\varepsilon(1/150\,\text{s})\)</span> would have to be <span class="math inline">\(227\times\)</span> smaller, i.e.&nbsp;a turbulence intensity of <span class="math inline">\(0.7\%\)</span> against the stated <span class="math inline">\(10\%\)</span>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">the power signal</span></p>
+<p>Demodulating generator power <span class="math inline">\(k\Omega^3\)</span> rather than aerodynamic <span class="math inline">\(\tau_{\text{aero}}\Omega\)</span> changes <span class="math inline">\(\sigma(\hat g)\)</span> by <span class="math inline">\(2\%\)</span>. Not this either.</p>
+</div>
+</div>
+<div class="openq">
+<p>What is left: <span class="math inline">\(|J''|\)</span> wrong by <span class="math inline">\(15\times\)</span>, an effective <span class="math inline">\(N\)</span> far larger than the settling time implies, or the LES inflow genuinely much quieter at <span class="math inline">\(1/150\)</span> Hz than IEC Kaimal at <span class="math inline">\(10\%\)</span>. <strong>The cheapest discriminator is their own Figure 3</strong>, which plots the inflow PSD: read its value at <span class="math inline">\(6.7\times10^{-3}\)</span> Hz.</p>
+</div>
+</section>
+<section id="verdict" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="verdict">Verdict</h2>
+<div class="cols3">
+<div class="card">
+<p><span class="cardh">Tone, feasible now</span></p>
+<p>Single-turbine torque gain, <span class="math inline">\(p=1\)</span>, so no frequency plan to solve. But <strong>slow the dither</strong>: simulation puts <span class="math inline">\(2\omega\tau = 0.53\)</span> at <span class="math inline">\(T=150\)</span> s, where <span class="math inline">\(\hat H\)</span> reads <span class="math inline">\(21\%\)</span> low. <span class="math inline">\(T = 600\)</span> s brings that under <span class="math inline">\(1\%\)</span>.</p>
+</div>
+<div class="card">
+<p><span class="cardh">Tone, after retuning</span></p>
+<p>Two parameters, <span class="math inline">\((u,\beta)\)</span>. Three demodulation channels to place, and the bandwidth is there for them.</p>
+</div>
+<div class="card">
+<p><span class="cardh">Random probing</span></p>
+<p>Yaw across a farm, optimized jointly. This is not what the tunnel experiment does: it runs six scalar loops on clusters, which is how it keeps <span class="math inline">\(p=1\)</span>.</p>
+</div>
+</div>
+<div class="openq">
+<p>Both versions share everything downstream of the Jacobian: the averaging recursion, the regularized inverse, the Polyak-Ruppert tail. Only the way <span class="math inline">\(A_{n+1}\)</span> is measured changes, so the two are the same program with two front ends.</p>
+</div>
+</section>
+<section id="what-i-would-test-first" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="what-i-would-test-first">What I would test first</h2>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">P0, two weeks</span></p>
+<p>Run the existing LP-ESC at a fixed torque gain, demodulate at <span class="math inline">\(2\omega\)</span>, and compare <span class="math inline">\(\hat H\)</span> against the curvature of the simulator’s own <span class="math inline">\(C_P\)</span> surface. Pure measurement, no loop closed.</p>
+</div>
+<div class="card">
+<p><span class="cardh">Fitting <span class="math inline">\(2\omega\)</span> inside the rotor</span></p>
+<p>Does <span class="math inline">\(\hat H\)</span> converge to within, say, 20% over a plausible averaging window, and does its scatter match the <span class="math inline">\((8/a)2^{-5/6}\)</span> prediction?</p>
+</div>
+</div>
+<div class="claim">
+<p>If <span class="math inline">\(\hat H\)</span> can be measured open-loop, everything else in this deck is engineering. If it cannot, the matrix gain is dead and Polyak-Ruppert averaging is the whole answer to Rotea’s question.</p>
+</div>
+<div class="notes">
+<p>Note what this test does not require: closing the loop, retuning anything, or committing to Zap. It asks only whether the second harmonic carries usable curvature on this plant, which is the single fact everything else depends on.</p>
+</div>
+</section>
+<section id="a-matrix-gain-for-extremum-seeking" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="a-matrix-gain-for-extremum-seeking">A matrix gain for extremum seeking</h2>
+<div class="closing">
+<div class="lead">
+<p>The Jacobian Zap needs is measurable: one octave up from the gradient, or in the second moment of a random probe.</p>
+</div>
+<div class="cols2">
+<div class="card">
+<p><span class="cardh">The mapping</span></p>
+<p><span class="math inline">\(f\)</span> is a gradient estimate, from a tone or from a random perturbation. <span class="math inline">\(A\)</span> is the curvature of <span class="math inline">\(\ln C_P\)</span>, read at <span class="math inline">\(2\omega\)</span> or from a second moment. <span class="math inline">\(\hat A\)</span> is the Hessian that erosion moves.</p>
+</div>
+<div class="card">
+<p><span class="cardh">The open part</span></p>
+<p>Which front end to use is set by <span class="math inline">\(p\)</span>, not by taste. Still open: a convergence theory for the reversed timescale ordering this plant actually wants.</p>
+</div>
+</div>
+<div class="small">
+<p>Meyn, <em>Control Systems and Reinforcement Learning</em>, §8.5 · Ghaffari, Krstic &amp; Nesic, <em>Automatica</em> 2012 · Spall, <em>IEEE TAC</em> <strong>45</strong> (2000) 1839–1853 · Kumar &amp; Rotea, <em>Energies</em> 2022 · Rotea, Kumar, Aju &amp; Jin, <em>J. Phys. Conf. Ser.</em> 2767 (2024) 032043</p>
+</div>
+</div>
+</section>
+<section id="references" class="level2 smaller">
+<h2 class="smaller anchored" data-anchor-id="references">References</h2>
+<div class="refs">
+<p><strong>[R17]</strong>&nbsp; M. A. Rotea, <em>Logarithmic power feedback for extremum seeking control of wind turbines</em>, IFAC-PapersOnLine <strong>50</strong>(1) (2017) 4504–4509. <a href="https://doi.org/10.1016/j.ifacol.2017.08.381">doi:10.1016/j.ifacol.2017.08.381</a></p>
+<p><strong>[CLR19]</strong>&nbsp; U. Ciri, S. Leonardi &amp; M. A. Rotea, <em>Evaluation of log-of-power extremum seeking control for wind turbines using large eddy simulations</em>, Wind Energy <strong>22</strong> (2019) 992–1002. <a href="https://doi.org/10.1002/we.2336">doi:10.1002/we.2336</a></p>
+<p><strong>[KR22]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Wind turbine power maximization using log-power proportional-integral extremum seeking</em>, Energies <strong>15</strong> (2022) 1004. <a href="https://doi.org/10.3390/en15031004">doi:10.3390/en15031004</a></p>
+<p><strong>[KR24]</strong>&nbsp; D. Kumar &amp; M. A. Rotea, <em>Optimal tip-speed ratio for degraded blades</em>, Wind Energy Science <strong>9</strong> (2024) 2133–2146. <a href="https://doi.org/10.5194/wes-9-2133-2024">doi:10.5194/wes-9-2133-2024</a></p>
+<p><strong>[RKAJ24]</strong>&nbsp; M. A. Rotea, D. Kumar, E. J. Aju &amp; Y. Jin, <em>Multi-row extremum seeking for wind farm power maximization</em>, J. Phys. Conf. Ser. <strong>2767</strong> (2024) 032043. <a href="https://doi.org/10.1088/1742-6596/2767/3/032043">doi:10.1088/1742-6596/2767/3/032043</a></p>
+<p><strong>[MGR24]</strong>&nbsp; S. P. Mulders, N. Gallo &amp; M. A. Rotea, <em>Analysis of extremum seeking control for wind turbine torque controller optimization by aerodynamic and generator power objectives</em>, ACC (2024). <a href="https://arxiv.org/abs/2407.08059">arXiv:2407.08059</a></p>
+<p><strong>[GKN12]</strong>&nbsp; A. Ghaffari, M. Krstić &amp; D. Nešić, <em>Multivariable Newton-based extremum seeking</em>, Automatica <strong>48</strong> (2012) 1759–1767. <a href="https://doi.org/10.1016/j.automatica.2012.05.059">doi:10.1016/j.automatica.2012.05.059</a></p>
+<p><strong>[S00]</strong>&nbsp; J. C. Spall, <em>Adaptive stochastic approximation by the simultaneous perturbation method</em>, IEEE Trans. Automat. Contr. <strong>45</strong> (2000) 1839–1853. <a href="https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_TAC00.pdf">PDF</a></p>
+<p><strong>[LM23]</strong>&nbsp; C. Lauand &amp; S. Meyn, <em>Quasi-stochastic approximation: design principles with applications to extremum seeking control</em>, IEEE Control Systems Magazine <strong>43</strong> (2023). <a href="https://doi.org/10.1109/MCS.2023.3291884">doi:10.1109/MCS.2023.3291884</a></p>
+<p><strong>[A22]</strong>&nbsp; N. J. Abbas et al., <em>A reference open-source controller for fixed and floating offshore wind turbines</em>, Wind Energy Science <strong>7</strong> (2022) 53–73. <a href="https://doi.org/10.5194/wes-7-53-2022">doi:10.5194/wes-7-53-2022</a></p>
+<p><strong>[J09]</strong>&nbsp; J. Jonkman, S. Butterfield, W. Musial &amp; G. Scott, <em>Definition of a 5-MW reference wind turbine</em>, NREL/TP-500-38060 (2009). <a href="https://www.nrel.gov/docs/fy09osti/38060.pdf">PDF</a> &nbsp;·&nbsp; <strong>[IEC]</strong>&nbsp; IEC 61400-1 ed.&nbsp;3, normal turbulence model.</p>
+</div>
+<div class="footnote">
+<p>Companion to <a href="gradient-estimation.html">Extremum Seeking Control of Wind Turbines</a>.</p>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Aykut C. Satici · Robot Control Lab · UT Dallas</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="mailto:aykut.satici@utdallas.edu">
+<p>Email</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/symplectomorphism">
+<p>GitHub</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="../../positions/index.html">
+<p>Opportunities</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
