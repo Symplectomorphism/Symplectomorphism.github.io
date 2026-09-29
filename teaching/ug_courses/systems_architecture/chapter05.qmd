@@ -1034,96 +1034,118 @@ The prime filter is the book's convention for retaining producer-to-consumer ter
 
 ## Figure 5.18 · From PO to OP {.smaller .chapter05-detail}
 
-![](assets/chapter05/fig5_18_po_op_notation.png){width=75% fig-align="center" fig-alt="A single process with created, affected, consumed, and instrument objects, alongside its PO row and OP column."}
+![](assets/chapter05/fig5_18_po_op_notation.png){width=75% fig-align="center" fig-alt="Figure 5.18: PO row and OP column for create, affect, consume, and instrument links."}
 
-Transpose `PO` to construct `OP`, then change `c′ → c` and `d → d′`. Affect (`a`) and instrument (`I`) entries stay unchanged.
+- Start with `PO`: process rows and operand columns.
+- Transpose it to form `OP`; change `c′ → c` and `d → d′`. Affect and instrument entries stay the same.
+- For the pump, apply this to **all four processes** and **all three internal flows**: low-pressure ($L$), high-velocity ($V$), and high-pressure ($H$).
 
-Use **all four pump processes** from Table 5.4, in order $P_1$ = Inflowing, $P_2$ = Accelerating, $P_3$ = Diffusing, $P_4$ = Outflowing. Let $L$, $V$, $H$ be the three internal low-pressure, high-velocity, and high-pressure flows:
+::: {.side-caption}
+Source: Figure 5.18 and Box 5.8. Figure 5.18 uses `e` for effect; the text uses `a`.
+:::
+
+::: {.notes}
+Figure 5.18 illustrates the PO-to-OP operator conversion for one process. The next slide applies that conversion to Table 5.4's pump with all four processes and all three internal flows. The instrument glyph resembles a lowercase l in the reproduction.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 120, Fig. 5.18 and Box 5.8.
+:::
+
+## Pump Projection · PO and OP Arrays {.smaller .chapter05-detail}
+
+$P_1$ = Inflowing, $P_2$ = Accelerating, $P_3$ = Diffusing, $P_4$ = Outflowing.
+
+$L$ = internal low-pressure flow; $V$ = internal high-velocity flow; $H$ = internal high-pressure flow.
 
 $$PO=\begin{array}{c|ccc}&L&V&H\\\hline P_1&c'&0&0\\P_2&d&c'&0\\P_3&0&d&c'\\P_4&0&0&d\end{array},\qquad
 OP=\begin{array}{c|cccc}&P_1&P_2&P_3&P_4\\\hline L&c&d'&0&0\\V&0&c&d'&0\\H&0&0&c&d'\end{array}.$$
 
 $$OO=\operatorname{diag}(L,V,H).$$
 
-This is the **internal-process projection**: the two external interface flows in Table 5.4 each touch just one internal process, so they add no link between two internal processes.
-
-**Notation:** Figure 5.18 uses `e` for effect; the text and these slides use `a`.
-
-::: {.side-caption}
-Source: Figure 5.18 and Box 5.8. Primes distinguish the before/after roles needed for the causal projection.
-:::
+The external inlet and outlet flows in Table 5.4 each touch only one internal process; they create no link between two internal processes.
 
 ::: {.notes}
-Figure 5.18 prints the affect link as e while Box 5.8 says a; maintain a in the description for consistency. The instrument glyph resembles a lowercase l in the reproduction. Here PO is 4×3, OO is 3×3, and OP is 3×4; the product is 4×4. The rows of PO and columns of OP include all four processes, including Inflowing and Outflowing. The three operand columns are the internal flows that can connect two internal processes.
+PO is 4×3, OO is 3×3, and OP is 3×4. The product is 4×4. PO includes the four process rows; OP includes the four process columns. We retain the three internal operand columns because the projection concerns links among internal processes. If the two external interface flows are retained as extra columns, they contribute no off-diagonal process-to-process term. External low-pressure flow is consumed only by Inflowing; external high-pressure flow is created only by Outflowing.
 
-Table 5.4 also has external low-pressure flow, consumed by Inflowing, and external high-pressure flow, created by Outflowing. If kept as two extra columns, they contribute no off-diagonal process-to-process term: neither has both an internal producer and an internal consumer.
+**Discussion:** Which process creates the internal high-pressure flow?
 
-**Discussion:** Which row of PO records the creation of internal high-pressure flow?
-
-**Suggested answer:** $P_3$, Diffusing, has $c'$ in the $H$ column. The same column has $d$ in the $P_4$ row, so Outflowing consumes that flow.
+**Suggested answer:** $P_3$, Diffusing. It has $c'$ in the $H$ column; Outflowing has $d$ in the same column.
 
 [Sources]
-- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Figs. 5.17–5.18 and Box 5.8.
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8.
 :::
 
-## Pump Projection · Symbolic Product {.smaller .chapter05-detail}
+## Pump Projection · Matrix Multiplication {.smaller .chapter05-detail}
 
-With process order $P_1$ through $P_4$ and operand order $L,V,H$, multiply the three arrays from the previous slide:
+Multiply the arrays symbolically. Row $i$ is the **receiving process**; column $j$ is the **source process**:
 
 $$R=PO\,OO\,OP,\qquad R_{ij}=\sum_{k\in\{L,V,H\}}PO_{ik}\,[k] \,OP_{kj}.$$
 
-The **unprimed off-diagonal terms** are:
+The three forward handoffs come from three separate operand columns:
 
-$$R_{21}=dLc,\qquad R_{32}=dVc,\qquad R_{43}=dHc.$$
+$$\begin{aligned}
+R_{21}&=d(L)c+c'(V)0+0(H)0=dLc,\\
+R_{32}&=0(L)d'+d(V)c+c'(H)0=dVc,\\
+R_{43}&=0(L)0+0(V)d'+d(H)c=dHc.
+\end{aligned}$$
 
-For example, $R_{32}=0(L)d'+d(V)c+c'(H)0=dVc$: Diffusing consumes the high-velocity flow created by Accelerating. The reverse entry $R_{23}=c'Vd'$ contains primes and is discarded.
-
-After the prime filter, with **receiver rows** and **source columns**:
-
-$$R_{\mathrm{causal}}=\begin{array}{c|cccc}&P_1&P_2&P_3&P_4\\\hline P_1&0&0&0&0\\P_2&dLc&0&0&0\\P_3&0&dVc&0&0\\P_4&0&0&dHc&0\end{array}.$$
-
-Read Figure 5.17: **Inflowing → Accelerating → Diffusing → Outflowing**; each label names the connecting internal flow.
+Each **nonzero result** has no prime, so it survives the book's causal filter. A reverse term such as $R_{23}=c'Vd'$ contains primes and is discarded.
 
 ::: {.notes}
-All four processes are present. Inflowing produces L for Accelerating; Accelerating produces V for Diffusing; Diffusing produces H for Outflowing. Their symbolic cells are $dLc$, $dVc$, and $dHc$. Each diagonal cell contains a prime, so it is filtered along with the reverse-flow entries. Zeros indicate no shared internal flow in the PO array. This gives the three operand-labeled process links drawn in Figure 5.17.
+The entries come directly from Table 5.4. For example, $R_{32}$ selects the Diffusing row of PO and the Accelerating column of OP. Only the V term is nonzero: Diffusing consumes V and Accelerating creates V. This is a symbolic path product, not multiplication of numerical strengths. The book's printed first factor PP is dimensionally inconsistent; PO is the intended first factor.
 
-The two external flows are interface operands, not inter-process handoffs. Including them in a 4×5 PO and 5×4 OP adds terms only to a diagonal cell: external low-pressure flow in the Inflowing row/column, and external high-pressure flow in the Outflowing row/column. Both terms contain a prime under the book's rules, so the causal matrix is unchanged.
+**Discussion:** What is the source process for $R_{43}$?
 
-**Discussion:** Why is $R_{31}=0$ even though Inflowing contributes to the high-pressure output?
+**Suggested answer:** Column 3 is Diffusing. Row 4 is Outflowing, so the high-pressure-flow term represents Diffusing → Outflowing.
 
-**Suggested answer:** It is a direct-link projection. Inflowing and Diffusing do not share an operand; their connection passes through Accelerating and the high-velocity flow.
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8.
+:::
+
+## Pump Projection · Causal Result {.smaller .chapter05-detail}
+
+Set every term containing a prime to zero. The surviving $4\times4$ process matrix is:
+
+$$R_{\mathrm{causal}}=\begin{array}{c|cccc}&P_1&P_2&P_3&P_4\\\hline
+P_1&0&0&0&0\\
+P_2&dLc&0&0&0\\
+P_3&0&dVc&0&0\\
+P_4&0&0&dHc&0
+\end{array}.$$
+
+Read **column → row**:
+
+- $P_1\rightarrow P_2$ via internal low-pressure flow ($L$).
+- $P_2\rightarrow P_3$ via internal high-velocity flow ($V$).
+- $P_3\rightarrow P_4$ via internal high-pressure flow ($H$).
+
+These are the three labeled arrows in **Figure 5.17**.
+
+::: {.notes}
+The four processes are Inflowing, Accelerating, Diffusing, and Outflowing. Their direct process links form the chain shown in Figure 5.17. Diagonal terms and reverse-flow terms contain primes and are filtered. $R_{31}=0$ because Inflowing and Diffusing do not share a directly produced-and-consumed internal flow; the path passes through Accelerating.
 
 [Sources]
 - Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8 (worked application).
 :::
 
-## Worked Projection · Pump Processes {.smaller .chapter05-detail}
+## Pump Projection · Numeric Check {.smaller .chapter05-detail}
 
-For all three **internal pump flows**, write a numeric special case of Table 5.4. Process order: Inflowing, Accelerating, Diffusing, Outflowing. Operand order: internal low-pressure, high-velocity, high-pressure flow. $C$ marks creation; $D$ marks consumption:
+For the same four process rows and three internal-flow columns, let $C_{jk}=1$ when process $j$ **creates** operand $k$, and $D_{ik}=1$ when process $i$ **consumes** it:
 
 $$C=\begin{bmatrix}1&0&0\\0&1&0\\0&0&1\\0&0&0\end{bmatrix},\qquad
 D=\begin{bmatrix}0&0&0\\1&0&0\\0&1&0\\0&0&1\end{bmatrix}.$$
 
-$$A=D C^{\mathsf T}
-=\begin{bmatrix}0&0&0&0\\1&0&0&0\\0&1&0&0\\0&0&1&0\end{bmatrix},\qquad
-A_{ij}=\sum_{k=1}^{3}D_{ik}C_{jk}.$$
+$$A=DC^{\mathsf T}=\begin{bmatrix}0&0&0&0\\1&0&0&0\\0&1&0&0\\0&0&1&0\end{bmatrix}.$$
 
-For example, $A_{\text{Diffusing,Accelerating}}=0(0)+1(1)+0(0)=1$ via internal high-velocity flow. The other 1s are **Inflowing → Accelerating** (low-pressure flow) and **Diffusing → Outflowing** (high-pressure flow). These are exactly Figure 5.17's three links.
-
-Setting the operand diagonal to 1 gives this ordinary matrix product; the symbolic version retains operand names and OPM link types. External interface flows touch only one internal process each, so they produce no internal process-to-process link.
+$A_{ij}=\sum_k D_{ik}C_{jk}$ counts direct producer-to-consumer handoffs. Its three 1s occur in the same cells as $dLc$, $dVc$, and $dHc$.
 
 ::: {.notes}
-Define C_{jk}=1 if process j creates operand k and D_{ik}=1 if process i consumes operand k. Then (DC^T)_{ij}=sum_k D_{ik} C_{jk}, the number of direct producer-to-consumer shared operands from source j to receiver i. In this example each nonzero count is one. The contributing columns are internal low-pressure, high-velocity, and high-pressure flow, in that order.
-
-This is the ordinary 0/1-matrix specialization of the book's symbolic projection. In the numeric version, the diagonal operand block is the identity for connectivity; the operand name is recovered from the k that contributes. The symbolic calculation on the previous slide carries those names and link operators through the product. Affect and instrument relationships are excluded from C and D and need separate interpretation; do not treat every shared operand as a causal handoff. Table 5.4 also includes external low-pressure flow, consumed by Inflowing, and external high-pressure flow, created by Outflowing. With no internal producer or consumer respectively, neither creates an off-diagonal internal dependency.
-
-**Discussion:** Why is $A_{\text{Diffusing,Inflowing}}=0$ even though Inflowing contributes to the final high-pressure output?
-
-**Suggested answer:** Inflowing and Diffusing do not share a directly produced-and-consumed operand in this model. The effect reaches Diffusing through Accelerating and the high-velocity-flow operand, so their direct adjacency entry is zero.
+This is the ordinary numeric specialization of the book's symbolic product. Setting the operand diagonal to the identity counts links; the contributing operand column supplies the label. For example, $A_{32}=0(0)+1(1)+0(0)=1$ via internal high-velocity flow. The numeric shortcut covers create-to-consume handoffs only; affect and instrument relationships need separate interpretation.
 
 [Sources]
 - Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8 (worked application).
 :::
+
 ## Functional Architecture in Software {.smaller}
 
 - Software functions are of two types: **computational** statements (`A = B + C`) and functions that **dynamically allocate control** (`if... then...`)
