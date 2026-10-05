@@ -1,0 +1,463 @@
+# Appendices {.divider}
+
+The derivations the main line cites.
+
+## A.0: Where the equilibrium relation comes from {.smaller}
+
+The rotor is a rigid body of inertia $I$, driven by aerodynamic torque and
+braked by the generator: $I\dot\Omega = \tau_{\text{aero}} - \tau_g$ with
+$\tau_g = u\Omega^2$. Power is torque times angular speed, and
+$\Omega = \lambda V/R$, so with $A = \pi R^2$
+
+$$\tau_{\text{aero}} = \frac{P}{\Omega}
+= \frac{\tfrac12\rho\pi R^2V^3C_P(\lambda)}{\lambda V/R}
+= \tfrac12\rho\pi R^3V^2\,\frac{C_P(\lambda)}{\lambda}$$
+
+At rest $\dot\Omega = 0$, so $\tau_{\text{aero}} = \tau_g = u\lambda^2V^2/R^2$.
+The $V^2$ on the two sides cancels, and dividing through:
+
+$$\boxed{\;\frac{C_P(\lambda)}{\lambda^3} = \frac{2}{\rho\pi R^5}\,u =: c\,u\;}$$
+
+::: claim
+A curve set by the blades meets a line set by the gain at
+$\lambda_{\text{eq}}(u)$, and $V$ is gone. That cancellation is the reason for
+the $\Omega^2$ law: any other power of $\Omega$ leaves a factor of $V$ behind.
+:::
+
+::: {.warn}
+$C_P/\lambda^3$ is not monotone; it peaks near $\lambda \approx 4$. The physical
+root is on the falling branch, the other is unstable, and $\lambda_{\text{eq}}(u)$
+means the falling-branch root throughout.
+:::
+
+## A.0b: Where the shape of $C_P(\lambda)$ comes from {.smaller}
+
+Three layers, from what is a theorem down to what is a fit.
+
+::: {.cols3}
+::: {.card}
+[physics fixes the envelope]{.cardh}
+
+$C_P \ge 0$, and $C_P \le 16/27 \approx 0.593$ for any rotor: the **Betz
+limit**, from momentum conservation on the stream tube alone. At $\lambda \to 0$
+the rotor is stopped and extracts nothing; at large $\lambda$ the blades run
+faster than the wind can feed them and drag dominates. So $C_P$ must rise from
+zero and fall back, and has at least one maximum.
+:::
+
+::: {.card}
+[blade design fixes the curve]{.cardh}
+
+For a *given* blade, $C_P(\lambda)$ is computed by **blade-element momentum**
+theory: slice the blade spanwise, look up each section's lift and drag against
+its local angle of attack from wind-tunnel airfoil tables, integrate. The
+result is empirical in its inputs and deterministic in its arithmetic. For a
+well-designed blade at fixed pitch it has one peak.
+:::
+
+::: {.card}
+[what this deck uses]{.cardh}
+
+Heier's closed-form fit to typical BEM curves [\[H98\]](#references), remapped so its maximum sits
+at $(\lambda^\star, C_P^{\max}) = (7.5,\,0.49)$, the design values of the NREL
+5 MW rotor from [\[J09\]](#references). A stand-in with the right peak and the right asymmetry,
+steep on the stall side and gentle above.
+:::
+:::
+
+::: claim
+So "single maximum" is an empirical property of good blades, and the specific
+curve here is a fit. Two consequences the main line depends on
+survive any such curve: $C_P' = 0$ at the maximum $\lambda^\star$, which is what Link A uses, and
+$C_P/\lambda^3$ being non-monotone, which is why A.0 must pick a branch.
+:::
+
+## A.0b, continued: The curve in formula, and its curvature $\kappa_2$ {.smaller}
+
+1. **Heier's fit at zero pitch** [\[H98\]](#references), in its own variable $\ell$:
+   $$h(\ell) = 0.5176\Big(\frac{116}{\ell_i} - 5\Big)e^{-21/\ell_i} + 0.0068\,\ell,
+   \qquad \frac{1}{\ell_i} = \frac{1}{\ell} - 0.035$$
+   Its maximum is at $\ell^\star = 8.100$ with $h(\ell^\star) = 0.480$.
+2. **Remap to the NREL 5 MW design point.** The deck uses
+   $C_P(\lambda) := \dfrac{0.49}{0.48048}\,h\big(8.1226\,\lambda/7.5\big)$, a
+   rescaling of the argument and of the amplitude.
+
+## A.0b, continued: The curvature number {.smaller}
+
+3. **The curvature number.** With $C_P(\lambda) = A\,h(k\lambda)$, $C_P'' = Ak^2h''$, so
+   $$\kappa_2 := -\frac{\lambda^{\star2}C_P''(\lambda^\star)}{C_P(\lambda^\star)}
+   = -\frac{(k\lambda^\star)^2\,h''(k\lambda^\star)}{h(k\lambda^\star)}$$
+   independent of $A$ and $k$: a property of the shape of Heier's curve. Here
+   $k\lambda^\star = 8.1226$, within $0.3\%$ of $\ell^\star = 8.100$; evaluated at
+   either point,
+   $$\kappa_2 = \frac{8.10^2\times0.0462}{0.480} = 6.3 \quad (6.32 \text{ at } \ell^\star,\ 6.34 \text{ at } 8.1226)$$
+4. **What $\kappa_2$ measures.** Taylor about the maximum, where $C_P' = 0$:
+   $$\frac{C_P(\lambda)}{C_P^{\max}} = 1 - \frac{\kappa_2}{2}\Big(\frac{\lambda-\lambda^\star}{\lambda^\star}\Big)^2 + O\big((\lambda-\lambda^\star)^3\big)$$
+   so a $10\%$ error in $\lambda$ costs $\kappa_2/2\times1\% = 3.2\%$ of the power.
+
+::: claim
+The rescaling in step 2 assumes the fit's maximum at $\ell = 8.1226$; it is at
+$8.100$, so the remapped maximum sits at $\lambda = 7.479$, $C_P = 0.4895$, and
+the deck's $\lambda^\star = 7.5$ is $0.3\%$ above it. The residual slope
+$C_P'(7.5) = -0.0011$ corresponds to $c = \lambda C_P'/C_P = -0.018$ in A.14, which changes $\sigma(\hat g)$ by under $0.05\%$; every
+number in the deck is computed on this curve as it stands.
+:::
+
+## A.0c: The rotor time constant {.smaller}
+
+Write the rotor equation of A.0 at fixed $u$ as $I\dot\Omega = F(\Omega,V) :=
+\tau_{\text{aero}}(\Omega,V) - u\Omega^2$, with equilibrium $F(\Omega_{\text{eq}},\bar V)
+= 0$. For $\delta\Omega := \Omega - \Omega_{\text{eq}}$ and $\delta V := V - \bar V
+= \bar V\varepsilon$, to first order
+
+$$I\,\dot{\delta\Omega} = F_\Omega\,\delta\Omega + F_V\,\delta V,
+\qquad F_\Omega := \partial F/\partial\Omega,\ F_V := \partial F/\partial V
+\ \text{at the equilibrium.}$$
+
+From A.0, $\tau_{\text{aero}} = \tfrac12\rho\pi R^3V^2\,C_P(\lambda)/\lambda$ with
+$\lambda = R\Omega/V$, so $\partial\lambda/\partial\Omega = R/V$ and
+
+$$\frac{\partial\tau_{\text{aero}}}{\partial\Omega}
+= \tfrac12\rho\pi R^3V^2\,\frac{\lambda C_P'(\lambda) - C_P(\lambda)}{\lambda^2}\,\frac{R}{V}
+= \tfrac12\rho\pi R^4V\,\frac{\lambda C_P' - C_P}{\lambda^2},
+\qquad
+2u\Omega_{\text{eq}} = \frac{2\tau_{\text{aero}}}{\Omega_{\text{eq}}}
+= \rho\pi R^4V\,\frac{C_P}{\lambda^2}$$
+
+the second using $u\Omega_{\text{eq}}^2 = \tau_{\text{aero}}$ at equilibrium. Therefore
+
+$$F_\Omega = -\tfrac12\rho\pi R^4\bar V\,\frac{3C_P - \lambda C_P'}{\lambda^2} < 0,
+\qquad
+\tau_{\text{rotor}} := -\frac{I}{F_\Omega}
+= \frac{2I\lambda^2}{\rho\pi R^4\bar V\,\big(3C_P(\lambda) - \lambda C_P'(\lambda)\big)},
+\qquad
+b := \frac{F_V\bar V}{I}$$
+
+::: claim
+At the maximum of $C_P$, $\lambda = \lambda^\star$, $C_P' = 0$, so $\tau_{\text{rotor}} = 2I\lambda^{\star2}/(3\rho\pi R^4\bar V
+C_P^{\max}) = 6.4$ s for $I = 4.05\times10^{7}$ kg m$^2$ (rotor $3.54\times10^{7}$
+plus $97^2\times534$ from the generator through the gearbox, [\[J09\]](#references))
+and $\bar V = 8$ m/s. Dividing the linearized equation by $I$ gives
+$\dot{\delta\Omega} + \delta\Omega/\tau_{\text{rotor}} = b\,\varepsilon(t)$, the
+form on *Link A, standing assumptions*. Also $b\,\tau_{\text{rotor}} = -F_V\bar V/F_\Omega
+= \bar V\,d\Omega_{\text{eq}}/dV = \Omega_{\text{eq}}$: the first equality from the
+definitions, the second by differentiating $F(\Omega_{\text{eq}}(V),V) = 0$ in $V$,
+the third because $\Omega_{\text{eq}} = \lambda_{\text{eq}}V/R$ is proportional to $V$. The full equation is stable about the
+same equilibrium and forgets $\Omega(0)$ in the same way; the linearization
+makes the rate explicit.
+:::
+
+## A.0c, continued: The rotor's response at the dither frequency {.smaller}
+
+1. **Linearize in the gain.** At fixed wind, linearizing $I\dot\Omega = \tau_{\text{aero}} - u\Omega^2$
+   in $u$ as A.0c did in $V$ gives $\tau_{\text{rotor}}\dot{\delta\Omega} + \delta\Omega = \beta\,\delta u$,
+   with $\beta := -\tau_{\text{rotor}}\Omega_{\text{eq}}^2/I$.
+2. **Static limit.** For a slow $\delta u$ the rotor settles, $\delta\Omega = \beta\,\delta u$, and
+   $\lambda$ and log-power follow the equilibrium: $\delta y = J'\,\delta u$.
+3. **At the dither frequency.** For $\delta u = a\sin\omega t = a\operatorname{Im}e^{i\omega t}$ the steady
+   response is $\delta\Omega = \beta a\operatorname{Im}\big(Ge^{i\omega t}\big)$, with
+   $$G := \frac{1}{1 + i\omega\tau_{\text{rotor}}} = |G|\,e^{-i\varphi},
+   \qquad |G| = \frac{1}{\sqrt{1 + (\omega\tau_{\text{rotor}})^2}},
+   \qquad \varphi = \arctan(\omega\tau_{\text{rotor}})$$
+   so the swing of $\lambda$ is scaled by $|G|$ and delayed by $\varphi$, and
+   $y_{\text{det}} = J'a|G|\sin(\omega t - \varphi) = J'a\big[\operatorname{Re}G\sin\omega t + \operatorname{Im}G\cos\omega t\big]$.
+4. **What the estimator reads.** Correlating with $\sin\omega t$ keeps the in-phase part,
+   $$\hat g_{\text{det}} = J'\operatorname{Re}G = J'G_1,\qquad G_1 := \operatorname{Re}G = \frac{1}{1+(\omega\tau_{\text{rotor}})^2} = |G|^2$$
+   Correlating with $\sin(\omega t - \varphi)$ reads $J'|G| = J'\sqrt{G_1}$.
+
+::: claim
+With $\tau_{\text{rotor}} = 6.4$ s: $G_1 = 0.93$ at $T = 150$ s and $0.69$ at $60$ s. The corner
+$1/(2\pi\tau_{\text{rotor}}) = 0.025$ Hz also separates the two limits of
+*Link A, executed, continued*: below it $\Omega$ follows the wind and $\lambda$ stays
+near $\lambda_{\text{eq}}(u)$; above it $\Omega$ barely moves and $\lambda$ follows $1/V$.
+:::
+
+## A.0d: Why $\bar\lambda - \lambda^\star$ is second order {.smaller}
+
+Under the standing assumptions $\lambda(t)$ is a functional of the wind path,
+and the next slide derives its expansion in powers of $\varepsilon$ about
+$\varepsilon \equiv 0$, where $\lambda = \lambda_{\text{eq}}(u)$:
+
+$$\lambda(t) = \lambda_{\text{eq}}(u) + \Lambda_1[\varepsilon](t) + \Lambda_2[\varepsilon](t) + O(\varepsilon^3)$$
+
+$$\Lambda_1[\varepsilon](t) = \int_0^\infty h(s)\,\varepsilon(t-s)\,ds,
+\qquad
+\Lambda_2[\varepsilon](t) = \iint_0^\infty k(s_1,s_2)\,\varepsilon(t-s_1)\,\varepsilon(t-s_2)\,ds_1\,ds_2$$
+
+with $h$ and $k$ fixed kernels set by the rotor equation. Taking expectations,
+
+$$\mathbb{E}\,\Lambda_1 = \int_0^\infty h(s)\,\mathbb{E}[\varepsilon(t-s)]\,ds = 0,
+\qquad
+\big|\mathbb{E}\,\Lambda_2\big| = \Big|\iint k(s_1,s_2)\,\Gamma(s_1-s_2)\,ds_1ds_2\Big|
+\le \|k\|_{1}\,\Gamma(0) = \|k\|_{1}\,\sigma_\varepsilon^2$$
+
+the first because $\mathbb{E}[\varepsilon] = 0$, the second because $|\Gamma(\tau)| \le
+\Gamma(0)$ (Cauchy-Schwarz). At $u = u^\star$, $\lambda_{\text{eq}}(u^\star) =
+\lambda^\star$, so $\bar\lambda - \lambda^\star = \mathbb{E}\,\Lambda_2 + O(\mathbb{E}|\varepsilon|^3)
+= O(\sigma_\varepsilon^2)$.
+
+::: claim
+**In the two rotor limits.** Frozen $\Omega$: $\lambda = \lambda^\star/(1+\varepsilon)
+= \lambda^\star(1 - \varepsilon + \varepsilon^2 - \dots)$, so $\Lambda_1 =
+-\lambda^\star\varepsilon$ has mean zero and $\Lambda_2 = \lambda^\star\varepsilon^2$
+has mean $\lambda^\star\sigma_\varepsilon^2 = 0.01\,\lambda^\star$. Tracking
+$\Omega$: $\lambda = \lambda^\star$ and the difference is zero. With the linearized
+rotor of A.0c, $\lambda = \lambda^\star(1 + \delta\Omega/\Omega_{\text{eq}})(1 -
+\varepsilon + \varepsilon^2 - \dots)$; the first-order part
+$\delta\Omega/\Omega_{\text{eq}} - \varepsilon$ has mean zero, and the second-order
+part $\varepsilon^2 - \varepsilon\,\delta\Omega/\Omega_{\text{eq}}$ has mean
+$\sigma_\varepsilon^2 - \mathbb{E}[\varepsilon\,\delta\Omega]/\Omega_{\text{eq}}$ with
+$|\mathbb{E}[\varepsilon\,\delta\Omega]| = \big|b\int_0^\infty e^{-s/\tau_{\text{rotor}}}\Gamma(s)\,ds\big|
+\le b\,\tau_{\text{rotor}}\,\sigma_\varepsilon^2$.
+:::
+
+## A.0d, continued: Where the expansion comes from {.smaller}
+
+$\Omega(t)$ solves $I\dot\Omega = F(\Omega,V)$, $F := \tau_{\text{aero}} - u\Omega^2$,
+driven by $V = \bar V(1+\varepsilon)$, with $F$ smooth and the equilibrium stable
+($F_\Omega < 0$, A.0c). Seek the solution ordered by powers of $\varepsilon$,
+$\Omega = \Omega_{\text{eq}} + \Omega_1 + \Omega_2 + \dots$ with $\Omega_n$ of order
+$n$, expand $F$ about $(\Omega_{\text{eq}},\bar V)$, and collect equal orders:
+
+- **Order 1.** $I\dot\Omega_1 = F_\Omega\Omega_1 + F_V\bar V\varepsilon$, the linearized
+  equation of A.0c, so
+  $$\Omega_1(t) = b\int_0^\infty e^{-s/\tau_{\text{rotor}}}\,\varepsilon(t-s)\,ds$$
+  linear in the path, with kernel $b\,e^{-s/\tau_{\text{rotor}}}$.
+- **Order 2.** $I\dot\Omega_2 = F_\Omega\Omega_2 + \tfrac12F_{\Omega\Omega}\Omega_1^2
+  + F_{\Omega V}\bar V\,\Omega_1\varepsilon + \tfrac12F_{VV}\bar V^2\varepsilon^2$: the
+  same stable operator, forced by products of two first-order quantities, so
+  $$\Omega_2(t) = \frac1I\int_0^\infty e^{-s/\tau_{\text{rotor}}}
+  \Big[\tfrac12F_{\Omega\Omega}\Omega_1^2 + F_{\Omega V}\bar V\,\Omega_1\varepsilon
+  + \tfrac12F_{VV}\bar V^2\varepsilon^2\Big](t-s)\,ds$$
+  With $\Omega_1$ itself an integral of $\varepsilon$, this is a double integral
+  of $\varepsilon(t-s_1)\varepsilon(t-s_2)$ against a fixed kernel $k(s_1,s_2)$.
+- **Order 3 and higher** are forced by cubic and higher products: $O(\varepsilon^3)$.
+
+::: claim
+Time invariance of $F$ makes the kernels depend on lags only; causality puts the
+integrals on $s \ge 0$; stability makes $e^{-s/\tau_{\text{rotor}}}$ integrable,
+so each $\Omega_n$ is bounded by a constant times $\max|\varepsilon|^n$ over the
+filter's memory.
+:::
+
+## A.0d, continued: From $\Omega$ to $\lambda$ {.smaller}
+
+With $R\Omega_{\text{eq}}/\bar V = \lambda_{\text{eq}}(u)$ and $1/(1+\varepsilon)
+= 1 - \varepsilon + \varepsilon^2 - \dots$,
+$$\lambda = \frac{R\Omega}{\bar V(1+\varepsilon)}
+= \lambda_{\text{eq}}\Big(1 + \frac{\Omega_1}{\Omega_{\text{eq}}} + \frac{\Omega_2}{\Omega_{\text{eq}}} + \dots\Big)\big(1 - \varepsilon + \varepsilon^2 - \dots\big)$$
+$$\Lambda_1 = \lambda_{\text{eq}}\Big(\frac{\Omega_1}{\Omega_{\text{eq}}} - \varepsilon\Big),
+\qquad
+\Lambda_2 = \lambda_{\text{eq}}\Big(\frac{\Omega_2}{\Omega_{\text{eq}}} - \varepsilon\frac{\Omega_1}{\Omega_{\text{eq}}} + \varepsilon^2\Big)$$
+
+::: claim
+These are the functionals $\Lambda_1$, $\Lambda_2$ of A.0d: $\Lambda_1$ is linear
+in the path because $\Omega_1$ is; $\Lambda_2$ is quadratic because $\Omega_2$,
+$\varepsilon\Omega_1$ and $\varepsilon^2$ are. The frozen rotor is the case
+$\Omega_1 = \Omega_2 = 0$, which gives $\Lambda_1 = -\lambda_{\text{eq}}\varepsilon$
+and $\Lambda_2 = \lambda_{\text{eq}}\varepsilon^2$ as on A.0d.
+:::
+
+## A.1: The estimator is a Fourier coefficient {.smaller}
+
+Let $y$ be $T$-periodic with Fourier series $y = \tfrac{a_0}{2} +
+\sum_{k\ge1}(a_k\cos k\omega t + b_k\sin k\omega t)$, $\omega := 2\pi/T$.
+Multiply by $\sin\omega t$, integrate over one period, and use three
+product-to-sum identities:
+
+$$\int_0^T\!\sin\omega t\,dt = 0,
+\qquad
+\int_0^T\!\cos k\omega t\,\sin\omega t\,dt = \tfrac12\!\int_0^T\!\big[\sin(k{+}1)\omega t - \sin(k{-}1)\omega t\big]dt = 0,$$
+$$\int_0^T\!\sin k\omega t\,\sin\omega t\,dt
+= \tfrac12\!\int_0^T\!\big[\cos(k{-}1)\omega t - \cos(k{+}1)\omega t\big]dt
+= \begin{cases} T/2, & k = 1\\ 0, & k \ne 1\end{cases}$$
+
+because a non-constant sinusoid integrates to zero over whole periods, while
+for $k = 1$ the first cosine is $\cos0 = 1$. Every term dies except one:
+
+$$\int_0^T y(t)\sin\omega t\,dt = b_1\cdot\frac{T}{2}
+\qquad\Longrightarrow\qquad
+b_1 = \frac{2}{T}\int_0^T y(t)\sin\omega t\,dt$$
+
+::: claim
+Now the estimator, with the constants pulled out of the integral:
+$$\hat g = \frac{1}{T}\int_0^T y(t)\,\frac{2}{a}\sin\omega t\,dt
+= \frac{1}{a}\cdot\underbrace{\frac{2}{T}\int_0^T y(t)\sin\omega t\,dt}_{=\;b_1}
+= \frac{b_1}{a}$$
+**The estimator is the first sine coefficient of the measured log-power,
+divided by the probe amplitude.** Its $2/a$ is the Fourier $2/T$ times the
+$1/a$ that turns a power swing into a slope.
+:::
+
+## A.1, continued: From log-power to $J$ {.smaller}
+
+Two idealizations, both stated: $\varepsilon \equiv 0$, so $V = \bar V$ is
+constant; and the rotor sits at its equilibrium at every instant, so
+$\lambda(t) = \lambda_{\text{eq}}(u(t))$ with $u(t) = u + a\sin\omega t$. From
+*What we need from the turbine*, $P = \tfrac12\rho A\bar V^3C_P(\lambda)$ and
+$J(u) := \ln C_P(\lambda_{\text{eq}}(u))$. Therefore
+
+$$y(t) = \ln P(t)
+= \ln\big(\tfrac12\rho A\bar V^3\big) + \ln C_P\big(\lambda_{\text{eq}}(u(t))\big)
+= \underbrace{\ln\big(\tfrac12\rho A\bar V^3\big)}_{\text{a constant}}
++ J\big(u + a\sin\omega t\big)$$
+
+::: claim
+The constant contributes nothing to $b_1$, because
+$\int_0^T\sin\omega t\,dt = 0$ (A.1). So for the purpose of computing $b_1$,
+**$y$ may be replaced by $J(u + a\sin\omega t)$**, which *The bias grows as $a^2$*
+expands. Both idealizations are relaxed in the main line: the first by Links A
+through D, the second by the rotor's response at the dither frequency,
+A.0c, continued.
+:::
+
+## A.2: Moments of a sine over a whole period {.smaller}
+
+With $s = \sin\omega t$ and $\langle\cdot\rangle = \tfrac1T\int_0^T(\cdot)\,dt$
+over one period:
+
+$$\langle s^{2m+1}\rangle = 0 \quad\text{for every } m \ge 0$$
+
+because $\sin\omega t$ is odd about $t = T/2$ and the interval is symmetric
+about that point, so the two halves cancel. For the even moments,
+
+$$\langle s^2\rangle = \Big\langle\tfrac{1-\cos2\omega t}{2}\Big\rangle = \tfrac12,
+\qquad
+\langle s^4\rangle = \Big\langle\tfrac{3 - 4\cos2\omega t + \cos4\omega t}{8}\Big\rangle = \tfrac38$$
+
+using $\sin^4\theta = \tfrac18(3 - 4\cos2\theta + \cos4\theta)$ and that every
+non-constant cosine averages to zero over a whole period. These are the only
+moments the bias derivation uses.
+
+## A.3: The window's transform, and Parseval {.smaller}
+
+The window is $w_N(t) = \sin\omega_1 t$ on $[0,NT]$ with $\omega_1 = 2\pi/T$, and zero
+elsewhere; $N = 1$ is one period. Write $\beta := 2\pi f$ and
+$\sin\omega_1 t = (e^{i\omega_1 t} - e^{-i\omega_1 t})/2i$:
+
+$$\hat w_N(f) = \int_0^{NT} \sin\omega_1 t\,e^{-i\beta t}\,dt
+= \frac{1}{2i}\left[\frac{e^{i(\omega_1-\beta)NT}-1}{i(\omega_1-\beta)}
++ \frac{e^{-i(\omega_1+\beta)NT}-1}{i(\omega_1+\beta)}\right]$$
+
+Since $\omega_1NT = 2\pi N$, both exponentials equal $e^{-i\beta NT}$ and the fractions combine:
+
+$$\boxed{\;\hat w_N(f) = \frac{\omega_1\big(1 - e^{-i2\pi fNT}\big)}{\omega_1^2 - (2\pi f)^2}\;}
+\qquad\Longrightarrow\qquad
+|\hat w_N(f)|^2 = \frac{4\omega_1^2\sin^2(\pi fNT)}{\big(\omega_1^2 - 4\pi^2f^2\big)^2}$$
+
+::: claim
+At $f = f_1 = 1/T$ numerator and denominator both vanish; the limit is
+$|\hat w_N(f_1)|^2 = (NT)^2/4$. For $N = 1$ the main lobe lies between the first two
+zeros of $\sin^2(\pi fT)$, at $f = 0$ and $f = 2f_1$. **Parseval**,
+$\int|\hat w_N|^2df = \int|w_N|^2dt$, gives the total weight:
+$\int_0^{NT}\sin^2\omega_1t\,dt = \int_0^{NT}\tfrac12(1-\cos2\omega_1t)\,dt = NT/2$.
+:::
+
+## A.4: Stationary variance of the loop, with correlated noise {.smaller}
+
+The recursion $x_{n+1} = \alpha x_n + \kappa e_n$, $|\alpha| < 1$, with $e_n$ stationary, of mean
+zero, variance $\sigma^2$ and correlations $\rho_k := \operatorname{Corr}(e_n, e_{n+k})$.
+
+1. **Unroll.** In the stationary state $x_n = \kappa\sum_{j\ge0}\alpha^j e_{n-1-j}$.
+2. **Variance of a sum** is the sum of all covariances:
+   $$\operatorname{Var}(x) = \kappa^2\sum_{j\ge0}\sum_{l\ge0}\alpha^{j+l}\,\sigma^2\rho_{|j-l|}$$
+3. **Count the pairs by lag** $k := |j-l|$. For $k = 0$: $\sum_j\alpha^{2j} = 1/(1-\alpha^2)$. For
+   $k \ge 1$: the pairs $(j, j+k)$ and $(j+k, j)$ give $2\sum_j\alpha^{2j+k} = 2\alpha^k/(1-\alpha^2)$. Hence
+   $$\operatorname{Var}(x) = \frac{\kappa^2\sigma^2}{1-\alpha^2}\Big[1 + 2\sum_{k\ge1}\alpha^k\rho_k\Big]$$
+
+::: claim
+On *The closed loop*, $\alpha = 1 - K$, so $1 - \alpha^2 = K(2-K)$. With every $\rho_k = 0$ the
+bracket is $1$, the textbook result for independent noise. Stationarity requires
+$|1-K| < 1$, that is $0 < K < 2$, the loop's stability condition.
+:::
+
+## A.5: Why a short record under-measures a persistent process {.smaller}
+
+Take $N$ consecutive samples of a stationary process with variance $\sigma^2$
+and autocorrelations $\rho_k$, and form the sample variance
+$s^2 := \tfrac1N\sum_{n=1}^N(x_n - \bar x)^2$ with $\bar x := \tfrac1N\sum_n x_n$
+the sample mean. Take the process zero-mean (subtract the mean otherwise).
+Expanding the square, $\sum_n(x_n-\bar x)^2 = \sum_n x_n^2 - 2\bar x\sum_n x_n +
+N\bar x^2 = \sum_n x_n^2 - N\bar x^2$, so
+
+$$\mathbb{E}[s^2] = \frac1N\sum_{n=1}^N\mathbb{E}[x_n^2] - \mathbb{E}[\bar x^2]
+= \sigma^2 - \operatorname{Var}(\bar x),
+\qquad
+\operatorname{Var}(\bar x) = \frac{\sigma^2}{N}\Big[1 + 2\sum_{k=1}^{N-1}\big(1-\tfrac kN\big)\rho_k\Big]\ \text{(A.7)}$$
+
+::: claim
+For an AR(1), $\rho_k = \alpha^k$. With $\alpha = 0.985$ and $N = 270$ the bracket
+is $170$, so $\mathbb{E}[s^2] = 0.628\,\sigma^2$ and the expected sample
+**standard deviation** is $0.79\,\sigma$. A persistent series sampled for only a
+few correlation times has not had room to wander as far as it eventually will,
+and the sample variance records that. The measured/predicted ratio of the nonlinear
+closed loop on *Checked: the scatter of the loop* is this effect.
+:::
+
+## A.6: Correlation between estimates $k$ periods apart {.smaller}
+
+The estimate from period $k$ uses the window shifted by $kT$, $w_k(t) :=
+w(t-kT)$, so $Z_k := \int_{\mathbb{R}}\varepsilon(t)\,w_k(t)\,dt$. Substituting
+$t' = t - kT$, the shift becomes a phase on the transform:
+$\hat w_k(f) = \int w(t-kT)\,e^{-i2\pi ft}dt = e^{-i2\pi fkT}\int w(t')\,e^{-i2\pi ft'}dt'
+= e^{-i2\pi fkT}\,\hat w(f)$. Repeating Link C's calculation with the two windows
+$w$ and $w_k$,
+
+$$\operatorname{Cov}(Z_0,Z_k)
+= \iint w(t)\,w(s-kT)\,\Gamma(t-s)\,dt\,ds
+= \int_{\mathbb{R}} S^{2s}(f)\,\overline{\hat w(f)}\,e^{-i2\pi fkT}\hat w(f)\,df
+= \int_{\mathbb{R}} S^{2s}(f)\,|\hat w(f)|^2\,e^{-i2\pi fkT}\,df$$
+
+::: claim
+$S^{2s}|\hat w|^2$ is even in $f$, so the sine part of $e^{-i2\pi fkT}$ integrates
+to zero and
+$$\rho_k := \frac{\operatorname{Cov}(Z_0,Z_k)}{\operatorname{Var}(Z)}
+= \frac{\int S^{2s}(f)\,|\hat w(f)|^2\cos(2\pi fkT)\,df}{\int S^{2s}(f)\,|\hat w(f)|^2\,df}$$
+the $\rho_k$ of *The closed loop*. Dividing by $6/aT$ on both sides
+leaves the ratio unchanged, so $\rho_k$ is also the correlation of
+$\hat g_{\text{noise}}$ across periods.
+:::
+
+## A.7: Variance of the mean of $N$ correlated samples {.smaller}
+
+Let $x_1,\dots,x_N$ have common variance $\sigma^2$ and correlations
+$\operatorname{Corr}(x_n,x_m) = \rho_{|n-m|}$, and $\bar x := \tfrac1N\sum_n x_n$.
+Variance of a sum is the sum of all covariances:
+
+$$\operatorname{Var}(\bar x) = \frac1{N^2}\sum_{n=1}^N\sum_{m=1}^N\operatorname{Cov}(x_n,x_m)
+= \frac{\sigma^2}{N^2}\sum_{n=1}^N\sum_{m=1}^N\rho_{|n-m|}$$
+
+Count the pairs by lag $k := |n-m|$: there are $N$ pairs with $k = 0$ and
+$2(N-k)$ pairs with lag $k \ge 1$ (each unordered pair twice). Hence
+
+$$\operatorname{Var}(\bar x) = \frac{\sigma^2}{N^2}\Big[N + 2\sum_{k=1}^{N-1}(N-k)\rho_k\Big]
+= \frac{\sigma^2}{N}\Big[1 + 2\sum_{k=1}^{N-1}\Big(1-\frac kN\Big)\rho_k\Big]$$
+
+::: claim
+With all $\rho_k = 0$ the bracket is $1$ and $\operatorname{Var}(\bar x) = \sigma^2/N$,
+the independent case. When $\sum_k|\rho_k|$ converges, each $1 - k/N \to 1$ and
+$N\operatorname{Var}(\bar x) \to \sigma^2\big[1 + 2\sum_{k\ge1}\rho_k\big]$, the long-run variance of
+*The noise a slow loop averages*. With $\rho_k = \alpha^k$ it is the bracket in A.5.
+:::
+
+## A.8: The size of $\hat g_r$ {.smaller}
+
+From *Link A, executed, concluded*, the second-order part of $y - \mathbb{E}[y]$ at
+the optimum is $-\tfrac32\varepsilon^2 + \tfrac{C_P''(\lambda^\star)}{2C_P}\delta\lambda^2$
+about its mean (the $O(\sigma_\varepsilon^2\varepsilon)$ piece is linear in
+$\varepsilon$ and is the slope excess, counted separately). With $\delta\lambda =
+-\bar\lambda\varepsilon$ (frozen rotor) or $0$ (tracking), and $\kappa_2 =
+-\lambda^{\star2}C_P''/C_P$,
+
+$$r_2 = -q\,(\varepsilon^2 - \sigma_\varepsilon^2),
+\qquad q \in \Big[\tfrac32,\ \tfrac{3+\kappa_2}{2}\Big] = [1.5,\ 4.7],
+\qquad
+\hat g_r = -\frac{2q}{aT}\,Z_2,\quad Z_2 := \int_0^T(\varepsilon^2 - \sigma_\varepsilon^2)\sin\omega t\,dt$$
+
+- **Variance of $Z_2$.** For zero-mean jointly Gaussian $X, Y$,
+  $\mathbb{E}[X^2Y^2] = \mathbb{E}[X^2]\mathbb{E}[Y^2] + 2(\mathbb{E}[XY])^2$, so
+  $\operatorname{Cov}(\varepsilon(t)^2,\varepsilon(s)^2) = 2\Gamma(t-s)^2$ and, by
+  Link B's step, $\operatorname{Var}(Z_2) = 2\iint\sin\omega t\,\sin\omega s\,\Gamma(t-s)^2\,dt\,ds$.
+- **Its spectrum.** The transform of a product is the convolution of the
+  transforms, so $\Gamma^2$ has density $S^{2s}\!\ast S^{2s}$, and by Link C's step
+  $$\operatorname{Var}(Z_2) = 2\int_{\mathbb{R}}\big(S^{2s}\!\ast S^{2s}\big)(f)\,|\hat w(f)|^2\,df$$

@@ -1,0 +1,85 @@
+# The closed loop {.divider}
+
+**Goal.** The loop steps on hundreds of estimates before it settles. Find the
+noise it actually averages, and the scatter it leaves in the gain: that scatter
+is what costs power.
+
+## The bias grows as $a^2$ {.smaller}
+
+Link B wrote $\hat g = \hat g_{\text{det}} + \hat g_{\text{noise}} + \hat g_r$. Both
+wind-driven parts have mean zero, $\mathbb{E}[Z] = 0$ and
+$\mathbb{E}[\hat g_r] = \tfrac{2}{aT}\mathbb{E}[r]\int_0^T\sin\omega t\,dt = 0$, so
+$\mathbb{E}[\hat g] = \hat g_{\text{det}}$ and the **bias** is
+$\operatorname{Bias} := \hat g_{\text{det}} - J'(u)$. By A.1,
+$\hat g_{\text{det}} = \tfrac{2}{aT}\int_0^T J(u + a\sin\omega t)\sin\omega t\,dt$.
+
+With $s := \sin\omega t$, $\langle\cdot\rangle := \tfrac1T\int_0^T(\cdot)\,dt$, and the moments
+of a sine over a whole period (A.2),
+
+$$\langle s\rangle = 0,\qquad \langle s^2\rangle = \tfrac12,\qquad
+\langle s^3\rangle = 0,\qquad \langle s^4\rangle = \tfrac38$$
+
+expand $J(u + as) = J + J'as + \tfrac{J''}{2}a^2s^2 + \tfrac{J'''}{6}a^3s^3 +
+O(a^4)$, multiply by $\tfrac{2}{a}s$ and average:
+
+$$\hat g_{\text{det}} = \frac2a\Big[J\langle s\rangle + J'a\langle s^2\rangle
++ \tfrac{J''}{2}a^2\langle s^3\rangle + \tfrac{J'''}{6}a^3\langle s^4\rangle\Big] + O(a^4)
+= J' + \frac{a^2}{8}J''' + O(a^4)$$
+
+::: claim
+$$\operatorname{Bias}(\hat g) = \frac{a^2}{8}\,J'''(u) + O(a^4),
+\qquad
+\sigma(\hat g_{\text{noise}}) = \frac{6}{aT}\,\sigma(Z) \propto \frac1a$$
+The bias grows with the probe; the scatter falls with it, because $Z$ does not
+involve $a$. Checked numerically on a cubic $J$, where $J'''$ is exact: agreement
+to six digits at $a = 0.02$, $0.05$, $0.10$.
+:::
+
+## The closed loop {.smaller}
+
+1. **The update.** $u_{n+1} = u_n + \kappa\,\hat g_n$, with a constant step $\kappa > 0$
+   and $\tilde u_n := u_n - u^\star$.
+2. **The mean of $\hat g_n$ near $u^\star$.** $J'(u_n) = J''\tilde u_n + O(\tilde u_n^2)$ with
+   $J'' < 0$. The rotor follows the dither with a lag, which scales the part of the
+   power in phase with the dither by (A.0c, continued)
+   $$G_1 := \frac{1}{1 + (2\pi\tau_{\text{rotor}}/T)^2}:\qquad
+   \mathbb{E}[\hat g_n] = G_1\big(J''\tilde u_n + \operatorname{Bias}\big)$$
+   $G_1 = 0.93$ at $T = 150$ s and $0.69$ at $60$ s. The bias shifts the fixed point to
+   $\tilde u = -a^2J'''/(8J'')$ and is set aside here.
+3. **The recursion.** With $K := \kappa\,G_1|J''|$, the fraction of the error removed per period,
+   $$\tilde u_{n+1} = (1-K)\,\tilde u_n + \kappa\,e_n,
+   \qquad e_n := \hat g_{\text{noise},n} + \hat g_{r,n}$$
+4. **Its stationary variance** (A.4), with $\rho_k$ the correlation between
+   estimates $k$ periods apart (A.6):
+   $$\operatorname{Var}(\tilde u) = \frac{\kappa^2\sigma^2(\hat g)}{K(2-K)}\Big[1 + 2\sum_{k\ge1}(1-K)^k\rho_k\Big]$$
+
+::: claim
+**Two regimes.** A **fast loop**, $K$ near $1$, weights only $k = 0$: one period's
+$\sigma(\hat g)$ sets the scatter. A **slow loop**, $K \ll 1$, has $(1-K)^k \approx 1$
+wherever $\rho_k$ is nonzero, and the bracket tends to $1 + 2\sum_{k\ge1}\rho_k$: the
+scatter is set by the **long-run variance**
+$\sigma_\infty^2(\hat g) := \sigma^2(\hat g)\big[1 + 2\sum_{k\ge1}\rho_k\big]$, and
+$\operatorname{Var}(\tilde u) \approx \tfrac{K}{2}\,\sigma_\infty^2(\hat g)/(G_1J'')^2$.
+:::
+
+## The noise a slow loop averages {.smaller}
+
+**Goal:** $\sigma_\infty^2$ in closed form. **Route:** the mean of $N$ consecutive
+estimates is a single estimate over a window $N$ periods long, and Link C gives
+its variance.
+
+1. **The mean of $N$ estimates is one window.** The dither $\sin\omega t$ runs on
+   across period boundaries, so
+   $$\bar{\hat g}_N := \frac1N\sum_{n=0}^{N-1}\hat g_n = \frac{2}{aNT}\int_0^{NT}y(t)\sin\omega t\,dt,
+   \qquad \text{noise part } \frac{6}{aNT}\int_0^{NT}\varepsilon(t)\sin\omega t\,dt$$
+2. **Its variance,** by Link C with the window $w_N := \sin\omega t$ on $[0, NT]$ (A.3):
+   $$\operatorname{Var}(\bar{\hat g}_N) = \Big(\frac{6}{aNT}\Big)^2\int_{\mathbb{R}} S^{2s}(f)\,|\hat w_N(f)|^2\,df,
+   \qquad |\hat w_N(f)|^2 = \frac{4\omega^2\sin^2(\pi fNT)}{(\omega^2 - 4\pi^2f^2)^2}$$
+3. **The window narrows onto $\pm f_1$.** Its total area is $NT/2$ (Parseval, A.3).
+   Away from $\pm f_1$ it stays below $4\omega^2/(\omega^2 - 4\pi^2f^2)^2$, a bound free of
+   $N$, so as $N$ grows its area gathers at $\pm f_1$, $NT/4$ at each:
+   $\int S^{2s}|\hat w_N|^2df = S^{2s}(f_1)\,NT/2 + o(N)$.
+4. **Multiply by $N$ and let $N \to \infty$.** By A.7, $N\operatorname{Var}(\bar{\hat g}_N) \to \sigma_\infty^2(\hat g)$. Hence
+   $$\boxed{\;\sigma_\infty^2(\hat g) = \lim_{N\to\infty}N\Big(\frac{6}{aNT}\Big)^2S^{2s}(f_1)\,\frac{NT}{2} = \frac{2R}{a^2T},
+   \qquad R := 9\,S^{2s}(f_1)\;}$$
+   $R$ is the two-sided density, at the dither frequency, of the wind's term $3\varepsilon$ in log-power.

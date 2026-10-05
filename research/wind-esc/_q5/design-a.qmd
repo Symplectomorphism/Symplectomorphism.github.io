@@ -1,0 +1,43 @@
+# Design {.divider}
+
+**Goal.** Choose the period, the amplitude and the step so that the loop loses
+the least power while still tracking the optimum in a required time.
+
+## Design, the objective: Power lost, in two parts {.smaller}
+
+1. **Loss in terms of $J$.** $J = \ln C_P$, so $J(u^\star) - J$ is the relative power
+   loss at the operating point (for a small loss, $-\ln(1-x) \approx x$).
+2. **What the rotor sees.** The gain is $u^\star + \tilde u + a\sin\omega t$. The rotor
+   follows the slow $\tilde u$ fully and the dither through its lag, which scales the
+   dither's effect on $\lambda$ by $|G| = \sqrt{G_1}$ and delays it by $\varphi$ (A.0c,
+   continued). So $\lambda$ sits at $\lambda_{\text{eq}}\big(u^\star + \tilde u + a\sqrt{G_1}\sin(\omega t - \varphi)\big)$.
+3. **Expand about $u^\star$**, where $J' = 0$:
+   $$J(u^\star) - J = \tfrac12|J''|\big(\tilde u + a\sqrt{G_1}\sin(\omega t-\varphi)\big)^2 + O\big((\tilde u + a)^3\big)$$
+4. **Average** over the wind ($\mathbb{E}[\tilde u] = 0$ at the fixed point, up to the bias
+   shift) and over one period ($\langle\sin^2\rangle = \tfrac12$, $\langle\sin\rangle = 0$):
+   $$\boxed{\;\text{loss} = \tfrac12|J''|\operatorname{Var}(\tilde u) + \tfrac14|J''|\,G_1a^2\;}$$
+   the first term from the gain wandering about $u^\star$, the second from the dither itself.
+5. **Scale.** $|J''|u^{\star2} = 0.70$ (NREL 5 MW), so $\sigma(\tilde u) = 0.10\,u^\star$ costs
+   $0.35\%$, and $a = 0.136\,u^\star$ at $T = 150$ s costs $0.30\%$.
+
+## Design, the requirement: How fast must the loop track? {.smaller}
+
+1. **What moves $u^\star$.** $\lambda_{\text{eq}}(u)$ involves $u$ and the blades only (A.0),
+   so $u^\star$ is the same at every mean wind speed. It moves only when the blades
+   change, by erosion, icing or fouling, over weeks [\[KR24\]](#references).
+2. **When the loop must re-converge:** after start-up, and after a spell above
+   rated wind speed with the loop paused. Both are events of order a day.
+3. **Tracking time.** The error forgets its initial value as $(1-K)^n \approx e^{-nK}$,
+   that is, in $\tau_c := T/K$ seconds. Adopted here: $\tau_c = 1$ day $= 86\,400$ s, so
+   $K = T/\tau_c = 0.0007$ at $T = 60$ s and $0.0017$ at $150$ s: a slow loop.
+4. **The scatter at that tracking time.** From *The closed loop* with
+   $\kappa = K/(G_1|J''|)$ and $\sigma_\infty^2 = 2R/(a^2T)$:
+   $$\operatorname{Var}(\tilde u) = \frac K2\,\frac{\sigma_\infty^2(\hat g)}{G_1^2J''^2}
+   = \frac{T}{2\tau_c}\cdot\frac{2R}{a^2T}\cdot\frac{1}{G_1^2J''^2}
+   \;\Longrightarrow\;
+   \boxed{\;\operatorname{Var}(\tilde u) = \frac{R}{a^2\,G_1^2\,\tau_c\,J''^2}\;}$$
+
+::: claim
+At a fixed tracking time the period enters only through $R(T) = 9\,S^{2s}(1/T)$,
+the wind's density at the dither frequency, and through the rotor's $G_1(T)$.
+:::

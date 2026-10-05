@@ -10,28 +10,43 @@ from windkit import (
     style,
 )
 
-TI, L, U = 0.10, 340.0, 8.0
+TI, U = 0.10, 8.0
+#: IEC 61400-1 lengths at the NREL 5 MW hub: 8.1 and 3.5 times Lambda_1 = 42 m.
+LENGTH = {"kaimal": 340.0, "vonkarman": 147.0}
+L = LENGTH["kaimal"]
 
 
-def S_eps(f):
-    """One-sided PSD of the relative wind fluctuation, IEC 61400-1 Kaimal."""
-    return TI**2 * (4 * L / U) / (1 + 6 * np.abs(f) * L / U) ** (5 / 3)
+def S_eps(f, model="kaimal"):
+    """One-sided PSD of the relative wind fluctuation, IEC 61400-1 Kaimal or von Karman."""
+    L = LENGTH[model]
+    if model == "kaimal":
+        return TI**2 * (4 * L / U) / (1 + 6 * np.abs(f) * L / U) ** (5 / 3)
+    return TI**2 * (4 * L / U) / (1 + 70.8 * (np.abs(f) * L / U) ** 2) ** (5 / 6)
 
 
-def kaimal(path):
-    """The Kaimal density, with the dither frequencies compared in the Design section."""
+def corner(model):
+    L = LENGTH[model]
+    return U / (6 * L) if model == "kaimal" else U / (np.sqrt(70.8) * L)
+
+
+def kaimal(path, model="kaimal"):
+    """The density, with the dither frequencies compared in the Design section."""
+    S = lambda f: S_eps(f, model)
     f = np.logspace(-4.2, -0.9, 800)
     fig, ax = figure(11.6, 3.9)
-    ax.loglog(f, S_eps(f), color=PRIMARY, linewidth=2.8)
-    ax.axvline(U / (6 * L), color=FAINT, linewidth=1.4, linestyle=(0, (4, 3)))
-    ax.text(U / (6 * L) * 1.12, 2.4e-2, "corner\n$f = \\bar V/6L$", fontsize=10.5,
+    ax.loglog(f, S(f), color=PRIMARY, linewidth=2.8)
+    fc = corner(model)
+    ax.axvline(fc, color=FAINT, linewidth=1.4, linestyle=(0, (4, 3)))
+    lab = "$f = \\bar V/6L$" if model == "kaimal" else "$f = \\bar V/8.41L$"
+    ax.text(fc * 1.12, 2.4e-2, "corner\n" + lab, fontsize=10.5,
             color=MUTED, linespacing=1.3)
-    ax.text(1.2e-4, 0.42, "flat:  $S_\\varepsilon \\to \\mathrm{TI}^2\\,4L/\\bar V$", fontsize=11,
+    ax.text(1.2e-4, 0.42 if model == "kaimal" else 0.2,
+            "flat:  $S_\\varepsilon \\to \\mathrm{TI}^2\\,4L/\\bar V$", fontsize=11,
             color=PRIMARY)
     ax.text(6e-2, 5e-2, "$\\propto f^{-5/3}$", fontsize=12, color=PRIMARY, ha="right")
     for T, dy in ((600.0, 6), (150.0, 6), (60.0, 6)):
-        ax.plot([1 / T], [S_eps(1 / T)], "o", color=GOLD, markersize=10, zorder=6)
-        ax.annotate(f"$T={T:.0f}$ s", xy=(1 / T, S_eps(1 / T)), xytext=(1 / T * 1.6, S_eps(1 / T) * dy),
+        ax.plot([1 / T], [S(1 / T)], "o", color=GOLD, markersize=10, zorder=6)
+        ax.annotate(f"$T={T:.0f}$ s", xy=(1 / T, S(1 / T)), xytext=(1 / T * 1.6, S(1 / T) * dy),
                     fontsize=10.5, color=GOLD, ha="left",
                     arrowprops=dict(arrowstyle="->", color=GOLD, linewidth=1.1))
     ax.set_ylim(4e-3, 12)
@@ -47,12 +62,13 @@ def _w2(f, T, N=1):
     return np.where(near, (N * T / 2) ** 2, z)
 
 
-def window(path):
+def window(path, model="kaimal"):
     """One period's window spans the whole lobe; N periods' window narrows onto f_1."""
+    S = lambda f: S_eps(f, model)
     T = 150.0
     f = np.linspace(1e-6, 3.2 / T, 6000)
     fig, ax = figure(11.6, 3.9)
-    ax.plot(f * T, S_eps(f) / S_eps(1 / T), color=PRIMARY, linewidth=2.6,
+    ax.plot(f * T, S(f) / S(1 / T), color=PRIMARY, linewidth=2.6,
             label=r"wind density $S_\varepsilon(f)/S_\varepsilon(f_1)$")
     for N, col, lw in ((1, VIOLET, 2.8), (4, HOT, 2.2)):
         w = _w2(f, T, N) / (N * T / 4) / T      # unit area over f/f_1 > 0
@@ -93,11 +109,12 @@ def roadmap(path):
     save(fig, path, pad=0.05)
 
 
-def design(path):
+def design(path, model="kaimal"):
     """Least power lost at a one-day tracking time, against the dither period."""
+    S = lambda f: S_eps(f, model)
     TAU, TAUC = 6.36, 86400.0
     T = np.geomspace(15, 900, 400)
-    R = 9 * 0.5 * S_eps(1 / T)
+    R = 9 * 0.5 * S(1 / T)
     G1 = 1 / (1 + (2 * np.pi * TAU / T) ** 2)
     fig, ax = figure(11.6, 3.9)
     ax.axvspan(15, 45, color=SOFT, zorder=0)
@@ -107,7 +124,7 @@ def design(path):
                 label=r"in-phase demodulation: $\sqrt{R/(2\tau_c G_1)}$")
     ax.semilogx(T, 100 * np.sqrt(R / (2 * TAUC)), color=BLUE, linewidth=2.0,
                 linestyle=(0, (6, 3)), label=r"phase-compensated: $\sqrt{R/(2\tau_c)}$")
-    Rp = 9 * 0.5 * S_eps(1 / 150.0); Gp = 1 / (1 + (2 * np.pi * TAU / 150.0) ** 2)
+    Rp = 9 * 0.5 * S(1 / 150.0); Gp = 1 / (1 + (2 * np.pi * TAU / 150.0) ** 2)
     a = 0.136 * 1.0; J2 = 0.7022
     su2 = Rp / (a**2 * Gp**2 * TAUC * J2**2)
     pub = 100 * (0.5 * J2 * su2 + 0.25 * J2 * Gp * a**2)
@@ -116,7 +133,7 @@ def design(path):
                 fontsize=10.5, color=HOT, linespacing=1.3,
                 arrowprops=dict(arrowstyle="->", color=HOT, linewidth=1.1))
     for Tm in (60.0, 150.0):
-        Rm = 9 * 0.5 * S_eps(1 / Tm); Gm = 1 / (1 + (2 * np.pi * TAU / Tm) ** 2)
+        Rm = 9 * 0.5 * S(1 / Tm); Gm = 1 / (1 + (2 * np.pi * TAU / Tm) ** 2)
         v = 100 * np.sqrt(Rm / (2 * TAUC * Gm))
         ax.plot([Tm], [v], "o", color=PRIMARY, markersize=9, zorder=6)
         ax.annotate(f"{v:.2f}%", xy=(Tm, v), xytext=(Tm * 1.06, v - 0.045), fontsize=10.5,
@@ -132,12 +149,12 @@ def design(path):
     save(fig, path)
 
 
-def validate(path):
+def validate(path, model="kaimal"):
     """Each link of the chain, checked against the full nonlinear simulation."""
     import matplotlib.pyplot as plt
     import os
-    d = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             "sim", "exp5_chain.npz"))
+    name = "exp5_chain.npz" if model == "kaimal" else f"exp5_chain_{model}.npz"
+    d = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "sim", name))
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(11.6, 4.0),
                                  gridspec_kw={"width_ratios": [1.15, 1.0]})
 
@@ -173,4 +190,32 @@ def validate(path):
     a2.set_ylim(0.80, 1.14)
     style(a2, None, "measured / predicted", "every link, independently")
     fig.tight_layout()
+    save(fig, path)
+
+
+def spectra(path):
+    """Kaimal and von Karman at the IEC lengths, with the shaping filter of Lao et al."""
+    from scipy.special import beta
+    f = np.logspace(-4.2, -0.3, 900)
+    fig, ax = figure(11.6, 3.9)
+    Sk, Sv = S_eps(f, "kaimal"), S_eps(f, "vonkarman")
+    # Lao et al. (ACC 2022), eqs. (19)-(21), for the same L and mean wind: one-sided
+    # density 2|H|^2 of unit white noise, scaled by TI^2.
+    TF = LENGTH["vonkarman"] / U
+    w = 2 * np.pi * f * TF
+    H2 = 2 * np.pi * TF / beta(0.5, 1 / 3) * (1 + (0.4 * w) ** 2) / ((1 + w**2) * (1 + (0.25 * w) ** 2))
+    ax.loglog(f, Sk, color=PRIMARY, linewidth=2.8, label="Kaimal, $L = 340$ m")
+    ax.loglog(f, Sv, color=VIOLET, linewidth=2.8, label="von Karman, $L = 147$ m")
+    ax.loglog(f, 2 * TI**2 * H2, color=MUTED, linewidth=1.8, linestyle=(0, (5, 3)),
+              label="shaping filter of Lao et al., same $L$")
+    for T in (600.0, 150.0, 60.0):
+        for model, col in (("kaimal", PRIMARY), ("vonkarman", VIOLET)):
+            ax.plot([1 / T], [S_eps(1 / T, model)], "o", color=col, markersize=8, zorder=6)
+        ax.axvline(1 / T, color=GOLD, linewidth=1.2, linestyle=(0, (2, 3)), zorder=0)
+        ax.text(1 / T * 1.07, 6.0, f"$T={T:.0f}$ s", fontsize=10.5, color=GOLD)
+    ax.set_ylim(1e-4, 12)
+    style(ax, "frequency $f$  [Hz]", "$S_\\varepsilon(f)$   [1/Hz]")
+    leg = ax.legend(loc="lower left", frameon=False, fontsize=10.5)
+    for t in leg.get_texts():
+        t.set_color(INK)
     save(fig, path)
