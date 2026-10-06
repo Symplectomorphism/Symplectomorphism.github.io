@@ -189,7 +189,7 @@ def sim_averaging(path):
 def sim_period(path):
     """Both the gradient noise and the curvature bias want a longer dither."""
     import matplotlib.pyplot as plt
-    TI, L, U, tau = 0.10, 340.0, 8.0, 6.36
+    TI, L, U, tau = 0.10, 340.0, 8.0, 6.8776      # tau_rotor at 8 m/s, rotea windesc.turbine
     S = lambda f: TI**2 * (4 * L / U) / (1 + 6 * f * L / U) ** (5 / 3)
     T = np.logspace(np.log10(70), np.log10(2000), 300)
 

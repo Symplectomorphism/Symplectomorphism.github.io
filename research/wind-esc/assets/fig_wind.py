@@ -112,13 +112,13 @@ def roadmap(path):
 def design(path, model="kaimal"):
     """Least power lost at a one-day tracking time, against the dither period."""
     S = lambda f: S_eps(f, model)
-    TAU, TAUC = 6.36, 86400.0
+    TAU, TAUC = 6.8776, 86400.0      # tau_rotor at 8 m/s (rotea windesc.turbine)
     T = np.geomspace(15, 900, 400)
     R = 9 * 0.5 * S(1 / T)
     G1 = 1 / (1 + (2 * np.pi * TAU / T) ** 2)
     fig, ax = figure(11.6, 3.9)
     ax.axvspan(15, 45, color=SOFT, zorder=0)
-    ax.text(16.5, 0.505, "period nearing the rotor's\n6.4 s time constant", fontsize=10,
+    ax.text(16.5, 0.505, "period nearing the rotor's\n6.9 s time constant", fontsize=10,
             color=MUTED, linespacing=1.3, va="top")
     ax.semilogx(T, 100 * np.sqrt(R / (2 * TAUC * G1)), color=PRIMARY, linewidth=2.8,
                 label=r"in-phase demodulation: $\sqrt{R/(2\tau_c G_1)}$")
