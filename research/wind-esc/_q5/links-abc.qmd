@@ -1,0 +1,385 @@
+# Link A: reduce the randomness {.divider}
+
+**Goal.** Show that at the optimum the wind enters log-power through a single
+term, three times the relative wind fluctuation. **Why.** The noise in $\hat g$
+then depends on the wind through one random process, whose spectrum is measured.
+
+## What we need from the turbine {.smaller}
+
+A wind turbine below rated wind speed. Write $\bar V$ for the mean wind speed,
+$R$ for the rotor radius, $\Omega$ for the rotor angular speed, $\rho$ for air
+density and $A = \pi R^2$ for the swept area. Define the **tip-speed ratio** and
+the **power coefficient**:
+
+$$\lambda := \frac{R\Omega}{V},
+\qquad
+P = \tfrac12\rho A V^3\,C_P(\lambda)$$
+
+$C_P$ is a property of the blades. For the rotor studied here it has a single
+maximum $C_P^{\max}$ at $\lambda = \lambda^\star$ (the curve's origin: A.0b). The controller's only actuator is the **torque gain**
+$u$ in the generator-torque law $\tau_g = u\Omega^2$; setting $\dot\Omega = 0$
+makes the rotor rest where $C_P(\lambda)/\lambda^3 = c\,u$ for a rotor constant
+$c$ (derived in Appendix A.0), so $u$ selects an equilibrium
+$\lambda_{\text{eq}}(u)$.
+
+::: claim
+Define the **objective** $J(u) := \ln C_P\big(\lambda_{\text{eq}}(u)\big)$, and
+write $J'$, $J''$ for its first two derivatives in $u$. The optimum $u^\star$
+is where $J'(u^\star) = 0$, equivalently $\lambda_{\text{eq}}(u^\star) =
+\lambda^\star$. Numerically, for the NREL 5 MW rotor at $\bar V = 8$ m/s,
+$J'' = -1.41\times10^{-13}$ in SI units.
+:::
+
+## The decomposition {.smaller}
+
+Split the wind into a mean and a fluctuation about it:
+
+$$V(t) = \bar V\big(1 + \varepsilon(t)\big),
+\qquad
+\varepsilon(t) := \frac{\tilde v(t)}{\bar V},
+\qquad
+\mathrm{TI} := \frac{\sigma_{\tilde v}}{\bar V} = \sigma_\varepsilon$$
+
+$\tilde v$ is the fluctuating part in m/s, $\varepsilon$ its dimensionless
+counterpart, and $\mathrm{TI}$ the **turbulence intensity**, $0.10$ in the case
+studied here. For a random variable $x$, $\sigma_x :=
+\sqrt{\mathbb{E}[x^2] - (\mathbb{E}[x])^2}$ is its **standard deviation**, written $\sigma(x)$ when $x$ is a compound
+expression. For
+a process $x(t)$ it is evaluated at a fixed $t$; the assumption that makes it
+independent of $t$ is stated on *Link A, standing assumptions*. Since $\bar V :=
+\mathbb{E}[V]$, both $\tilde v$ and $\varepsilon$ have mean zero, so
+$\sigma_{\tilde v}^2 = \mathbb{E}[\tilde v^2]$ and $\sigma_\varepsilon^2 =
+\mathbb{E}[\varepsilon^2]$.
+
+::: {.remark}
+The standard form is additive, $V = \bar V + \tilde v$, with the
+statistics written for $\tilde v$ [\[IEC\]](#references). Dividing by the constant
+$\bar V$ gives the form above: $\varepsilon = \tilde v/\bar V$ and
+$\sigma_\varepsilon = \sigma_{\tilde v}/\bar V = \mathrm{TI}$.
+:::
+
+$\sigma_\varepsilon = 0.10$, so terms of second order in $\varepsilon$ have typical size
+$\sigma_\varepsilon^2 = 0.01$ against $\sigma_\varepsilon = 0.10$ at first order. From
+here on the wind enters only through $\varepsilon$.
+
+## Link A, executed {.smaller}
+
+From the definitions, $y = \ln P = \ln(\tfrac12\rho A) + 3\ln V + \ln C_P(\lambda)$.
+Substituting $V = \bar V(1+\varepsilon)$ into the middle term, the logarithm of
+the product splits, and $\ln(1+\varepsilon) = \varepsilon - \tfrac12\varepsilon^2 +
+O(\varepsilon^3)$ for $|\varepsilon| < 1$:
+
+$$3\ln V = 3\ln\bar V + 3\ln(1+\varepsilon)
+= \underbrace{3\ln\bar V}_{\text{constant}} + 3\varepsilon
+\;\underbrace{-\;\tfrac32\varepsilon^2 + O(\varepsilon^3)}_{\text{second order}}$$
+
+The second-order part has typical size $\tfrac32\sigma_\varepsilon^2 = 0.015$,
+against $3\sigma_\varepsilon = 0.30$ for the linear term $3\varepsilon$.
+
+The third term, $\ln C_P(\lambda)$, also depends on the wind, through
+$\lambda = R\Omega/V$. Both wind-dependent terms are expanded under four
+standing assumptions, stated on the next slide; the third term is then handled
+on the slide after.
+
+## Link A, standing assumptions {.smaller}
+
+In force through Links A and B.
+
+1. **The gain is held fixed**: $u(t) = u$ on the whole interval considered.
+   A.10 adds the dither and bounds its effect.
+2. **$\varepsilon$ is strictly stationary**: for every $k$, every
+   $s_1,\dots,s_k$ and every shift $\tau$, the vector
+   $(\varepsilon(s_1+\tau),\dots,\varepsilon(s_k+\tau))$ has the same joint
+   distribution as $(\varepsilon(s_1),\dots,\varepsilon(s_k))$.
+3. **$\mathbb{E}[\cdot]$ is the expectation with respect to that law.** For
+   fixed $t$, $\mathbb{E}[\lambda(t)]$ averages the random variable $\lambda(t)$
+   over the distribution of the wind. It is a number.
+4. **The rotor has forgotten its initial condition.** Linearized about its
+   equilibrium (A.0c), the rotor equation reads $\dot{\delta\Omega} +
+   \delta\Omega/\tau_{\text{rotor}} = b\,\varepsilon(t)$, with $\delta\Omega :=
+   \Omega - \Omega_{\text{eq}}$, $\tau_{\text{rotor}} = 6.9$ s at $8$ m/s, and $b$ a
+   constant (both in A.0c). Its solution from $t = 0$ is
+   $$\delta\Omega(t) = e^{-t/\tau_{\text{rotor}}}\,\delta\Omega(0)
+   + b\int_0^t e^{-(t-s)/\tau_{\text{rotor}}}\,\varepsilon(s)\,ds$$
+   The first term is deterministic and falls below $1\%$ of $\delta\Omega(0)$
+   after $5\tau_{\text{rotor}} = 34$ s. Assumption 4 is that this has happened,
+   so $\Omega(t)$ is the second term alone: a causal, time-invariant functional
+   of the wind path $\{\varepsilon(s): s\le t\}$. The rotor still lags the wind;
+   the lag is the exponential weight itself.
+
+::: claim
+Under 1 to 4, $V(t) = \bar V(1+\varepsilon(t))$, $\Omega(t)$, hence
+$\lambda(t) = R\Omega(t)/V(t)$ and $y(t)$, are obtained from the wind path up to
+$t$ by rules that do not change with $t$. Assumption 2 then gives each of them
+the same law at every $t$, so $\mathbb{E}[\lambda(t)]$ and $\mathbb{E}[y(t)]$ are
+constants.
+:::
+
+## Link A, executed, continued {.smaller}
+
+With $u$ fixed, $\lambda(t)$ fluctuates only because the wind does. Write
+$\bar\lambda := \mathbb{E}[\lambda(t)]$, a constant by the previous slide, and
+$\delta\lambda := \lambda - \bar\lambda$. Two limits of the rotor's response
+bracket $\delta\lambda$:
+
+- **Frozen $\Omega$.** With $\lambda_0 := R\Omega/\bar V$ and $1/(1+\varepsilon) = 1 - \varepsilon + O(\varepsilon^2)$,
+  $$\lambda = \frac{R\Omega}{\bar V(1+\varepsilon)} = \lambda_0\big(1 - \varepsilon + O(\varepsilon^2)\big),
+  \qquad \bar\lambda = \lambda_0\big(1 + O(\sigma_\varepsilon^2)\big),
+  \qquad \delta\lambda = -\bar\lambda\,\varepsilon + O(\varepsilon^2)$$
+- **$\Omega$ tracking the equilibrium.** $\delta\lambda = 0$, since
+  $\lambda_{\text{eq}}(u)$ depends on $u$ alone (A.0).
+
+In both, and in between, $\delta\lambda = O(\varepsilon)$. Expanding about $\bar\lambda$:
+
+$$\ln C_P(\bar\lambda + \delta\lambda)
+= \ln C_P(\bar\lambda)
++ \frac{C_P'(\bar\lambda)}{C_P(\bar\lambda)}\,\delta\lambda
++ O(\delta\lambda^2)$$
+
+::: claim
+The next slide evaluates the two terms of this expansion at the optimum. Away
+from it, $C_P'(\bar\lambda)$ is a fixed nonzero number, $\delta\lambda = O(\varepsilon)$,
+and their product, the linear term, is $O(\varepsilon)$: a fluctuation of the same
+order as $3\varepsilon$, with a coefficient set by how far off the gain sits.
+:::
+
+## Link A, executed, concluded {.smaller}
+
+**At the optimum**, $u = u^\star$ (*What we need from the turbine*), so
+$\lambda_{\text{eq}}(u) = \lambda^\star$, and $d := \bar\lambda - \lambda^\star$ is a
+number with $d = O(\sigma_\varepsilon^2)$ (A.0d). Three steps.
+
+1. **The coefficient of the linear term.** Taylor-expand $C_P'$ about $\lambda^\star$,
+   where $C_P'(\lambda^\star) = 0$ and $C_P''(\lambda^\star) = -0.055$ is a fixed number
+   (A.0b, continued):
+   $$C_P'(\bar\lambda) = C_P'(\lambda^\star) + C_P''(\lambda^\star)\,d + O(d^2)
+   = C_P''(\lambda^\star)\,d + O(\sigma_\varepsilon^4) = O(\sigma_\varepsilon^2)$$
+2. **The linear term.** $\dfrac{C_P'(\bar\lambda)}{C_P(\bar\lambda)}\,\delta\lambda
+   = O(\sigma_\varepsilon^2)\cdot O(\varepsilon) = O(\sigma_\varepsilon^2\,\varepsilon)$.
+3. **The Taylor remainder.** $O(\delta\lambda^2) = O(\varepsilon^2)$, because
+   $\delta\lambda = O(\varepsilon)$ (previous slide).
+
+Collecting the three terms of $y$ from *Link A, executed*:
+
+$$y = \underbrace{\ln(\tfrac12\rho A) + 3\ln\bar V + \ln C_P(\bar\lambda)}_{\text{constant}}
+\;+\; 3\varepsilon(t) \;+\; r(t),
+\qquad
+r := -\tfrac32\varepsilon^2 + O(\varepsilon^3) + O(\sigma_\varepsilon^2\,\varepsilon) + O(\delta\lambda^2)$$
+
+::: claim
+$\mathbb{E}[3\varepsilon] = 0$, so $\mathbb{E}[y]$ is the constant plus
+$\mathbb{E}[r]$, and
+$$y(t) - \mathbb{E}[y] = 3\varepsilon(t) + \big(r(t) - \mathbb{E}[r]\big)$$
+Every piece of $r$ is a product of at least two factors of size
+$\sigma_\varepsilon$, so $\sigma(r - \mathbb{E}r) = O(\sigma_\varepsilon^2)
+\approx 0.01$ against $\sigma(3\varepsilon) = 3\sigma_\varepsilon = 0.30$.
+This is what $y - \mathbb{E}[y] = 3\varepsilon + O(\varepsilon^2)$ means
+wherever it is quoted below: **one term, one random process.**
+:::
+
+# Link B: make it a linear functional {.divider}
+
+**Goal.** Write the noise in $\hat g$ as one integral of $\varepsilon$ against the
+dither. **Why.** The variance of such an integral follows from $\varepsilon$'s
+spectrum, which is Link C.
+
+## What we need from the estimator {.smaller}
+
+Extremum seeking perturbs the gain with a sinusoid of **amplitude** $a$ and
+**period** $T$. Time is cut into dither periods $[nT,(n+1)T)$, $n = 0,1,2,\dots$;
+$u_n$ is the gain about which the $n$-th period dithers, and the measured
+log-power is correlated against the sinusoid over exactly that period (written
+below with the period's own clock, $t \in [0,T]$):
+
+$$u(t) = u_n + a\sin\omega t,
+\qquad
+\omega := \frac{2\pi}{T},
+\qquad
+f_1 := \frac{1}{T} = \frac{\omega}{2\pi}$$
+
+$\omega$ is the dither's angular frequency (rad/s) and $f_1$ the **dither
+frequency** in hertz; both are fixed numbers throughout, $f_1 = 6.7\times10^{-3}$
+Hz at $T = 150$ s.
+
+$$y(t) := \ln P(t),
+\qquad
+\hat g_n := \frac{1}{T}\int_0^T y(t)\,\frac{2}{a}\sin\omega t\;dt$$
+
+Why that integral is a gradient estimate, and why the factor is $2/a$, is
+Appendix A.1.
+
+::: claim
+$\hat g_n$ is an estimate of $J'(u_n)$. Its **mean** error is the
+finite-amplitude bias $\tfrac{a^2}{8}J'''$, derived on *The bias grows as $a^2$*; its **scatter**, which is what this
+deck computes, comes entirely from the wind. Published values for the NREL 5 MW
+case [\[CLR19\]](#references): $T = 150$ s and $a = 13.6\%$ of $u^\star$.
+:::
+
+::: {.notes}
+Two conventions fixed here and used throughout. The correlation window is
+exactly one dither period, which matters in Link C because it fixes the
+shape of the frequency window. And the demodulating signal is in phase with the
+dither, which is what makes the estimator pick out the first harmonic.
+:::
+
+## Link B, executed {.smaller}
+
+Write the log-power over one period as three parts. $y_0(t)$ is its value with
+$\varepsilon \equiv 0$, a deterministic $T$-periodic function of the dither; the
+wind adds $3\varepsilon(t)$ and the remainder $r(t)$ of *Link A, executed,
+concluded*. That decomposition holds **at the optimum**, so Link B and
+everything built on it describe the estimator's noise with the gain at
+$u^\star$: the terminal scatter. (With a rotor that tracks its equilibrium it
+holds at every $u$, since $\ln C_P(\lambda_{\text{eq}}(u))$ is then constant.)
+
+$$y(t) = y_0(t) + 3\varepsilon(t) + r(t)$$
+
+The estimator is linear in $y$, so it splits the same way:
+
+$$\hat g = \underbrace{\frac{2}{aT}\int_0^T y_0\sin\omega t\,dt}_{\hat g_{\text{det}}}
++ \underbrace{\frac{6}{aT}\int_0^T \varepsilon(t)\sin\omega t\,dt}_{\hat g_{\text{noise}}}
++ \underbrace{\frac{2}{aT}\int_0^T r\sin\omega t\,dt}_{\hat g_r}$$
+
+$\hat g_{\text{det}}$ is a number (A.1). $\hat g_r$ adds under $3\%$ to the scatter at
+$\mathrm{TI} = 0.10$ (A.8); the dither's own effect on the wind term is part of $r$
+and modulates it by at most $10\%$ (A.10). The deck computes the scatter of the middle term:
+
+$$\hat g_{\text{noise}} = \frac{6}{aT}\,Z,
+\qquad
+Z := \int_0^T \varepsilon(t)\,\sin\omega t\,dt$$
+
+## Link B, executed, continued {.smaller}
+
+$Z$ is a scalar random variable: the wind fluctuation over one period, weighted
+by the dither and integrated.
+
+- **Mean.** $\sin\omega t$ is deterministic and $\mathbb{E}[\varepsilon(t)] = 0$ at every $t$, so
+  $$\mathbb{E}[Z] = \int_0^T \mathbb{E}[\varepsilon(t)]\,\sin\omega t\,dt = 0,
+  \qquad\text{hence}\qquad \operatorname{Var}(Z) = \mathbb{E}[Z^2]$$
+- **$Z^2$ as a double integral.** $Z^2 = Z\cdot Z$; name the two dummy variables
+  $t$ and $s$. For a fixed realization each factor is a number independent of the
+  other's variable, so each moves inside the other's integral. The iterated
+  integral equals the double integral over $[0,T]^2$, the integrand being
+  bounded there.
+- **The autocovariance.** Under standing assumption 2,
+  $\mathbb{E}[\varepsilon(t)\varepsilon(s)]$ depends on $t, s$ only through $t-s$.
+  Define $\Gamma(t-s) := \mathbb{E}[\varepsilon(t)\varepsilon(s)]$; then $\Gamma(0) = \sigma_\varepsilon^2$.
+- **Expectation inside the integral** (Fubini's theorem; its condition is checked in A.11).
+  $$\operatorname{Var}(Z)
+  = \mathbb{E}\!\left[\iint_{[0,T]^2}\! \sin\omega t\,\sin\omega s\;\varepsilon(t)\varepsilon(s)\,dt\,ds\right]
+  = \iint_{[0,T]^2}\! \sin\omega t\,\sin\omega s\;\Gamma(t-s)\,dt\,ds$$
+
+# Link C: $\operatorname{Var}(Z)$ in the frequency domain {.divider}
+
+**Goal.** The variance of an integral of $\varepsilon$ against any fixed weight,
+from $\varepsilon$'s spectral density. **Why.** The estimator is such an integral
+over one period, and the loop, as shown later, is one over many periods.
+
+## The power spectral density {.smaller}
+
+Standing assumption 2 (*Link A, standing assumptions*): $\varepsilon$ is
+**strictly stationary**, meaning that for every $k$, every $s_1,\dots,s_k$ and
+every shift $\tau$, $(\varepsilon(s_1+\tau),\dots,\varepsilon(s_k+\tau))$ has the same
+joint distribution as $(\varepsilon(s_1),\dots,\varepsilon(s_k))$. Two consequences,
+together called **wide-sense stationarity**:
+
+- **One time point** ($k = 1$ in the definition): $\varepsilon(t)$ has the same law
+  at every $t$, so $\mathbb{E}[\varepsilon] = 0$ by construction of $\varepsilon$.
+- **Two time points** ($k = 2$): shifting by $\tau = -s$,
+  $\mathbb{E}[\varepsilon(t)\varepsilon(s)] = \mathbb{E}[\varepsilon(t-s)\varepsilon(0)] =: \Gamma(t-s)$,
+  the autocovariance of *Link B, executed, continued*. Shifting by $\tau$ instead,
+  $\Gamma(-\tau) = \mathbb{E}[\varepsilon(t)\varepsilon(t-\tau)] = \mathbb{E}[\varepsilon(t+\tau)\varepsilon(t)] = \Gamma(\tau)$:
+  $\Gamma$ is even.
+
+Define, as the Fourier transform of $\Gamma$, the **power spectral density**.
+The superscript $2s$ marks it as **two-sided**: a function of every $f \in
+\mathbb{R}$, negative frequencies included. Standards tabulate a one-sided
+version $S$ on $f > 0$, related on the next slide.
+
+$$\Gamma(\tau) := \mathbb{E}\big[\varepsilon(t)\,\varepsilon(t+\tau)\big],
+\qquad
+S^{2s}(f) := \int_{-\infty}^{\infty}\! \Gamma(\tau)e^{-i2\pi f\tau}d\tau,
+\qquad
+\Gamma(\tau) = \int_{-\infty}^{\infty}\! S^{2s}(f)e^{i2\pi f\tau}df$$
+
+::: claim
+The pair is the **Wiener-Khinchin theorem**: for $\Gamma \in L^1(\mathbb{R})$
+the transform $S^{2s}$ exists, is real, even and **nonnegative**, and the
+inversion formula holds. Setting $\tau = 0$ in the inversion gives
+$\Gamma(0) = \sigma_\varepsilon^2 = \int S^{2s}df$. "Density" means density of
+**variance over frequency**, in units of variance per hertz: $S^{2s}(f)\,df$ is the
+variance carried by frequencies in $[f, f+df]$, made precise in A.9 (a filter
+passing only a band leaves a process of variance $\int_{\text{band}}S^{2s}df$).
+:::
+
+::: {.notes}
+Links C and D use only wide-sense stationarity. Strict stationarity entered
+once, on Link A, to make the means of nonlinear functions of the path constant
+in time. Stationarity is defensible over the ten-minute scales the
+dither operates on and false over a day, which is a limit on the result rather
+than on the derivation.
+:::
+
+## One-sided and two-sided densities {.smaller}
+
+**Frequency in hertz.** Transforms are taken over $f$ (cycles per second), with
+$e^{\mp i2\pi f\tau}$ in the kernels: the turbulence standards tabulate spectra
+this way, and the transform pair then carries no factor $1/2\pi$.
+
+**One-sided and two-sided.** $\Gamma$ is real and even, so $S^{2s}$ is real and
+even. Tables therefore fold the negative frequencies onto the positive ones and
+quote the **one-sided** density:
+
+$$S(f) := 2\,S^{2s}(f)\quad (f>0),
+\qquad\text{so}\qquad
+\sigma_\varepsilon^2 = \int_{-\infty}^{\infty}\!S^{2s}(f)\,df = \int_0^{\infty}\! S(f)\,df$$
+
+::: {.warn}
+Everything quoted from a standard is **one-sided**; every integral over all of
+$\mathbb{R}$ below needs **two-sided**. The conversion $S^{2s} = \tfrac12 S$ is
+applied once, explicitly, at the point of use.
+:::
+
+Units: $\varepsilon$ is dimensionless, so $[\Gamma] = 1$, $[S] = \text{Hz}^{-1}$, and
+$\int S\,df$ is dimensionless.
+
+## Link C, executed {.smaller}
+
+Start from Link B, $\operatorname{Var}(Z) = \iint_{[0,T]^2}\sin\omega t\,\sin\omega s\;\Gamma(t-s)\,dt\,ds$.
+
+1. **Substitute the inversion formula** $\Gamma(t-s) = \int_{\mathbb{R}} S^{2s}(f)\,e^{i2\pi f(t-s)}df$
+   and split the exponential, $e^{i2\pi f(t-s)} = e^{i2\pi ft}\,e^{-i2\pi fs}$:
+   $$\operatorname{Var}(Z) = \iint_{[0,T]^2}\sin\omega t\,\sin\omega s\int_{\mathbb{R}} S^{2s}(f)\,e^{i2\pi ft}\,e^{-i2\pi fs}\,df\,dt\,ds$$
+2. **Move the $f$-integral outside** (Fubini; the condition is checked below). The
+   $t$ and $s$ integrals then separate:
+   $$\operatorname{Var}(Z) = \int_{\mathbb{R}} S^{2s}(f)
+   \left[\int_0^T\sin\omega t\,e^{i2\pi ft}dt\right]\left[\int_0^T\sin\omega s\,e^{-i2\pi fs}ds\right]df$$
+3. **Name the brackets.** Define the **window** $w(t) := \sin\omega t$ for $0 \le t \le T$
+   and $w(t) := 0$ otherwise, and its Fourier transform
+   $\hat w(f) := \int_{\mathbb{R}} w(t)\,e^{-i2\pi ft}dt = \int_0^T\sin\omega t\,e^{-i2\pi ft}dt$
+   (closed form in A.3). The second bracket is $\hat w(f)$; the first is its complex
+   conjugate $\overline{\hat w(f)}$, because $w$ is real. Their product is $|\hat w(f)|^2$:
+   $$\boxed{\;\operatorname{Var}(Z) = \int_{\mathbb{R}} S^{2s}(f)\,|\hat w(f)|^2\,df\;}$$
+4. **Fubini's condition.** $\iiint|S^{2s}(f)\,\sin\omega t\,\sin\omega s\,e^{i2\pi f(t-s)}|\,dt\,ds\,df
+   \le T^2\int_{\mathbb{R}}S^{2s}\,df = \sigma_\varepsilon^2T^2 < \infty$, using $S^{2s} \ge 0$
+   and $|\sin|, |e^{i\theta}| \le 1$.
+
+## Link C, bottom line {.smaller}
+
+::: claim
+**Result.** Steps 1 to 4 used only that the weight is real, bounded and zero
+outside a finite interval. So for any such weight $w$,
+$$\operatorname{Var}\Big(\int_{\mathbb{R}} w(t)\,\varepsilon(t)\,dt\Big) = \int_{\mathbb{R}} S^{2s}(f)\,|\hat w(f)|^2\,df$$
+and for one period, $w = \sin\omega t$ on $[0,T]$,
+$$\sigma(\hat g_{\text{noise}}) = \frac{6}{aT}\sqrt{\int_{\mathbb{R}} S^{2s}(f)\,|\hat w(f)|^2\,df},
+\qquad |\hat w(f)|^2 = \frac{4\omega^2\sin^2(\pi fT)}{(\omega^2 - 4\pi^2f^2)^2}\ \text{(A.3)}$$
+:::
+
+- **Reading.** The noise variance is the wind's density, weighted by how much of
+  each frequency the window lets through.
+- **The window.** An unending sine admits the frequency $f_1$ alone. One period of
+  it admits the band $[0, 2f_1]$, with total weight $T/2$ (Parseval, A.3). The loop
+  section turns on this difference.
+- **Needed next:** $S^{2s}$ of the actual wind, which is Link D.
+- **Away from $u^\star$** the wind also enters through $\lambda$; within the loop's
+  terminal scatter this changes the noise by about $1\%$ (A.14).

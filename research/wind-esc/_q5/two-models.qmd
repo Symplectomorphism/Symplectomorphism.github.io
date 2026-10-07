@@ -1,0 +1,96 @@
+# Two models of the spectrum {.divider}
+
+**Goal.** IEC 61400-1 offers two densities for the longitudinal wind, Kaimal and von Karman.
+Compare them, and carry the difference through to the noise and the design. The same
+analysis is worked out under each: [Kaimal](q5-kaimal.html) &middot; [von Karman](q5-vonkarman.html).
+
+## Two models: the formulas {.smaller}
+
+Both are one-sided densities of $\varepsilon$ with the A.13 prefactor; Lao et al.
+[\[LRKSG22\]](#references), eq. (18), use the second:
+
+$$S^{\mathrm{K}}_\varepsilon(f) = \mathrm{TI}^2\;\frac{4L/\bar V}{\big(1+6fL/\bar V\big)^{5/3}},
+\qquad
+S^{\mathrm{vK}}_\varepsilon(f) = \mathrm{TI}^2\;\frac{4L/\bar V}{\big(1+70.8\,(fL/\bar V)^2\big)^{5/6}}$$
+
+| | Kaimal [\[KWIC72\]](#references) | von Karman [\[vK48\]](#references) |
+|---|---|---|
+| value at $f = 0$ | $4L\,\mathrm{TI}^2/\bar V$ | $4L\,\mathrm{TI}^2/\bar V$ |
+| above the corner | $\propto f^{-5/3}$ | $\propto f^{-5/3}$ |
+| $\int_0^\infty S\,df$ | $\mathrm{TI}^2$ | $\mathrm{TI}^2$ ($70.8$ is $70.78$ rounded, the value that makes it exact) |
+| IEC length, hub $\ge 60$ m | $L = 8.1\Lambda_1 = 340$ m | $L = 3.5\Lambda_1 = 147$ m (Lao et al.: $150$ m) |
+| corner at $\bar V = 8$ m/s | $\bar V/6L = 0.0039$ Hz | $\bar V/(8.41L) = 0.0065$ Hz |
+
+- **One family.** Both are the A.13 prefactor times a shape that is flat below a corner
+  and falls as Kolmogorov's $f^{-5/3}$ above it. They differ in how the corner is turned.
+- **Different $L$, on purpose.** IEC picks the two lengths so that the $f^{-5/3}$ ranges
+  coincide: at $1$ Hz the densities agree to $0.2\%$. The price is the low end. The
+  models disagree on the integral length scale itself ($340$ against $147$ m), and so on
+  $S(0)$, by a factor of $2.31$.
+
+## Two models: where the dither frequencies sit {.smaller}
+
+![](assets/wind-spectra.svg){.fig-hero fig-alt="Kaimal and von Karman one-sided densities on log-log axes at 8 m/s and 10 percent turbulence intensity. Kaimal is 2.3 times higher at low frequency and turns its corner earlier; above about 0.02 Hz the two coincide along f to the minus five thirds. The dither frequencies of 600, 150 and 60 second periods are marked on both curves: at 600 s Kaimal is higher, at 150 and 60 s von Karman is. A dashed curve, the shaping filter of Lao et al., runs below von Karman at low frequency, above it near 0.08 Hz and below it again at high frequency."}
+
+::: claim
+The design reads each density at $f_1$ only. Kaimal over von Karman there: $1.35$ at
+$T = 600$ s, $1.03$ at $314$ s, $0.81$ at $150$ s, $0.79$ at $60$ s. The published $150$ s
+sits just above Kaimal's corner and on von Karman's.
+:::
+
+## Two models: what changes downstream {.smaller}
+
+Links A to C never use the form of $S$. Link D and the closed loop read it at $f_1$, through
+$S^{2s}(f_1)\,T/2$, so the choice enters as one ratio per period:
+
+| $T$ | $S^{\mathrm{K}}(f_1)/S^{\mathrm{vK}}(f_1)$ | $\sigma(\tilde u)/u^\star$, Kaimal | $\sigma(\tilde u)/u^\star$, von Karman | measured ratio | $\sqrt{S^{\mathrm{K}}/S^{\mathrm{vK}}}$ |
+|---|---|---|---|---|---|
+| $60$ s | $0.794$ | $0.0257$ | $0.0288$ | $0.891$ | $0.891$ |
+| $150$ s | $0.808$ | $0.0427$ | $0.0475$ | $0.899$ | $0.899$ |
+| $600$ s | $1.352$ | $0.0693$ | $0.0596$ | $1.163$ | $1.163$ |
+
+The loop of *Checked: the scatter of the loop*, run on both synthesized winds (same seeds, $24$
+records of $20$ days per row). At the design level ($\tau_c = 1$ day):
+
+| | Kaimal | von Karman |
+|---|---|---|
+| least loss at $T = 60$ s, $a_{\text{opt}}$ | $0.21\%$, $a = 9.4\%$ of $u^\star$ | $0.23\%$, $a = 10.0\%$ of $u^\star$ |
+| published design ($150$ s, $13.6\%$) | $0.38\%$ | $0.39\%$ |
+
+::: claim
+Changing the model changes no derivation; it rescales the scatter at each $T$ by
+$\sqrt{S(f_1)}$, exactly as *The noise a slow loop averages* says it must. Kaimal is the noisier
+model at $T = 600$ s, von Karman by $11$ to $12\%$ at the short periods. The design rule and its
+choice of $T = 60$ s survive the change of model; the loss it achieves moves from $0.21\%$ to $0.23\%$.
+:::
+
+## Two models: the shaping filter of Lao et al. {.smaller}
+
+Lao et al. do not synthesize from eq. (18). They pass unit white noise through a rational
+filter and scale its output by $\sigma = I\,V_m$ [\[LRKSG22\]](#references), eqs. (19)&ndash;(21):
+
+$$H_t(s) = \frac{K_F\,(m_1T_Fs+1)}{(T_Fs+1)(m_2T_Fs+1)},\qquad
+T_F = \frac{L}{V_m},\quad K_F = \sqrt{\frac{2\pi T_F}{B(\tfrac12,\tfrac13)}},\quad m_1 = 0.4,\ m_2 = 0.25$$
+
+- **Why a filter.** The exponents $5/6$ and $5/3$ are not integers, so no finite-order
+  linear system has exactly the von Karman density; a filter is needed to generate the
+  wind online, sample by sample. A.12 builds the whole record at once and evaluates $S$
+  exactly on its frequency grid, so it needs no filter.
+- **The variance is right.** For white noise of two-sided density $1$ the output variance
+  is $0.98\,\sigma^2$: $K_F$ is the normalization.
+- **The shape is approximate.** Their filter's density against eq. (18), at their
+  $L = 150$ m, $V_m = 12$ m/s ($T_F = 12.5$ s):
+
+| $f$ | $0$ | $1/600$ Hz | $1/150$ Hz | $1/60$ Hz | $0.08$ Hz ($fT_F = 1$) | $1$ Hz |
+|---|---|---|---|---|---|---|
+| $S_{H_t}/S^{\mathrm{vK}}$ | $0.75$ | $0.75$ | $0.84$ | $1.02$ | $1.37$ (largest) | $0.73$ |
+
+Above the corner the filter falls as $f^{-2}$, not $f^{-5/3}$, so the ratio keeps falling as
+$f^{-1/3}$.
+
+::: claim
+For ten-minute constraint tests, which is what Lao et al. need, the variance is what matters
+and the filter gets it right. For this analysis, whose noise is $S(f_1)$, the filter's
+error at the dither frequency ($0.75$ to $1.02$) is as large as the gap between Kaimal and
+von Karman themselves, which is why A.12 synthesizes from the spectrum directly.
+:::

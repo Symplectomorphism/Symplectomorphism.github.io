@@ -14,7 +14,7 @@ from windkit import BLUE, FAINT, GOLD, HOT, INK, MUTED, PRIMARY, SOFT, VIOLET, f
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SIM = os.path.join(HERE, "sim")
-WT = 0.02 * 6.357          # omega * tau_rotor at 8 m/s
+WT = 0.02 * 6.8776         # omega * tau_rotor at 8 m/s (tau_rotor = 6.8776 s, rotea windesc.turbine)
 
 
 def _load(name):

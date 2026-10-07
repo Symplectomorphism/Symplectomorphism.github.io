@@ -1,0 +1,114 @@
+# Link D: the wind's spectral density {.divider}
+
+**Goal.** Put in the measured spectrum of atmospheric turbulence, evaluate the
+variance, and check it against simulation.
+
+## The von Karman spectrum {.smaller}
+
+A one-parameter model for $S$, von K&aacute;rm&aacute;n's interpolation [\[vK48\]](#references) between
+the energy-containing eddies and Kolmogorov's inertial range, listed by IEC 61400-1
+[\[IEC\]](#references) beside Kaimal and used by Lao et al. [\[LRKSG22\]](#references). In terms of $\varepsilon$:
+
+$$\boxed{\;S_\varepsilon(f) = \mathrm{TI}^2\;\frac{4L/\bar V}{\big(1+70.8\,(fL/\bar V)^2\big)^{5/6}}\;}
+\qquad f \ge 0,\ \text{one-sided}$$
+
+$L$ is the **integral length scale**: $\bar V$ times the wind's correlation time
+$\int_0^\infty\Gamma(\tau)\,d\tau/\Gamma(0)$, the size of the eddies carried past the
+rotor. Every piece of the formula is forced or measured:
+
+::: {.cols3}
+::: {.card}
+[$4L/\bar V$]{.cardh}
+
+The value at $f = 0$ that any density with integral length scale $L$ must
+take (A.13).
+:::
+
+::: {.card}
+[exponent $5/3$]{.cardh}
+
+On $f^2$, so $S\propto (f^2)^{-5/6} = f^{-5/3}$ above the corner: Kolmogorov's
+inertial-subrange law.
+:::
+
+::: {.card}
+[the $70.8$]{.cardh}
+
+Fixed by the normalization below. It places the **corner**, the
+frequency $f = \bar V/8.41L$ at which $70.8(fL/\bar V)^2 = 1$: below it the
+density is flat, above it the density falls.
+:::
+:::
+
+::: claim
+It is normalized by its constant: with $c := 70.8$ and $x = \sqrt c\,fL/\bar V$,
+$\int_0^{\infty}\! S_\varepsilon df = \tfrac{4}{\sqrt c}\int_0^\infty (1+x^2)^{-5/6}dx\,\mathrm{TI}^2
+= \tfrac{2B(\frac12,\frac13)}{\sqrt c}\,\mathrm{TI}^2$, which is $\mathrm{TI}^2$ for $c = 4B(\tfrac12,\tfrac13)^2 = 70.78$.
+:::
+
+## Where the dither frequencies sit {.smaller}
+
+![](assets/wind-vonkarman.svg){.fig-hero fig-alt="The von Karman one-sided density on log-log axes: flat below a corner frequency near 0.0065 Hz, then falling as f to the minus five thirds. The dither frequencies of 600, 150 and 60 second periods are marked on the curve: 600 s on the flat part, 150 s at the corner, 60 s on the falling part."}
+
+[\[IEC\]](#references) fixes $L$ from the hub height $z$: $L = 3.5\Lambda_1$ with
+$\Lambda_1 = 0.7\min(z,60)$ m. For the NREL 5 MW rotor, $z = 90$ m gives $L = 147$ m.
+
+::: claim
+At $\bar V = 8$ m/s the corner sits at $\bar V/8.41L = 6.5\times10^{-3}$ Hz, a period of $155$ s,
+so the published $f_1 = 1/150$ s sits on it. Above it the density falls as $f^{-5/3}$:
+at $1/150$ s it is $3.0$ times its value at $1/60$ s. The Design section exploits that fall.
+:::
+
+## The answer {.smaller}
+
+The exact integral, evaluated numerically, against a direct simulation of the
+turbine under synthesized von Karman inflow, at the published $a = 0.136\,u^\star$
+($240$ periods per row, so a simulated $\sigma$ carries a sampling uncertainty of
+about $1/\sqrt{2\cdot240} = 4.6\%$):
+
+| $T$ | $\operatorname{Var}(Z)$ | $\sigma(\hat g)$ predicted | $\sigma(\hat g)$ simulated | predicted/simulated |
+|---|---|---|---|---|
+| $150$ s | $17.04$ | $5.43{\times}10^{-7}$ | $5.52{\times}10^{-7}$ | $0.985$ |
+| $300$ s | $46.53$ | $4.49{\times}10^{-7}$ | $4.58{\times}10^{-7}$ | $0.981$ |
+| $600$ s | $104.9$ | $3.37{\times}10^{-7}$ | $3.44{\times}10^{-7}$ | $0.979$ |
+
+::: claim
+$$\boxed{\;\sigma(\hat g) = \frac{6}{aT}\sqrt{\int_{\mathbb{R}}\tfrac12 S_\varepsilon(f)\,|\hat w(f)|^2\,df}\;}$$
+Within $2.1\%$ of simulation across a fourfold range of $T$, with no fitted
+parameter: $\mathrm{TI}$, $L$ and the exponent $5/3$ come from the standard and from
+turbulence theory, $T$ and $a$ from the published design. In units of the gain,
+$\sigma(\hat g)/|J''| = 1.7\,u^\star$ at $T = 150$ s: one period's estimate is far
+too noisy to step on alone, and the loop reaches a scatter of a few percent of
+$u^\star$ only by averaging over many periods (next section).
+:::
+
+## Every link holds {.smaller}
+
+The turbine is integrated with an adaptive solver under synthesized von Karman inflow
+(A.12): $240$ periods of $T = 150$ s at $\bar V = 8$ m/s, with realized turbulence
+intensity $9.87\%$ and the gain held at $u^\star$ so that the estimator is
+tested alone. Each link is tested separately, so that a failure can be attributed.
+
+| link | claim | test | predicted | measured | ratio |
+|---|---|---|---|---|---|
+| **A** | $y-\mathbb{E}[y] = 3\varepsilon$ | regress $y$ on the recorded $\varepsilon$ | slope $3$ | slope $3.090$, $r = 0.9914$ | $1.039$ |
+| **C** | $\operatorname{Var}Z = \int S^{2s}\vert\hat w\vert^2 df$ | sample variance of $Z$ | $17.04$ | $16.61$ | $0.975$ |
+| **D** | $\sigma(\hat g) = \tfrac{6}{aT}\sqrt{\operatorname{Var}Z}$ | sample deviation of $\hat g$ | $5.43{\times}10^{-7}$ | $5.52{\times}10^{-7}$ | $1.015$ |
+
+::: claim
+All three within $5\%$. Link B is algebra given A, $\hat g_{\text{noise}} = \tfrac{6}{aT}Z$
+by linearity of the estimator, and is tested through D. The ratio on A is
+$\sigma(y)/\sigma(3\varepsilon)$.
+:::
+
+## Every link holds, continued {.smaller}
+
+![](assets/wind-validate-vonkarman.svg){.fig-hero fig-alt="Left, a scatter of the log-power fluctuation against three times the von Karman wind fluctuation, with the predicted unit-slope line and the fitted line of slope 3.090, correlation 0.9914. Right, three bars giving measured over predicted for links A, C and D: 1.039, 0.975 and 1.015."}
+
+- **The $3.9\%$ on A.** The slope exceeds $3$ by $3.0\%$: the $O(\sigma_\varepsilon^2\varepsilon)$
+  term of *Link A, executed, concluded*, $\kappa_2\sigma_\varepsilon^2\varepsilon = 0.063\,\varepsilon$ for a
+  frozen rotor and $0$ for a tracking one. The rest is the remainder uncorrelated
+  with $\varepsilon$, $\sqrt{1-r^2} = 13.1\%$ of $\sigma(y)$. The slope is $r$ times $\sigma(y)/\sigma(\varepsilon)$, so $\sigma(y)/\sigma(3\varepsilon) = (3.090/3)/0.9914 = 1.039$.
+- **Row D** compares the total scatter, remainder included, with the prediction
+  for $\hat g_{\text{noise}}$ alone: the remainder adds $2.8\%$ (A.8) and Link C's
+  sample falls $2.5\%$ short, $1.028\times\sqrt{0.975} = 1.015$.

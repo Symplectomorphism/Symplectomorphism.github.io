@@ -521,24 +521,24 @@ Pump: increments kinetic energy (**accelerating**), then trades it for pressure 
 ## Table 5.3 · Principal Internal Functions {.smaller .chapter05-detail}
 
 ::: {.function-table}
-| System form | Internal operand → process pairs |
+| System form | Internal operand — process pairs |
 |---|---|
-| Operational amplifier | Gain → Setting; Voltage → Increasing |
-| Team X | Requirements → Finalizing; Concepts → Developing; Design → Approving |
-| Circulatory system | Oxygen → Absorbing; Blood → Pumping; Oxygen → Delivering |
-| Centrifugal pump | Flow → Accelerating; Flow → Diffusing |
-| Bubblesort code | I index → Looping; J index → Looping; Array entries → Testing / Exchanging |
-| Kitchen | Dough → Mixing; Bread → Baking; Slices → Cutting |
+| Operational amplifier | Gain — Setting; Voltage — Increasing |
+| Team X | Requirements — Finalizing; Concepts — Developing; Design — Approving |
+| Circulatory system | Oxygen — Absorbing; Blood — Pumping; Oxygen — Delivering |
+| Centrifugal pump | Flow — Accelerating; Flow — Diffusing |
+| Bubblesort code | I index — Looping; J index — Looping; Array entries — Testing / Exchanging |
+| Kitchen | Dough — Mixing; Bread — Baking; Slices — Cutting |
 :::
 
 **Compare Table 5.2:** several internal functions contribute to one externally delivered function. Their interactions still need to be identified.
 
 ::: {.side-caption}
-Adapted from Table 5.3; all listed pairs retained. Each arrow pairs an operand with its process, not an OPM flow arrow.
+Adapted from Table 5.3; all listed pairs retained. The dash pairs an operand with a process; it does not specify an OPM link direction.
 :::
 
 ::: {.notes}
-Read pairs in the table as associations. Dough is produced by Mixing, while array entries are read by Testing and affected by Exchanging. Do not assume every listed operand is consumed, or that table ordering fully specifies causality.
+Read pairs in the table as associations, not directed OPM links. A process may produce an operand (process → operand), consume it (operand → process), or affect an existing operand (double-headed link). Dough is produced by Mixing, while array entries are read by Testing and affected by Exchanging. The table alone does not specify each link type or a causal sequence.
 
 **Discussion:** Does identifying Accelerating and Diffusing establish that the pump will pressurize water?
 
@@ -1003,24 +1003,30 @@ Trace one link back to Figure 5.13 and Table 5.4. The Accelerating → Diffusing
 
 ## Box 5.8 · A Symbolic Process Projection {.smaller .chapter05-detail}
 
-For **m processes** and **n operands**, assemble the blocks:
+For **m processes** and **n operands**:
 
-$$\begin{bmatrix} PP & PO \\ OP & OO \end{bmatrix}$$
+- `PO` is m × n: process rows, operand columns.
+- `OO` is n × n: the operand names on its diagonal.
+- `OP` is n × m: operand rows, process columns.
 
-- `PP` and `OO`: diagonal process and operand identifiers.
-- `PO`: m × n; `OP`: n × m, constructed on the next slide.
-- Project through the operand identifiers: **PO × OO × OP** → m × m.
-- To retain the book's causal links, discard terms containing a prime.
-- Read the resulting DSM from **column process to row process**.
+$$R=PO\,OO\,OP,\qquad R_{ij}=\sum_{k=1}^{n}PO_{ik}\,[O_k] \,OP_{kj}.$$
+
+Each term follows **source process j → operand k → receiving process i**. Here multiplication joins labels into a path; addition collects paths. It is **symbolic**, not ordinary arithmetic. Afterward, discard terms containing a prime to retain the book's causal links; read each surviving entry **column → row**. We apply this to **Table 5.4's pump** to obtain Figure 5.17.
 
 ::: {.side-caption}
-Based on Box 5.8. Its printed product begins with PP; PO is required for compatible dimensions and a projection through operands.
+Box 5.8 prints `PP × OO × OP`; the first factor must be `PO` for the dimensions and the process–operand links to match.
 :::
 
 ::: {.notes}
-The printed equation in this edition is PP × OO × OP. With m processes and n operands the first multiplication is undefined when m differs from n; even if equal, PP does not encode process–operand links. The dimensionally consistent expression is PO × OO × OP. Explain this correction explicitly rather than propagating the typo. Products are symbolic: they preserve the operand and relation labels, not numerical weights.
+The original four-block DSM is [PP PO; OP OO], with PP and OO diagonal identifier blocks. The printed equation uses PP as its first factor; with m≠n the dimensions fail, and even if m=n, PP has no process–operand links. The corrected projection is PO (m×n) times OO (n×n) times OP (n×m), giving an m×m process matrix.
+
+For each receiver row i and source column j, scan operands k. If either link is absent, that term is zero. Otherwise concatenate the PO operator, operand name, and OP operator; retain all nonzero terms as a formal sum. This is a labeled-path calculation, not multiplication of numerical strengths. The following slides show the full pump arrays, their symbolic product, and its binary producer–consumer specialization.
 
 The prime filter is the book's convention for retaining producer-to-consumer terms; it is not a full scheduling or dynamic model. Shared affect/instrument relationships need interpretation and may remain symmetric.
+
+**Discussion:** What does a surviving term in row Diffusing, column Accelerating mean?
+
+**Suggested answer:** Accelerating creates internal high-velocity flow, and Diffusing consumes it. The term gives a direct Accelerating-to-Diffusing handoff.
 
 [Sources]
 - Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, pp. 119–120, Box 5.8.
@@ -1028,58 +1034,118 @@ The prime filter is the book's convention for retaining producer-to-consumer ter
 
 ## Figure 5.18 · From PO to OP {.smaller .chapter05-detail}
 
-![](assets/chapter05/fig5_18_po_op_notation.png){width=95% fig-alt="A single process with created, affected, consumed, and instrument objects, alongside its PO row and OP column."}
+![](assets/chapter05/fig5_18_po_op_notation.png){width=75% fig-align="center" fig-alt="Figure 5.18: PO row and OP column for create, affect, consume, and instrument links."}
 
-1. Transpose PO: rows become operands, columns become processes.
-2. Change `c′` to `c`; change `d` to `d′`.
-3. Leave affect and instrument entries unchanged.
-
-**Notation:** the reproduced figure uses `e` for the effect link; the text and our tables use `a`. `I` denotes an instrument.
+- Start with `PO`: process rows and operand columns.
+- Transpose it to form `OP`; change `c′ → c` and `d → d′`. Affect and instrument entries stay the same.
+- For the pump, apply this to **all four processes** and **all three internal flows**: low-pressure ($L$), high-velocity ($V$), and high-pressure ($H$).
 
 ::: {.side-caption}
-Source: Figure 5.18 and Box 5.8. Primes distinguish the before/after roles needed for the causal projection.
+Source: Figure 5.18 and Box 5.8. Figure 5.18 uses `e` for effect; the text uses `a`.
 :::
 
 ::: {.notes}
-This is a symbolic construction, not a numerical transpose of arbitrary codes. Figure 5.18 prints the affect link as e while Box 5.8 says a; maintain a in the worked arrays for consistency. The instrument glyph resembles a lowercase l in the reproduction.
-
-**Discussion:** If Baking consumes Dough in PO, what is its entry in OP?
-
-**Suggested answer:** d′ at row Dough, column Baking. If Mixing creates Dough, the corresponding OP entry is c at row Dough, column Mixing.
+Figure 5.18 illustrates the PO-to-OP operator conversion for one process. The next slide applies that conversion to Table 5.4's pump with all four processes and all three internal flows. The instrument glyph resembles a lowercase l in the reproduction.
 
 [Sources]
 - Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 120, Fig. 5.18 and Box 5.8.
 :::
 
-## Worked Projection · Mixing to Baking {.smaller .chapter05-detail}
+## Pump Projection · PO and OP Arrays {.smaller .chapter05-detail}
 
-**Shared operand: Dough**
+$P_1$ = Inflowing, $P_2$ = Accelerating, $P_3$ = Diffusing, $P_4$ = Outflowing.
 
-- PO(Baking, Dough) = `d`; OP(Dough, Mixing) = `c`.
-- Their symbolic product contributes **d · Dough · c** at row Baking, column Mixing.
-- No prime: retain **Mixing → Baking**.
-- The reverse term is **c′ · Dough · d′**; it contains primes and is discarded.
+$L$ = internal low-pressure flow; $V$ = internal high-velocity flow; $H$ = internal high-pressure flow.
 
-::: {.po-table}
-| Receiver ↓ / Source → | Mixing | Baking | Cutting |
-|---|:---:|:---:|:---:|
-| Mixing | — | | |
-| Baking | Dough | — | |
-| Cutting | | Bread | — |
-:::
+$$PO=\begin{array}{c|ccc}&L&V&H\\\hline P_1&c'&0&0\\P_2&d&c'&0\\P_3&0&d&c'\\P_4&0&0&d\end{array},\qquad
+OP=\begin{array}{c|cccc}&P_1&P_2&P_3&P_4\\\hline L&c&d'&0&0\\V&0&c&d'&0\\H&0&0&c&d'\end{array}.$$
 
-This off-diagonal projection preserves the handoff chain; detailed operand states remain in the full model.
+$$OO=\operatorname{diag}(L,V,H).$$
+
+The external inlet and outlet flows in Table 5.4 each touch only one internal process; they create no link between two internal processes.
 
 ::: {.notes}
-Repeat the calculation for Bread: Cutting consumes Bread, Baking creates it, so the retained entry is row Cutting, column Baking. Self terms are omitted from this dependency display. Ingredients and Slices each connect to only one modeled internal process, so they create no off-diagonal internal handoff here.
+PO is 4×3, OO is 3×3, and OP is 3×4. The product is 4×4. PO includes the four process rows; OP includes the four process columns. We retain the three internal operand columns because the projection concerns links among internal processes. If the two external interface flows are retained as extra columns, they contribute no off-diagonal process-to-process term. External low-pressure flow is consumed only by Inflowing; external high-pressure flow is created only by Outflowing.
 
-**Discussion:** Why is the upper-right cell blank even though Mixing contributes to the final slices?
+**Discussion:** Which process creates the internal high-pressure flow?
 
-**Suggested answer:** The projection records direct shared-operand links. The downstream effect on Cutting is indirect through Baking; it is not a shared operand between Mixing and Cutting in this model.
+**Suggested answer:** $P_3$, Diffusing. It has $c'$ in the $H$ column; Outflowing has $d$ in the same column.
 
 [Sources]
-- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, pp. 112–113 and 119–120, Fig. 5.12 and Boxes 5.7–5.8 (worked application).
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8.
 :::
+
+## Pump Projection · Matrix Multiplication {.smaller .chapter05-detail}
+
+Multiply the arrays symbolically. Row $i$ is the **receiving process**; column $j$ is the **source process**:
+
+$$R=PO\,OO\,OP,\qquad R_{ij}=\sum_{k\in\{L,V,H\}}PO_{ik}\,[k] \,OP_{kj}.$$
+
+The three forward handoffs come from three separate operand columns:
+
+$$\begin{aligned}
+R_{21}&=d(L)c+c'(V)0+0(H)0=dLc,\\
+R_{32}&=0(L)d'+d(V)c+c'(H)0=dVc,\\
+R_{43}&=0(L)0+0(V)d'+d(H)c=dHc.
+\end{aligned}$$
+
+Each **nonzero result** has no prime, so it survives the book's causal filter. A reverse term such as $R_{23}=c'Vd'$ contains primes and is discarded.
+
+::: {.notes}
+The entries come directly from Table 5.4. For example, $R_{32}$ selects the Diffusing row of PO and the Accelerating column of OP. Only the V term is nonzero: Diffusing consumes V and Accelerating creates V. This is a symbolic path product, not multiplication of numerical strengths. The book's printed first factor PP is dimensionally inconsistent; PO is the intended first factor.
+
+**Discussion:** What is the source process for $R_{43}$?
+
+**Suggested answer:** Column 3 is Diffusing. Row 4 is Outflowing, so the high-pressure-flow term represents Diffusing → Outflowing.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8.
+:::
+
+## Pump Projection · Causal Result {.smaller .chapter05-detail}
+
+Set every term containing a prime to zero. The surviving $4\times4$ process matrix is:
+
+$$R_{\mathrm{causal}}=\begin{array}{c|cccc}&P_1&P_2&P_3&P_4\\\hline
+P_1&0&0&0&0\\
+P_2&dLc&0&0&0\\
+P_3&0&dVc&0&0\\
+P_4&0&0&dHc&0
+\end{array}.$$
+
+Read **column → row**:
+
+- $P_1\rightarrow P_2$ via internal low-pressure flow ($L$).
+- $P_2\rightarrow P_3$ via internal high-velocity flow ($V$).
+- $P_3\rightarrow P_4$ via internal high-pressure flow ($H$).
+
+These are the three labeled arrows in **Figure 5.17**.
+
+::: {.notes}
+The four processes are Inflowing, Accelerating, Diffusing, and Outflowing. Their direct process links form the chain shown in Figure 5.17. Diagonal terms and reverse-flow terms contain primes and are filtered. $R_{31}=0$ because Inflowing and Diffusing do not share a directly produced-and-consumed internal flow; the path passes through Accelerating.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8 (worked application).
+:::
+
+## Pump Projection · Numeric Check {.smaller .chapter05-detail}
+
+For the same four process rows and three internal-flow columns, let $C_{jk}=1$ when process $j$ **creates** operand $k$, and $D_{ik}=1$ when process $i$ **consumes** it:
+
+$$C=\begin{bmatrix}1&0&0\\0&1&0\\0&0&1\\0&0&0\end{bmatrix},\qquad
+D=\begin{bmatrix}0&0&0\\1&0&0\\0&1&0\\0&0&1\end{bmatrix}.$$
+
+$$A=DC^{\mathsf T}=\begin{bmatrix}0&0&0&0\\1&0&0&0\\0&1&0&0\\0&0&1&0\end{bmatrix}.$$
+
+$A_{ij}=\sum_k D_{ik}C_{jk}$ counts direct producer-to-consumer handoffs. Its three 1s occur in the same cells as $dLc$, $dVc$, and $dHc$.
+
+::: {.notes}
+This is the ordinary numeric specialization of the book's symbolic product. Setting the operand diagonal to the identity counts links; the contributing operand column supplies the label. For example, $A_{32}=0(0)+1(1)+0(0)=1$ via internal high-velocity flow. The numeric shortcut covers create-to-consume handoffs only; affect and instrument relationships need separate interpretation.
+
+[Sources]
+- Crawley, Cameron & Selva, *System Architecture* (2016), Ch. 5, p. 111, Table 5.4; pp. 119–120, Fig. 5.17 and Box 5.8 (worked application).
+:::
+
 ## Functional Architecture in Software {.smaller}
 
 - Software functions are of two types: **computational** statements (`A = B + C`) and functions that **dynamically allocate control** (`if... then...`)

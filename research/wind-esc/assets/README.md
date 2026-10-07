@@ -33,7 +33,7 @@ slides. A symmetric stand-in would quietly erase the effect.
 
 | quantity | value | source |
 |---|---|---|
-| `R`, `I`, `N` | 63 m, 35.44e6 kg·m², 97 | Jonkman et al. 2009; Kumar & Rotea 2022 Table 1 |
+| `R`, `I`, `N` | 63 m, 38.76e6 kg·m² (rotor about the shaft), 97 | Jonkman et al. 2009, Tables 1-1, 2-2, 4-1, by the parallel-axis theorem (Kumar & Rotea 2022 use 35.44e6, which omits the 1.5 m hub-radius offset) |
 | settling times under shear + 10% TI | 31.0 / 8.0 / unstable vs 8.1 / 8.1 / 8.0 min | Ciri et al. 2019, Table 4 |
 | converged `λ̄` under shear + TI | 7.85 against a design 7.5 | Ciri et al. 2019, Table 4 |
 | energy vs. an oracle baseline | LP-ESC −14.2%, LP-PIESC −0.3% | Kumar & Rotea 2022, Table 4 |

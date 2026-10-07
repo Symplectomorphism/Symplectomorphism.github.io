@@ -7,7 +7,8 @@ Turbine constants are the NREL 5-MW reference machine as used throughout the
 UTD extremum-seeking line (Jonkman et al. 2009):
 
     R = 63 m (radius; note Ciri et al. 2019 Table 1 labels 126 m as "R")
-    I = 35.44e6 kg m^2,  N = 97,  rated 5 MW,  cut-in 3, rated 11.4 m/s
+    I = 38.76e6 kg m^2 (rotor about the shaft),  N = 97,  rated 5 MW,
+    cut-in 3, rated 11.4 m/s
 
 lambda_opt and Cp_max differ slightly between papers (7.5/0.49 in the 2019
 LES, 7.55/0.48 in the 2022 Energies paper); we use the 2019 pair, which is
@@ -39,7 +40,11 @@ VIOLET = "#6b4c9a"
 # ------------------------------------------------------------------ turbine
 
 R = 63.0
-INERTIA = 35.444067e6
+# Rotor inertia about the shaft, from the blade and hub data of Jonkman et al. 2009
+# (Tables 1-1, 2-2, 4-1, 5-1) by the parallel-axis theorem:
+#   3 cos^2(2.5 deg) (11,776,047 + 2*1.5*363,231 + 17,740*1.5^2) + 115,926.
+# Kumar & Rotea's 35.44e6 omits the 1.5 m hub-radius offset of the blade roots.
+INERTIA = 38_759_226.0
 RHO = 1.225
 LAMBDA_OPT = 7.5
 CP_MAX = 0.49
