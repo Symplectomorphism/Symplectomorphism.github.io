@@ -44,100 +44,48 @@ The deck builds the problem from the beginning: why the $k\Omega^2$ torque law
 works, why its equilibrium is a ray rather than a setpoint, and what the
 logarithm of power actually fixes. It then turns to what is unresolved.
 
-## Q4: the curvature question, worked through and simulated
+## Gradient noise in extremum seeking
 
 ::: {.research-paper}
 
 **Presentation**
 
-[A Matrix Gain for Extremum Seeking →](q4-matrix-gain.html) works the fourth
-question all the way through. Meyn's Zap stochastic approximation needs the
-Jacobian of the update direction, which a demodulated gradient estimate does not
-supply in closed form. It turns out to sit at the second harmonic of the probe
-already being injected, so reading it costs one extra correlation rather than one
-extra experiment.
+[Gradient Noise in Extremum Seeking for Wind Turbines →](gradient-noise.html)
+presents the results of the technical report in about twenty-five slides, with
+backup slides for the derivations and speaker notes throughout.
 
 :::
 
-Using it takes the curvature out of the loop gain, which turns the step size
-into a settling time and removes the retuning that Rotea describes as the
-practical obstacle. **This one is simulated rather than argued**: a JAX and
-diffrax model of the NREL 5 MW rotor under Kaimal turbulence confirms the
-central claim, with a gradient loop settling over a $5\times$ range as the
-plant curvature varies and a Newton loop settling in the same 4 periods on all
-three plants. It also corrects two of the estimates made on paper: the
-second-harmonic reading is $21\%$ low at the published dither period, and the
-curvature estimate needs about 15 days of averaging rather than one. The deck also carries the version without extremum seeking at all,
-where a random perturbation supplies the gradient and either Spall's second-order
-SPSA or a Gaussian probe supplies the Jacobian, and then compares the two. That
-comparison turns out to be combinatorial rather than statistical: resolving every
-entry of the Hessian needs a frequency plan whose bandwidth grows quadratically
-in the number of parameters, from 101 seconds of averaging for one parameter to
-2915 for six.
+At the optimum the power curve is flat, so a gust changes log-power only through
+the cube of the wind speed: the wind enters as the single term $3\varepsilon$, and
+every gradient estimate is the wind seen through a known window. A loop slow enough
+to be useful sees only the wind's spectral density at the dither frequency, so the
+scatter of the gain, the power it costs and the tuning that loses least follow in
+closed form from three numbers: that density, the curvature of $C_P$ at its peak,
+and the rotor time constant. Worked out under both IEC spectra, Kaimal and
+von Kármán.
 
-## One question about one turbine
+Checked end to end on the nonlinear NREL 5 MW turbine at $8$ m/s, every controller
+in the same wind as a turbine held at the optimum, a demodulation loop designed this
+way loses $0.23\%$ of the energy: **$41\%$ less** than the best published design
+(Ciri, Leonardi and Rotea 2019, at the same tracking time), and **$14$ to $20$ times
+less** than the two 2022 tunings. The published LP-PIESC estimator turns out to read
+only the part of the response that lags the dither, $\omega\tau_r$ of the signal,
+and its loop tracks the optimum with a time constant of $5.1$ days.
 
-Worked to a test rather than surveyed. The stability question was answered by
-the existing log-of-power fix, and the probing question by a degeneracy that no
-amount of data removes; neither has a deck.
+### Earlier versions
 
-::: {.research-paper}
+These decks are superseded by the one above and kept for reference; some of their
+numbers predate the corrected rotor inertia and the energy simulations.
 
-**Presentations**
-
-[Q1: Where Does the Torque Gain Converge? →](q1-estimand.html) Extremum
-seeking adapts one quantity, the torque gain $k$, and in the published
-simulations it lands five to eight percent below the design value in every run.
-Estimator bias and a shifted turbulent optimum are both dead by an order of
-magnitude, and the scatter is bounded well below the gap. The decisive point is
-that most of the offset is already present in *uniform* inflow, where none of
-the three can act, which leaves only the reference: the design value comes from
-a blade-element curve whose peak may not be where the simulated rotor's is.
-
-:::
-
-## The wind as a stochastic process
-
-::: {.research-paper}
-
-**Presentation**
-
-[Wind as a Stochastic Process →](q5-wind-process.html) derives the
-gradient-estimate noise from the inflow spectrum instead of measuring it, in two
-decks, one for each IEC spectrum: [Kaimal](q5-kaimal.html) and
-[von Karman](q5-vonkarman.html).
-Writing $V = \bar V(1+\varepsilon)$ with $\varepsilon$ a stationary process, and
-using the fact that $C_P' = 0$ at the optimum kills the tip-speed-ratio
-channel, the whole first-order fluctuation in log-power is $3\varepsilon(t)$.
-The estimator is then a linear functional of it, and its variance is an
-ordinary spectral integral. Built from the definitions up: what a spectral
-density is, the Wiener-Khinchin pair, the one-sided convention, and the two IEC
-forms, compared side by side down to the design they lead to.
-
-:::
-
-## Least squares for the gradient
-
-::: {.research-paper}
-
-**Presentation**
-
-[Least Squares for the Gradient →](q6-least-squares.html) builds recursive
-least squares from the cost up, derives the covariance of its estimate and the
-one number, the noise density at the dither frequency, that the algorithm
-cannot compute itself. Applied to LP-PIESC with its published tuning, the
-estimator turns out to read only the quadrature part of the power's response,
-at $40$ times the variance of the in-phase part; regressing the power itself
-fixes this, and the wind model's density calibrates the error bars to $2\%$.
-
-:::
-
-It agrees with simulation to 6%, with nothing fitted, and produces a design
-rule: gradient noise has a *maximum* near $T = 6L/\bar V$, and the published
-150-second dither period sits almost exactly on it. Both longer and shorter
-periods are quieter, and longer also fixes the second-harmonic curvature bias.
-It does not close the factor of 15 against the published scatter, but it
-eliminates two explanations for it.
+- [A Matrix Gain for Extremum Seeking](q4-matrix-gain.html): the curvature question
+  (Q4), with Zap stochastic approximation and a second-harmonic Hessian estimate.
+- [Where Does the Torque Gain Converge?](q1-estimand.html): the estimand question (Q1).
+- [Wind as a Stochastic Process](q5-wind-process.html), in two decks,
+  [Kaimal](q5-kaimal.html) and [von Kármán](q5-vonkarman.html): the first derivation
+  of the gradient noise from the spectrum.
+- [Least Squares for the Gradient](q6-least-squares.html): the first analysis of the
+  LP-PIESC estimator.
 
 ## Five questions, audited
 
@@ -185,26 +133,13 @@ probing it worth asking about.
 
 ## Status
 
-This is a reading of the published record rather than a result, and the reading
-has cost two of the five questions. Q3 and Q4 have not yet had the same
-treatment.
+The technical report behind the presentation derives every result in 27 short units
+with worked solutions, and checks each one against simulation; every number it
+states is recomputed by a claim checker. Its limits are stated there: a stationary
+wind, point spectra rather than the rotor-averaged wind, a static power curve with a
+first-order rotor, and aerodynamic rather than electrical power.
 
-The immediate next step is an open-loop measurement rather than a control
-experiment: hold the torque gain at a series of fixed values, run each long
-enough to average the turbulence, and measure the simulator's own
-$C_P(\lambda)$ curve to find where its peak actually is. That settles the
-reference question directly, and the same runs give the gradient-estimate
-scatter at each gain, which is the one quantity the analysis here cannot
-predict. A prerequisite either way: the published inflow recycles a 20-minute
-precursor, so no variance estimate survives it and non-repeating seeds have to
-come first.
-
-::: {.research-next}
-
-[Robotics and control →](../robotics_and_control.qmd) ·
-[Robust machine learning →](../robust_machine_learning.qmd) ·
-[All publications →](../../publications.qmd)
-
-:::
-
-:::
+The next steps are measured turbine data, where the true spectrum and the
+rotor-averaged wind replace the models, and the transient question the analysis
+leaves open: whether a least-squares loop, retuned by these rules, recovers faster
+than demodulation after the optimum moves.
