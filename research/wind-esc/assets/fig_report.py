@@ -94,9 +94,9 @@ def energy_bars(path):
             ax.barh(yy, mean, height=0.36, color=c, alpha=1.0 if j == 0 else 0.45,
                     edgecolor=c, linewidth=1.2)
             ax.plot([lo, hi], [yy, yy], color=INK, lw=1.0, alpha=0.55)
-            if j == 0:
-                ax.text(hi * 1.08, yy, f"{mean:.2f}%" if mean < 1 else f"{mean:.1f}%",
-                        va="center", fontsize=13, color=c, fontweight="bold")
+            ax.text(hi * 1.08, yy, f"{mean:.2f}%" if mean < 1 else f"{mean:.1f}%",
+                    va="center", fontsize=12.5 if j == 0 else 11.5, color=c,
+                    alpha=1.0 if j == 0 else 0.7, fontweight="bold" if j == 0 else "normal")
     ax.set_xscale("log")
     ax.set_xlim(0.1, 12)
     ax.set_yticks(y)
@@ -106,8 +106,8 @@ def energy_bars(path):
     ax.set_xticks([0.1, 0.2, 0.5, 1, 2, 5, 10])
     ax.set_xticklabels(["0.1", "0.2", "0.5", "1", "2", "5", "10"])
     from matplotlib.patches import Patch
-    _legend(ax, handles=[Patch(color=MUTED, alpha=1.0, label="Kaimal (labelled)"),
-                         Patch(color=MUTED, alpha=0.45, label="von Kármán")],
+    _legend(ax, handles=[Patch(color=MUTED, alpha=1.0, label="Kaimal (upper bar)"),
+                         Patch(color=MUTED, alpha=0.45, label="von Kármán (lower bar)")],
             loc="upper right")
     save(fig, path)
 
