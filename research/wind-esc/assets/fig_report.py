@@ -64,12 +64,21 @@ CTRL = (("PUB_LPESC", "LP-ESC\nKumar & Rotea 2022", HOT),
         ("LIT_DEMOD", "LP-ESC\nCiri, Leonardi & Rotea 2019", BLUE),
         ("REC_PIESC", "LP-PIESC\nproposed design", VIOLET),
         ("REC_DEMOD", "LP-ESC\nproposed design", PRIMARY))
+MATCH = "#4a9c82"
+# headline bars: each published design beside the proposed design of the same route
+CTRL_PAIRS = (("PUB_LPESC", "LP-ESC, Kumar & Rotea 2022\ntracking time 740 s", HOT),
+              ("MATCH_DEMOD", "LP-ESC, proposed design\ntracking time 740 s", MATCH),
+              ("PUB_PIESC", "LP-PIESC, Kumar & Rotea 2022\ntracking time 5.1 days", GOLD),
+              ("REC_PIESC", "LP-PIESC, proposed design\ntracking time 1 day", VIOLET),
+              ("LIT_DEMOD", "LP-ESC, Ciri, Leonardi & Rotea 2019\ntracking time 1 day", BLUE),
+              ("REC_DEMOD", "LP-ESC, proposed design\ntracking time 1 day", PRIMARY))
 
 
 def _energy(model):
     suf = "" if model == "kaimal" else "_vonkarman"
     d = dict(_load(f"exp13_energy{suf}.npz"))
-    d.update({k: v for k, v in _load(f"exp13_energy{suf}_lit_demod.npz").items() if k.startswith("LIT")})
+    for kind in ("LIT_DEMOD", "MATCH_DEMOD"):
+        d.update({k: v for k, v in _load(f"exp13_energy{suf}_{kind.lower()}.npz").items() if k.startswith(kind)})
     return d
 
 
@@ -83,12 +92,12 @@ def _loss(d, kind, scen, window):
 
 
 def energy_bars(path):
-    """Headline: energy lost by the five controllers, both spectra, log scale."""
-    fig, ax = figure(11.4, 5.2)
+    """Headline: energy lost by each published design and the proposed design of the same route."""
+    fig, ax = figure(11.4, 5.6)
     E = {m: _energy(m) for m, *_ in MODELS}
-    y = np.arange(len(CTRL))
+    y = np.arange(len(CTRL_PAIRS)) + np.repeat(np.arange(len(CTRL_PAIRS) // 2) * 0.35, 2)
     for j, (m, lab, col, _) in enumerate(MODELS):
-        for i, (kind, name, c) in enumerate(CTRL):
+        for i, (kind, name, c) in enumerate(CTRL_PAIRS):
             mean, lo, hi = _loss(E[m], kind, "steady", "rest")
             yy = y[i] + (0.19 if j == 0 else -0.19)
             ax.barh(yy, mean, height=0.36, color=c, alpha=1.0 if j == 0 else 0.45,
@@ -100,7 +109,7 @@ def energy_bars(path):
     ax.set_xscale("log")
     ax.set_xlim(0.1, 12)
     ax.set_yticks(y)
-    ax.set_yticklabels([n for _, n, _ in CTRL], fontsize=12)
+    ax.set_yticklabels([n for _, n, _ in CTRL_PAIRS], fontsize=12)
     style(ax, xlabel="energy lost against a turbine held at the optimum, days 2–6 (%)")
     ax.grid(axis="y", visible=False)
     ax.set_xticks([0.1, 0.2, 0.5, 1, 2, 5, 10])
