@@ -62,8 +62,8 @@ def lmin(T, model, quadrature=False):
 CTRL = (("PUB_LPESC", "LP-ESC\nKumar & Rotea 2022", HOT),
         ("PUB_PIESC", "LP-PIESC\nKumar & Rotea 2022", GOLD),
         ("LIT_DEMOD", "LP-ESC\nCiri, Leonardi & Rotea 2019", BLUE),
-        ("REC_PIESC", "LP-PIESC\nour design", VIOLET),
-        ("REC_DEMOD", "LP-ESC\nour design", PRIMARY))
+        ("REC_PIESC", "LP-PIESC\nproposed design", VIOLET),
+        ("REC_DEMOD", "LP-ESC\nproposed design", PRIMARY))
 
 
 def _energy(model):
@@ -94,7 +94,7 @@ def energy_bars(path):
             ax.barh(yy, mean, height=0.36, color=c, alpha=1.0 if j == 0 else 0.45,
                     edgecolor=c, linewidth=1.2)
             ax.plot([lo, hi], [yy, yy], color=INK, lw=1.0, alpha=0.55)
-            ax.text(hi * 1.08, yy, f"{mean:.2f}%" if mean < 1 else f"{mean:.1f}%",
+            ax.text(hi * 1.08, yy, f"{mean:.3f}%" if mean < 1 else f"{mean:.2f}%",
                     va="center", fontsize=12.5 if j == 0 else 11.5, color=c,
                     alpha=1.0 if j == 0 else 0.7, fontweight="bold" if j == 0 else "normal")
     ax.set_xscale("log")
@@ -113,12 +113,12 @@ def energy_bars(path):
 
 
 def wander(path):
-    """The gain over six days: Kumar & Rotea 2022 LP-PIESC against our LP-ESC design."""
+    """The gain over six days: Kumar & Rotea 2022 LP-PIESC against the proposed LP-PIESC design."""
     fig, axs = plt.subplots(1, 2, figsize=(12.4, 4.4), sharey=True)
     d = _energy("kaimal")
     t = np.arange(len(d["PUB_PIESC_steady_0_uh"])) / 24
     for ax, kind, title, col in ((axs[0], "PUB_PIESC", "LP-PIESC, Kumar & Rotea 2022", GOLD),
-                                 (axs[1], "REC_DEMOD", "LP-ESC, our design", PRIMARY)):
+                                 (axs[1], "REC_PIESC", "LP-PIESC, proposed design", VIOLET)):
         for s in range(int(d["seeds"])):
             ax.plot(t, d[f"{kind}_steady_{s}_uh"] / NU, color=col, lw=1.6, alpha=0.9 - 0.15 * s)
         ax.axhline(1, color=INK, lw=1.0, ls=":")
@@ -142,7 +142,7 @@ def tracking(path):
                 label=name.replace("\n", ", "))
     ax.axhline(1, color=INK, lw=1.0, ls=":")
     ax.axhline(0.8, color=FAINT, lw=1.0, ls="--")
-    ax.text(0.05, 0.78, "start: 0.8 × optimum", ha="left", fontsize=11, color=MUTED, va="top")
+    ax.text(5.95, 0.42, "dashed: start at 0.8 × optimum", ha="right", fontsize=11, color=MUTED, va="bottom")
     style(ax, xlabel="time (days)", ylabel="gain / optimal gain")
     ax.set_ylim(0.4, 1.6)
     _legend(ax, loc="upper left", ncol=3, fontsize=10)
