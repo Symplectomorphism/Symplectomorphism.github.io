@@ -101,7 +101,7 @@ Correlate $y$ with the dither over each period: the **in-phase channel** $\hat g
 :::
 ::: card
 [LP-PIESC: least squares]{.cardh}
-Fit $\dot y \approx \theta_0 + \theta_1(\nu - \hat\nu)$ by recursive least squares; proportional-integral update [Kumar & Rotea 2022].
+Fit $\dot y \approx \theta_0 + \theta_1(\nu - \hat\nu)$ by recursive least squares; proportional-integral update [Kumar & Rotea 2022]. Here $\nu = \nu^\star u/u^\star$ is the normalized gain ($\nu^\star = 0.061$) and $\hat\nu$ the integrator state, about which the dither swings.
 :::
 :::
 
@@ -115,8 +115,7 @@ They differ in how they turn the response into a gradient.
 ![](assets/rpt-piesc-loop.svg){.fig-band}
 
 Published tuning [Kumar & Rotea 2022]: $T = 314$ s, $a = 0.082\,\nu^\star$, estimator memory
-$1/k_T = 0.05$ s, ridge $q = 10^{-6}$, $k_p = 5\times10^{-6}$ s, $\tau_I = 2.8$; normalized gain
-$\nu = 0.061\,u/u^\star$. Reported to reach the optimum almost at once, with a quarter of
+$1/k_T = 0.05$ s, ridge $q = 10^{-6}$, $k_p = 5\times10^{-6}$ s, $\tau_I = 2.8$. Reported to reach the optimum almost at once, with a quarter of
 the classical dither.
 
 ::: notes
@@ -132,7 +131,8 @@ minutes. Their ratio is what decides what this estimator reads.
 **Scatter** $\sigma(\tilde u)$: the standard deviation of the gain error $\tilde u = u - u^\star$
 once the loop has settled, a spread over time quoted as a fraction of $u^\star$. It concerns
 the center of the dither only; the dither's own cost is counted separately. Every
-excursion costs power: the loss is $\tfrac12|J''|\,\sigma(\tilde u)^2$ plus the dither's cost.
+excursion costs power. With $J(u)$ the log-power at rest at gain $u$ (apart from a constant set by
+the wind), which peaks at $u^\star$, the loss is $\tfrac12|J''|\,\sigma(\tilde u)^2$ plus the dither's cost.
 :::
 
 ::: notes
@@ -141,18 +141,19 @@ random-walks. Right: the same LP-PIESC estimator with the proposed design (60 s 
 amplitude 0.111, one-day tracking time), same winds. The scatter is the size of this motion.
 :::
 
-## What this work answers {.smaller}
+## What this work answers
 
 Given the wind's spectral density and the tuning of each controller:
 
 1. How noisy is **one gradient estimate** at the optimum, and what does LP-PIESC's estimate measure?
 2. How large is the **scatter** of the gain in steady state?
 3. How much **power is lost**, and which tuning loses least for a required tracking time?
-4. How do the **two routes compare**, and do the predictions survive **simulation**, including the published runs?
+4. How do **LP-ESC and LP-PIESC** compare, and do the predictions survive **simulation**, including the published runs?
 
 ::: claim
-**The answer in one line.** At the optimum the wind enters log-power as $3\varepsilon$, so
-each estimate is the wind seen through a known window; a slow loop sees only the wind's
+**The answer in one line.** Write the wind speed as $V = \bar V(1+\varepsilon)$, with mean
+$\bar V$ and relative fluctuation $\varepsilon$. At the optimum the wind enters log-power as $3\varepsilon$, so
+each estimate is the wind seen through a known window; a slow loop (one whose tracking time spans many dither periods) sees only the wind's
 density at the dither frequency; the scatter, the loss and the best tuning then follow
 in closed form from **three numbers**: that density, the curvature of $C_P$ at its peak,
 and the rotor time constant.
@@ -162,7 +163,7 @@ and the rotor time constant.
 Everything that follows is this one sentence, unpacked and checked.
 :::
 
-## The argument in one line {.smaller}
+## The argument in one line
 
 ![](assets/rpt-chain.svg)
 
@@ -197,7 +198,8 @@ $$y = \ln P = \text{const} + 3\ln(1+\varepsilon) + \ln C_P(\lambda).$$
 
 At $u^\star$ the power curve is **flat**: $C_P'(\lambda^\star) = 0$, so the wind's effect through
 $\lambda$ drops out at first order, and
-$$y - \mathbb{E}[y] = 3\,\varepsilon + O(\sigma_\varepsilon^2).$$
+$$y - \mathbb{E}[y] = 3\,\varepsilon + O(\sigma_\varepsilon^2),$$
+where $\sigma_\varepsilon$, the standard deviation of $\varepsilon$, is the turbulence intensity (0.10).
 
 [Simulation: slope 3.086 (Kaimal), 3.090 (von Kármán); correlation 0.991.]{.small}
 :::
@@ -214,7 +216,8 @@ power curve is flat. That single term makes everything else linear.
 
 The demodulated estimate correlates $y$ with $\sin\omega t$, so its noise is
 $6Z_n/(aT)$ with $Z_n = \int_0^T \varepsilon(nT+t)\sin\omega t\,dt$, and
-$$\operatorname{Var}(Z) = \int \Phi(f)\,|\hat w(f)|^2\,df .$$
+$$\operatorname{Var}(Z) = \int \Phi(f)\,|\hat w(f)|^2\,df ,$$
+where $\hat w(f) = \int_0^T \sin(\omega t)\,e^{-i2\pi ft}\,dt$, the dither's Fourier transform over one period, is the estimate's window on the wind.
 
 [Both windows pass $f_1$ equally; the sine window leans to low frequencies, where the wind has its energy, so the quadrature (cosine) channel is the quieter one per estimate (Units 12–14).]{.small}
 
@@ -265,11 +268,14 @@ value at the dither frequency.
 ![](assets/rpt-channels.svg)
 :::
 ::: {}
-Over a 0.05 s memory the regressor is frozen, so the ridge fit returns the minimum-norm
-product
+The regressor is $[1, d]$, with $d = \nu - \hat\nu = a\sin\omega t$ the dither (proportional
+term neglected). Over a 0.05 s memory it is frozen, so the ridge fit, with effective ridge
+weight $\gamma = 4\times10^{-4}$, returns the minimum-norm product
 $$\hat\theta_1 = \frac{d\,\dot y}{1 + d^2 + \gamma},$$
-whose period average is the **cosine** (quadrature) coefficient of $y$. Its signal is
-$G_q = \omega\tau_r G_1$: **0.135** against **0.981** for demodulation at 314 s.
+whose period average is the **cosine** (quadrature) coefficient of $y$. The rotor returns
+the dither in phase with gain $G_1 = 1/(1+(\omega\tau_r)^2)$, which demodulation reads, and a
+quarter period late with gain $G_q = \omega\tau_r G_1$, which this estimate reads:
+**0.135** against **0.981** at 314 s.
 
 [Simulation: $\hat\theta_1$ follows $d\,\dot y$ with correlation 0.997; in-phase / quadrature 7.24, predicted $1/(\omega\tau_r) = 7.27$.]{.small}
 :::
@@ -287,8 +293,9 @@ give it no gradient signal at all.
 ![](assets/rpt-loop.svg)
 :::
 ::: {}
-Averaging $N$ estimates is one estimate over $N$ periods; its window narrows onto $f_1$
-(Fejér). So the noise a slow loop feels is the **long-run variance**
+Each period a loop corrects a fraction $K = T/\tau_c$ of the gain error; it is **slow** when
+${K \ll 1}$ (one day at 60 s: ${K = 7\times10^{-4}}$). Averaging $N$ estimates is one estimate over
+$N$ periods; its window narrows onto $f_1$ (Fejér). So the noise a slow loop feels is the **long-run variance**
 $$\sigma_\infty^2 = \frac{2\Psi}{a^2T},\qquad \Psi = 9\,\Phi(f_1),$$
 and the scatter at tracking time $\tau_c$ is
 $$\sigma(\tilde u)^2 = \frac{\Psi}{a^2 g^2\,\tau_c\,J''^2},\quad g = G_1 \text{ or } G_q .$$
@@ -309,13 +316,14 @@ through its density at one frequency.
 ![](assets/rpt-loss-amplitude.svg)
 :::
 ::: {}
-$$\ell(a) = \underbrace{\frac{\Psi}{2a^2g^2\tau_c|J''|}}_{\text{scatter}} + \underbrace{\tfrac14|J''|G_1a^2}_{\text{dither}}$$
+$$\ell(a) = \underbrace{\frac{\Psi}{2a^2g^2\tau_c|J''|}}_{\text{scatter}} + \underbrace{\frac{|J''|G_1a^2}{4\vphantom{2a^2g^2\tau_c|J''|}}}_{\text{dither}}$$
 
 Least when the two are **equal**:
-$$a_{opt} = \Big(\frac{2\Psi}{g^2G_1\tau_cJ''^2}\Big)^{1/4},\qquad
-\ell_{min} = \sqrt{\frac{\Psi G_1}{2\tau_c g^2}}.$$
+$$a_{\mathrm{opt}} = \Big(\frac{2\Psi}{g^2G_1\tau_cJ''^2}\Big)^{1/4},\qquad
+\ell_{\mathrm{min}} = \sqrt{\frac{\Psi G_1}{2\tau_c g^2}}.$$
 
-Then $\kappa = T/(\tau_c G_1|J''|)$ (LP-ESC) or $\tau_I = \tau_c\pi a^2G_q|J''|/T$ (LP-PIESC).
+The step size or integral time then follows from the tracking time:
+$$\begin{aligned}\kappa &= \frac{T}{\tau_cG_1|J''|} &&\text{(LP-ESC)},\\[2pt] \tau_I &= \frac{\tau_c\pi a^2G_q|J''|}{T} &&\text{(LP-PIESC)}.\end{aligned}$$
 :::
 :::
 
@@ -396,7 +404,7 @@ The 2022 LP-PIESC's gain wanders instead of converging (0.78–1.45 $u^\star$ af
 One wind record shown. The designs return within about a day, as their tracking time says.
 :::
 
-## Gains over the published designs {.smaller}
+## Gains over the published designs
 
 ::: kpis
 ::: {.kpi .blue}
@@ -430,7 +438,7 @@ rather than 1.9, and the wind's density at the dither frequency is lower. A 740-
 tracking time is expensive: at one day the same rules lose 0.23 percent.
 :::
 
-## When is LP-PIESC the right choice? {.smaller}
+## When is LP-PIESC the right choice?
 
 ::: cols2
 ::: card
@@ -462,29 +470,30 @@ Choose LP-PIESC's structure where its model, its error bar or a faster transient
 needed, and tune it by these rules.
 :::
 
-## The design procedure {.smaller}
+## The design procedure {.bk}
 
 ::: cols2
 ::: {}
 **Three numbers**
 
-1. $\tau_r = \dfrac{2I\lambda^{\star2}}{3\rho\pi R^4\bar V C_P^{max}}$ from the rotor data.
-2. $\chi$ from the design power curve: $|J''(u^\star)| = \chi/(9u^{\star2})$.
-3. $\Psi = 9\,\Phi(1/T)$ from the site's spectrum (or the IEC model).
+1. $\tau_r = \dfrac{2I\lambda^{\star2}}{3\rho\pi R^4\bar V C_P^{\mathrm{max}}}$ from the rotor data.
+2. $\chi$ from the design power curve: ${|J''(u^\star)| = \chi/(9u^{\star2})}$.
+3. ${\Psi = 9\,\Phi(1/T)}$ from the site's spectrum (or the IEC model).
 
 **One choice**: the tracking time $\tau_c$ (blades change over weeks; recover from
-start-up within a day: $\tau_c = 1$ day).
+start-up within a day: ${\tau_c = 1}$ day).
 :::
 ::: {}
 **Then**
 
 4. $T \approx 9\,\tau_r$ (60 s here).
-5. $a = a_{opt}$.
-6. $\kappa = T/(\tau_cG_1|J''|)$ or $\tau_I = \tau_c\pi a^2G_q|J''|/T$.
+5. $a = a_{\mathrm{opt}}$.
+6. ${\kappa = T/(\tau_cG_1|J''|)}$ or ${\tau_I = \tau_c\pi a^2G_q|J''|/T}$.
 
 ::: claim
-An error in the curvature changes only the tracking time ($\tau_c|J''_d/J''|$); the loop
-stays unbiased.
+A design curvature ${J''_\mathrm{d} = rJ''}$ leaves the loop unbiased, scales the tracking time
+by $r$, and costs ${(\sqrt r + 1/\sqrt r)/2}$ of the least loss for that tracking time: 6 % at
+$r = 2$ (B15).
 :::
 :::
 :::
@@ -493,21 +502,29 @@ stays unbiased.
 Everything needed before any simulation is run.
 :::
 
-## Limits, and the next step {.smaller}
+## Limits, and the next step {.bk}
 
-- **Stationary wind**, fixed mean speed and turbulence intensity; a day mixes wind states.
-- **Point spectra** of the standard; the rotor averages the wind over its disk (affects content above about 0.06 Hz).
-- **Static power curve and first-order rotor**; induced-flow lag and drivetrain outside the model.
-- **Aerodynamic, not electrical, power**: the term $I\Omega\dot\Omega$ matters when $\omega\tau_r$ is not small (0.72 at 60 s).
-- **LP-PIESC**: proportional path and projection neglected.
+- **The design needs $J''$.** It comes from the design power curve, and the true curvature
+  drifts with the blades, as $u^\star$ does. A design curvature ${J''_\mathrm{d} = rJ''}$
+  leaves the loop unbiased, scales its tracking time by $r$, and costs
+  ${(\sqrt r + 1/\sqrt r)/2}$ of the least loss for that tracking time: measured **+5 %** at
+  $r = \tfrac12$ and **+8 %** at $r = 2$ (B15). The design also needs $\Phi(f_1)$ at the site,
+  and $\tau_r$, which varies as $1/\bar V$.
+- **The wind model**: stationary, with fixed mean speed and turbulence intensity, while a day
+  mixes wind states; point spectra, while the rotor averages the wind over its disk.
+- **The turbine model**: static power curve and first-order rotor; aerodynamic, not electrical,
+  power (the term $I\Omega\dot\Omega$ matters when $\omega\tau_r$ is not small: 0.72 at 60 s).
 - **The simulations use the same spectra** as the analysis: they test the derivation, not the wind models.
+- **LP-PIESC**: its proportional path $k_p\hat\theta_1$, the term that adds the current
+  estimate to the gain, moves the gain ${4.5\times10^{-8}}$ as much as the integral path per
+  period at the published $k_p$. A $k_p$ raised for speed, and the projection, are not analyzed.
 
 ::: openq
-**Next:** test the predictions on measured turbine data and electrical power, and measure
-recovery speed after the optimum moves, where LP-PIESC was meant to excel.
+**Next:** measure $J''$ online; test on measured turbine data and electrical power; measure
+recovery after the optimum moves, where LP-PIESC's proportional path was meant to act.
 :::
 
-## Summary {.smaller}
+## Summary
 
 ::: claim
 1. At the optimum the wind enters log-power as **$3\varepsilon$**, so each gradient estimate is the wind seen through a known window.
@@ -521,122 +538,389 @@ recovery speed after the optimum moves, where LP-PIESC was meant to excel.
 
 ## Backup {.divider}
 
-## B1: The rest point, and why the wind cancels {.smaller}
+[Derivations and checks behind the main slides. Each cites the units of the technical report that prove it.]{.lead}
 
-At a fixed tip-speed ratio $\lambda = R\Omega/V$, aerodynamic torque
-$\tfrac12\rho\pi R^3V^2C_P(\lambda)/\lambda$ and generator torque $u\Omega^2 = u\lambda^2V^2/R^2$
-both scale as $V^2$. The torque balance is wind-free:
+::: bkindex
+- [**B1** The rest point, and why the wind cancels](#/b1)
+- [**B2** The rotor time constant, and the inertia](#/b2)
+- [**B3** The rotor seen from the gain](#/b3)
+- [**B4** The estimate in calm wind](#/b4)
+- [**B5** The wind as a random process](#/b5)
+- [**B6** The least-squares estimator, unpacked](#/b6)
+- [**B7** Correlated noise and the long-run variance](#/b7)
+- [**B8** Short records under-measure the scatter](#/b8)
+- [**B9** Away from the optimum](#/b9)
+- [**B10** The synthesized wind](#/b10)
+- [**B11** Where the optimum sits in turbulence](#/b11)
+- [**B12** Why the 2022 LP-ESC tuning loses 4.5 %](#/b12)
+- [**B13** Simulation setup](#/b13)
+- [**B14** Running example](#/b14)
+- [**B15** A wrong design curvature](#/b15)
+:::
+
+## B1: The rest point, and why the wind cancels {#b1 .bk}
+
+At a fixed tip-speed ratio $\lambda = R\Omega/V$, both torques on the rotor scale as $V^2$:
+
+::: cols2
+::: card
+[Aerodynamic torque]{.cardh}
+$$\tfrac12\rho\pi R^3V^2\,\frac{C_P(\lambda)}{\lambda}$$
+:::
+::: card
+[Generator torque]{.cardh}
+$$u\,\Omega^2 = u\,\frac{\lambda^2V^2}{R^2}$$
+:::
+:::
+
+so their balance is free of the wind:
+
+::: eqbox
 $$\frac{C_P(\lambda)}{\lambda^3} = c_u\,u,\qquad c_u = \frac{2}{\rho\pi R^5}.$$
+:::
 
-For every gain below $1.86\,u^\star$ there is exactly **one** rest point, on the branch through
-$\lambda^\star$; it is stable, and near it the rotor is first order with time constant $\tau_r$
-(Units 1–2). Log-power at rest is a wind constant plus $J(u) = \ln C_P(\lambda_{eq}(u))$, which
-peaks at $u^\star = 2.23\times10^6$ N m s² with $J''(u^\star) = -\chi/(9u^{\star2})$ (Unit 3).
+::: cols2
+::: card
+[One stable rest point]{.cardh}
+For every gain below $1.86\,u^\star$ there is exactly one, $\lambda_{\mathrm{eq}}(u)$, on the branch through
+$\lambda^\star$; near it the rotor is first order with time constant $\tau_r$ (Units 1–2).
+:::
+::: card
+[The objective]{.cardh}
+Log-power at rest is a wind constant plus $J(u) = \ln C_P(\lambda_{\mathrm{eq}}(u))$, which peaks at
+$u^\star = 2.23\times10^6$ N m s² with $J''(u^\star) = -\chi/(9u^{\star2})$ (Unit 3).
+:::
+:::
 
-## B2: The rotor time constant, and the inertia {.smaller}
+## B2: The rotor time constant, and the inertia {#b2 .bk}
 
-$$\tau_r = \frac{2I\lambda^{\star2}}{3\rho\pi R^4\bar V C_P^{max}} = 6.88\ \text{s at } 8\ \text{m/s},\qquad \tau_r\propto 1/\bar V.$$
+::: eqbox
+$$\tau_r = \frac{2I\lambda^{\star2}}{3\rho\pi R^4\bar V C_P^{\mathrm{max}}} = 6.88\ \text{s at } 8\ \text{m/s},\qquad \tau_r\propto 1/\bar V.$$
+:::
 
-Inertia from the NREL 5 MW blade and hub data, moving each blade to the shaft by the
-parallel-axis theorem:
-$$I_{rotor} = 3\cos^2\beta_p\,(I_b + 2r_hS_b + m_br_h^2) + 115\,926 = 3.88\times10^7\ \text{kg m}^2,$$
-plus the generator, $97^2\times534$: $I = 4.38\times10^7$ kg m². The value $3.54\times10^7$ used
-in [Kumar & Rotea 2022] omits the hub-radius offset $r_h = 1.5$ m.
+The rotor's inertia $I_{\mathrm{rotor}}$ follows from the NREL 5 MW blade and hub data, moving each blade
+to the shaft by the parallel-axis theorem:
+$$I_{\mathrm{rotor}} = 3\cos^2\beta_p\,(I_b + 2r_hS_b + m_br_h^2) + 115\,926\ \text{kg m}^2,$$
 
-## B3: The rotor seen from the gain {.smaller}
+[with $\beta_p$ the precone angle, $r_h$ the hub radius, $m_b$, $S_b$, $I_b$ the blade's mass and its first and second mass moments about its root, and 115 926 kg m² the hub.]{.small}
 
-A first-order lag with unit static gain and time constant $\tau_r$, followed by the slope $J'$.
-A dither $a\sin\omega t$ returns as
+::: stats
+::: stat
+[3.88 × 10⁷ kg m²]{.num}
+[the rotor, $I_{\mathrm{rotor}}$]{.lab}
+:::
+::: stat
+[+ 97² × 534 kg m²]{.num}
+[the generator, seen through the 97 : 1 gearbox]{.lab}
+:::
+::: stat
+[4.38 × 10⁷ kg m²]{.num}
+[the total, $I$]{.lab}
+:::
+:::
+
+::: remark
+[Kumar & Rotea 2022] use $3.54\times10^7$ kg m², which omits the hub-radius offset $r_h = 1.5$ m.
+:::
+
+## B3: The rotor seen from the gain {#b3 .bk}
+
+From the gain to log-power, the rotor is a first-order lag with unit static gain and time
+constant $\tau_r$, followed by the slope $J'$. A dither $a\sin\omega t$ therefore returns as
+
+::: eqbox
 $$\delta y = J'a\,(G_1\sin\omega t - G_q\cos\omega t),\qquad G_1 = \frac{1}{1+(\omega\tau_r)^2},\quad G_q = \omega\tau_rG_1 .$$
-At 314 s: $G_1 = 0.981$, $G_q = 0.135$; at 60 s: $G_1 = 0.66$, $G_q = 0.48$. The two cross at
-$T = 2\pi\tau_r = 43$ s, where $G_q = 1/2$ is largest (Unit 4).
+:::
 
-## B4: The estimate in calm wind {.smaller}
+::: stats
+::: stat
+[0.981 / 0.135]{.num}
+[$G_1$ / $G_q$ at the published period, $T$ = 314 s]{.lab}
+:::
+::: stat
+[0.66 / 0.48]{.num}
+[$G_1$ / $G_q$ at the recommended period, $T$ = 60 s]{.lab}
+:::
+::: {.stat .gold}
+[43 s]{.num}
+[$T = 2\pi\tau_r$: the two cross, and $G_q = 1/2$ is largest (Unit 4)]{.lab}
+:::
+:::
 
-The demodulated estimate is a Fourier coefficient: $\hat g_n = B_1/a$, $\hat g^c_n = A_1/a$
-(first sine and cosine coefficients of $y$ over the period). It ignores the mean and every
-higher harmonic, but a drift within the period reads as gradient (Unit 5).
+::: claim
+Demodulation reads the in-phase part $G_1$; the published LP-PIESC estimator reads the
+quadrature part $G_q$ (Link 3).
+:::
 
-Its bias: $\hat g_n = J'(u_n) + \tfrac{a^2}{8}J'''(u_n) + O(a^4)$. At $a = 0.136\,u^\star$ the loop
-settles **0.37 %** above $u^\star$, costing about $5\times10^{-6}$ of the power, against 0.32 % for
-the dither itself (Unit 6). The error that matters is random.
+## B4: The estimate in calm wind {#b4 .bk}
 
-## B5: The wind as a random process {.smaller}
+::: cols2
+::: card
+[A Fourier coefficient]{.cardh}
+$$\hat g_n = B_1/a,\qquad \hat g^c_n = A_1/a,$$
+with $B_1$ and $A_1$ the first sine and cosine coefficients of $y$ over period $n$. It ignores
+the mean and every higher harmonic, but a drift within the period reads as gradient (Unit 5).
+:::
+::: card
+[Its bias]{.cardh}
+$$\hat g_n = J'(u_n) + \tfrac{a^2}{8}J'''(u_n) + O(a^4),$$
+with $u_n$ the center of the dither in period $n$ (Unit 6).
+:::
+:::
 
-$V = \bar V(1+\varepsilon)$, $\varepsilon$ stationary with autocovariance
-$\Gamma(\tau) = \mathbb{E}[\varepsilon(t)\varepsilon(t+\tau)]$, $|\Gamma| \le \Gamma(0) = \sigma_\varepsilon^2 = \mathrm{TI}^2$,
-and spectral density $\Phi(f) = \int\Gamma(\tau)e^{-i2\pi f\tau}d\tau$, one-sided $S = 2\Phi$,
-$\sigma_\varepsilon^2 = \int_0^\infty S\,df$ (Units 7–8). Remainders are ranked by RMS in powers of
-$\sigma_\varepsilon$; with sixth moments finite, products of $k \le 3$ filtered winds are
-$O(\sigma_\varepsilon^k)$ (Unit 9).
+At $a = 0.136\,u^\star$:
 
-The tip-speed ratio sees the **high-passed** wind (corner $1/(2\pi\tau_r) = 0.023$ Hz); its mean
-stays at $\lambda^\star$ to second order (Unit 10). In the Kaimal model 72 % of the variance lies
-below that corner.
+::: stats
+::: stat
+[0.37 %]{.num}
+[above $u^\star$: where the bias makes the loop settle]{.lab}
+:::
+::: stat
+[5 × 10⁻⁶]{.num}
+[of the power: what that offset costs]{.lab}
+:::
+::: {.stat .gold}
+[0.32 %]{.num}
+[of the power: what the dither itself costs]{.lab}
+:::
+:::
 
-## B6: The least-squares estimator, unpacked {.smaller}
+::: claim
+The bias is negligible. The error that matters is random.
+:::
 
-The recursion computes, at every instant, the minimizer of an exponentially weighted ridge
-cost with memory $1/k_T$ (Unit 15). LP-PIESC's states combine into $z = \tilde y + c^\top\hat\theta$
-with $\dot z = -k_fz + \dot y$: it regresses low-pass-filtered $\dot y$ on the equally filtered
-regressor, effective ridge $\gamma = qk_f^2 = 4\times10^{-4}$ (Unit 16).
+## B5: The wind as a random process {#b5 .bk}
 
-Memory number $\mathcal M = \omega^2/(k_T^2\gamma) = 0.0025$: the regressor is frozen over the
-memory, so the fit is the **minimum-norm** product, whose period average is the quadrature
-channel (Unit 17). A fit of $y$ on $[1, d]$ over a full period returns the in-phase channel.
+::: cols2
+::: card
+[The model]{.cardh}
+$$V = \bar V(1+\varepsilon),\qquad \Gamma(\tau) = \mathbb{E}[\varepsilon(t)\varepsilon(t+\tau)],$$
+with $\varepsilon$ stationary and $|\Gamma| \le \Gamma(0) = \sigma_\varepsilon^2 = \mathrm{TI}^2$.
+:::
+::: card
+[Its spectrum]{.cardh}
+$$\Phi(f) = \int\Gamma(\tau)e^{-i2\pi f\tau}d\tau,\qquad \sigma_\varepsilon^2 = \int_0^\infty S\,df,$$
+with $S = 2\Phi$ the one-sided density (Units 7–8).
+:::
+::: card
+[Orders of smallness]{.cardh}
+Remainders are ranked by RMS in powers of $\sigma_\varepsilon$. With sixth moments finite,
+products of $k \le 3$ filtered winds are $O(\sigma_\varepsilon^k)$ (Unit 9).
+:::
+::: card
+[What the tip-speed ratio sees]{.cardh}
+The **high-passed** wind, with corner $1/(2\pi\tau_r) = 0.023$ Hz; the mean of $\lambda$ stays at
+$\lambda^\star$ to second order (Unit 10).
+:::
+:::
 
-## B7: Correlated noise and the long-run variance {.smaller}
+::: stats
+::: stat
+[72 %]{.num}
+[of the Kaimal variance lies below that corner, where the rotor follows the wind]{.lab}
+:::
+:::
 
-A first-order recursion $x_{n+1} = \alpha x_n + \kappa v_n$ with correlated noise has variance
-$$\frac{\kappa^2\sigma_v^2}{1-\alpha^2}\Big[1 + 2\sum_{k\ge1}\alpha^k\rho_k\Big],$$
-and as the loop slows the bracket tends to $1 + 2\sum\rho_k$, the **long-run variance** per
-sample (Units 20–21). Summed in the frequency domain with Fejér's kernel, it is
-$2\Psi/(a^2T)$, for both channels (Unit 22). For Kaimal at 150 s one period's variance is
-1.29× the long-run value (in-phase) and 0.87× (quadrature).
+## B6: The least-squares estimator, unpacked {#b6 .bk}
 
-## B8: Short records under-measure the scatter {.smaller}
+::: cols3
+::: card
+[1 · A weighted ridge fit]{.cardh}
+At every instant the recursion returns the minimizer of an exponentially weighted ridge cost
+with memory $1/k_T = 0.05$ s (Unit 15).
+:::
+::: card
+[2 · A fit of filtered $\dot y$]{.cardh}
+With $\tilde y$ the prediction error and $c$ the filtered regressor, the states combine into
+$$z = \tilde y + c^\top\hat\theta,\quad \dot z = -k_fz + \dot y.$$
+So the estimator regresses $\dot y$, low-passed at rate $k_f$, on the equally filtered
+regressor (Unit 16).
+:::
+::: card
+[3 · A frozen regressor]{.cardh}
+Over the memory the regressor barely moves, so the fit is the **minimum-norm** product,
+whose period average is the quadrature channel (Unit 17).
+:::
+:::
 
-The sample variance of a record is low by the variance of its own mean:
-$\mathbb{E}[s^2] = \sigma^2 - \operatorname{Var}(\bar x)$ (Unit 21). For a two-day record of a loop with a
-six-hour tracking time (eight tracking times), the sample standard deviation is
-**0.88** of the true one, a 12 % shortfall. The nonlinear comparison of LP-PIESC against
-demodulation applies this factor to its predictions.
+::: stats
+::: stat
+[γ = 4 × 10⁻⁴]{.num}
+[effective ridge weight, $qk_f^2$]{.lab}
+:::
+::: stat
+[𝓜 = 0.0025]{.num}
+[memory number $\omega^2/(k_T^2\gamma)$: small means frozen]{.lab}
+:::
+:::
 
-## B9: Away from the optimum {.smaller}
+::: claim
+A fit of $y$ itself on $[1, d]$ over a full period returns the in-phase channel instead.
+:::
 
-Away from $u^\star$ the rotor adds a high-passed copy of the wind to log-power with weight
-$\eta \approx 2.1\,\tilde u/u^\star$. The noise is multiplied by $|1 + \eta H(f_1)/3|$; for a loop
-whose scatter is $0.1\,u^\star$ it changes by about **2 %** (Unit 26). The noise model derived at
-$u^\star$ holds over the gains a converged loop visits.
+## B7: Correlated noise and the long-run variance {#b7 .bk}
 
-## B10: The synthesized wind {.smaller}
+A first-order recursion $x_{n+1} = \alpha x_n + \kappa v_n$, driven by noise $v_n$ of variance
+$\sigma_v^2$ and correlation $\rho_k$ between values $k$ steps apart, has variance
 
-A sum of cosines with independent uniform phases, amplitudes $\sqrt{2S(f_k)/D}$: strictly
-stationary with the target spectrum on its frequency grid. A ten-hour record sampled at
-0.5 s lacks **2.7 %** of the variance (mostly above the Nyquist frequency), so its turbulence
-intensity is 9.86 % (Kaimal); it is Gaussian to within an excess kurtosis of −0.002 (Unit 27).
+::: eqbox
+$$\operatorname{Var}(x) = \frac{\kappa^2\sigma_v^2}{1-\alpha^2}\Big[1 + 2\sum_{k\ge1}\alpha^k\rho_k\Big].$$
+:::
+
+::: cols2
+::: card
+[A slow loop, $\alpha \to 1$]{.cardh}
+The bracket tends to $1 + 2\sum_{k\ge1}\rho_k$, and $\sigma_\infty^2 = \sigma_v^2\big(1 + 2\sum_{k\ge1}\rho_k\big)$
+is the **long-run variance** of the noise (Units 20–21).
+:::
+::: card
+[In the frequency domain]{.cardh}
+Summed with Fejér's kernel, $\sigma_\infty^2 = 2\Psi/(a^2T)$, for both channels (Unit 22).
+:::
+:::
+
+::: stats
+::: {.stat .gold}
+[1.29 ×]{.num}
+[one period's variance against the long-run value, in-phase channel (Kaimal, $T$ = 150 s)]{.lab}
+:::
+::: stat
+[0.87 ×]{.num}
+[the same ratio for the quadrature channel]{.lab}
+:::
+:::
+
+## B8: Short records under-measure the scatter {#b8 .bk}
+
+The sample variance $s^2$ of a record falls short of the true variance $\sigma^2$ by the variance
+of the record's own mean $\bar x$ (Unit 21):
+
+::: eqbox
+$$\mathbb{E}[s^2] = \sigma^2 - \operatorname{Var}(\bar x).$$
+:::
+
+::: stats
+::: stat
+[2 days]{.num}
+[record length]{.lab}
+:::
+::: stat
+[6 h]{.num}
+[tracking time of the loop: the record spans eight tracking times]{.lab}
+:::
+::: {.stat .hot}
+[0.88]{.num}
+[sample standard deviation over true: a 12 % shortfall]{.lab}
+:::
+:::
+
+::: claim
+The nonlinear comparison of LP-PIESC against demodulation applies this factor to its predictions.
+:::
+
+## B9: Away from the optimum {#b9 .bk}
+
+Away from $u^\star$ the rotor adds a high-passed copy of the wind to log-power, with weight
+$\eta$, the slope of $\ln C_P$ against $\ln\lambda$ at the mean tip-speed ratio. The standard
+deviation of the noise is multiplied by $|1 + \eta H(f_1)/3|$, where
+
+::: eqbox
+$$\eta \approx 2.1\,\frac{\tilde u}{u^\star},\qquad H(f) = \frac{-i2\pi f\tau_r}{1+i2\pi f\tau_r}\ \ \text{(the rotor's high-pass)}.$$
+:::
+
+::: stats
+::: stat
+[0.1 $u^\star$]{.num}
+[scatter of a converged loop]{.lab}
+:::
+::: stat
+[≈ 2 %]{.num}
+[change in the noise at that scatter (Unit 26)]{.lab}
+:::
+:::
+
+::: claim
+The noise model derived at $u^\star$ holds over the gains a converged loop visits.
+:::
+
+## B10: The synthesized wind {#b10 .bk}
+
+A sum of cosines with independent uniform phases $\Theta_k$:
+
+::: eqbox
+$$\varepsilon(t) = \sum_{k=1}^{M} A_k\cos(2\pi f_kt + \Theta_k),\qquad f_k = \frac{k}{D},\quad A_k = \sqrt{2S(f_k)/D},$$
+:::
+
+with $D$ the record length and $f_M = 1/(2\Delta t)$ the Nyquist frequency of the sampling
+interval $\Delta t$. The sum is strictly stationary, with the target spectrum on its frequency grid (Unit 27).
+
+::: stats
+::: {.stat .hot}
+[2.7 %]{.num}
+[of the variance missing from a ten-hour record at $\Delta t$ = 0.5 s, mostly above the Nyquist frequency]{.lab}
+:::
+::: stat
+[9.86 %]{.num}
+[so its turbulence intensity (Kaimal; target 10 %)]{.lab}
+:::
+::: stat
+[−0.002]{.num}
+[excess kurtosis: Gaussian]{.lab}
+:::
+:::
+
+::: claim
 Runs under the two spectra share their random phases.
+:::
 
-## B11: Where the optimum sits in turbulence {.smaller}
+## B11: Where the optimum sits in turbulence {#b11 .smaller}
 
 ![](assets/rpt-optimum.svg){.fig-band}
 
 Fixed gains, no dither: the energy peaks at **0.99 $u^\star$**; mean log-power, which the loops
 climb, at **1.013 $u^\star$** (1.014 von Kármán). The difference costs about 0.02 % of the energy.
-The dither alone, centre held at $u^\star$, costs **exactly** the calm-wind $\tfrac14|J''|G_1a^2$:
+The dither alone, center held at $u^\star$, costs **exactly** the calm-wind $\tfrac14|J''|G_1a^2$:
 0.102 % at 60 s and 0.094 $u^\star$, 0.116 % for the published LP-PIESC dither.
 
-## B12: Why the 2022 LP-ESC tuning loses 4.5 % {.smaller}
+## B12: Why the 2022 LP-ESC tuning loses 4.5 % {#b12 .bk}
 
-- Its dither, $a = 0.33\,u^\star$ at 314 s, costs **1.94 %** on its own (measured; the quadratic formula gives 1.88 %).
-- Its integrator is fast: it reaches the optimum's neighbourhood within the first hour, but swings the gain by **0.17 $u^\star$** root-mean-square, about a mean 10 % above $u^\star$.
-- Together: 4.5 %, steady, independent of the start.
-- Its tracking time, from the linearized loop (high-pass 0.018 s⁻¹, demodulation phase 0.36 rad, integrator gain 0.001): **740 s**.
-- The proposed LP-ESC for the same 740 s ($T$ = 60 s, $a$ = 0.31 $u^\star$): **2.42 %** (predicted 2.22 %). Same amplitude, shorter period: the dither costs 1.11 % instead of 1.88 %.
+::: cols2
+::: card
+[Its dither]{.cardh}
+$a = 0.33\,u^\star$ at $T$ = 314 s costs **1.94 %** on its own (measured; the quadratic formula
+gives 1.88 %).
+:::
+::: card
+[Its integrator]{.cardh}
+Fast: it reaches the optimum's neighborhood within the first hour, but swings the gain by
+**0.17 $u^\star$** root-mean-square, about a mean 10 % above $u^\star$.
+:::
+:::
 
-## B13: Simulation setup {.smaller}
+::: stats
+::: {.stat .hot}
+[4.5 %]{.num}
+[lost in all, steady, independent of the start]{.lab}
+:::
+::: {.stat .gold}
+[740 s]{.num}
+[its tracking time, from the linearized loop]{.lab}
+:::
+::: stat
+[2.42 %]{.num}
+[lost by the proposed LP-ESC for the same 740 s ($T$ = 60 s, $a$ = 0.31 $u^\star$); predicted 2.22 %]{.lab}
+:::
+:::
 
-::: bigtable
+[Linearized loop of the 2022 tuning: high-pass 0.018 s⁻¹, demodulation phase 0.36 rad, integrator gain 0.001.]{.small}
+
+::: claim
+Same amplitude, shorter period: the proposed design's dither costs 1.11 % instead of 1.88 %.
+:::
+
+## B13: Simulation setup {#b13 .smaller}
+
+::: {.bigtable .kv}
 | | |
 |---|---|
 | turbine | NREL 5 MW rotor, Heier power curve rescaled to $(7.48, 0.4895)$, $I = 4.38\times10^7$ kg m² |
@@ -645,25 +929,53 @@ The dither alone, centre held at $u^\star$, costs **exactly** the calm-wind $\tf
 | energy runs | six controllers + reference at $u^\star$, same wind; 6 days × 4 records × 2 spectra × 2 starts |
 | left out | pitch, power limit, generator and converter dynamics, drivetrain flexibility; one wind speed acts on the whole rotor |
 | constants | $u^\star$ by Newton on $J'$, $J''$ by automatic differentiation: $|J''|u^{\star2} = 0.7017$ (designs use $0.7022 = 6.32/9$); $\tau_r$ = 6.878 s |
-| checks | 601 stated numbers recomputed from formulas and stored results by the claim checker |
+| checks | 629 stated numbers recomputed from formulas and stored results by the claim checker |
 :::
 
-[Every run is specified in full (equations as implemented, initial states, seeds, record lengths, statistics) in Appendix D of the technical report.]{.tiny}
+[Every run is specified in full (equations as implemented, initial states, seeds, record lengths, statistics) in Appendix D of the technical report.]{.small}
 
-## B14: Running example {.smaller}
+## B14: Running example {#b14 .bk}
 
-::: bigtable
+::: {.bigtable .kv}
 | quantity | value |
 |---|---|
 | rotor radius, air density | 63 m, 1.225 kg/m³ |
-| optimum | $\lambda^\star = 7.48$, $C_P^{max} = 0.4895$, $u^\star = 2.23\times10^6$ N m s² ($\nu^\star = 0.061$) |
+| optimum | $\lambda^\star = 7.48$, $C_P^{\mathrm{max}} = 0.4895$ |
+| optimal gain | ${u^\star = 2.23\times10^6}$ N m s², normalized ${\nu^\star = 0.061}$ |
 | curvature | $\chi = 6.3$, $|J''(u^\star)|u^{\star2} = 0.70$ |
 | rotor time constant | 6.88 s at 8 m/s |
 | dither periods | 60 s (recommended), 150 s (2019 design), 314 s (2022 tunings) |
 | tracking time | one day (designs); 740 s for the design matched to the 2022 LP-ESC |
 :::
 
-## References {.smaller}
+## B15: A wrong design curvature {#b15 .bk}
+
+Tuned with ${J''_\mathrm{d} = rJ''}$, the loop tracks in ${r\tau_c}$, stays unbiased, and has
+amplitude ${a_\mathrm{opt}r^{-1/2}}$. The loss of Link 5 becomes
+
+::: eqbox
+$$\ell = \frac{\ell_\mathrm{min}}{2}\Big(1 + \frac1r\Big) = \frac{\sqrt r + 1/\sqrt r}{2}\cdot\frac{\ell_\mathrm{min}}{\sqrt r},$$
+:::
+
+where $\ell_\mathrm{min}/\sqrt r$ is the least loss at the tracking time $r\tau_c$ the loop actually has.
+
+::: kv
+| LP-ESC, $T$ = 60 s (Kaimal) | tracking time | $a/u^\star$ | lost, days 2–6 | predicted |
+|---|---|---|---|---|
+| tuned with $J''/2$ ($r = \tfrac12$) | 0.5 day | 0.133 | 0.328 % | 0.31 % |
+| correct design for 0.5 day | 0.5 day | 0.112 | 0.311 % | 0.29 % |
+| proposed design ($r = 1$) | 1 day | 0.094 | 0.227 % | 0.21 % |
+| correct design for 2 days | 2 days | 0.079 | 0.160 % | 0.15 % |
+| tuned with $2J''$ ($r = 2$) | 2 days | 0.067 | 0.172 % | 0.15 % |
+:::
+
+::: claim
+Against the correct design for the same tracking time: **+5 %** ($r = \tfrac12$) and **+8 %**
+($r = 2$), predicted +6 %; von Kármán gives the same. The error shows in the tracking time,
+not in the energy. Mean of four six-day records; same winds as the energy table.
+:::
+
+## References
 
 - [R17] M. A. Rotea, "Logarithmic power feedback for extremum seeking control of wind turbines," *IFAC-PapersOnLine*, vol. 50, no. 1, pp. 4504–4509, 2017.
 - [CLR19] U. Ciri, S. Leonardi, M. A. Rotea, "Evaluation of log-of-power extremum seeking control for wind turbines using large eddy simulations," *Wind Energy*, vol. 22, pp. 992–1002, 2019.

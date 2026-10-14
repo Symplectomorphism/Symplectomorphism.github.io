@@ -318,7 +318,7 @@ def loss_amplitude(path):
     aopt = (A / B) ** 0.25
     lm = 100 * 2 * np.sqrt(A * B)
     ax.plot([aopt], [lm], "o", color=HOT, ms=10, zorder=5)
-    ax.annotate(f"$a_{{opt}}$ = {aopt:.3f} $u^\\star$\nloss {lm:.2f}%", (aopt, lm), (aopt + 0.04, lm + 0.25),
+    ax.annotate(f"$a_{{\\mathrm{{opt}}}}$ = {aopt:.3f} $u^\\star$\nloss {lm:.2f}%", (aopt, lm), (aopt + 0.04, lm + 0.25),
                 fontsize=12.5, color=HOT, arrowprops=dict(arrowstyle="-", color=HOT, lw=1.0))
     style(ax, xlabel="dither amplitude $a / u^\\star$", ylabel="power lost (%)")
     ax.set_ylim(0, 1.2)
@@ -339,7 +339,7 @@ def design(path):
     for Tm, txt in ((60, "60 s:\nrecommended"), (314.16, "314 s:\npublished")):
         ax.axvline(Tm, color=INK, lw=1.0, ls=":")
         ax.text(Tm * 1.05, 4.6, txt, fontsize=11, color=INK, va="top")
-    style(ax, xlabel="dither period $T$ (s)", ylabel="least loss $\\ell_{min}$ (%)")
+    style(ax, xlabel="dither period $T$ (s)", ylabel="least loss $\\ell_\\mathrm{min}$ (%)")
     ax.set_yticks([0.1, 0.2, 0.5, 1, 2, 5])
     ax.set_yticklabels(["0.1", "0.2", "0.5", "1", "2", "5"])
     ax.set_ylim(0.1, 5)
