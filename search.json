@@ -10318,6 +10318,523 @@
     ]
   },
   {
+    "objectID": "body-weight/weight-dynamics-unused.html",
+    "href": "body-weight/weight-dynamics-unused.html",
+    "title": "Body-Weight Dynamics",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$"
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#twenty-one-months-on-one-bathroom-scale",
+    "href": "body-weight/weight-dynamics-unused.html#twenty-one-months-on-one-bathroom-scale",
+    "title": "Body-Weight Dynamics",
+    "section": "Twenty-one months on one bathroom scale",
+    "text": "Twenty-one months on one bathroom scale\n\n\n\n5 attempts Jan 2025 to now, months apart\n\n\n53 weigh-ins the only measurement; no food log before Aug 2026\n\n\n±1.1 lb scatter of one morning reading about the trend, fitted from this record\n\n\n7 to 22 lb lost on each of the three longer attempts, then regained before the next\n\n\n\nEvery weigh-in on record, one panel per attempt, on a shared weight axis. The gaps between panels are months long and contain no data, so they are not drawn. Each attempt worked while it lasted. What this record cannot tell you is why: there is no food log for the first four attempts, so all it can identify is how noisy a single reading is and how fast the trend moves. That turns out to be exactly what the filter needs first."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#a-day-one-drop-is-mostly-water",
+    "href": "body-weight/weight-dynamics-unused.html#a-day-one-drop-is-mostly-water",
+    "title": "Body-Weight Dynamics",
+    "section": "A day-one drop is mostly water",
+    "text": "A day-one drop is mostly water\n\n\n\nThe energy budget says under 1 lb Day 1 of the current attempt: 885 kcal eaten against roughly 3,350 kcal of expenditure, a deficit near 2,500 kcal. At about 7,800 kcal per kg of tissue that is 0.3 kg, or 0.7 lb.\n\n\nThe scale said 4.6 lb 237.6 → 233.0 lb overnight. The other 4 lb are glycogen and its bound water, gut contents, and fluid: real mass, but not the mass a diet is trying to move. A model that cannot tell the two apart will over-credit the first week and then report a “stall”.\n\n\n\nThree of the four attempts open with a 3 to 6 pound drop on the first day. No energy balance produces that from tissue. The model has to carry a separate fast compartment for it, or it will mistake water for progress."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#the-scale-is-a-noisy-sensor-of-a-slow-state",
+    "href": "body-weight/weight-dynamics-unused.html#the-scale-is-a-noisy-sensor-of-a-slow-state",
+    "title": "Body-Weight Dynamics",
+    "section": "The scale is a noisy sensor of a slow state",
+    "text": "The scale is a noisy sensor of a slow state\n\n\nA morning reading scatters by 0.51 kg (1.1 lb) about the true trend. That is not the scale’s error, which is tens of grams; it is fluid, gut contents, and glycogen.\nFiltered: the best estimate using only readings up to that day. This is what a controller can use. Smoothed: conditioned on the whole record, the right way to review history.\nMissing days cost precision, not accuracy: the update is skipped, never filled in.\n\n\nThe March attempt, which has the densest weigh-ins. The blue line is causal: it is what the filter would have known that morning. The green line uses the future too, which is why it is smoother. A controller only ever gets the blue line."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#why-3500-kcal-per-pound-is-wrong",
+    "href": "body-weight/weight-dynamics-unused.html#why-3500-kcal-per-pound-is-wrong",
+    "title": "Body-Weight Dynamics",
+    "section": "Why “3,500 kcal per pound” is wrong",
+    "text": "Why “3,500 kcal per pound” is wrong\n\n\nMass is a mixture A lost pound is part fat (about 9,400 kcal/kg) and part lean tissue (about 1,800 kcal/kg). The mix depends on how much fat you carry, so the energy per pound falls as the diet goes on.\n\n\nWater moves first Glycogen is stored with about three times its mass in water. Cutting carbohydrate empties it in days: pounds on the scale, no tissue lost. Salt does the same in the other direction.\n\n\nExpenditure adapts In a sustained deficit the body spends less than its lower mass alone explains, with a lag of a few weeks. The plateau is part of the dynamics, not a failure to comply.\n\n\n\nEach of these is a state with its own time constant. The rest of this talk is a model with those states, a filter that estimates them from a scale, and a controller that plans food around them.\n\n\nThe rule of thumb treats the body as a fixed-density battery. It is wrong three ways, and each way becomes one state of the model."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#the-model",
+    "href": "body-weight/weight-dynamics-unused.html#the-model",
+    "title": "Body-Weight Dynamics",
+    "section": "The model",
+    "text": "The model\nFive states, nine parameters, one equation that matters most."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#the-loop",
+    "href": "body-weight/weight-dynamics-unused.html#the-loop",
+    "title": "Body-Weight Dynamics",
+    "section": "The loop",
+    "text": "The loop\n\n\nThe person is a nonlinear system with five hidden states. The only sensor is a scale, read once a morning.\nThe filter estimates the states and the person’s metabolic parameters, jointly.\nThe controller plans 28 days ahead from that estimate, and the subject eats only the first day of the plan. Tomorrow it plans again from a new weigh-in.\n\n\nThis is a textbook output-feedback loop with an unusual plant. The plant’s input is food, its output is one noisy number per day, and its parameters are unknown and personal."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#five-states",
+    "href": "body-weight/weight-dynamics-unused.html#five-states",
+    "title": "Body-Weight Dynamics",
+    "section": "Five states",
+    "text": "Five states\n\n\n\n\n\n\n\n\n\nState\nUnits\nMeaning\nClock\n\n\n\n\n\\(T\\)\nkg\ntissue: fat plus fat-free solids and their water. What a diet changes\nmonths\n\n\n\\(F\\)\nkg\nfat mass, a part of \\(T\\) (lean mass is \\(T - F\\))\nmonths\n\n\n\\(G\\)\nkg\nglycogen and bound water, deviation from the attempt’s mean\n1 to 2 days\n\n\n\\(N\\)\nkg\nsodium-associated water, deviation from the mean\nabout 1 day\n\n\n\\(A\\)\nkcal/day\nadaptive thermogenesis; negative in a deficit\nabout 2 weeks\n\n\n\n\n\\[\n\\rho_{\\text{eff}}\\,\\dot T = I - E - \\rho_G\\,\\dot G,\n\\qquad\n\\dot F = p\\,\\dot T,\n\\qquad\ny = T + G + N + v\n\\]\n\nEnergy eaten \\(I\\) minus energy spent \\(E\\) goes into tissue, except what is diverted into glycogen (\\(\\rho_G \\approx 1{,}025\\) kcal/kg of glycogen-water complex). \\(\\rho_{\\text{eff}}\\) is the energy density of the tissue being lost, \\(p\\) its fat fraction, and the scale reads \\(y\\): tissue plus both water compartments plus noise \\(v\\).\n\nThe boxed equation is the whole model in one line: energy balance, with the energy density set by what kind of tissue is moving and a correction for energy parked in glycogen. The scale cannot see T alone; it sees T plus water."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#expenditure-and-the-plateau-as-an-ode",
+    "href": "body-weight/weight-dynamics-unused.html#expenditure-and-the-plateau-as-an-ode",
+    "title": "Body-Weight Dynamics",
+    "section": "Expenditure, and the plateau as an ODE",
+    "text": "Expenditure, and the plateau as an ODE\n\n\\[\nE = c_0 + c_1 W + \\text{TEF} + X + A,\n\\qquad\n\\dot A = \\frac{-\\beta_A\\,(E_{\\text{base}} - I) - A}{\\tau_A}\n\\]\n\n\n\\(c_0 + c_1 W\\): resting and baseline expenditure, \\(W\\) total mass, TEF the thermic effect of food, \\(X\\) logged exercise, and \\(E_{\\text{base}} = E - A\\).\nUnder a sustained deficit \\(D = E_{\\text{base}} - I\\), adaptation settles at \\(-\\beta_A D\\) with time constant \\(\\tau_A\\). Priors: \\(\\beta_A \\approx 0.15\\), \\(\\tau_A \\approx 14\\) days.\nWater: \\(\\dot G = (k_G\\,\\Delta C - G)/\\tau_G\\), with \\(\\Delta C\\) carbohydrate relative to the attempt’s mean; the same form for sodium.\n\n\nRemark. \\(c_0\\) also absorbs any constant bias in the food log, harmlessly. A bias that drifts is another matter: the model cannot tell it apart from adaptation.\n\n\nNine parameters in all: c0, c1, beta_A, tau_A, the gain and time constant for each water compartment, and kappa_P for protein, which appears on the next slide."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#what-a-lost-pound-is-made-of",
+    "href": "body-weight/weight-dynamics-unused.html#what-a-lost-pound-is-made-of",
+    "title": "Body-Weight Dynamics",
+    "section": "What a lost pound is made of",
+    "text": "What a lost pound is made of\n\n\n\n\n\nForbes found lean mass roughly logarithmic in fat mass across people. Differentiating gives the fat share of any change:\n\\[\np = \\frac{F}{F + 10.4} + \\kappa_P\\!\\left(\\frac{P_g}{W} - 1.6\\right)\n\\]\nclipped to \\([0.5, 0.98]\\), with \\(P_g\\) grams of protein. Then \\(\\rho_{\\text{eff}} = p\\,\\rho_F + (1-p)\\,\\rho_L\\).\nThe leaner you get, the more of each pound is lean tissue, and the less energy each pound takes. The last stretch of a diet is harder than the first, structurally.\n\n\n\nThe protein term kappa_P lets higher protein shift the mix toward fat. It is in the model because leaving it out would assert protein has no effect; the data, as we will see, cannot estimate it."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#three-clocks",
+    "href": "body-weight/weight-dynamics-unused.html#three-clocks",
+    "title": "Body-Weight Dynamics",
+    "section": "Three clocks",
+    "text": "Three clocks\n\nThe model at its prior parameters, for a 235 lb subject who cuts 1,000 kcal/day and drops carbohydrate from 250 to 50 g on day 0. Water settles in days, adaptation in weeks, tissue in months. Over six months the model predicts 37 lb, against 51 lb for the rule of thumb.\n\nThe separation of timescales is what makes the states distinguishable at all. If adaptation were instantaneous it would be perfectly confounded with an error in \\(c_0\\); because it lags, a change in intake produces a brief transient in which the two differ.\n\n\nAdaptation peaks and then shrinks because the deficit itself shrinks as mass falls. The gap between scale and tissue in the left panel is the 1.3 pounds of glycogen water."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#from-physiology-to-a-filter",
+    "href": "body-weight/weight-dynamics-unused.html#from-physiology-to-a-filter",
+    "title": "Body-Weight Dynamics",
+    "section": "From physiology to a filter",
+    "text": "From physiology to a filter\n\n\nDiscretize exactly Food logs are daily totals, so inputs are held for a day: an exact zero-order hold. The one-day map \\(x_{k+1} = f(x_k, u_k)\\) is RK4 with four substeps, checked against an adaptive Tsit5 solve to \\(2.5\\times10^{-7}\\).\n\n\nObserve linearly \\(y_k = H x_k + v_k\\) with \\(H = (1\\ 0\\ 1\\ 1\\ 0)\\). The measurement is linear in the state, so every measurement update is exact; only the time update is approximate.\n\n\nUnlogged days are one unknown A day with no food log sets intake to current expenditure and adds process noise along a single direction, \\(\\propto (1, p, 0, 0, 0)/\\rho_{\\text{eff}}\\). An unknown intake moves tissue and fat together; diagonal noise would let the filter learn composition from nothing.\n\n\nMissing weigh-ins are skipped The update is skipped and the prediction carried forward. Never interpolate a missed weigh-in by hand, and never delete an awkward one: both corrupt the noise estimate everything else rests on.\n\n\n\nThese four choices are where most of the care went. The rank-one noise on unlogged days is the least obvious and, I think, the most important."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#estimation",
+    "href": "body-weight/weight-dynamics-unused.html#estimation",
+    "title": "Body-Weight Dynamics",
+    "section": "Estimation",
+    "text": "Estimation\nA weight-only history identifies noise. Weight and food together identify metabolism."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#phase-1-noise-from-weight-alone",
+    "href": "body-weight/weight-dynamics-unused.html#phase-1-noise-from-weight-alone",
+    "title": "Body-Weight Dynamics",
+    "section": "Phase 1: noise, from weight alone",
+    "text": "Phase 1: noise, from weight alone\n\n\nThe first four attempts have no food log, so they cannot say anything about metabolism. They can say how noisy a reading is and how fast the trend moves. A local linear trend model does exactly that:\n\\[\n\\begin{pmatrix}\\ell_{k+1}\\\\ b_{k+1}\\end{pmatrix}\n= \\begin{pmatrix}1&1\\\\0&1\\end{pmatrix}\\begin{pmatrix}\\ell_k\\\\ b_k\\end{pmatrix} + w_k,\n\\qquad y_k = \\ell_k + v_k\n\\]\nwith level \\(\\ell\\) and daily slope \\(b\\). The three noise scales are fitted by maximum likelihood over all attempts at once, each with its own diffuse start.\n\n\n\n\n\n\n\n\n\n\nThe record\n\n\n\n\nobservation sd\n0.51 kg (1.1 lb)\n\n\nlevel innovation sd\n0.30 kg/day\n\n\nslope innovation sd\nat its bound\n\n\nsteady-state gain\n0.44\n\n\neffective window\n2.3 days\n\n\n\nGain 0.44: each weigh-in moves the estimate 44% of the way toward itself. A standard error is reported as “unidentified” when the optimum sits on a bound, rather than as a huge number.\n\n\n\nThe fitted observation noise is what phase 2 inherits. The short window here, about two days, reflects how much these past trends bent. It may lengthen as the current attempt adds steadier data."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#phase-2-parameters-as-slow-states",
+    "href": "body-weight/weight-dynamics-unused.html#phase-2-parameters-as-slow-states",
+    "title": "Body-Weight Dynamics",
+    "section": "Phase 2: parameters as slow states",
+    "text": "Phase 2: parameters as slow states\n\n\\[\nz_k = \\bigl(\\underbrace{T, F, G, N, A}_{x_k \\in \\mathbb{R}^5},\\;\n\\underbrace{\\eta}_{\\in \\mathbb{R}^9}\\bigr) \\in \\mathbb{R}^{14},\n\\qquad \\eta_{k+1} = \\eta_k + \\omega_k,\\ \\ \\omega_k \\sim \\mathcal{N}(0,\\, 0.02^2 I)\n\\]\n\n\n\nUnscented, not extended Sigma points go through the exact nonlinear dynamics; \\(\\alpha = 0.3\\), because the classic \\(10^{-3}\\) loses positive definiteness in 14 dimensions. Smoothing is Rauch-Tung-Striebel with the sigma-point cross-covariance.\n\n\nFilter in a coordinate that cannot break \\(\\theta = c\\,e^{s\\eta}\\) for positive quantities, a logistic map for \\(\\beta_A \\in (0,1)\\), affine for \\(\\kappa_P\\). Centered and scaled so the prior is exactly \\(\\mathcal{N}(0, I)\\), and no sigma point is ever a negative time constant.\n\n\nShare metabolism, not state Each attempt restarts the physical states from its first weigh-in. The parameter posterior carries over as the next prior, relaxed toward the population prior with a two-year time constant across the gap.\n\n\nThe random walk keeps the filter from going deaf to later evidence. Its cost: intervals settle at a steady width instead of shrinking forever.\n\nThe random walk on parameters is a modeling fiction, but a useful one: early food logs are the least reliable, and a filter with zero parameter noise would lock onto them."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#validation-does-it-recover-what-it-was-given",
+    "href": "body-weight/weight-dynamics-unused.html#validation-does-it-recover-what-it-was-given",
+    "title": "Body-Weight Dynamics",
+    "section": "Validation: does it recover what it was given?",
+    "text": "Validation: does it recover what it was given?\n\n\n\n9 of 9 true parameters inside their 90% intervals, truth set deliberately off the priors\n\n\n202 g trend error, from readings with 476 g of noise each\n\n\n±7 kg 90% band on fat mass, nearly unchanged after 120 days\n\n\nData generated by the model itself: this validates the inference machinery, and says nothing about whether the model resembles a person.\n\nThe synthetic subject has two weight-only past attempts and 120 logged days. If the truth sat on the prior, an estimator that ignored the data would pass; it does not sit there. Fat mass is only weakly observable: it enters the dynamics only through rho_eff."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#maintenance-is-identified-its-parts-are-not",
+    "href": "body-weight/weight-dynamics-unused.html#maintenance-is-identified-its-parts-are-not",
+    "title": "Body-Weight Dynamics",
+    "section": "Maintenance is identified; its parts are not",
+    "text": "Maintenance is identified; its parts are not\n\n\n\n\n\nOver the narrow range of weights in one dataset, raising \\(c_0\\) and lowering \\(c_1\\) leaves the fitted trajectory almost unchanged: correlation −0.79.\nSo each coefficient has a wide marginal, but maintenance \\(c_0 + c_1 W\\) at the current weight is tight: 2,562 to 2,975 kcal/day around a true 2,697.\nThe package reports maintenance by propagating the full covariance through the sum. A test asserts that interval is more than 20% narrower than treating the two as independent.\n\n\n\nThis is the slide to remember before quoting any single parameter as a finding. Also well identified: the glycogen gain, because carbohydrate varies a lot day to day. Weakly: the adaptation pair, which needs deliberate variation in intake. Not at all: kappa_P."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#what-the-real-data-has-said-so-far",
+    "href": "body-weight/weight-dynamics-unused.html#what-the-real-data-has-said-so-far",
+    "title": "Body-Weight Dynamics",
+    "section": "What the real data has said so far",
+    "text": "What the real data has said so far\n\n\n\nWith two logged days, eight of nine parameters sit on their priors. That is the correct answer: the weigh-in history pins down noise, and nothing about metabolism, so the filter reports its ignorance instead of inventing precision.\n\n\n\\(\\tau_G\\) has moved to about 9 days against a prior of 1.5. From one day of carbohydrate variation that is far more likely a flat likelihood ridge than a finding. If it is real, it will keep landing there as data accrues.\n\n\n\nSame axes as the synthetic case, deliberately, so the contrast is the message. Check back in a few weeks."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#control",
+    "href": "body-weight/weight-dynamics-unused.html#control",
+    "title": "Body-Weight Dynamics",
+    "section": "Control",
+    "text": "Control\nPlan four weeks, eat one day, replan."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#receding-horizon",
+    "href": "body-weight/weight-dynamics-unused.html#receding-horizon",
+    "title": "Body-Weight Dynamics",
+    "section": "Receding horizon",
+    "text": "Receding horizon\n\n\nEach morning the controller takes the filtered state, optimizes intake over a 28-day horizon, prescribes the first day, and discards the rest. Tomorrow’s weigh-in corrects whatever the model got wrong.\nDecisions are held constant over weekly blocks:\n\n\n\n\n\n\n\nPer block\nBounds\n\n\n\n\nenergy \\(I\\)\n\\([I_{\\min}, I_{\\max}]\\), floor 1,200 kcal\n\n\nprotein per kg\n\\([P_{\\min}, 3.0]\\) g/kg\n\n\nfat share of energy\n\\([0.15, 0.75]\\)\n\n\n\nCarbohydrate is the residual, \\(C = (I - 4P_g - 9F_g)/4\\), so the three are independent and the bounds are boxes for L-BFGS-B.\n\n\n\nRemark. Certainty equivalence. The plan uses posterior-mean parameters and ignores their spread. That is cheap and optimistic: a maintenance estimate 200 kcal too high under-delivers, and the controller learns so only from the weigh-ins. Daily replanning keeps the error from compounding, but for the first two weeks the numbers are a starting point, not a prescription.\n\n\nNot modeled: adherence. The plan is what would be optimal if followed exactly. People do not follow plans exactly.\n\n\n\n\nThe receding-horizon structure is what makes this robust to a model that is certainly wrong in its details. Nothing beyond tomorrow is ever acted on."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#the-objective-term-by-term",
+    "href": "body-weight/weight-dynamics-unused.html#the-objective-term-by-term",
+    "title": "Body-Weight Dynamics",
+    "section": "The objective, term by term",
+    "text": "The objective, term by term\n\n\\[\nJ_{\\text{sustainable}} = w_p\\,T_H + w_s\\,\\textstyle\\sum\\Delta I^2 + w_e\\,D^2 + w_c\\,C^2\n+ w_\\phi(\\phi - \\phi^\\star)^2 + \\mu\\,\\Phi\n\\]\n\n\n\n\n\n\n\n\n\nTerm\nIn plain English\n\n\n\n\n\\(w_p\\,T_H\\)\nend the horizon with less tissue. Linear, so it trades against the quadratic terms at an interior optimum instead of running to the floor\n\n\n\\(w_s\\,\\Delta I^2\\)\ndo not change the target every day\n\n\n\\(w_e\\,D^2\\)\nlarge deficits cost adherence, training and sleep, beyond any hard limit\n\n\n\\(w_c\\,C^2\\)\nan optional preference for less carbohydrate, at any level\n\n\n\\(w_\\phi(\\phi - \\phi^\\star)^2\\)\npull one macro’s energy share \\(\\phi\\) toward a target (or break a flat tie)\n\n\n\\(\\mu\\,\\Phi\\)\nhinge penalties on every safety limit, escalated until they hold\n\n\n\n\nDeadline mode replaces the progress term with tracking: tissue against a straight path from today’s weight to the goal, scored at the end of the horizon, not at the goal itself.\n\nScoring the gap to the final goal over a 28-day horizon was a real bug during development: it asked to arrive within 28 days no matter how far away the deadline was, and pinned intake to the floor. Tracking the reference instead makes the horizon a window onto a longer plan."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#constrain-tissue-not-the-scale",
+    "href": "body-weight/weight-dynamics-unused.html#constrain-tissue-not-the-scale",
+    "title": "Body-Weight Dynamics",
+    "section": "Constrain tissue, not the scale",
+    "text": "Constrain tissue, not the scale\n\n\\[\n-\\Delta T_k \\;\\le\\; \\frac{\\gamma\\, T_k}{7} \\qquad \\text{for every day } k,\n\\qquad \\gamma = 1.75\\%/\\text{week}\n\\]\n\n\n\nWhy tissue Cutting carbohydrate sheds a kilogram of glycogen water in days. On the scale that reads as 4 lb/week and trips any limit written on scale weight, though no tissue moved. A controller limited on the scale would refuse a sound plan, or raise calories in response to water. The objective scores \\(T\\) for the same reason: scored on \\(W\\), cutting carbohydrate alone would look like progress.\n\n\nConstraints in fact, not intention The limit acts on the trajectory, so it is a hinge penalty. A soft penalty binds only by coincidence, so the solver checks the result, multiplies violated penalties by 12 and re-solves, warm-started, up to nine times. The CLI checks the final plan independently, and says so when a goal is out of reach:\ntarget of 170 lb by 2026-10-25 is not reachable within your 2.0%/week limit; the earliest achievable date at that maximum rate is 2026-12-03\n\n\n\nThis is the most important modeling decision in the controller. Separating tissue from water is what makes the safety constraint mean anything."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#the-plan-being-followed",
+    "href": "body-weight/weight-dynamics-unused.html#the-plan-being-followed",
+    "title": "Body-Weight Dynamics",
+    "section": "The plan being followed",
+    "text": "The plan being followed\n\n\n\n1,294 kcal tomorrow: 107 g protein, 77 g carbohydrate, 62 g fat\n\n\n3.0 to 3.5 lb/wk predicted scale loss; tissue at 1.5 to 1.8% a week, against the 1.75% limit\n\n\n1,200 kcal the floor, binding from week 2: a deadline this close leaves no slack\n\n\n\nDeadline mode, 170 pounds by March 20. Two constraints bind from the second week, the calorie floor and the tissue rate limit, so this plan is about as aggressive as the safety settings allow. Only tomorrow’s line is a prescription; the rest will be replaced as weigh-ins arrive and the parameters move off their priors."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#where-things-stand-on-day-2",
+    "href": "body-weight/weight-dynamics-unused.html#where-things-stand-on-day-2",
+    "title": "Body-Weight Dynamics",
+    "section": "Where things stand on day 2",
+    "text": "Where things stand on day 2\n\n\n235.1 lb filtered trend, against a reading of 233.0: one low morning is not believed\n\n\n3,016 kcal maintenance \\(c_0 + c_1W\\); 90% interval 2,365 to 3,958, still the prior’s width\n\n\n38 ± 7 kg fat mass, 90%; anchored by the prior and Forbes, not by data yet\n\n\n−54 kcal/day adaptation, two days into a large deficit\n\n\n\nWhat to expect after four months of consistent data: a trend far better than the raw scale, a personal maintenance figure good to perhaps 5 to 8% with an honest interval, a usable split of scale movement into tissue and water, and a daily plan grounded in the subject’s data rather than a population formula.\n\n\nWhat not to expect: a reliable body-composition measurement, a trustworthy adaptation estimate unless intake is deliberately varied, or any insight into whether the plan will be followed.\n\n\nThese numbers are honest about being early. The maintenance interval is still nearly 1,600 kcal wide. A planned diet break would be the most informative thing the subject could do for the adaptation parameters, an unusual case of the experimentally optimal choice also being the pleasant one."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#what-the-model-cannot-do",
+    "href": "body-weight/weight-dynamics-unused.html#what-the-model-cannot-do",
+    "title": "Body-Weight Dynamics",
+    "section": "What the model cannot do",
+    "text": "What the model cannot do\n\n\n\nDrifting log bias looks like adaptation. If under-logging grows as the weeks go by, the model sees expenditure falling. Nothing in scale data separates the two.\nIntake is self-reported, and expenditure is never measured, only inferred.\nUnlogged days are treated as neutral. In reality they are more often the high days.\nOne subject, no replication. The physiology is population-level; the fit is to one person.\n\n\n\n\nGaussian everything, and a parameter random walk that is a convenient fiction.\nReported intervals are optimistic: they assume the model is right.\nCertainty-equivalent control. A stochastic or minimax formulation is the obvious extension.\nResidual diagnostics can show when the model is clearly wrong. They cannot show it is right.\n\n\n\n\nRemark. Not medical advice. The safety limits are conservative defaults from general guidance, not anything specific to one person.\n\n\nChapter 11 of the technical report lists these in full. The first one is the deepest: it is structural, not a matter of more data."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#the-software",
+    "href": "body-weight/weight-dynamics-unused.html#the-software",
+    "title": "Body-Weight Dynamics",
+    "section": "The software",
+    "text": "The software\n\n\nwdm, a Python package on JAX, Equinox and Diffrax:\n\nmodels as JAX pytrees; one-day RK4 map, Tsit5 reference\nlinear, extended and unscented filters, RTS smoothers\nphase-1 maximum likelihood with L-BFGS-B and JAX gradients\nreceding-horizon solver with escalating penalties\nexercise energy from a lifting routine\n163 tests, and a 78-page technical report deriving all of it\n\n\n\nThe daily loop:\n# 1. weigh in; close out yesterday's row\n#    in observations.csv (weight, food,\n#    exercise)\n# 2. plan from yesterday's state\nwdm plan observations.csv \\\n    --config subject.toml\n# 3. eat the \"Today:\" line\nwdm filter and wdm fit-noise are diagnostics, not part of the daily loop. The plan’s horizon starts the day after the last row, so tomorrow’s row is never added before planning.\n\n\n\nEverything in this deck was generated by running the package against the real observation file. Rerunning two scripts brings every figure up to date."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#section",
+    "href": "body-weight/weight-dynamics-unused.html#section",
+    "title": "Body-Weight Dynamics",
+    "section": "",
+    "text": "A scale is a sensor, a diet is an input, and a plateau is a time constant.\nEstimate the state, respect the noise, plan ahead, act one day at a time, and let tomorrow’s weigh-in correct today’s plan.\nUpdated as the current attempt accrues data. Figures generated by the wdm package from the subject’s weigh-ins and food log."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#backup",
+    "href": "body-weight/weight-dynamics-unused.html#backup",
+    "title": "Body-Weight Dynamics",
+    "section": "Backup",
+    "text": "Backup\n\nB1 Sigma points and weights\nB2 The steady-state gain\nB3 Notation"
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#b1",
+    "href": "body-weight/weight-dynamics-unused.html#b1",
+    "title": "Body-Weight Dynamics",
+    "section": "B1. Sigma points and weights",
+    "text": "B1. Sigma points and weights\nFor an \\(n\\)-dimensional belief \\((\\hat x, P)\\) with Cholesky factor \\(L\\) and \\(\\lambda = \\alpha^2(n + \\kappa) - n\\):\n\\[\n\\mathcal{X}^{(0)} = \\hat x,\\qquad\n\\mathcal{X}^{(i)} = \\hat x + \\sqrt{n+\\lambda}\\,L_{:,i},\\qquad\n\\mathcal{X}^{(i+n)} = \\hat x - \\sqrt{n+\\lambda}\\,L_{:,i},\n\\quad i = 1,\\dots,n\n\\]\n\\[\nW_m^{(0)} = \\frac{\\lambda}{n+\\lambda},\\qquad\nW_c^{(0)} = \\frac{\\lambda}{n+\\lambda} + 1 - \\alpha^2 + \\beta,\\qquad\nW_m^{(i)} = W_c^{(i)} = \\frac{1}{2(n+\\lambda)}\n\\]\nThe \\(2n + 1 = 29\\) points reproduce the mean and covariance exactly. Each is pushed through the one-day map, and the prediction is their weighted mean and covariance plus \\(Q_k\\). With \\(\\alpha = 10^{-3}\\) and \\(n = 14\\), \\(W_c^{(0)}\\) is large and negative and the recombined covariance can lose positive definiteness; the package uses \\(\\alpha = 0.3\\)."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#b2",
+    "href": "body-weight/weight-dynamics-unused.html#b2",
+    "title": "Body-Weight Dynamics",
+    "section": "B2. The steady-state gain",
+    "text": "B2. The steady-state gain\nIterate the Riccati recursion of the local linear trend model to convergence and read off the Kalman gain \\(K_\\ell\\) on the level. It answers the operational question directly: what fraction of the gap between this morning’s reading and yesterday’s estimate does the filter act on?\n\\[\n\\hat\\ell_{k|k} = \\hat\\ell_{k|k-1} + K_\\ell\\,\\bigl(y_k - \\hat\\ell_{k|k-1}\\bigr),\n\\qquad \\text{effective window} \\approx 1/K_\\ell \\text{ days}\n\\]\nIt is reported in place of the ratio \\(\\sigma_\\ell/\\sigma_v\\), which reads as “no signal” whenever maximum likelihood drives \\(\\sigma_\\ell \\to 0\\): an ordinary outcome meaning the trend moves by slope innovations rather than level jumps."
+  },
+  {
+    "objectID": "body-weight/weight-dynamics-unused.html#b3",
+    "href": "body-weight/weight-dynamics-unused.html#b3",
+    "title": "Body-Weight Dynamics",
+    "section": "B3. Notation",
+    "text": "B3. Notation\n\n\n\n\n\n\n\n\nSymbol\nMeaning\n\n\n\n\n\\(T, F, G, N, A\\)\ntissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day)\n\n\n\\(W = T + G + N\\)\ntotal mass, what the scale reads before noise \\(v\\)\n\n\n\\(I, E, X, D\\)\nintake, expenditure, logged exercise, deficit \\(E_{\\text{base}} - I\\) (kcal/day)\n\n\n\\(P_g, C, F_g\\)\nprotein, carbohydrate, fat (g/day); \\(\\Delta C\\) carbohydrate relative to the mean\n\n\n\\(c_0, c_1\\)\nexpenditure intercept (kcal/day) and slope (kcal/day per kg)\n\n\n\\(\\beta_A, \\tau_A\\)\nadaptation gain and time constant\n\n\n\\(k_G, \\tau_G\\); \\(k_{Na}, \\tau_{Na}\\)\ngain and time constant of the glycogen and sodium water compartments\n\n\n\\(p, \\kappa_P\\)\nfat fraction of a mass change; its protein sensitivity\n\n\n\\(\\rho_F, \\rho_L, \\rho_G, \\rho_{\\text{eff}}\\)\nenergy density of fat, lean tissue, glycogen-water complex, and the current mix (kcal/kg)\n\n\n\\(\\eta, z\\)\nunconstrained parameters; the 14-dimensional augmented state\n\n\n\\(\\ell, b\\)\nlevel and slope of the local linear trend model\n\n\n\\(\\gamma\\)\npermitted weekly tissue-loss fraction"
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#twenty-one-months-on-one-bathroom-scale",
+    "href": "body-weight/weight-dynamics.html#twenty-one-months-on-one-bathroom-scale",
+    "title": "Body-Weight Dynamics",
+    "section": "Twenty-one months on one bathroom scale",
+    "text": "Twenty-one months on one bathroom scale\n\n\n\n5 attempts Jan 2025 to now, months apart\n\n\n53 weigh-ins the only measurement; no food log before Aug 2026\n\n\n±1.1 lb scatter of one morning reading about the trend, fitted from this record\n\n\n7 to 22 lb lost on each of the three longer attempts, then regained before the next\n\n\n\nEvery weigh-in on record, one panel per attempt, on a shared weight axis. The gaps between panels are months long and contain no data, so they are not drawn. Each attempt worked while it lasted. What this record cannot tell you is why: there is no food log for the first four attempts, so all it can identify is how noisy a single reading is and how fast the trend moves. That turns out to be exactly what the filter needs first.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#a-day-one-drop-is-mostly-water",
+    "href": "body-weight/weight-dynamics.html#a-day-one-drop-is-mostly-water",
+    "title": "Body-Weight Dynamics",
+    "section": "A day-one drop is mostly water",
+    "text": "A day-one drop is mostly water\n\n\n\nThe energy budget says under 1 lb Day 1 of the current attempt: 885 kcal eaten against roughly 3,350 kcal of expenditure, a deficit near 2,500 kcal. At about 7,800 kcal per kg of tissue that is 0.3 kg, or 0.7 lb.\n\n\nThe scale said 4.6 lb 237.6 → 233.0 lb overnight. The other 4 lb are glycogen and its bound water, gut contents, and fluid: real mass, but not the mass a diet is trying to move. A model that cannot tell the two apart will over-credit the first week and then report a “stall”.\n\n\n\nThree of the four attempts open with a 3 to 6 pound drop on the first day. No energy balance produces that from tissue. The model has to carry a separate fast compartment for it, or it will mistake water for progress.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#the-scale-is-a-noisy-sensor-of-a-slow-state",
+    "href": "body-weight/weight-dynamics.html#the-scale-is-a-noisy-sensor-of-a-slow-state",
+    "title": "Body-Weight Dynamics",
+    "section": "The scale is a noisy sensor of a slow state",
+    "text": "The scale is a noisy sensor of a slow state\n\n\nA morning reading scatters by 0.51 kg (1.1 lb) about the true trend. That is not the scale’s error, which is tens of grams; it is fluid, gut contents, and glycogen.\nFiltered: the best estimate using only readings up to that day. This is what a controller can use. Smoothed: conditioned on the whole record, the right way to review history.\nMissing days cost precision, not accuracy: the update is skipped, never filled in.\n\n\nThe March attempt, which has the densest weigh-ins. The blue line is causal: it is what the filter would have known that morning. The green line uses the future too, which is why it is smoother. A controller only ever gets the blue line.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#why-3500-kcal-per-pound-is-wrong",
+    "href": "body-weight/weight-dynamics.html#why-3500-kcal-per-pound-is-wrong",
+    "title": "Body-Weight Dynamics",
+    "section": "Why “3,500 kcal per pound” is wrong",
+    "text": "Why “3,500 kcal per pound” is wrong\n\n\nMass is a mixture A lost pound is part fat (about 9,400 kcal/kg) and part lean tissue (about 1,800 kcal/kg). The mix depends on how much fat you carry, so the energy per pound falls as the diet goes on.\n\n\nWater moves first Glycogen is stored with about three times its mass in water. Cutting carbohydrate empties it in days: pounds on the scale, no tissue lost. Salt does the same in the other direction.\n\n\nExpenditure adapts In a sustained deficit the body spends less than its lower mass alone explains, with a lag of a few weeks. The plateau is part of the dynamics, not a failure to comply.\n\n\n\nEach of these is a state with its own time constant. The rest of this talk is a model with those states, a filter that estimates them from a scale, and a controller that plans food around them.\n\n\nThe rule of thumb treats the body as a fixed-density battery. It is wrong three ways, and each way becomes one state of the model.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#the-model",
+    "href": "body-weight/weight-dynamics.html#the-model",
+    "title": "Body-Weight Dynamics",
+    "section": "The model",
+    "text": "The model\nFive states, nine parameters, one equation that matters most.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#the-loop",
+    "href": "body-weight/weight-dynamics.html#the-loop",
+    "title": "Body-Weight Dynamics",
+    "section": "The loop",
+    "text": "The loop\n\n\nThe person is a nonlinear system with five hidden states. The only sensor is a scale, read once a morning.\nThe filter estimates the states and the person’s metabolic parameters, jointly.\nThe controller plans 28 days ahead from that estimate, and the subject eats only the first day of the plan. Tomorrow it plans again from a new weigh-in.\n\n\nThis is a textbook output-feedback loop with an unusual plant. The plant’s input is food, its output is one noisy number per day, and its parameters are unknown and personal.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#five-states",
+    "href": "body-weight/weight-dynamics.html#five-states",
+    "title": "Body-Weight Dynamics",
+    "section": "Five states",
+    "text": "Five states\n\n\n\n\n\n\n\n\n\nState\nUnits\nMeaning\nClock\n\n\n\n\n\\(T\\)\nkg\ntissue: fat plus fat-free solids and their water. What a diet changes\nmonths\n\n\n\\(F\\)\nkg\nfat mass, a part of \\(T\\) (lean mass is \\(T - F\\))\nmonths\n\n\n\\(G\\)\nkg\nglycogen and bound water, deviation from the attempt’s mean\n1 to 2 days\n\n\n\\(N\\)\nkg\nsodium-associated water, deviation from the mean\nabout 1 day\n\n\n\\(A\\)\nkcal/day\nadaptive thermogenesis; negative in a deficit\nabout 2 weeks\n\n\n\n\n\\[\n\\rho_{\\text{eff}}\\,\\dot T = I - E - \\rho_G\\,\\dot G,\n\\qquad\n\\dot F = p\\,\\dot T,\n\\qquad\ny = T + G + N + v\n\\]\n\nEnergy eaten \\(I\\) minus energy spent \\(E\\) goes into tissue, except what is diverted into glycogen (\\(\\rho_G \\approx 1{,}025\\) kcal/kg of glycogen-water complex). \\(\\rho_{\\text{eff}}\\) is the energy density of the tissue being lost, \\(p\\) its fat fraction, and the scale reads \\(y\\): tissue plus both water compartments plus noise \\(v\\).\n\nThe boxed equation is the whole model in one line: energy balance, with the energy density set by what kind of tissue is moving and a correction for energy parked in glycogen. The scale cannot see T alone; it sees T plus water.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#expenditure-and-the-plateau-as-an-ode",
+    "href": "body-weight/weight-dynamics.html#expenditure-and-the-plateau-as-an-ode",
+    "title": "Body-Weight Dynamics",
+    "section": "Expenditure, and the plateau as an ODE",
+    "text": "Expenditure, and the plateau as an ODE\n\n\\[\nE = c_0 + c_1 W + \\text{TEF} + X + A,\n\\qquad\n\\dot A = \\frac{-\\beta_A\\,(E_{\\text{base}} - I) - A}{\\tau_A}\n\\]\n\n\n\\(c_0 + c_1 W\\): resting and baseline expenditure, \\(W\\) total mass, TEF the thermic effect of food, \\(X\\) logged exercise, and \\(E_{\\text{base}} = E - A\\).\nUnder a sustained deficit \\(D = E_{\\text{base}} - I\\), adaptation settles at \\(-\\beta_A D\\) with time constant \\(\\tau_A\\). Priors: \\(\\beta_A \\approx 0.15\\), \\(\\tau_A \\approx 14\\) days.\nWater: \\(\\dot G = (k_G\\,\\Delta C - G)/\\tau_G\\), with \\(\\Delta C\\) carbohydrate relative to the attempt’s mean; the same form for sodium.\n\n\nRemark. \\(c_0\\) also absorbs any constant bias in the food log, harmlessly. A bias that drifts is another matter: the model cannot tell it apart from adaptation.\n\n\nNine parameters in all: c0, c1, beta_A, tau_A, the gain and time constant for each water compartment, and kappa_P for protein, which appears on the next slide.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#what-a-lost-pound-is-made-of",
+    "href": "body-weight/weight-dynamics.html#what-a-lost-pound-is-made-of",
+    "title": "Body-Weight Dynamics",
+    "section": "What a lost pound is made of",
+    "text": "What a lost pound is made of\n\n\n\n\n\nForbes found lean mass roughly logarithmic in fat mass across people. Differentiating gives the fat share of any change:\n\\[\np = \\frac{F}{F + 10.4} + \\kappa_P\\!\\left(\\frac{P_g}{W} - 1.6\\right)\n\\]\nclipped to \\([0.5, 0.98]\\), with \\(P_g\\) grams of protein. Then \\(\\rho_{\\text{eff}} = p\\,\\rho_F + (1-p)\\,\\rho_L\\).\nThe leaner you get, the more of each pound is lean tissue, and the less energy each pound takes. The last stretch of a diet is harder than the first, structurally.\n\n\n\nThe protein term kappa_P lets higher protein shift the mix toward fat. It is in the model because leaving it out would assert protein has no effect; the data, as we will see, cannot estimate it.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#three-clocks",
+    "href": "body-weight/weight-dynamics.html#three-clocks",
+    "title": "Body-Weight Dynamics",
+    "section": "Three clocks",
+    "text": "Three clocks\n\nThe model at its prior parameters, for a 235 lb subject who cuts 1,000 kcal/day and drops carbohydrate from 250 to 50 g on day 0. Water settles in days, adaptation in weeks, tissue in months. Over six months the model predicts 37 lb, against 51 lb for the rule of thumb.\n\nThe separation of timescales is what makes the states distinguishable at all. If adaptation were instantaneous it would be perfectly confounded with an error in \\(c_0\\); because it lags, a change in intake produces a brief transient in which the two differ.\n\n\nAdaptation peaks and then shrinks because the deficit itself shrinks as mass falls. The gap between scale and tissue in the left panel is the 1.3 pounds of glycogen water.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#from-physiology-to-a-filter",
+    "href": "body-weight/weight-dynamics.html#from-physiology-to-a-filter",
+    "title": "Body-Weight Dynamics",
+    "section": "From physiology to a filter",
+    "text": "From physiology to a filter\n\n\nDiscretize exactly Food logs are daily totals, so inputs are held for a day: an exact zero-order hold. The one-day map \\(x_{k+1} = f(x_k, u_k)\\) is RK4 with four substeps, checked against an adaptive Tsit5 solve to \\(2.5\\times10^{-7}\\).\n\n\nObserve linearly \\(y_k = H x_k + v_k\\) with \\(H = (1\\ 0\\ 1\\ 1\\ 0)\\). The measurement is linear in the state, so every measurement update is exact; only the time update is approximate.\n\n\nUnlogged days are one unknown A day with no food log sets intake to current expenditure and adds process noise along a single direction, \\(\\propto (1, p, 0, 0, 0)/\\rho_{\\text{eff}}\\). An unknown intake moves tissue and fat together; diagonal noise would let the filter learn composition from nothing.\n\n\nMissing weigh-ins are skipped The update is skipped and the prediction carried forward. Never interpolate a missed weigh-in by hand, and never delete an awkward one: both corrupt the noise estimate everything else rests on.\n\n\n\nThese four choices are where most of the care went. The rank-one noise on unlogged days is the least obvious and, I think, the most important.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#estimation",
+    "href": "body-weight/weight-dynamics.html#estimation",
+    "title": "Body-Weight Dynamics",
+    "section": "Estimation",
+    "text": "Estimation\nA weight-only history identifies noise. Weight and food together identify metabolism.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#phase-1-noise-from-weight-alone",
+    "href": "body-weight/weight-dynamics.html#phase-1-noise-from-weight-alone",
+    "title": "Body-Weight Dynamics",
+    "section": "Phase 1: noise, from weight alone",
+    "text": "Phase 1: noise, from weight alone\n\n\nThe first four attempts have no food log, so they cannot say anything about metabolism. They can say how noisy a reading is and how fast the trend moves. A local linear trend model does exactly that:\n\\[\n\\begin{pmatrix}\\ell_{k+1}\\\\ b_{k+1}\\end{pmatrix}\n= \\begin{pmatrix}1&1\\\\0&1\\end{pmatrix}\\begin{pmatrix}\\ell_k\\\\ b_k\\end{pmatrix} + w_k,\n\\qquad y_k = \\ell_k + v_k\n\\]\nwith level \\(\\ell\\) and daily slope \\(b\\). The three noise scales are fitted by maximum likelihood over all attempts at once, each with its own diffuse start.\n\n\n\n\n\n\n\n\n\n\nThe record\n\n\n\n\nobservation sd\n0.51 kg (1.1 lb)\n\n\nlevel innovation sd\n0.30 kg/day\n\n\nslope innovation sd\nat its bound\n\n\nsteady-state gain\n0.44\n\n\neffective window\n2.3 days\n\n\n\nGain 0.44: each weigh-in moves the estimate 44% of the way toward itself. A standard error is reported as “unidentified” when the optimum sits on a bound, rather than as a huge number.\n\n\n\nThe fitted observation noise is what phase 2 inherits. The short window here, about two days, reflects how much these past trends bent. It may lengthen as the current attempt adds steadier data.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#phase-2-parameters-as-slow-states",
+    "href": "body-weight/weight-dynamics.html#phase-2-parameters-as-slow-states",
+    "title": "Body-Weight Dynamics",
+    "section": "Phase 2: parameters as slow states",
+    "text": "Phase 2: parameters as slow states\n\n\\[\nz_k = \\bigl(\\underbrace{T, F, G, N, A}_{x_k \\in \\mathbb{R}^5},\\;\n\\underbrace{\\eta}_{\\in \\mathbb{R}^9}\\bigr) \\in \\mathbb{R}^{14},\n\\qquad \\eta_{k+1} = \\eta_k + \\omega_k,\\ \\ \\omega_k \\sim \\mathcal{N}(0,\\, 0.02^2 I)\n\\]\n\n\n\nUnscented, not extended Sigma points go through the exact nonlinear dynamics; \\(\\alpha = 0.3\\), because the classic \\(10^{-3}\\) loses positive definiteness in 14 dimensions. Smoothing is Rauch-Tung-Striebel with the sigma-point cross-covariance.\n\n\nFilter in a coordinate that cannot break \\(\\theta = c\\,e^{s\\eta}\\) for positive quantities, a logistic map for \\(\\beta_A \\in (0,1)\\), affine for \\(\\kappa_P\\). Centered and scaled so the prior is exactly \\(\\mathcal{N}(0, I)\\), and no sigma point is ever a negative time constant.\n\n\nShare metabolism, not state Each attempt restarts the physical states from its first weigh-in. The parameter posterior carries over as the next prior, relaxed toward the population prior with a two-year time constant across the gap.\n\n\nThe random walk keeps the filter from going deaf to later evidence. Its cost: intervals settle at a steady width instead of shrinking forever.\n\nThe random walk on parameters is a modeling fiction, but a useful one: early food logs are the least reliable, and a filter with zero parameter noise would lock onto them.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#validation-does-it-recover-what-it-was-given",
+    "href": "body-weight/weight-dynamics.html#validation-does-it-recover-what-it-was-given",
+    "title": "Body-Weight Dynamics",
+    "section": "Validation: does it recover what it was given?",
+    "text": "Validation: does it recover what it was given?\n\n\n\n9 of 9 true parameters inside their 90% intervals, truth set deliberately off the priors\n\n\n202 g trend error, from readings with 476 g of noise each\n\n\n±7 kg 90% band on fat mass, nearly unchanged after 120 days\n\n\nData generated by the model itself: this validates the inference machinery, and says nothing about whether the model resembles a person.\n\nThe synthetic subject has two weight-only past attempts and 120 logged days. If the truth sat on the prior, an estimator that ignored the data would pass; it does not sit there. Fat mass is only weakly observable: it enters the dynamics only through rho_eff.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#maintenance-is-identified-its-parts-are-not",
+    "href": "body-weight/weight-dynamics.html#maintenance-is-identified-its-parts-are-not",
+    "title": "Body-Weight Dynamics",
+    "section": "Maintenance is identified; its parts are not",
+    "text": "Maintenance is identified; its parts are not\n\n\n\n\n\nOver the narrow range of weights in one dataset, raising \\(c_0\\) and lowering \\(c_1\\) leaves the fitted trajectory almost unchanged: correlation −0.79.\nSo each coefficient has a wide marginal, but maintenance \\(c_0 + c_1 W\\) at the current weight is tight: 2,562 to 2,975 kcal/day around a true 2,697.\nThe package reports maintenance by propagating the full covariance through the sum. A test asserts that interval is more than 20% narrower than treating the two as independent.\n\n\n\nThis is the slide to remember before quoting any single parameter as a finding. Also well identified: the glycogen gain, because carbohydrate varies a lot day to day. Weakly: the adaptation pair, which needs deliberate variation in intake. Not at all: kappa_P.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#what-the-real-data-has-said-so-far",
+    "href": "body-weight/weight-dynamics.html#what-the-real-data-has-said-so-far",
+    "title": "Body-Weight Dynamics",
+    "section": "What the real data has said so far",
+    "text": "What the real data has said so far\n\n\n\nWith two logged days, eight of nine parameters sit on their priors. That is the correct answer: the weigh-in history pins down noise, and nothing about metabolism, so the filter reports its ignorance instead of inventing precision.\n\n\n\\(\\tau_G\\) has moved to about 9 days against a prior of 1.5. From one day of carbohydrate variation that is far more likely a flat likelihood ridge than a finding. If it is real, it will keep landing there as data accrues.\n\n\n\nSame axes as the synthetic case, deliberately, so the contrast is the message. Check back in a few weeks.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#control",
+    "href": "body-weight/weight-dynamics.html#control",
+    "title": "Body-Weight Dynamics",
+    "section": "Control",
+    "text": "Control\nPlan four weeks, eat one day, replan.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#receding-horizon",
+    "href": "body-weight/weight-dynamics.html#receding-horizon",
+    "title": "Body-Weight Dynamics",
+    "section": "Receding horizon",
+    "text": "Receding horizon\n\n\nEach morning the controller takes the filtered state, optimizes intake over a 28-day horizon, prescribes the first day, and discards the rest. Tomorrow’s weigh-in corrects whatever the model got wrong.\nDecisions are held constant over weekly blocks:\n\n\n\n\n\n\n\nPer block\nBounds\n\n\n\n\nenergy \\(I\\)\n\\([I_{\\min}, I_{\\max}]\\), floor 1,200 kcal\n\n\nprotein per kg\n\\([P_{\\min}, 3.0]\\) g/kg\n\n\nfat share of energy\n\\([0.15, 0.75]\\)\n\n\n\nCarbohydrate is the residual, \\(C = (I - 4P_g - 9F_g)/4\\), so the three are independent and the bounds are boxes for L-BFGS-B.\n\n\n\nRemark. Certainty equivalence. The plan uses posterior-mean parameters and ignores their spread. That is cheap and optimistic: a maintenance estimate 200 kcal too high under-delivers, and the controller learns so only from the weigh-ins. Daily replanning keeps the error from compounding, but for the first two weeks the numbers are a starting point, not a prescription.\n\n\nNot modeled: adherence. The plan is what would be optimal if followed exactly. People do not follow plans exactly.\n\n\n\n\nThe receding-horizon structure is what makes this robust to a model that is certainly wrong in its details. Nothing beyond tomorrow is ever acted on.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#the-objective-term-by-term",
+    "href": "body-weight/weight-dynamics.html#the-objective-term-by-term",
+    "title": "Body-Weight Dynamics",
+    "section": "The objective, term by term",
+    "text": "The objective, term by term\n\n\\[\nJ_{\\text{sustainable}} = w_p\\,T_H + w_s\\,\\textstyle\\sum\\Delta I^2 + w_e\\,D^2 + w_c\\,C^2\n+ w_\\phi(\\phi - \\phi^\\star)^2 + \\mu\\,\\Phi\n\\]\n\n\n\n\n\n\n\n\n\nTerm\nIn plain English\n\n\n\n\n\\(w_p\\,T_H\\)\nend the horizon with less tissue. Linear, so it trades against the quadratic terms at an interior optimum instead of running to the floor\n\n\n\\(w_s\\,\\Delta I^2\\)\ndo not change the target every day\n\n\n\\(w_e\\,D^2\\)\nlarge deficits cost adherence, training and sleep, beyond any hard limit\n\n\n\\(w_c\\,C^2\\)\nan optional preference for less carbohydrate, at any level\n\n\n\\(w_\\phi(\\phi - \\phi^\\star)^2\\)\npull one macro’s energy share \\(\\phi\\) toward a target (or break a flat tie)\n\n\n\\(\\mu\\,\\Phi\\)\nhinge penalties on every safety limit, escalated until they hold\n\n\n\n\nDeadline mode replaces the progress term with tracking: tissue against a straight path from today’s weight to the goal, scored at the end of the horizon, not at the goal itself.\n\nScoring the gap to the final goal over a 28-day horizon was a real bug during development: it asked to arrive within 28 days no matter how far away the deadline was, and pinned intake to the floor. Tracking the reference instead makes the horizon a window onto a longer plan.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#constrain-tissue-not-the-scale",
+    "href": "body-weight/weight-dynamics.html#constrain-tissue-not-the-scale",
+    "title": "Body-Weight Dynamics",
+    "section": "Constrain tissue, not the scale",
+    "text": "Constrain tissue, not the scale\n\n\\[\n-\\Delta T_k \\;\\le\\; \\frac{\\gamma\\, T_k}{7} \\qquad \\text{for every day } k,\n\\qquad \\gamma = 1.75\\%/\\text{week}\n\\]\n\n\n\nWhy tissue Cutting carbohydrate sheds a kilogram of glycogen water in days. On the scale that reads as 4 lb/week and trips any limit written on scale weight, though no tissue moved. A controller limited on the scale would refuse a sound plan, or raise calories in response to water. The objective scores \\(T\\) for the same reason: scored on \\(W\\), cutting carbohydrate alone would look like progress.\n\n\nConstraints in fact, not intention The limit acts on the trajectory, so it is a hinge penalty. A soft penalty binds only by coincidence, so the solver checks the result, multiplies violated penalties by 12 and re-solves, warm-started, up to nine times. The CLI checks the final plan independently, and says so when a goal is out of reach:\ntarget of 170 lb by 2026-10-25 is not reachable within your 2.0%/week limit; the earliest achievable date at that maximum rate is 2026-12-03\n\n\n\nThis is the most important modeling decision in the controller. Separating tissue from water is what makes the safety constraint mean anything.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#the-plan-being-followed",
+    "href": "body-weight/weight-dynamics.html#the-plan-being-followed",
+    "title": "Body-Weight Dynamics",
+    "section": "The plan being followed",
+    "text": "The plan being followed\n\n\n\n1,294 kcal tomorrow: 107 g protein, 77 g carbohydrate, 62 g fat\n\n\n3.0 to 3.5 lb/wk predicted scale loss; tissue at 1.5 to 1.8% a week, against the 1.75% limit\n\n\n1,200 kcal the floor, binding from week 2: a deadline this close leaves no slack\n\n\n\nDeadline mode, 170 pounds by March 20. Two constraints bind from the second week, the calorie floor and the tissue rate limit, so this plan is about as aggressive as the safety settings allow. Only tomorrow’s line is a prescription; the rest will be replaced as weigh-ins arrive and the parameters move off their priors.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#where-things-stand-on-day-2",
+    "href": "body-weight/weight-dynamics.html#where-things-stand-on-day-2",
+    "title": "Body-Weight Dynamics",
+    "section": "Where things stand on day 2",
+    "text": "Where things stand on day 2\n\n\n235.1 lb filtered trend, against a reading of 233.0: one low morning is not believed\n\n\n3,016 kcal maintenance \\(c_0 + c_1W\\); 90% interval 2,365 to 3,958, still the prior’s width\n\n\n38 ± 7 kg fat mass, 90%; anchored by the prior and Forbes, not by data yet\n\n\n−54 kcal/day adaptation, two days into a large deficit\n\n\n\nWhat to expect after four months of consistent data: a trend far better than the raw scale, a personal maintenance figure good to perhaps 5 to 8% with an honest interval, a usable split of scale movement into tissue and water, and a daily plan grounded in the subject’s data rather than a population formula.\n\n\nWhat not to expect: a reliable body-composition measurement, a trustworthy adaptation estimate unless intake is deliberately varied, or any insight into whether the plan will be followed.\n\n\nThese numbers are honest about being early. The maintenance interval is still nearly 1,600 kcal wide. A planned diet break would be the most informative thing the subject could do for the adaptation parameters, an unusual case of the experimentally optimal choice also being the pleasant one.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#what-the-model-cannot-do",
+    "href": "body-weight/weight-dynamics.html#what-the-model-cannot-do",
+    "title": "Body-Weight Dynamics",
+    "section": "What the model cannot do",
+    "text": "What the model cannot do\n\n\n\nDrifting log bias looks like adaptation. If under-logging grows as the weeks go by, the model sees expenditure falling. Nothing in scale data separates the two.\nIntake is self-reported, and expenditure is never measured, only inferred.\nUnlogged days are treated as neutral. In reality they are more often the high days.\nOne subject, no replication. The physiology is population-level; the fit is to one person.\n\n\n\n\nGaussian everything, and a parameter random walk that is a convenient fiction.\nReported intervals are optimistic: they assume the model is right.\nCertainty-equivalent control. A stochastic or minimax formulation is the obvious extension.\nResidual diagnostics can show when the model is clearly wrong. They cannot show it is right.\n\n\n\n\nRemark. Not medical advice. The safety limits are conservative defaults from general guidance, not anything specific to one person.\n\n\nChapter 11 of the technical report lists these in full. The first one is the deepest: it is structural, not a matter of more data.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#the-software",
+    "href": "body-weight/weight-dynamics.html#the-software",
+    "title": "Body-Weight Dynamics",
+    "section": "The software",
+    "text": "The software\n\n\nwdm, a Python package on JAX, Equinox and Diffrax:\n\nmodels as JAX pytrees; one-day RK4 map, Tsit5 reference\nlinear, extended and unscented filters, RTS smoothers\nphase-1 maximum likelihood with L-BFGS-B and JAX gradients\nreceding-horizon solver with escalating penalties\nexercise energy from a lifting routine\n163 tests, and a 78-page technical report deriving all of it\n\n\n\nThe daily loop:\n# 1. weigh in; close out yesterday's row\n#    in observations.csv (weight, food,\n#    exercise)\n# 2. plan from yesterday's state\nwdm plan observations.csv \\\n    --config subject.toml\n# 3. eat the \"Today:\" line\nwdm filter and wdm fit-noise are diagnostics, not part of the daily loop. The plan’s horizon starts the day after the last row, so tomorrow’s row is never added before planning.\n\n\n\nEverything in this deck was generated by running the package against the real observation file. Rerunning two scripts brings every figure up to date.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#section",
+    "href": "body-weight/weight-dynamics.html#section",
+    "title": "Body-Weight Dynamics",
+    "section": "",
+    "text": "A scale is a sensor, a diet is an input, and a plateau is a time constant.\nEstimate the state, respect the noise, plan ahead, act one day at a time, and let tomorrow’s weigh-in correct today’s plan.\nUpdated as the current attempt accrues data. Figures generated by the wdm package from the subject’s weigh-ins and food log.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#backup",
+    "href": "body-weight/weight-dynamics.html#backup",
+    "title": "Body-Weight Dynamics",
+    "section": "Backup",
+    "text": "Backup\n\nB1 Sigma points and weights\nB2 The steady-state gain\nB3 Notation",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#b1",
+    "href": "body-weight/weight-dynamics.html#b1",
+    "title": "Body-Weight Dynamics",
+    "section": "B1. Sigma points and weights",
+    "text": "B1. Sigma points and weights\nFor an \\(n\\)-dimensional belief \\((\\hat x, P)\\) with Cholesky factor \\(L\\) and \\(\\lambda = \\alpha^2(n + \\kappa) - n\\):\n\\[\n\\mathcal{X}^{(0)} = \\hat x,\\qquad\n\\mathcal{X}^{(i)} = \\hat x + \\sqrt{n+\\lambda}\\,L_{:,i},\\qquad\n\\mathcal{X}^{(i+n)} = \\hat x - \\sqrt{n+\\lambda}\\,L_{:,i},\n\\quad i = 1,\\dots,n\n\\]\n\\[\nW_m^{(0)} = \\frac{\\lambda}{n+\\lambda},\\qquad\nW_c^{(0)} = \\frac{\\lambda}{n+\\lambda} + 1 - \\alpha^2 + \\beta,\\qquad\nW_m^{(i)} = W_c^{(i)} = \\frac{1}{2(n+\\lambda)}\n\\]\nThe \\(2n + 1 = 29\\) points reproduce the mean and covariance exactly. Each is pushed through the one-day map, and the prediction is their weighted mean and covariance plus \\(Q_k\\). With \\(\\alpha = 10^{-3}\\) and \\(n = 14\\), \\(W_c^{(0)}\\) is large and negative and the recombined covariance can lose positive definiteness; the package uses \\(\\alpha = 0.3\\).",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#b2",
+    "href": "body-weight/weight-dynamics.html#b2",
+    "title": "Body-Weight Dynamics",
+    "section": "B2. The steady-state gain",
+    "text": "B2. The steady-state gain\nIterate the Riccati recursion of the local linear trend model to convergence and read off the Kalman gain \\(K_\\ell\\) on the level. It answers the operational question directly: what fraction of the gap between this morning’s reading and yesterday’s estimate does the filter act on?\n\\[\n\\hat\\ell_{k|k} = \\hat\\ell_{k|k-1} + K_\\ell\\,\\bigl(y_k - \\hat\\ell_{k|k-1}\\bigr),\n\\qquad \\text{effective window} \\approx 1/K_\\ell \\text{ days}\n\\]\nIt is reported in place of the ratio \\(\\sigma_\\ell/\\sigma_v\\), which reads as “no signal” whenever maximum likelihood drives \\(\\sigma_\\ell \\to 0\\): an ordinary outcome meaning the trend moves by slope innovations rather than level jumps.",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
+    "objectID": "body-weight/weight-dynamics.html#b3",
+    "href": "body-weight/weight-dynamics.html#b3",
+    "title": "Body-Weight Dynamics",
+    "section": "B3. Notation",
+    "text": "B3. Notation\n\n\n\n\n\n\n\n\nSymbol\nMeaning\n\n\n\n\n\\(T, F, G, N, A\\)\ntissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day)\n\n\n\\(W = T + G + N\\)\ntotal mass, what the scale reads before noise \\(v\\)\n\n\n\\(I, E, X, D\\)\nintake, expenditure, logged exercise, deficit \\(E_{\\text{base}} - I\\) (kcal/day)\n\n\n\\(P_g, C, F_g\\)\nprotein, carbohydrate, fat (g/day); \\(\\Delta C\\) carbohydrate relative to the mean\n\n\n\\(c_0, c_1\\)\nexpenditure intercept (kcal/day) and slope (kcal/day per kg)\n\n\n\\(\\beta_A, \\tau_A\\)\nadaptation gain and time constant\n\n\n\\(k_G, \\tau_G\\); \\(k_{Na}, \\tau_{Na}\\)\ngain and time constant of the glycogen and sodium water compartments\n\n\n\\(p, \\kappa_P\\)\nfat fraction of a mass change; its protein sensitivity\n\n\n\\(\\rho_F, \\rho_L, \\rho_G, \\rho_{\\text{eff}}\\)\nenergy density of fat, lean tissue, glycogen-water complex, and the current mix (kcal/kg)\n\n\n\\(\\eta, z\\)\nunconstrained parameters; the 14-dimensional augmented state\n\n\n\\(\\ell, b\\)\nlevel and slope of the local linear trend model\n\n\n\\(\\gamma\\)\npermitted weekly tissue-loss fraction",
+    "crumbs": [
+      "Presentation"
+    ]
+  },
+  {
     "objectID": "about.html",
     "href": "about.html",
     "title": "About",
@@ -10351,6 +10868,46 @@
     "title": "About",
     "section": "Contact",
     "text": "Contact\n\nEmail: aykut.satici@utdallas.edu\nOffice: ECSN 3.716\nMailing address\nThe University of Texas at Dallas\nSystems Engineering, EC39\n800 W. Campbell Road\nRichardson, TX 75080-3021\n\nFor information about joining the lab, see open positions."
+  },
+  {
+    "objectID": "body-weight/index.html",
+    "href": "body-weight/index.html",
+    "title": "Body-Weight Dynamics",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$",
+    "crumbs": [
+      "Body-Weight Dynamics"
+    ]
+  },
+  {
+    "objectID": "body-weight/index.html#the-presentation",
+    "href": "body-weight/index.html#the-presentation",
+    "title": "Body-Weight Dynamics",
+    "section": "The presentation",
+    "text": "The presentation\n\nPresentation\nBody-Weight Dynamics → walks through the model, the filter and the controller, with figures generated from a real subject’s weigh-ins and food log. About twenty-five slides, with speaker notes and three backup slides.",
+    "crumbs": [
+      "Body-Weight Dynamics"
+    ]
+  },
+  {
+    "objectID": "body-weight/index.html#the-pieces",
+    "href": "body-weight/index.html#the-pieces",
+    "title": "Body-Weight Dynamics",
+    "section": "The pieces",
+    "text": "The pieces\n\nModel. Five states (tissue, fat mass, glycogen-bound water, sodium-bound water, adaptive thermogenesis) and nine parameters. Tissue follows energy balance with an energy density set by Forbes’ partition law; the water compartments and adaptation are first-order lags on days and weeks.\nEstimation, in two phases. Weight-only history identifies the noise by maximum likelihood on a local linear trend model. Weight and food together identify metabolism, with the parameters appended to the state and estimated by an unscented Kalman filter in a coordinate where no sigma point can be physically impossible.\nControl. A 28-day horizon in weekly blocks, with tissue, not scale weight, in both the objective and the safety constraints, so that a fast water drop is never mistaken for progress or for danger. Only the first day is eaten.",
+    "crumbs": [
+      "Body-Weight Dynamics"
+    ]
+  },
+  {
+    "objectID": "body-weight/index.html#status",
+    "href": "body-weight/index.html#status",
+    "title": "Body-Weight Dynamics",
+    "section": "Status",
+    "text": "Status\nThe current attempt began on October 26, 2026. With two logged days, the filter correctly reports that it has learned almost nothing about the subject’s metabolism yet: every parameter but one still sits on its prior. The deck will be updated as the record grows.\nThis is a modeling exercise built on population-level physiology and fitted to one person’s self-reported data. It is not medical advice.",
+    "crumbs": [
+      "Body-Weight Dynamics"
+    ]
   },
   {
     "objectID": "chiasson/blog.html",
