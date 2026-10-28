@@ -372,6 +372,9 @@ def parameters():
     fig, axes = plt.subplots(1, 2, figsize=(12.6, 4.9), sharey=True, gridspec_kw={"wspace": 0.08})
     names = list(TRANSFORMS)
     ypos = np.arange(len(names))[::-1]
+    # Same x-range on both panels, wide enough for the farthest interval end.
+    reach = max(to_eta(p["name"], p["q95"], p["prior"]) for p in syn["params"] + real["params"])
+    xmax = max(6.4, np.ceil(reach) + 0.6)
     for ax, src, title in (
         (axes[0], syn, "Synthetic subject, 120 logged days"),
         (axes[1], real, "Real subject so far: 2 logged days"),
@@ -390,7 +393,7 @@ def parameters():
                 ax.plot([tr], [y], "D", color=RED, markersize=7.5, markeredgecolor="white",
                         markeredgewidth=1.2, zorder=5)
         style(ax, xlabel="shift from prior center (prior standard deviations)", title=title)
-        ax.set_xlim(-3.2, 6.4)
+        ax.set_xlim(-3.2, xmax)
         ax.grid(axis="y", visible=False)
         ax.text(0, len(names) - 0.35, "prior 90%", ha="center", va="bottom", fontsize=10,
                 color=MUTED)
