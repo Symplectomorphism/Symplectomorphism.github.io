@@ -91,6 +91,35 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="../assets/mathjax/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="../research/research.css">
@@ -452,13 +481,13 @@ $$
 <h2 class="anchored" data-anchor-id="the-pieces">The pieces</h2>
 <ul>
 <li><strong>Model.</strong> Five states (tissue, fat mass, glycogen-bound water, sodium-bound water, adaptive thermogenesis) and nine parameters. Tissue follows energy balance with an energy density set by Forbes’ partition law; the water compartments and adaptation are first-order lags on days and weeks.</li>
-<li><strong>Estimation, in two phases.</strong> Weight-only history identifies the noise by maximum likelihood on a local linear trend model. Weight and food together identify metabolism, with the parameters appended to the state and estimated by an unscented Kalman filter in a coordinate where no sigma point can be physically impossible.</li>
-<li><strong>Control.</strong> A 28-day horizon in weekly blocks, with tissue, not scale weight, in both the objective and the safety constraints, so that a fast water drop is never mistaken for progress or for danger. Only the first day is eaten.</li>
+<li><strong>Estimation, in two phases.</strong> Weight-only history identifies the noise by maximum likelihood on a local linear trend model. Weight and food together (and a weekly tape measure, when there is one) identify metabolism, with the parameters appended to the state and estimated by an unscented Kalman filter in a coordinate where no sigma point can be physically impossible.</li>
+<li><strong>Control.</strong> A 28-day horizon in weekly blocks, with tissue, not scale weight, in both the objective and the safety constraints, which SLSQP treats as true constraints, so that a fast water drop is never mistaken for progress or for danger. Only the first day is eaten.</li>
 </ul>
 </section>
 <section id="status" class="level2">
 <h2 class="anchored" data-anchor-id="status">Status</h2>
-<p>The current attempt began on October 26, 2026. With three weigh-ins and two logged days of food, the filter correctly reports that it has learned almost nothing about the subject’s metabolism yet: every parameter but one still sits on its prior. The deck will be updated as the record grows.</p>
+<p>The current attempt began on October 26, 2026. With 4 logged days of food, the filter correctly reports that it has learned little about the subject’s metabolism yet: seven of nine parameters still sit on their priors. A backtest scores the filter’s forecasts of every weigh-in, and the deck, numbers included, is regenerated as the record grows.</p>
 <p>This is a modeling exercise built on population-level physiology and fitted to one person’s self-reported data. It is not medical advice.</p>
 </section>
 </div>
