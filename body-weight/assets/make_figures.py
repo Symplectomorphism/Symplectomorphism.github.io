@@ -384,7 +384,7 @@ def parameters():
     xmax = max(6.4, np.ceil(reach) + 0.6)
     for ax, src, title in (
         (axes[0], syn, "Synthetic subject, 120 logged days"),
-        (axes[1], real, "Real subject so far: 2 logged days"),
+        (axes[1], real, f"Real subject so far: {real['n_logged_days']} logged days"),
     ):
         ax.axvspan(-1.645, 1.645, color=SOFT, zorder=0)
         ax.axvline(0, color=FAINT, linewidth=1.0, linestyle=(0, (3, 2)), zorder=1)

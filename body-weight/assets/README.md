@@ -17,6 +17,11 @@ after logging more days to bring the deck up to date (`--data DIR` points
 | `data/synthetic.json` | the `wdm demo` subject: 120 logged days with known truth |
 | `data/timescales.json` | one simulated diet at prior parameters |
 | `data/forbes.json` | the Forbes partition curve |
+| `../numbers.yml` | every number the slides and landing page quote in text, formatted |
+
+The slides never type a data-dependent number: they read `numbers.yml` with
+`{{< meta bw.KEY >}}` (declared through `metadata-files` in each page's front
+matter). After the two steps, re-render the deck and nothing in it is stale.
 
 Series colors are four slots (`#0f8a6c`, `#b07d06`, `#3a6fb0`, `#c0392b`),
 checked as a set for color-vision-deficiency separation on every pair. The
