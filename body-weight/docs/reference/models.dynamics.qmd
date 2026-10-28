@@ -1,0 +1,160 @@
+# models.dynamics { #wdm.models.dynamics }
+
+`models.dynamics`
+
+The continuous-time model, its one-day step map, and the process-noise model.
+
+Assembling the pieces, the state $x = (T, F, G_c, G_n, A)$ evolves as
+
+$$
+\begin{aligned}
+\rho_{\text{eff}}\, \dot T &= I - E - \rho_G \dot G_c \\
+\dot F &= p\, \dot T \\
+\dot G_c &= \bigl(k_G \Delta C - G_c\bigr) / \tau_G \\
+\dot G_n &= \bigl(k_{Na} \Delta \mathrm{Na} - G_n\bigr) / \tau_{Na} \\
+\dot A &= \bigl(-\beta_A (E_{\text{base}} - I) - A\bigr) / \tau_A
+\end{aligned}
+$$
+
+The term $\rho_G \dot G_c$ is easy to overlook and worth stating plainly:
+energy diverted into glycogen storage is energy not available for fat storage.
+Omitting it makes the model attribute the entire post-refeed scale jump to
+tissue gain, which is both wrong and, if you are the one reading the output,
+needlessly discouraging.
+
+Two integrators are provided. `step` is a fixed-step RK4 map used inside
+the filter, where it runs millions of times and must be fast and
+trace-friendly. `simulate_diffrax` is an adaptive-step reference used for
+validation. A test asserts the two agree to tight tolerance; if they ever
+diverge, the fixed-step map's substep count is the first thing to raise.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [NoiseModel](#wdm.models.dynamics.NoiseModel) | Process and observation noise. |
+
+### NoiseModel { #wdm.models.dynamics.NoiseModel }
+
+```python
+models.dynamics.NoiseModel()
+```
+
+Process and observation noise.
+
+Process noise represents everything the deterministic model leaves out:
+unlogged snacks, hydration swings, measurement drift in the food log,
+day-to-day variation in spontaneous activity. Standard deviations are
+per-day, so variance accumulates linearly with elapsed time -- which is what
+makes a week-long gap in weigh-ins widen the confidence band by
+$\sqrt{7}$ rather than by 7.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [unlogged_intake_sd](#wdm.models.dynamics.NoiseModel.unlogged_intake_sd) | kcal/day. Spread of plausible intake on days with no food log. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [process_noise](#wdm.models.dynamics.process_noise) | Process-noise covariance for one day, ``(5, 5)``. |
+| [rate](#wdm.models.dynamics.rate) | Time derivative of the state, in units per day. |
+| [simulate](#wdm.models.dynamics.simulate) | Roll the model forward over a whole episode. |
+| [simulate_diffrax](#wdm.models.dynamics.simulate_diffrax) | Adaptive-step reference integration, one day at a time. |
+| [step](#wdm.models.dynamics.step) | Advance the state by exactly one day using fixed-step RK4. |
+| [step_vector](#wdm.models.dynamics.step_vector) | Vector-in, vector-out form of `step`, for the filters. |
+
+### process_noise { #wdm.models.dynamics.process_noise }
+
+```python
+models.dynamics.process_noise(x, u, p, noise)
+```
+
+Process-noise covariance for one day, ``(5, 5)``.
+
+Diagonal in the state variables, plus a rank-one inflation on the days with
+no food log. The inflation is *not* diagonal: an unknown intake perturbs
+tissue and fat mass together, in the fixed ratio set by the current
+partitioning, so it enters as $\sigma_I^2 b b^\top$ with
+
+$$
+b = \frac{1}{\rho_{\text{eff}}}\,(1,\ p,\ 0,\ 0,\ 0)^\top .
+$$
+
+Getting this correlation right matters. Treating the two as independent
+would let the filter believe it could learn fat mass from a day it knows
+nothing about, which is precisely the sort of phantom information that makes
+a filter overconfident.
+
+### rate { #wdm.models.dynamics.rate }
+
+```python
+models.dynamics.rate(x, u, p, carb_ref_g)
+```
+
+Time derivative of the state, in units per day.
+
+Returns a `State` whose fields are rates rather than values -- a mild
+abuse of the type that keeps the arithmetic readable and costs nothing,
+since both are the same pytree shape.
+
+### simulate { #wdm.models.dynamics.simulate }
+
+```python
+models.dynamics.simulate(
+    x0,
+    inputs,
+    p,
+    carb_ref_g,
+    *,
+    substeps=DEFAULT_SUBSTEPS,
+)
+```
+
+Roll the model forward over a whole episode.
+
+``inputs`` is a `DailyInput` whose fields are arrays of length ``n``.
+Returns a `State` whose fields are arrays of length ``n``, giving the
+state *after* each day.
+
+### simulate_diffrax { #wdm.models.dynamics.simulate_diffrax }
+
+```python
+models.dynamics.simulate_diffrax(
+    x0,
+    inputs,
+    p,
+    carb_ref_g,
+    *,
+    rtol=1e-08,
+    atol=1e-10,
+)
+```
+
+Adaptive-step reference integration, one day at a time.
+
+Slower than `simulate` and not used inside the filter. Its purpose is
+to be the trusted answer that the fast path is checked against, so that a
+discretisation error can never masquerade as a physiological finding.
+
+### step { #wdm.models.dynamics.step }
+
+```python
+models.dynamics.step(x, u, p, carb_ref_g, *, substeps=DEFAULT_SUBSTEPS)
+```
+
+Advance the state by exactly one day using fixed-step RK4.
+
+Inputs are held constant across the day, making this an exact zero-order-hold
+discretisation of the continuous model -- the correct reading of a daily food
+log, which reports a total rather than an instantaneous rate.
+
+### step_vector { #wdm.models.dynamics.step_vector }
+
+```python
+models.dynamics.step_vector(xv, u, p, carb_ref_g, *, substeps=DEFAULT_SUBSTEPS)
+```
+
+Vector-in, vector-out form of `step`, for the filters.

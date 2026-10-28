@@ -1,0 +1,116 @@
+# estimation.noise_id { #wdm.estimation.noise_id }
+
+`estimation.noise_id`
+
+Phase 1: identifying the noise scales from weight-only history.
+
+Historical episodes with no food log cannot tell you anything about your
+metabolism -- without the input, the input-output relationship is unidentifiable.
+What they *can* tell you, and what phase 2 needs badly, is the answer to two
+questions:
+
+1. How much does a single scale reading scatter around the truth?
+2. How fast does the underlying trend genuinely wander?
+
+The ratio of those two is what determines how aggressively any filter should
+smooth. Guess it wrong in one direction and the estimate chases every salty
+dinner; wrong in the other and it takes three weeks to notice a real change.
+Estimating it from your own history, rather than adopting a default, is the
+entire value of the old data.
+
+The estimator is maximum likelihood on the local linear trend model, with the
+likelihood obtained from the filter's prediction-error decomposition:
+
+$$
+\ell(\theta) = \sum_{k \,:\, \text{observed}}
+-\tfrac12 \left[ \log 2\pi S_k(\theta) + e_k(\theta)^2 / S_k(\theta) \right].
+$$
+
+The Gaussian is chosen on evidence: refitting with Student-t innovations
+(``trend_filter(..., dof=...)``) lowers the maximized likelihood on the record
+so far, and moves variance from the readings into the trend, which makes any
+filter built on the result smooth less.
+
+Episodes contribute additively, sharing the noise parameters while each keeps
+its own diffuse initial condition. Optimization runs in log coordinates so the
+variances stay positive, with gradients from JAX and the search from L-BFGS-B.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [NoiseIdentification](#wdm.estimation.noise_id.NoiseIdentification) | Fitted noise scales, in kg and kg/day, with approximate standard errors. |
+
+### NoiseIdentification { #wdm.estimation.noise_id.NoiseIdentification }
+
+```python
+estimation.noise_id.NoiseIdentification(
+    level_sd,
+    slope_sd,
+    obs_sd,
+    level_sd_factor,
+    slope_sd_factor,
+    obs_sd_factor,
+    loglik,
+    n_observations,
+    n_episodes,
+    converged,
+    message,
+)
+```
+
+Fitted noise scales, in kg and kg/day, with approximate standard errors.
+
+Standard errors come from the observed information matrix -- the Hessian of
+the negative log-likelihood at the optimum -- and are reported in log units,
+then converted to a multiplicative factor. A ``obs_sd`` of 0.45 kg with a
+factor of 1.15 means roughly a 68 % interval of ``[0.39, 0.52]``.
+
+Treat them as optimistic. They assume the local linear trend model is
+correctly specified, which it is not -- it has no notion of glycogen, sodium,
+or a food log. They are useful for judging whether a parameter is pinned
+down or merely guessed, and not for much beyond that.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [effective_window_days](#wdm.estimation.noise_id.NoiseIdentification.effective_window_days) | Rough number of days of history each estimate effectively averages. |
+| [steady_state_gain](#wdm.estimation.noise_id.NoiseIdentification.steady_state_gain) | Asymptotic Kalman gain on the level, in ``[0, 1]``. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [identify_noise](#wdm.estimation.noise_id.identify_noise) | Fit the three noise scales by maximum likelihood. |
+| [total_loglik](#wdm.estimation.noise_id.total_loglik) | Summed log-likelihood across episodes at the given log noise scales. |
+
+### identify_noise { #wdm.estimation.noise_id.identify_noise }
+
+```python
+estimation.noise_id.identify_noise(
+    episodes,
+    *,
+    init=(0.05, 0.005, 0.45),
+    min_observations=10,
+    dof=None,
+)
+```
+
+Fit the three noise scales by maximum likelihood.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name             | Type            | Description                                                                                                                                                                                                                                                                                                                     | Default    |
+|------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| episodes         | list\[Episode\] | Episodes to use. All are used, including ones that *do* have food logs: the local linear trend model ignores intake entirely, so a logged episode is simply more weight data. This is deliberate -- more observations make a better noise estimate, and phase 2 re-estimates everything that actually depends on intake anyway. | _required_ |
+| min_observations | int             | Refuse to fit below this many total weigh-ins. Three noise scales cannot be identified from a handful of points, and a confident-looking answer from too little data is worse than no answer.                                                                                                                                   | `10`       |
+| dof              | float \| None   | Student-t degrees of freedom for the observation noise, or ``None`` for Gaussian. Must match what phase 2 is given.                                                                                                                                                                                                             | `None`     |
+
+### total_loglik { #wdm.estimation.noise_id.total_loglik }
+
+```python
+estimation.noise_id.total_loglik(log_theta, arrays, dof=None)
+```
+
+Summed log-likelihood across episodes at the given log noise scales.

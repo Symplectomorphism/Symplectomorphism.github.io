@@ -1,0 +1,111 @@
+# filters.linear { #wdm.filters.linear }
+
+`filters.linear`
+
+Linear Kalman filter, RTS smoother, and the local-linear-trend model.
+
+Used in phase 1, where the only data available is a sequence of weights with no
+food log. Nothing about metabolism can be estimated from that. What *can* be
+estimated, and what phase 2 badly needs, is how noisy your scale readings are
+and how fast your underlying trend genuinely moves.
+
+The workhorse is the local linear trend model
+
+$$
+\begin{pmatrix} \mu_{k+1} \\ \beta_{k+1} \end{pmatrix}
+= \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}
+\begin{pmatrix} \mu_k \\ \beta_k \end{pmatrix} + w_k,
+\qquad y_k = \mu_k + v_k
+$$
+
+with $\mu$ the true weight level and $\beta$ its daily slope. It is
+the simplest model that separates "the scale bounced" from "the trend moved",
+which is precisely the separation phase 1 exists to quantify.
+
+Note that this same filter, run on your data as it accumulates, is already the
+single most useful thing here: the smoothed $\mu$ is a far better read on
+where you actually are than any raw weigh-in, and $\beta$ is a direct
+estimate of your current rate of loss with an honest error bar attached.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [kalman_filter](#wdm.filters.linear.kalman_filter) | Forward pass of the linear-Gaussian Kalman filter. |
+| [local_linear_trend_matrices](#wdm.filters.linear.local_linear_trend_matrices) | Transition and observation matrices of the local linear trend model. |
+| [rts_smoother](#wdm.filters.linear.rts_smoother) | Rauch-Tung-Striebel backward pass for a linear-Gaussian model. |
+| [trend_filter](#wdm.filters.linear.trend_filter) | Local linear trend filter, parameterized by the three noise scales. |
+
+### kalman_filter { #wdm.filters.linear.kalman_filter }
+
+```python
+filters.linear.kalman_filter(y, observed, f, h, q, r, m0, p0, *, dof=None)
+```
+
+Forward pass of the linear-Gaussian Kalman filter.
+
+Missing observations are handled by *skipping the update*, not by imputing a
+value: the predicted belief is carried forward unchanged and contributes
+nothing to the likelihood. This is the mathematically correct treatment of
+missingness at random, and it is why gaps in your weigh-ins cost you
+precision but never introduce bias.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name     | Type                   | Description                                                                                                                                                  | Default    |
+|----------|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| y        | Float\[Array, \' t\'\] | Observations, length ``t``. Entries where ``observed`` is zero are ignored and may be any finite value.                                                      | _required_ |
+| observed | Float\[Array, \' t\'\] | 1.0 where an observation exists, 0.0 otherwise.                                                                                                              | _required_ |
+| dof      | float \| None          | Degrees of freedom of Student-t observation noise, or ``None`` for the exact Gaussian Kalman filter. See `wdm.models.observation.student_t_inflation`. | `None`     |
+
+### local_linear_trend_matrices { #wdm.filters.linear.local_linear_trend_matrices }
+
+```python
+filters.linear.local_linear_trend_matrices()
+```
+
+Transition and observation matrices of the local linear trend model.
+
+### rts_smoother { #wdm.filters.linear.rts_smoother }
+
+```python
+filters.linear.rts_smoother(res, f)
+```
+
+Rauch-Tung-Striebel backward pass for a linear-Gaussian model.
+
+Runs backwards from the final filtered belief, correcting each earlier
+estimate with everything learned afterwards. The gain
+
+$$
+J_k = P_k F^\top (P_{k+1}^{-})^{-1}
+$$
+
+is solved rather than inverted, which matters when the predicted covariance
+is poorly conditioned -- as it is on long stretches with no weigh-ins.
+
+### trend_filter { #wdm.filters.linear.trend_filter }
+
+```python
+filters.linear.trend_filter(
+    y,
+    observed,
+    level_sd,
+    slope_sd,
+    obs_sd,
+    *,
+    m0=None,
+    p0=None,
+    dof=None,
+)
+```
+
+Local linear trend filter, parameterized by the three noise scales.
+
+Gaussian observation noise unless ``dof`` selects Student-t; phase 1 and
+phase 2 must use the same choice, so that the scale phase 1 identifies is
+the scale phase 2 assumes.
+
+The initial belief defaults to the first available observation with a wide
+covariance -- a diffuse prior in all but name, which lets the data rather
+than the guess determine the early trajectory.

@@ -1,0 +1,218 @@
+# control.mpc { #wdm.control.mpc }
+
+`control.mpc`
+
+Receding-horizon dietary control.
+
+Each day, the controller takes the filter's current belief about your state and
+metabolism, optimizes a calorie and macronutrient trajectory over a horizon of a
+few weeks, prescribes only the *first* day of it, and throws the rest away.
+Tomorrow it does the whole thing again with one more weigh-in of evidence. That
+discard-and-replan structure is what makes the scheme robust: the plan is never
+trusted beyond the next day, so model error and parameter uncertainty get
+corrected continuously rather than accumulating.
+
+**Certainty equivalence, and its cost.** The optimization uses the posterior
+*mean* parameters and ignores their uncertainty. This is standard, cheap, and
+optimistic: a plan built on a maintenance estimate that is 200 kcal too high
+will systematically under-deliver, and the controller will not know that until
+the weigh-ins disagree with it. Because it replans daily, the error is corrected
+within days rather than compounding -- but for the first fortnight, before the
+parameters have contracted, treat the numbers as a starting point rather than a
+prescription. A stochastic or minimax formulation would fix this properly at
+considerably more computational expense.
+
+**Dimension reduction.** Prescribing 28 independent daily calorie targets would
+be both numerically awkward and practically useless -- nobody eats to a different
+target every day. Decisions are made in blocks of a week, and held constant
+within each block.
+
+**Constraints as constraints.** The solver is SLSQP: per-block intake, protein
+and fat share are box bounds, and the limits that act on the predicted
+trajectory -- the daily tissue-loss rate and the carbohydrate floor -- are
+explicit inequality constraints with exact JAX Jacobians. The older scheme,
+hinge penalties escalated until the returned plan happens to satisfy them, is
+kept only as a fallback for the rare problem SLSQP reports it could not solve.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [Plan](#wdm.control.mpc.Plan) | An optimized intake trajectory and its predicted consequences. |
+| [PlanSpec](#wdm.control.mpc.PlanSpec) | Controller configuration. |
+
+### Plan { #wdm.control.mpc.Plan }
+
+```python
+control.mpc.Plan(
+    dates,
+    kcal,
+    protein_g,
+    carb_g,
+    fat_g,
+    predicted_weight_kg,
+    predicted_tissue_kg,
+    predicted_fat_kg,
+    predicted_adapt_kcal,
+    mode,
+    converged,
+    cost,
+    message,
+    penalty_scale=1.0,
+    start_weight_kg=None,
+    start_tissue_kg=None,
+)
+```
+
+An optimized intake trajectory and its predicted consequences.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [carb_pct](#wdm.control.mpc.Plan.carb_pct) | Carbohydrate's share of energy, in percent. |
+| [fat_pct](#wdm.control.mpc.Plan.fat_pct) | Fat's share of energy, in percent. |
+| [protein_pct](#wdm.control.mpc.Plan.protein_pct) | Protein's share of energy, in percent. |
+| [start_tissue_kg](#wdm.control.mpc.Plan.start_tissue_kg) | Tissue the plan starts from: day 1's loss is measured against it. |
+| [start_weight_kg](#wdm.control.mpc.Plan.start_weight_kg) | Scale weight the plan starts from: the basis of the protein bound. |
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [tissue_loss_frac_per_week](#wdm.control.mpc.Plan.tissue_loss_frac_per_week) | Predicted fractional *tissue* loss per week, in percent. |
+| [today](#wdm.control.mpc.Plan.today) | The only part of the plan that is actually prescribed. |
+| [weekly_rate_lb](#wdm.control.mpc.Plan.weekly_rate_lb) | Predicted rate of loss in lb/week over the horizon. |
+
+##### tissue_loss_frac_per_week { #wdm.control.mpc.Plan.tissue_loss_frac_per_week }
+
+```python
+control.mpc.Plan.tissue_loss_frac_per_week()
+```
+
+Predicted fractional *tissue* loss per week, in percent.
+
+This is the same basis the rate-of-loss safety limit
+(``max_loss_frac_per_week``) is checked against -- tissue, not scale
+weight, for the reason given in `rate_violation_cost` -- so it
+is what to compare directly against that config value to see how
+much headroom a plan is using, unlike `weekly_rate_lb`, which
+is on scale weight and includes water.
+
+##### today { #wdm.control.mpc.Plan.today }
+
+```python
+control.mpc.Plan.today()
+```
+
+The only part of the plan that is actually prescribed.
+
+##### weekly_rate_lb { #wdm.control.mpc.Plan.weekly_rate_lb }
+
+```python
+control.mpc.Plan.weekly_rate_lb()
+```
+
+Predicted rate of loss in lb/week over the horizon.
+
+### PlanSpec { #wdm.control.mpc.PlanSpec }
+
+```python
+control.mpc.PlanSpec(
+    mode='deadline',
+    horizon_days=28,
+    block_days=7,
+    max_protein_g_per_kg=3.0,
+    min_fat_fraction=0.15,
+    max_fat_fraction=0.75,
+    min_carb_g=20.0,
+    target_fat_fraction=None,
+    target_carb_fraction=None,
+    weights=eqx.field(default_factory=CostWeights),
+)
+```
+
+Controller configuration.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [min_carb_g](#wdm.control.mpc.PlanSpec.min_carb_g) | Floor on carbohydrate, enforced as a penalty. Prevents the optimizer |
+| [min_fat_fraction](#wdm.control.mpc.PlanSpec.min_fat_fraction) | Floor on fat as a share of energy. Very low fat intakes compromise |
+| [mode](#wdm.control.mpc.PlanSpec.mode) | ``"deadline"`` or ``"sustainable"``. |
+| [target_carb_fraction](#wdm.control.mpc.PlanSpec.target_carb_fraction) | Carbohydrate's share of energy to steer toward, e.g. ``0.05-0.10`` for |
+| [target_fat_fraction](#wdm.control.mpc.PlanSpec.target_fat_fraction) | Fat's share of energy to steer toward. Only used as a real preference |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [check_constraints](#wdm.control.mpc.check_constraints) | Verify the returned plan against the hard safety limits. |
+| [feasibility_report](#wdm.control.mpc.feasibility_report) | Report whether a deadline target is reachable within the safety limits. |
+| [solve](#wdm.control.mpc.solve) | Optimise an intake trajectory from the current state. |
+
+### check_constraints { #wdm.control.mpc.check_constraints }
+
+```python
+control.mpc.check_constraints(plan, cfg, spec)
+```
+
+Verify the returned plan against the hard safety limits.
+
+SLSQP treats the limits as constraints, but it can stop short of
+feasibility, and its penalty fallback treats the rate limit as a soft cost
+that can be violated at the optimum. This function checks the actual
+solution, independently of how it was found, and is called by the CLI
+before anything is displayed. A constraint that is never verified is not a
+constraint.
+
+### feasibility_report { #wdm.control.mpc.feasibility_report }
+
+```python
+control.mpc.feasibility_report(plan, cfg)
+```
+
+Report whether a deadline target is reachable within the safety limits.
+
+Returns ``None`` when the plan is on track, otherwise a plain statement of
+the earliest date the target could be reached at the maximum permitted rate.
+
+The rate is the one `solve` enforces: a fraction of each day's
+*tissue*, not scale weight, so at the maximum rate tissue falls
+geometrically, ``T_n = T_0 / (1 + frac/7)**n``. The distance to cover is
+measured on the scale, since that is how the target is stated, which assumes
+the water compartments end where they are today.
+
+This exists because the alternative is worse. A controller handed an
+impossible deadline will silently return the closest thing it can manage --
+typically the calorie floor, held for the entire horizon -- and that output
+looks like a plan rather than like a refusal. Saying so explicitly is the
+difference between a tool that informs you and one that quietly agrees with
+whatever you typed.
+
+### solve { #wdm.control.mpc.solve }
+
+```python
+control.mpc.solve(
+    x0,
+    params,
+    cfg,
+    spec,
+    *,
+    carb_ref_g,
+    start_date,
+    previous_kcal=None,
+    days_remaining=None,
+)
+```
+
+Optimise an intake trajectory from the current state.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name           | Type        | Description                                                             | Default    |
+|----------------|-------------|-------------------------------------------------------------------------|------------|
+| x0             | State       | Current filtered state -- the mean of the posterior at the last day.    | _required_ |
+| params         | Params      | Posterior mean parameters. See the note on certainty equivalence above. | _required_ |
+| days_remaining | int \| None | Days until the goal date, for deadline mode. Defaults to the horizon.   | `None`     |

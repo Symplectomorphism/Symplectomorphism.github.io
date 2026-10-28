@@ -1,0 +1,102 @@
+# estimation.reparam { #wdm.estimation.reparam }
+
+`estimation.reparam`
+
+Constrained/unconstrained parameter transforms.
+
+The filter propagates a Gaussian belief. Metabolic parameters are not Gaussian
+quantities: time constants and gains are strictly positive, the adaptation gain
+lies in $[0, 1)$, and a Gaussian placed on any of them puts mass on
+impossible values. Worse, a sigma point drawn from such a belief can *be* an
+impossible value, and a negative time constant does not merely give a poor
+estimate -- it makes the dynamics explode.
+
+The fix is to filter in an unconstrained coordinate $\eta$ and map to the
+natural parameter only inside the dynamics. Every transform here is centered so
+that $\eta = 0$ recovers the prior and scaled so that $\eta \sim
+N(0, 1)$ spans a physiologically plausible range. The prior is therefore exactly
+the standard normal, and the initial parameter covariance is the identity --
+which is not a coincidence but the point of choosing the scales this way.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [ParamTransform](#wdm.estimation.reparam.ParamTransform) | The full set of per-parameter transforms, in `PARAM_NAMES` order. |
+| [Transform](#wdm.estimation.reparam.Transform) | One parameter's map from unconstrained ``eta`` to natural units. |
+
+### ParamTransform { #wdm.estimation.reparam.ParamTransform }
+
+```python
+estimation.reparam.ParamTransform(rmr_intercept_prior, rmr_slope_prior)
+```
+
+The full set of per-parameter transforms, in `PARAM_NAMES` order.
+
+Built from the subject's expenditure prior so that the two metabolic-rate
+coefficients are centered on Mifflin-St Jeor scaled by activity level, rather
+than on an arbitrary constant.
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [constrain](#wdm.estimation.reparam.ParamTransform.constrain) | Unconstrained vector to natural-unit `Params`. |
+| [prior_cov](#wdm.estimation.reparam.ParamTransform.prior_cov) | The prior covariance, the identity by construction. |
+| [prior_eta](#wdm.estimation.reparam.ParamTransform.prior_eta) | The prior mean, which is the origin by construction. |
+| [unconstrain](#wdm.estimation.reparam.ParamTransform.unconstrain) | Natural-unit `Params` back to the unconstrained vector. |
+
+##### constrain { #wdm.estimation.reparam.ParamTransform.constrain }
+
+```python
+estimation.reparam.ParamTransform.constrain(eta)
+```
+
+Unconstrained vector to natural-unit `Params`.
+
+##### prior_cov { #wdm.estimation.reparam.ParamTransform.prior_cov }
+
+```python
+estimation.reparam.ParamTransform.prior_cov(scale=1.0)
+```
+
+The prior covariance, the identity by construction.
+
+``scale`` above 1 widens the prior uniformly, which is the honest thing
+to do if you suspect your logging is unusual in some way the literature
+priors do not anticipate.
+
+##### prior_eta { #wdm.estimation.reparam.ParamTransform.prior_eta }
+
+```python
+estimation.reparam.ParamTransform.prior_eta()
+```
+
+The prior mean, which is the origin by construction.
+
+##### unconstrain { #wdm.estimation.reparam.ParamTransform.unconstrain }
+
+```python
+estimation.reparam.ParamTransform.unconstrain(p)
+```
+
+Natural-unit `Params` back to the unconstrained vector.
+
+### Transform { #wdm.estimation.reparam.Transform }
+
+```python
+estimation.reparam.Transform(kind, center, scale)
+```
+
+One parameter's map from unconstrained ``eta`` to natural units.
+
+``kind`` is one of:
+
+``"log"``
+    ``theta = center * exp(scale * eta)``. Strictly positive; ``scale`` is
+    the standard deviation in log units, so 0.25 means roughly +-25 %.
+``"logit"``
+    ``theta = sigmoid(logit(center) + scale * eta)``. Confined to ``(0, 1)``.
+``"affine"``
+    ``theta = center + scale * eta``. Unbounded, for parameters whose sign
+    is genuinely unknown.

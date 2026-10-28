@@ -1,0 +1,128 @@
+# config { #wdm.config }
+
+`config`
+
+Subject metadata, goals, and safety limits.
+
+Loaded from a TOML file (see ``data/templates/subject_template.toml``). Nothing
+here is estimated from data -- these are the inputs *you* supply. Their only
+roles are to center the priors on the metabolic-rate parameters and to bound
+what the controller is permitted to prescribe.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [Goal](#wdm.config.Goal) | Where you want to end up, for the controller's deadline mode. |
+| [Preferences](#wdm.config.Preferences) | Diet-style choices with no principled default -- only your own. |
+| [Safety](#wdm.config.Safety) | Hard limits the controller may not violate. |
+| [Subject](#wdm.config.Subject) | Anthropometrics used to build the resting-metabolic-rate prior. |
+
+### Goal { #wdm.config.Goal }
+
+```python
+config.Goal(target_weight_lb, target_date)
+```
+
+Where you want to end up, for the controller's deadline mode.
+
+### Preferences { #wdm.config.Preferences }
+
+```python
+config.Preferences(target_carb_fraction=None, target_fat_fraction=None)
+```
+
+Diet-style choices with no principled default -- only your own.
+
+Unlike ``Safety``, none of these are guardrails; they are taste.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [target_carb_fraction](#wdm.config.Preferences.target_carb_fraction) | Carbohydrate's share of energy to aim for, e.g. ``0.05-0.10`` for a |
+| [target_fat_fraction](#wdm.config.Preferences.target_fat_fraction) | Fat's share of energy to aim for. Only used as a real preference if |
+
+### Safety { #wdm.config.Safety }
+
+```python
+config.Safety(
+    min_kcal=MIN_KCAL_FLOOR,
+    max_loss_frac_per_week=MAX_LOSS_FRAC_PER_WEEK,
+    min_protein_g_per_kg=MIN_PROTEIN_G_PER_KG,
+    max_kcal=6000.0,
+)
+```
+
+Hard limits the controller may not violate.
+
+These are *your* numbers, read from the config file rather than imposed.
+The package defaults are conservative; if you have set them otherwise, the
+controller respects your setting.
+
+### Subject { #wdm.config.Subject }
+
+```python
+config.Subject(
+    sex,
+    age_years,
+    height_cm,
+    body_fat_frac=None,
+    habitual_carb_g=None,
+    habitual_sodium_mg=None,
+)
+```
+
+Anthropometrics used to build the resting-metabolic-rate prior.
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [expenditure_prior](#wdm.config.Subject.expenditure_prior) | Prior center for the (intercept, mass-slope) of total expenditure. |
+| [habitual_intake](#wdm.config.Subject.habitual_intake) | Carbohydrate (g/day) and sodium (mg/day) eaten before a diet begins. |
+| [rmr_mifflin](#wdm.config.Subject.rmr_mifflin) | Mifflin-St Jeor resting metabolic rate, kcal/day. |
+
+##### expenditure_prior { #wdm.config.Subject.expenditure_prior }
+
+```python
+config.Subject.expenditure_prior(weight_kg, pal=DEFAULT_PAL)
+```
+
+Prior center for the (intercept, mass-slope) of total expenditure.
+
+Returns ``(c0, c1)`` such that non-adaptive, non-TEF expenditure is
+approximately ``c0 + c1 * weight_kg`` in kcal/day.
+
+The decomposition is obtained by scaling Mifflin-St Jeor by the activity
+level and splitting into the mass-dependent term and everything else.
+The two coefficients are strongly correlated given the narrow range of
+body mass in any single dataset; see the identifiability discussion in
+the report before reading much into either one alone.
+
+##### habitual_intake { #wdm.config.Subject.habitual_intake }
+
+```python
+config.Subject.habitual_intake()
+```
+
+Carbohydrate (g/day) and sodium (mg/day) eaten before a diet begins.
+
+The reference the water compartments measure deviations from, so that a
+diet starting from ordinary eating starts with both at zero and the
+first days' drop in glycogen and sodium water is predicted rather than
+absorbed as noise or credited to tissue. Defaults are roughly US adult
+averages by sex; set them in ``subject.toml`` if you know better. On the
+record so far, the fit is better with any plausible habitual level than
+with the alternative, the diet's own mean.
+
+##### rmr_mifflin { #wdm.config.Subject.rmr_mifflin }
+
+```python
+config.Subject.rmr_mifflin(weight_kg)
+```
+
+Mifflin-St Jeor resting metabolic rate, kcal/day.
+
+Note this predicts *resting* expenditure only. Total daily expenditure
+is larger by the physical-activity level and the thermic effect of food.

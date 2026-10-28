@@ -1,0 +1,86 @@
+# routine { #wdm.routine }
+
+`routine`
+
+A minimal, current-state definition of a lifting routine.
+
+Where the workout tracker spreadsheet (`wdm.exercise`,
+`wdm.tracker_write`) is a growing, dated log -- one full block of rows
+per session, every time it happens -- this is the opposite: one row per
+*exercise*, one definition per named session ("Lower A"), overwritten in
+place whenever the routine actually changes.
+
+It exists for a workflow where the routine is defined once and referred to by
+name on the days it's repeated -- "did Lower A today" -- with the day-by-day
+record living in ``observations.csv`` (its ``exercise_kcal`` column, and
+optionally a note naming the session) rather than in a spreadsheet that would
+otherwise need a new dated block appended every session. That is a real
+alternative to `wdm.tracker_write`'s approach, not a replacement for it:
+this file has no history, so if a session's kcal estimate matters historically
+-- did last month's Lower A cost less because you had lighter weights then --
+the dated tracker is still the right tool. For a routine held roughly constant
+and referred to by name, this is simpler.
+
+Reuses the MET table, tempo parsing, and rest-period assumptions from
+`wdm.exercise`; only the source of the sets, and how they're grouped
+(per exercise, not per set), differs.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [RoutineEstimate](#wdm.routine.RoutineEstimate) | Estimated energy cost of one named session, from its routine definition. |
+
+### RoutineEstimate { #wdm.routine.RoutineEstimate }
+
+```python
+routine.RoutineEstimate(session, kcal, n_sets, duration_min)
+```
+
+Estimated energy cost of one named session, from its routine definition.
+
+Carries no date -- a routine definition is a standing fact, not an event.
+Attach whichever date it applies to yourself, when logging it.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [estimate_named_session_kcal](#wdm.routine.estimate_named_session_kcal) | Estimate a named session's kcal cost from the routine definition. |
+| [list_sessions](#wdm.routine.list_sessions) | Distinct session names defined in the routine, in file order. |
+| [load_routine](#wdm.routine.load_routine) | Read a routine CSV: one row per exercise, not per set. |
+
+### estimate_named_session_kcal { #wdm.routine.estimate_named_session_kcal }
+
+```python
+routine.estimate_named_session_kcal(routine, session, weight_lb)
+```
+
+Estimate a named session's kcal cost from the routine definition.
+
+Unlike the tracker's date-grouped estimate, there is exactly one
+definition per session name here, so no "most recent instance" lookup is
+needed -- this either finds the session or it does not.
+
+### list_sessions { #wdm.routine.list_sessions }
+
+```python
+routine.list_sessions(routine)
+```
+
+Distinct session names defined in the routine, in file order.
+
+### load_routine { #wdm.routine.load_routine }
+
+```python
+routine.load_routine(path)
+```
+
+Read a routine CSV: one row per exercise, not per set.
+
+Expected columns: ``session, exercise, sets, reps, weight_lb, tempo,
+category, notes``. ``reps`` and ``weight_lb`` may be blank for bodyweight
+or isometric exercises. ``category`` is specified directly as one of
+``compound`` / ``isolation`` / ``core`` -- a routine of this size does not
+need the tracker's Muscle-Guide-driven inference, and specifying it
+directly means there is no join to silently miss.

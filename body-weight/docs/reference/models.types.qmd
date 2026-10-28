@@ -1,0 +1,159 @@
+# models.types { #wdm.models.types }
+
+`models.types`
+
+Core datatypes: model state, parameters, and daily inputs.
+
+All three are `equinox.Module` subclasses, which makes them JAX pytrees.
+That buys us three things for free: ``jax.grad`` differentiates through them,
+``jax.lax.scan`` carries them, and ``jax.vmap`` maps over them -- so the same
+structures serve simulation, filtering, and optimization without conversion.
+
+## Conventions {.doc-section .doc-section-conventions}
+
+Mass is kilograms, energy is kilocalories, time is days. Pounds appear only at
+the I/O boundary. Every state and parameter is a scalar array so that the same
+code runs on a single trajectory or, under ``vmap``, on a cloud of sigma points.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [DailyInput](#wdm.models.types.DailyInput) | Exogenous inputs for a single day, held constant across that day. |
+| [Params](#wdm.models.types.Params) | Personal metabolic parameters, estimated jointly with the state. |
+| [State](#wdm.models.types.State) | Hidden physiological state. |
+
+### DailyInput { #wdm.models.types.DailyInput }
+
+```python
+models.types.DailyInput()
+```
+
+Exogenous inputs for a single day, held constant across that day.
+
+Holding inputs constant over each day makes the one-day step map an exact
+zero-order-hold discretisation of the continuous dynamics, which is both the
+physically sensible reading of a daily food log and the numerically
+convenient one.
+
+The two ``*_known`` flags are floats rather than booleans so the structure
+stays a homogeneous pytree that ``vmap`` and ``scan`` handle without
+special-casing.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [carb_dev_g](#wdm.models.types.DailyInput.carb_dev_g) | Carbohydrate intake *relative to the reference (habitual) intake*, g/day. |
+| [intake_known](#wdm.models.types.DailyInput.intake_known) | 1.0 when a usable food log exists for this day, else 0.0. |
+| [macro_known](#wdm.models.types.DailyInput.macro_known) | 1.0 when the protein/carb/fat split is available, else 0.0. |
+| [sodium_dev_mg](#wdm.models.types.DailyInput.sodium_dev_mg) | Sodium intake *relative to the reference (habitual) intake*, mg/day. |
+
+### Params { #wdm.models.types.Params }
+
+```python
+models.types.Params()
+```
+
+Personal metabolic parameters, estimated jointly with the state.
+
+Every field is in natural units and positivity- or range-constrained where
+physically required. The filter works in an unconstrained reparameterization
+(see `wdm.estimation.reparam`) and converts back here, so these values
+are always physically admissible regardless of what the optimizer does.
+
+The thermic-effect coefficients are deliberately *not* estimated. Their
+influence on the scale is confounded with maintenance energy, and attempting
+to identify them from weight data alone yields nonsense with wide error bars
+dressed up as a result.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [at_gain](#wdm.models.types.Params.at_gain) | Dimensionless, in [0, 1). Fraction of a sustained deficit eventually |
+| [at_tau](#wdm.models.types.Params.at_tau) | days. Time constant of adaptation. |
+| [gly_gain](#wdm.models.types.Params.gly_gain) | kg per (g/day). Steady-state glycogen-complex mass per unit |
+| [gly_tau](#wdm.models.types.Params.gly_tau) | days. Glycogen repletion time constant. |
+| [na_gain](#wdm.models.types.Params.na_gain) | kg per (mg/day). Steady-state water retention per unit sodium |
+| [na_tau](#wdm.models.types.Params.na_tau) | days. Sodium-water time constant. |
+| [partition_kappa](#wdm.models.types.Params.partition_kappa) | Shift in the fat fraction of tissue change per (g/kg/day) of protein |
+| [rmr_intercept](#wdm.models.types.Params.rmr_intercept) | kcal/day. Mass-independent expenditure: organ metabolism, baseline |
+| [rmr_slope](#wdm.models.types.Params.rmr_slope) | kcal/day per kg. How expenditure scales with body mass. Strongly |
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [prior](#wdm.models.types.Params.prior) | Prior-centered parameters, given an expenditure prior from `wdm.config`. |
+
+##### prior { #wdm.models.types.Params.prior }
+
+```python
+models.types.Params.prior(rmr_intercept, rmr_slope)
+```
+
+Prior-centered parameters, given an expenditure prior from `wdm.config`.
+
+### State { #wdm.models.types.State }
+
+```python
+models.types.State()
+```
+
+Hidden physiological state.
+
+#### Attributes {.doc-section .doc-section-attributes}
+
+| Name         | Type   | Description                                                                                                                                                                                                                                                 |
+|--------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| tissue_kg    | Scalar | Slow-moving body mass: fat plus fat-free solids and their structural water. This is what a diet actually changes, and it is *not* what the scale reads.                                                                                                     |
+| fat_kg       | Scalar | Fat mass, a component of ``tissue_kg``. Only weakly observable from scale data -- it influences the dynamics solely through the effective energy density of tissue change -- so its posterior stays wide. Reported with error bars for exactly that reason. |
+| gly_water_kg | Scalar | Deviation of the glycogen-plus-bound-water compartment from its level at the habitual carbohydrate intake. Fast, carbohydrate-driven, and responsible for a large share of day-to-day scale movement.                                                       |
+| na_water_kg  | Scalar | Deviation of sodium-associated extracellular water from its level at the habitual sodium intake. Zero throughout when no sodium column is supplied.                                                                                                         |
+| adapt_kcal   | Scalar | Adaptive thermogenesis: the reduction in daily expenditure beyond what mass loss alone explains. Negative during an energy deficit. This is the state that produces plateaus.                                                                               |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [inputs_from_episode](#wdm.models.types.inputs_from_episode) | Convert a loaded `~wdm.io.Episode` into stacked daily inputs. |
+| [previous_day_inputs](#wdm.models.types.previous_day_inputs) | Re-index daily inputs so that entry ``k`` holds day ``k - 1``'s. |
+
+### inputs_from_episode { #wdm.models.types.inputs_from_episode }
+
+```python
+models.types.inputs_from_episode(ep)
+```
+
+Convert a loaded `~wdm.io.Episode` into stacked daily inputs.
+
+Every field becomes an array of length ``ep.n_days``, so the result is a
+pytree that ``jax.lax.scan`` can iterate over directly. Carbohydrate and
+sodium are converted to deviations from the episode's reference intake
+(habitual eating; see `~wdm.io.Episode`) here, which is the one
+place that convention is applied.
+
+Timing: row ``k`` holds the weigh-in on the morning of day ``k`` and the
+food eaten during day ``k``, after it. The state on day ``k`` is the
+morning state, so day ``k``'s food moves the state from morning ``k`` to
+morning ``k + 1``; see `previous_day_inputs` for the filter's view.
+
+``NaN`` energy on unlogged days is replaced by zero; the value is never used
+because `~wdm.models.energetics.effective_intake` selects the fallback
+whenever ``intake_known`` is zero. Leaving the ``NaN`` in place would
+poison the gradient through the unused branch of the ``where``, a classic
+and genuinely irritating JAX foot-gun.
+
+### previous_day_inputs { #wdm.models.types.previous_day_inputs }
+
+```python
+models.types.previous_day_inputs(u)
+```
+
+Re-index daily inputs so that entry ``k`` holds day ``k - 1``'s.
+
+A predict-then-update filter step ``k`` advances the state from morning
+``k - 1`` to morning ``k``, which is driven by the food of day ``k - 1``.
+Entry 0 repeats day 0 and is never used: the filter's first step is an
+update only (``predict_first=False``).

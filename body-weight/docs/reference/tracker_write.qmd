@@ -1,0 +1,58 @@
+# tracker_write { #wdm.tracker_write }
+
+`tracker_write`
+
+Appending a repeated session to the workout tracker spreadsheet.
+
+Companion to `wdm.exercise`'s read-only estimation. Where
+`wdm.exercise.repeat_session_kcal` estimates a repeated session's energy
+cost in memory without touching the file, `append_repeated_session`
+makes the repetition a permanent, ordinary dated entry -- duplicating the most
+recently logged instance of a session, with its exercises, sets, weights,
+reps, tempo, equipment-cap flag and its highlight, and notes (including the
+hold-duration notes the estimator reads) intact, changed only in date.
+
+This exists because of a mismatch between how the tracker is meant to be used
+and how it is actually used. Its own header text says "log every set: date,
+exercise, ...", implying a fresh dated block every session -- but a routine
+held constant for weeks is more naturally logged once and repeated from
+memory, which leaves the file with no row for any session after the first one
+of each type. This closes that gap without retyping the block by hand every
+time, while keeping the file an honest, growing log rather than a single
+template reused forever with no trace of when each session happened.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [append_repeated_session](#wdm.tracker_write.append_repeated_session) | Append a duplicate of ``session``'s most recently logged block, dated ``as_of``. |
+
+### append_repeated_session { #wdm.tracker_write.append_repeated_session }
+
+```python
+tracker_write.append_repeated_session(path, session, as_of, *, backup=True)
+```
+
+Append a duplicate of ``session``'s most recently logged block, dated ``as_of``.
+
+Mutates the tracker in place: finds the most recent logged instance of
+``session``, inserts an exact copy of its rows immediately before the
+sheet's trailing note, with only the date changed. Refuses outright if a
+block already exists for ``(session, as_of)``, so running this twice by
+accident does not silently duplicate the day.
+
+A ``.bak`` copy is written alongside the file before any modification,
+unless ``backup=False``.
+
+Notes are copied verbatim along with everything else. Technique reminders
+("rear foot on bench") and hold-duration notes ("1:00 held") carry over
+correctly and usefully; day-specific commentary ("last set felt notably
+harder") carries over too, and will read as slightly stale until you edit
+or clear it by hand. There is no reliable way to tell the two kinds apart
+automatically, so this makes no attempt to.
+
+#### Returns {.doc-section .doc-section-returns}
+
+| Name   | Type                  | Description                                                                   |
+|--------|-----------------------|-------------------------------------------------------------------------------|
+|        | (n_rows, source_date) | Number of rows inserted, and the date (``YYYY-MM-DD``) they were copied from. |

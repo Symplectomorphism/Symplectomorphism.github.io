@@ -1,0 +1,85 @@
+# models.partition { #wdm.models.partition }
+
+`models.partition`
+
+Body-composition partitioning: how much of a mass change is fat.
+
+This is where the model earns its keep relative to the folk formula
+"3500 kcal = 1 lb". That rule assumes every pound lost is pure fat. In reality a
+mass change is a mixture of adipose tissue at ~9441 kcal/kg and fat-free tissue
+at ~1816 kcal/kg -- a factor of five apart -- so the *same* energy deficit moves
+the scale by very different amounts depending on what is being mobilised.
+
+Two effects set the mixture.
+
+**Forbes' law.** Fitting body composition across a wide range of adiposity,
+Forbes found fat-free mass to be logarithmic in fat mass,
+
+$$
+L = 10.4 \ln F + C .
+$$
+
+Differentiating and rearranging gives a parameter-free prediction for the fat
+fraction of any mass change:
+
+$$
+p_{\text{Forbes}} = \frac{dF}{dW} = \frac{F}{F + 10.4} .
+$$
+
+The fatter you are, the more of what you lose is fat. At 30 kg fat mass the
+prediction is 74 %; at 15 kg, 59 %. This is why the last stretch of a diet is
+genuinely harder than the first: not only is maintenance lower, but a larger
+share of each lost kilogram is lean tissue, which carries far less energy and so
+comes off faster per unit deficit while costing more that you would rather keep.
+
+**Protein intake.** Adequate protein during an energy deficit shifts the mixture
+toward fat. Modelled as an additive shift on the fat fraction, proportional to
+protein intake relative to a reference of 1.6 g/kg/day.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [effective_energy_density](#wdm.models.partition.effective_energy_density) | Energy density of the tissue currently being gained or lost, kcal/kg. |
+| [fat_fraction](#wdm.models.partition.fat_fraction) | Fat fraction of the current tissue change, in ``[PARTITION_MIN, PARTITION_MAX]``. |
+| [forbes_fat_fraction](#wdm.models.partition.forbes_fat_fraction) | Fat fraction of a mass change predicted by Forbes' law, dimensionless. |
+
+### effective_energy_density { #wdm.models.partition.effective_energy_density }
+
+```python
+models.partition.effective_energy_density(x, u, p)
+```
+
+Energy density of the tissue currently being gained or lost, kcal/kg.
+
+$$
+\rho_{\text{eff}} = p \rho_F + (1 - p) \rho_L
+$$
+
+Ranges from about 5630 kcal/kg at the lower partition bound to 9290 at the
+upper one. Since the rate of mass change is the energy imbalance *divided*
+by this quantity, a lean subject on low protein can lose scale weight almost
+twice as fast as a fat subject on high protein at an identical deficit --
+while losing considerably more muscle in the process.
+
+### fat_fraction { #wdm.models.partition.fat_fraction }
+
+```python
+models.partition.fat_fraction(x, u, p)
+```
+
+Fat fraction of the current tissue change, in ``[PARTITION_MIN, PARTITION_MAX]``.
+
+Combines the Forbes baseline with a protein-driven shift. Clipping the
+result keeps the effective energy density inside physical bounds; without it
+an unconstrained ``partition_kappa`` could drive the fraction outside
+``[0, 1]`` and produce a negative energy density, which is not so much
+inaccurate as meaningless.
+
+### forbes_fat_fraction { #wdm.models.partition.forbes_fat_fraction }
+
+```python
+models.partition.forbes_fat_fraction(fat_kg)
+```
+
+Fat fraction of a mass change predicted by Forbes' law, dimensionless.

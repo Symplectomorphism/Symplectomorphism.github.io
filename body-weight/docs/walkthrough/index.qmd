@@ -1,0 +1,54 @@
+---
+title: "Walkthrough"
+subtitle: "Seven short scripts that take the package apart one layer at a time, on synthetic data with a known answer."
+---
+
+This section runs `wdm` one piece at a time: the model alone, a synthetic record with a hidden truth, the two estimation phases, the tape measure, the backtest, and the controller. At every step you run a short script, compare its output with the one shown, read the code it points at, and try a change. Everything here uses the package's Python API, so it also serves as a guide to using `wdm` as a library.
+
+**How to use it.** From `weight-dynamics/code`, after [Getting started](../getting-started.md):
+
+```bash
+cd weight-dynamics/code && uv run python walkthrough/01_model.py
+```
+
+- Each page gives the command, the script itself (folded), the output it printed when the page was written (2026-10-28), what to notice in that output, where the code lives (`file.py:line`, under `src/wdm/`), the assumptions made at that layer, and a "Try this" exercise.
+- All data are synthetic, with fixed seeds, so your numbers should match to the digits shown. Another JAX or SciPy version can change the last digits of the optimizer-driven results (steps 3 to 7).
+- Steps 2 to 7 share one subject and one episode: a 40-year-old man, 175 cm, starting at 100 kg and 30 % body fat, eating about 80 % of his maintenance for 120 days, with a metabolism set deliberately away from the prior (the same values `wdm demo` and the tests use). Each script rebuilds that episode from the same seed, so each runs on its own.
+- Everything runs on the CPU. Most of each step's time is generating the synthetic episode, which steps one day at a time in Python.
+
+## The steps
+
+| Step | What it shows | Script | Runtime |
+|---|---|---|---|
+| [1. The model](01-model.md) | A diet simulated at the prior: the early water drop, slower tissue loss, adaptation | `01_model.py` | 1.4 s |
+| [2. Synthetic data](02-synthetic.md) | Weigh-ins with noise, food logs, weekly waist readings, and the hidden truth | `02_synthetic.py` | 15 s |
+| [3. Phase 1: the scale's noise](03-phase1.md) | Reading noise, steady-state gain and effective window, against the true noise | `03_phase1.py` | 30 s |
+| [4. Phase 2: state and metabolism](04-phase2.md) | The joint fit: parameter recovery against the truth, what "shift" means, maintenance | `04_phase2.py` | 19 s |
+| [5. The waist tape](05-waist.md) | The same fit with and without waist readings: the fat-mass interval and bias | `05_waist.py` | 21 s |
+| [6. The backtest](06-backtest.md) | 1- and 7-day forecasts against persistence, and their calibration | `06_backtest.py` | 21 s |
+| [7. Planning](07-plan.md) | Deadline and sustainable plans, the constraint check, an impossible deadline | `07_plan.py` | 26 s |
+
+Runtimes are wall-clock on a 20-thread desktop CPU, including Python and JAX start-up.
+
+## The steps in the pipeline
+
+```{mermaid}
+%%| fig-cap: "Where each step sits in the pipeline. Rounded boxes are what `wdm` computes; the model (step 1) is used by the generator, the filter and the controller alike."
+flowchart LR
+  M("model<br/>step 1")
+  D["synthetic episode:<br/>weigh-ins, food, waist<br/>step 2"]
+  P1("phase 1<br/>noise of the scale<br/>step 3")
+  P2("phase 2<br/>state + metabolism<br/>steps 4, 5")
+  BT("backtest<br/>step 6")
+  PL("controller<br/>step 7")
+  D --> P1
+  P1 -->|"reading noise"| P2
+  D --> P2
+  P2 --> BT
+  P2 -->|"state, parameters"| PL
+  M -.-> D
+  M -.-> P2
+  M -.-> PL
+```
+
+The command-line tool runs the same chain: [`wdm fit-noise`](../commands.md#wdm-fit-noise) is step 3, [`wdm filter`](../commands.md#wdm-filter) steps 4 and 5, [`wdm backtest`](../commands.md#wdm-backtest) step 6, and [`wdm plan`](../commands.md#wdm-plan) step 7. The theory behind each layer is in [The model](../theory/model.md), [Estimation](../theory/estimation.md) and [Control](../theory/control.md).

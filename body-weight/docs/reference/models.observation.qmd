@@ -1,0 +1,169 @@
+# models.observation { #wdm.models.observation }
+
+`models.observation`
+
+The observation model: what a bathroom scale actually reports.
+
+$$
+y_k = T_k + G_{c,k} + G_{n,k} + v_k, \qquad v_k \sim N(0, R)
+$$
+
+Linear in the state, which is a small mercy in an otherwise nonlinear model: the
+measurement update stays exact and the only approximation in the filter is in
+the time update.
+
+What ``R`` represents is worth being precise about. It is *not* instrument
+error, which for a decent digital scale is a few tens of grams. It is the
+residual within-day fluid and gut-content variation that the two modeled water
+compartments do not capture: hydration state, bladder and bowel contents, the
+previous evening's meal timing, glycogen changes faster than the modeled lag.
+Empirically this lands near 0.4-0.6 kg for consistent morning fasted weights,
+and appreciably worse if weigh-in conditions vary. Phase 1 estimates it from
+your own history rather than assuming it.
+
+Gaussian noise is a choice made on evidence, not by default. A Student-t
+alternative (`student_t_inflation`) is available, and on the record so
+far it fits worse: standardized innovations have a kurtosis near 3 and the
+likelihood falls as the tails get heavier. What the Gaussian lacks, protection
+against the rare gross error such as a mistyped number, is supplied by
+`innovation_gate`.
+
+A tape measure is the optional second sensor: waist circumference, modeled as
+linear in fat mass with a personal offset and slope that the filter estimates
+(`waist_prior`). It is the only reading that responds to fat directly;
+the scale sees fat only through the energy density of what is lost, which is
+weak evidence, so even a noisy weekly waist adds information the scale cannot.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [assert_shapes](#wdm.models.observation.assert_shapes) | Cheap internal consistency check used by the test suite. |
+| [innovation_gate](#wdm.models.observation.innovation_gate) | Soft outlier gate, returning a variance-inflation factor in ``[1, inf)``. |
+| [observation_covariance](#wdm.models.observation.observation_covariance) | Observation-noise covariance ``R``, ``(1, 1)``. |
+| [observation_inflation](#wdm.models.observation.observation_inflation) | Variance multiplier for one reading under the selected noise model. |
+| [observation_matrix](#wdm.models.observation.observation_matrix) | The constant Jacobian ``H`` of the observation map. |
+| [predict_scale](#wdm.models.observation.predict_scale) | Noise-free scale reading predicted from the state, kg. |
+| [predict_waist](#wdm.models.observation.predict_waist) | Noise-free waist circumference predicted from fat mass, cm. |
+| [student_t_inflation](#wdm.models.observation.student_t_inflation) | Observation-variance multiplier for Student-t noise, ``(nu + z**2) / (nu + 1)``. |
+| [waist_prior](#wdm.models.observation.waist_prior) | Population prior for the waist model ``waist = a + b * F``, in cm. |
+
+### assert_shapes { #wdm.models.observation.assert_shapes }
+
+```python
+models.observation.assert_shapes()
+```
+
+Cheap internal consistency check used by the test suite.
+
+### innovation_gate { #wdm.models.observation.innovation_gate }
+
+```python
+models.observation.innovation_gate(residual, innovation_sd, n_sigma=4.0)
+```
+
+Soft outlier gate, returning a variance-inflation factor in ``[1, inf)``.
+
+A residual inside ``n_sigma`` predicted standard deviations passes through
+untouched. Beyond that, the observation's variance is inflated by the square
+of the exceedance, which smoothly downweights the reading rather than
+discarding it.
+
+This matters more than it might seem. A single mistyped weight -- 213 entered
+as 231 -- is otherwise absorbed as a genuine 18 lb overnight gain, and the
+filter will happily revise its estimate of your metabolism to accommodate it.
+Gating keeps one bad keystroke from rewriting a month of inference, while
+still letting a *sustained* shift move the estimate, since consecutive large
+residuals eventually drag the state along.
+
+### observation_covariance { #wdm.models.observation.observation_covariance }
+
+```python
+models.observation.observation_covariance(obs_sd)
+```
+
+Observation-noise covariance ``R``, ``(1, 1)``.
+
+### observation_inflation { #wdm.models.observation.observation_inflation }
+
+```python
+models.observation.observation_inflation(
+    residual,
+    innovation_sd,
+    *,
+    dof,
+    gate_sigma,
+)
+```
+
+Variance multiplier for one reading under the selected noise model.
+
+Student-t weighting when ``dof`` is given, otherwise Gaussian with the
+gross-error gate.
+
+### observation_matrix { #wdm.models.observation.observation_matrix }
+
+```python
+models.observation.observation_matrix()
+```
+
+The constant Jacobian ``H`` of the observation map.
+
+### predict_scale { #wdm.models.observation.predict_scale }
+
+```python
+models.observation.predict_scale(x)
+```
+
+Noise-free scale reading predicted from the state, kg.
+
+### predict_waist { #wdm.models.observation.predict_waist }
+
+```python
+models.observation.predict_waist(fat_kg, offset_cm, slope_cm_per_kg)
+```
+
+Noise-free waist circumference predicted from fat mass, cm.
+
+### student_t_inflation { #wdm.models.observation.student_t_inflation }
+
+```python
+models.observation.student_t_inflation(residual, innovation_sd, dof=OBS_DOF)
+```
+
+Observation-variance multiplier for Student-t noise, ``(nu + z**2) / (nu + 1)``.
+
+A Student-t is a Gaussian whose variance is itself random. Given the
+residual ``z`` (in predicted standard deviations), the expected precision
+multiplier is ``(nu + 1) / (nu + z**2)``; dividing the noise variance by it
+and doing an ordinary Kalman update is the standard one-step approximation to
+the Student-t filter. A one-sigma reading keeps its full weight; a ten-sigma
+reading (213 typed as 231) gets about a twentieth of it, so one bad keystroke
+cannot rewrite a month of inference, while a *sustained* shift still moves
+the estimate, because each of its readings is only moderately surprising
+once the first few have pulled the prediction along.
+
+``dof=None`` returns 1: plain Gaussian noise.
+
+### waist_prior { #wdm.models.observation.waist_prior }
+
+```python
+models.observation.waist_prior(sex, age_years, fat_kg, weight_kg)
+```
+
+Population prior for the waist model ``waist = a + b * F``, in cm.
+
+Returns ``(a, b, sd_a)``. The slope ``b`` is the derivative of the Lean
+equation with respect to fat mass at fixed lean mass, evaluated at the given
+composition: ``d(100 F / W) / dF = 100 L / W**2`` percentage points per kg,
+divided by the equation's waist coefficient. For a man of 108 kg with 39 kg
+of fat this is about 1.05 cm per kg of fat, in line with the common
+observation that waist falls by about 1 cm per kg of weight lost, most of it
+fat. The offset ``a`` places the line through the Lean prediction at that
+composition, and ``sd_a`` is the equation's standard error converted to cm.
+
+The model is linear in ``F`` on purpose, and ``b`` is estimated rather than
+fixed: a cross-sectional regression is not a law for one person's waist, and
+across a long diet the Lean equation's implied slope itself steepens (about
+10 % per 5 kg of fat lost at fixed lean mass), so the prior slope is a
+starting value that the estimate, with its random walk, has to track.

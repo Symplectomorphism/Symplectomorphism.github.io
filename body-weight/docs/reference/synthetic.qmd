@@ -1,0 +1,95 @@
+# synthetic { #wdm.synthetic }
+
+`synthetic`
+
+Synthetic data generation, for testing and for calibrating expectations.
+
+Two distinct uses.
+
+**Validation.** Parameter recovery on data generated from known parameters is
+the only way to know whether the estimator works. Real data has no ground truth,
+so a plausible-looking fit there proves nothing at all.
+
+**Power analysis.** Before you spend four months logging, it is worth knowing
+what four months of data can actually resolve. Generating synthetic episodes of
+varying length and logging quality, then looking at how wide the posteriors come
+out, answers that honestly -- and the answer for some parameters is "not much".
+Better to learn that from a simulation than from a spreadsheet in December.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [SyntheticSpec](#wdm.synthetic.SyntheticSpec) | Configuration for one synthetic episode. |
+
+### SyntheticSpec { #wdm.synthetic.SyntheticSpec }
+
+```python
+synthetic.SyntheticSpec(
+    n_days=120,
+    start_weight_kg=100.0,
+    body_fat_frac=0.3,
+    intake_fraction=0.8,
+    intake_sd_kcal=250.0,
+    protein_g_per_kg=1.8,
+    fat_fraction_of_kcal=0.3,
+    carb_weekly_amplitude_g=60.0,
+    obs_sd_kg=0.45,
+    weigh_in_rate=0.85,
+    logging_rate=0.9,
+    sodium_mean_mg=3000.0,
+    sodium_sd_mg=800.0,
+    include_sodium=True,
+    habitual_carb_g=None,
+    habitual_sodium_mg=None,
+    waist_every_days=0,
+    waist_offset_cm=75.0,
+    waist_slope_cm_per_kg=1.2,
+    waist_sd_cm=1.5,
+)
+```
+
+Configuration for one synthetic episode.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [make_episode](#wdm.synthetic.make_episode) | Simulate one episode and return it alongside the hidden ground truth. |
+| [make_weight_only_episode](#wdm.synthetic.make_weight_only_episode) | A past episode with weigh-ins but no food log, mimicking old history. |
+
+### make_episode { #wdm.synthetic.make_episode }
+
+```python
+synthetic.make_episode(
+    spec,
+    true_params,
+    *,
+    name='synthetic',
+    start_date='2026-01-01',
+    seed=0,
+    noise=None,
+)
+```
+
+Simulate one episode and return it alongside the hidden ground truth.
+
+The simulation runs the *same* dynamics the estimator uses, which makes this
+a test of the estimator rather than of the model. That is the correct scope:
+whether the model resembles human physiology is a question for the
+literature and for residual diagnostics on real data, not for a self-test.
+
+#### Returns {.doc-section .doc-section-returns}
+
+| Name   | Type    | Description                                                                                                                                     |
+|--------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+|        | episode | An `~wdm.io.Episode` as if loaded from a CSV.                                                                                            |
+|        | truth   | Dict of the hidden trajectories: ``tissue_kg``, ``fat_kg``, ``gly_water_kg``, ``na_water_kg``, ``adapt_kcal``, and the noise-free ``scale_kg``. |
+
+### make_weight_only_episode { #wdm.synthetic.make_weight_only_episode }
+
+```python
+synthetic.make_weight_only_episode(spec, true_params, *, name, start_date, seed)
+```
+
+A past episode with weigh-ins but no food log, mimicking old history.

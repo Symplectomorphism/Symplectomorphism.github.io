@@ -1,0 +1,159 @@
+# filters.ukf { #wdm.filters.ukf }
+
+`filters.ukf`
+
+Unscented (sigma-point) Kalman filter and smoother.
+
+The energy-balance model is nonlinear -- the effective energy density depends on
+fat mass, adaptation multiplies intake deviations, and once parameters join the
+state the products of unknowns make it thoroughly so. The unscented transform
+handles this by propagating a small, deterministically chosen set of points
+through the *exact* nonlinear dynamics and refitting a Gaussian, rather than
+linearising the dynamics as the extended filter does.
+
+Two properties make it the right default here. It needs no Jacobians, so the
+model can be edited freely without maintaining derivative code. And it is
+accurate to third order for Gaussian inputs, against the extended filter's
+first, which matters because our nonlinearity is not gentle: the partitioning
+term saturates and the parameter-times-state products are genuinely bilinear.
+
+**The observation update is exact, not unscented.** The scale measures
+$T + G_c + G_n$, which is linear in the state, and the augmented parameter
+block does not enter the measurement at all. So the standard linear update
+applies with no approximation whatsoever, and using sigma points there would add
+error for nothing. Only the time update is approximate.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [SigmaPointSpec](#wdm.filters.ukf.SigmaPointSpec) | Scaling parameters of the unscented transform. |
+| [UnscentedResult](#wdm.filters.ukf.UnscentedResult) | Forward-pass output, including the cross-covariances the smoother needs. |
+
+### SigmaPointSpec { #wdm.filters.ukf.SigmaPointSpec }
+
+```python
+filters.ukf.SigmaPointSpec()
+```
+
+Scaling parameters of the unscented transform.
+
+#### Attributes {.doc-section .doc-section-attributes}
+
+| Name   | Type   | Description                                                                                                                                                                                                                                                                                                                                                                                                                |
+|--------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| alpha  | float  | Spread of the sigma points around the mean. Small values keep the points local, which is what you want when the nonlinearity is only mild over the posterior's support. The classic recommendation of 1e-3 is often *too* small in high dimensions, giving a large negative weight on the central point and a covariance that can lose positive definiteness. 0.3 is a safer default for a 14-dimensional augmented state. |
+| beta   | float  | Incorporates prior knowledge of the distribution's higher moments; 2 is optimal for a Gaussian.                                                                                                                                                                                                                                                                                                                            |
+| kappa  | float  | Secondary scaling, conventionally 0 or ``3 - n``.                                                                                                                                                                                                                                                                                                                                                                          |
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [weights](#wdm.filters.ukf.SigmaPointSpec.weights) | Mean and covariance weights, each of length ``2n + 1``. |
+
+##### weights { #wdm.filters.ukf.SigmaPointSpec.weights }
+
+```python
+filters.ukf.SigmaPointSpec.weights(n)
+```
+
+Mean and covariance weights, each of length ``2n + 1``.
+
+### UnscentedResult { #wdm.filters.ukf.UnscentedResult }
+
+```python
+filters.ukf.UnscentedResult()
+```
+
+Forward-pass output, including the cross-covariances the smoother needs.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [aux_innovation](#wdm.filters.ukf.UnscentedResult.aux_innovation) | Residual of the auxiliary measurement, when one was supplied. |
+| [cross_cov](#wdm.filters.ukf.UnscentedResult.cross_cov) | $\mathrm{Cov}(x_k, x_{k+1}^-)$, from the sigma-point spread. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [sigma_points](#wdm.filters.ukf.sigma_points) | Deterministic sigma points capturing the mean and covariance of ``(m, p)``. |
+| [unscented_filter](#wdm.filters.ukf.unscented_filter) | Forward unscented filtering pass with a linear observation. |
+| [unscented_predict](#wdm.filters.ukf.unscented_predict) | One unscented time update: predicted mean and covariance, and the cross-covariance. |
+| [unscented_rts_smoother](#wdm.filters.ukf.unscented_rts_smoother) | Backward smoothing pass using the stored sigma-point cross-covariances. |
+
+### sigma_points { #wdm.filters.ukf.sigma_points }
+
+```python
+filters.ukf.sigma_points(m, p, spec)
+```
+
+Deterministic sigma points capturing the mean and covariance of ``(m, p)``.
+
+Returns ``2n + 1`` points: the mean, then ``n`` points displaced along each
+Cholesky column and ``n`` mirrored ones.
+
+### unscented_filter { #wdm.filters.ukf.unscented_filter }
+
+```python
+filters.ukf.unscented_filter(
+    transition,
+    process_cov,
+    h,
+    obs_var,
+    m0,
+    p0,
+    inputs,
+    y,
+    observed,
+    *,
+    spec=None,
+    gate_sigma=4.0,
+    dof=None,
+    aux=None,
+    predict_first=True,
+)
+```
+
+Forward unscented filtering pass with a linear observation.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name          | Type                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Default    |
+|---------------|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| transition    |                         | ``(z, u) -> z_next``, the one-step map on the (possibly augmented) state. Must be JAX-traceable; it is ``vmap``-ed over sigma points.                                                                                                                                                                                                                                                                                                                                                                    | _required_ |
+| process_cov   |                         | ``(z, u) -> Q``, evaluated at the prior mean each step.                                                                                                                                                                                                                                                                                                                                                                                                                                                  | _required_ |
+| h             | Float\[Array, \'1 n\'\] | Observation row vector, shape ``(1, n)``.                                                                                                                                                                                                                                                                                                                                                                                                                                                                | _required_ |
+| obs_var       | Float\[Array, \'\'\]    | Scalar observation-noise variance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | _required_ |
+| inputs        |                         | Pytree whose leaves have leading dimension ``t``; iterated by ``scan``.                                                                                                                                                                                                                                                                                                                                                                                                                                  | _required_ |
+| gate_sigma    | float                   | With Gaussian noise, residuals beyond this many predicted standard deviations have their observation variance inflated. See `wdm.models.observation.innovation_gate`.                                                                                                                                                                                                                                                                                                                              | `4.0`      |
+| dof           | float \| None           | Degrees of freedom for Student-t observation noise instead, or ``None`` (the default) for Gaussian. See `wdm.models.observation.student_t_inflation`.                                                                                                                                                                                                                                                                                                                                              | `None`     |
+| aux           |                         | Optional second, scalar, possibly nonlinear measurement, as a tuple ``(h_fn, var, y_aux, observed_aux)`` with ``h_fn: z -> scalar``. Applied after the linear update on the same day, from fresh sigma points of the updated belief. Sequential processing is exact for independent noises when both updates are linear; with a nonlinear ``h_fn`` it inherits the usual unscented approximation, but only on days the auxiliary reading exists. ``None`` leaves the filter exactly as it is without it. | `None`     |
+| predict_first | bool                    | Whether step 0 begins with a time update. ``False`` when ``(m0, p0)`` already describes the state at the first observation time, so that step ``k`` propagates with ``inputs[k]`` from ``k - 1`` to ``k`` for ``k >= 1`` and ``inputs[0]`` is never used.                                                                                                                                                                                                                                                | `True`     |
+
+### unscented_predict { #wdm.filters.ukf.unscented_predict }
+
+```python
+filters.ukf.unscented_predict(transition, process_cov, m, p, u, spec)
+```
+
+One unscented time update: predicted mean and covariance, and the cross-covariance.
+
+The cross-covariance $\mathrm{Cov}(x_k, x_{k+1}^-)$ is what the RTS
+smoother needs. Used by the filter and, iterated without measurement updates,
+for multi-day forecasts.
+
+### unscented_rts_smoother { #wdm.filters.ukf.unscented_rts_smoother }
+
+```python
+filters.ukf.unscented_rts_smoother(res)
+```
+
+Backward smoothing pass using the stored sigma-point cross-covariances.
+
+Structurally identical to the linear RTS recursion, with the analytic
+$P F^\top$ replaced by the cross-covariance the unscented transform
+already produced. Nothing extra needs to be computed, which is a pleasant
+consequence of having saved it during the forward pass.

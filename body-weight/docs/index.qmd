@@ -1,0 +1,39 @@
+---
+title: "wdm documentation"
+subtitle: "Weight-dynamics modeling: an energy-balance state-space model of body weight, a joint Kalman filter that learns one person's metabolism from a scale and a food log, and a model-predictive controller that turns the estimate into a daily calorie and macronutrient prescription."
+---
+
+`wdm` is a Python package (JAX, Equinox, Diffrax) with a command-line tool of the same name. You weigh in each morning, log what you eat as you go, and once a day it re-estimates where you are and replans what to eat next. The [presentation](../weight-dynamics.html) tells the story in slides; these pages are the manual.
+
+## How the pieces fit
+
+```{mermaid}
+%%| fig-cap: "One day of use. Square boxes are files; rounded boxes are what `wdm` computes. `wdm daily` records the weigh-in and runs the chain from validation to the plans log; `wdm log` adds meals and shows what is left of today's prescription."
+flowchart LR
+  O["observations.csv"] --> V("validate")
+  V --> P1("phase 1<br/>scale noise")
+  P1 --> P2("phase 2<br/>state and metabolism")
+  C["subject.toml"] --> P2
+  P2 --> M("controller")
+  C --> M
+  M --> T["today's prescription<br/>plans/log.csv"]
+```
+
+- **The model** has five states: tissue, fat mass, glycogen-bound water, sodium-bound water, and adaptive thermogenesis. Its nine metabolic parameters are personal and unknown.
+- **Phase 1** learns how noisy your scale readings are, from weight alone.
+- **Phase 2** estimates the states and the parameters together, from weight, food, and an optional weekly waist measurement.
+- **The controller** plans the next weeks of intake to reach a goal weight by a date (deadline mode) or to lose at a safe steady rate (sustainable mode). Tissue, not scale weight, sits in its objective and safety limits. Only today's line is a prescription; tomorrow it replans.
+
+## Where to start
+
+- **Use it:** [Getting started](getting-started.md) installs it and sets up your files; [The daily routine](daily-routine.md) is the whole day-to-day obligation (two commands).
+- **Look something up:** [Commands](commands.md) lists every command and option; [The observations file](data.md) and [The subject file](configuration.md) define every column and setting; [Reading the output](reading-output.md) explains each number the tool prints, what to expect when, and what to do when something looks wrong.
+- **Lifting:** [Exercise energy](exercise.md) estimates `exercise_kcal` from a routine or a workout spreadsheet.
+- **Learn the code:** the [walkthrough](walkthrough/index.qmd) runs the package one layer at a time on synthetic data with known truth.
+- **Understand the method:** [the model](theory/model.md), [estimation](theory/estimation.md), [control](theory/control.md), their [limitations](theory/limitations.md), and the [notation](theory/notation.md).
+- **Use it from Python:** the [API reference](reference/index.qmd), generated from the docstrings; [Development](development.md) covers the layout, the tests, and rebuilding the report and these pages.
+
+::: {.callout-warning}
+## Not medical advice
+This is a modeling exercise built on population-level physiology and fitted to one person's self-reported data. Its estimates come with honest, often wide, intervals, and its safety limits are general guidance, not anything specific to you. Talk to a doctor or a registered dietitian before acting on an aggressive plan.
+:::

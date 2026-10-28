@@ -1,0 +1,131 @@
+# daily { #wdm.daily }
+
+`daily`
+
+The morning routine's bookkeeping: record today's readings, keep a plan log.
+
+``wdm daily`` is the whole daily obligation in one command (see
+`wdm.cli.cmd_daily`). This module holds the parts of it that touch files,
+kept apart so they can be tested without running the filter:
+
+* `record` writes values into a day's row of the observations CSV:
+  this morning's weigh-in and waist, or yesterday's food, creating the row if
+  needed. Row ``k`` holds the morning readings of day ``k`` and the food eaten
+  that day, so entering the weight first thing is exactly right; the food
+  columns are filled in tomorrow.
+* `log_plan` archives every plan with the facts needed to reproduce it,
+  which a plain ``plan.csv``, overwritten daily, cannot do.
+
+The CSV is edited through the ``csv`` module with every cell kept as the string
+it was, so nothing is reformatted: a line that was not touched is byte-for-byte
+what it was.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [ask_number](#wdm.daily.ask_number) | Prompt until the answer is a number or blank (``None``). |
+| [day_has_food](#wdm.daily.day_has_food) | Whether ``date``'s row has an energy total or a full macro split. |
+| [day_totals](#wdm.daily.day_totals) | The day's logged totals for the prescribed quantities, zero where blank. |
+| [day_value](#wdm.daily.day_value) | The raw cell for ``col`` on ``date``, or ``None`` if the row or cell is empty. |
+| [last_weight_lb](#wdm.daily.last_weight_lb) | The most recent weigh-in in the file, or ``None`` if there is none. |
+| [log_plan](#wdm.daily.log_plan) | Archive ``plan`` as ``<start>.csv`` and append a row to ``log.csv``. |
+| [prescription](#wdm.daily.prescription) | Today's prescription: the latest logged plan that starts on ``date``. |
+| [record](#wdm.daily.record) | Write ``values`` into ``date``'s row; return what was done. |
+| [record_morning](#wdm.daily.record_morning) | Write this morning's readings into ``date``'s row; return what was done. |
+
+### ask_number { #wdm.daily.ask_number }
+
+```python
+daily.ask_number(prompt, ask=input)
+```
+
+Prompt until the answer is a number or blank (``None``).
+
+### day_has_food { #wdm.daily.day_has_food }
+
+```python
+daily.day_has_food(path, date)
+```
+
+Whether ``date``'s row has an energy total or a full macro split.
+
+``None`` when there is no row for that date at all.
+
+### day_totals { #wdm.daily.day_totals }
+
+```python
+daily.day_totals(path, date)
+```
+
+The day's logged totals for the prescribed quantities, zero where blank.
+
+### day_value { #wdm.daily.day_value }
+
+```python
+daily.day_value(path, date, col)
+```
+
+The raw cell for ``col`` on ``date``, or ``None`` if the row or cell is empty.
+
+### last_weight_lb { #wdm.daily.last_weight_lb }
+
+```python
+daily.last_weight_lb(path)
+```
+
+The most recent weigh-in in the file, or ``None`` if there is none.
+
+### log_plan { #wdm.daily.log_plan }
+
+```python
+daily.log_plan(
+    log_dir,
+    plan,
+    *,
+    write_plan_csv,
+    goal,
+    trend_lb,
+    maintenance_kcal,
+    constraints_ok,
+    command,
+)
+```
+
+Archive ``plan`` as ``<start>.csv`` and append a row to ``log.csv``.
+
+A replan on the same day overwrites that day's archived plan but adds a
+new log row, so the log records every prescription ever issued.
+
+### prescription { #wdm.daily.prescription }
+
+```python
+daily.prescription(log_dir, date)
+```
+
+Today's prescription: the latest logged plan that starts on ``date``.
+
+### record { #wdm.daily.record }
+
+```python
+daily.record(path, date, values, *, add=False, replace=False)
+```
+
+Write ``values`` into ``date``'s row; return what was done.
+
+An existing row keeps its episode and gets the values in its empty cells;
+a value that would overwrite a different one is refused, since a silent
+overwrite is how a typo becomes data. With ``add``, values are summed into
+what is there instead: that is how a meal joins the day's food totals. With
+``replace``, a new value overwrites the old one, for running totals such as
+a step count. A
+missing row is appended to the most recent episode, so a new diet attempt
+still needs its first row by hand. ``None`` values are skipped.
+
+### record_morning { #wdm.daily.record_morning }
+
+```python
+daily.record_morning(path, date, *, weight_lb=None, waist_in=None)
+```
+
+Write this morning's readings into ``date``'s row; return what was done.

@@ -1,0 +1,251 @@
+# estimation.joint { #wdm.estimation.joint }
+
+`estimation.joint`
+
+Phase 2: joint estimation of physiological state and metabolic parameters.
+
+The idea is standard and worth stating plainly: append the unknown parameters to
+the state vector and filter the lot together. The augmented state
+
+$$
+z_k = \bigl(\underbrace{T, F, G_c, G_n, A}_{x_k},\;
+\underbrace{\eta}_{\text{parameters}},\;
+\underbrace{\omega}_{\text{waist}}\bigr)
+\in \mathbb{R}^{16}
+$$
+
+evolves with the physiological state following the energy-balance dynamics and
+the parameter block following a slow random walk. Each morning's weigh-in then
+updates *both* -- where you are, and what kind of metabolism produced that
+trajectory. Parameter uncertainty contracts as evidence accumulates, which is
+exactly the desired behavior when early food logs are less reliable than later
+ones. The last two entries calibrate the optional tape measure (offset and slope
+of waist against fat mass); they are personal constants like the metabolic
+parameters and are carried and relaxed the same way, but they never enter the
+dynamics. They are added only when some episode has a waist reading: the
+unscented transform's sigma-point spread depends on the state dimension, so two
+idle entries would perturb every other estimate slightly for no information.
+
+Two design choices deserve comment.
+
+**Why a random walk on parameters that are supposedly constant.** Giving the
+parameter block a small process noise is what keeps the filter from locking in
+early. With zero process noise the parameter covariance shrinks monotonically
+and the filter becomes deaf to later evidence -- including evidence that its
+early estimate was wrong. The random walk is a modeling fiction that buys
+robustness, and it is also not entirely a fiction: maintenance energy genuinely
+does drift with season, activity, and age.
+
+**Pooling across episodes by sequential Bayes.** Episodes share your metabolism
+but not your state: you started each attempt at a different weight with a
+different glycogen load. So between episodes the physiological block is reset
+from that episode's first weigh-in, while the parameter posterior carries
+forward as the next episode's prior. Because episodes may be years apart, the
+carried-forward covariance is relaxed back toward the prior at a rate set by the
+calendar gap -- what your metabolism was in 2023 is evidence about 2026, but
+weaker evidence than last month's. Past episodes without a food log are not
+filtered here at all: they identify the noise in phase 1 and nothing else, and
+filtering them would let a misspecified "intake unknown, near maintenance"
+assumption bend the parameters (see the comment in `fit_joint`).
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [EpisodeFit](#wdm.estimation.joint.EpisodeFit) | Filtering and smoothing output for one episode. |
+| [JointFit](#wdm.estimation.joint.JointFit) | Result of phase 2. |
+| [ParameterSummary](#wdm.estimation.joint.ParameterSummary) | Posterior summary of one parameter in natural units. |
+
+### EpisodeFit { #wdm.estimation.joint.EpisodeFit }
+
+```python
+estimation.joint.EpisodeFit(name, dates, filtered, smoothed)
+```
+
+Filtering and smoothing output for one episode.
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [scale_trend_kg](#wdm.estimation.joint.EpisodeFit.scale_trend_kg) | Smoothed true scale weight (tissue plus both water compartments). |
+
+##### scale_trend_kg { #wdm.estimation.joint.EpisodeFit.scale_trend_kg }
+
+```python
+estimation.joint.EpisodeFit.scale_trend_kg()
+```
+
+Smoothed true scale weight (tissue plus both water compartments).
+
+### JointFit { #wdm.estimation.joint.JointFit }
+
+```python
+estimation.joint.JointFit(
+    episodes,
+    transform,
+    eta_mean,
+    eta_cov,
+    params,
+    summaries,
+    total_loglik,
+    noise,
+    waist_transforms=None,
+    waist_eta_mean=None,
+    waist_eta_cov=None,
+    n_waist=0,
+)
+```
+
+Result of phase 2.
+
+``eta_mean`` and ``eta_cov`` cover the nine metabolic parameters only; the
+waist calibration block is kept apart in ``waist_*`` so that everything
+downstream of the metabolic posterior is unaffected by it.
+
+#### Methods
+
+| Name | Description |
+| --- | --- |
+| [maintenance_interval_kcal](#wdm.estimation.joint.JointFit.maintenance_interval_kcal) | Posterior median and central interval for maintenance energy, kcal/day. |
+| [maintenance_kcal](#wdm.estimation.joint.JointFit.maintenance_kcal) | Estimated non-adaptive maintenance energy at a given weight, kcal/day. |
+| [waist_summaries](#wdm.estimation.joint.JointFit.waist_summaries) | Posterior of the waist offset (cm) and slope (cm per kg fat). |
+| [weight_stable_intake_kcal](#wdm.estimation.joint.JointFit.weight_stable_intake_kcal) | Intake at which weight would hold steady, kcal/day. |
+
+##### maintenance_interval_kcal { #wdm.estimation.joint.JointFit.maintenance_interval_kcal }
+
+```python
+estimation.joint.JointFit.maintenance_interval_kcal(
+    weight_lb,
+    *,
+    q=0.9,
+    n_samples=20000,
+    seed=0,
+)
+```
+
+Posterior median and central interval for maintenance energy, kcal/day.
+
+Returns ``(low, median, high)``.
+
+This, and not the individual coefficients, is the quantity your data
+actually pins down. The intercept and the mass slope are strongly
+negatively correlated -- over the narrow range of body mass in one
+dataset, raising one and lowering the other leaves the fitted trajectory
+almost unchanged -- so each has a wide marginal posterior while their
+*combination* at any particular weight is well determined. Quoting either
+coefficient alone would overstate the uncertainty; quoting them as
+independent would understate it. Propagating the full covariance through
+the combination is the only honest option, and it is why this method
+samples rather than adding variances.
+
+##### maintenance_kcal { #wdm.estimation.joint.JointFit.maintenance_kcal }
+
+```python
+estimation.joint.JointFit.maintenance_kcal(weight_lb)
+```
+
+Estimated non-adaptive maintenance energy at a given weight, kcal/day.
+
+Excludes the thermic effect of food and adaptive thermogenesis, so it is
+*not* the intake at which weight would hold steady. Use
+`weight_stable_intake` for that.
+
+##### waist_summaries { #wdm.estimation.joint.JointFit.waist_summaries }
+
+```python
+estimation.joint.JointFit.waist_summaries(n_samples=20000, seed=0)
+```
+
+Posterior of the waist offset (cm) and slope (cm per kg fat).
+
+##### weight_stable_intake_kcal { #wdm.estimation.joint.JointFit.weight_stable_intake_kcal }
+
+```python
+estimation.joint.JointFit.weight_stable_intake_kcal(weight_lb, tef_fraction=0.1)
+```
+
+Intake at which weight would hold steady, kcal/day.
+
+Solves ``I = c0 + c1*W + tef_fraction * I`` for ``I``, i.e. accounts for
+the fact that eating more itself costs energy to process. Ignores any
+adaptation currently in effect, which if you are mid-deficit will make
+this an overestimate of what you can actually eat without regaining.
+
+### ParameterSummary { #wdm.estimation.joint.ParameterSummary }
+
+```python
+estimation.joint.ParameterSummary(name, mean, median, q05, q95, prior_center)
+```
+
+Posterior summary of one parameter in natural units.
+
+Quantiles come from transforming Monte Carlo draws of the unconstrained
+posterior, not from a delta-method linearisation. The transforms are
+strongly nonlinear -- exponential and logistic -- so the induced posteriors
+are skewed, and a symmetric interval would misrepresent them.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [shrinkage](#wdm.estimation.joint.ParameterSummary.shrinkage) | How far the posterior median moved from the prior, in relative terms. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [fit_joint](#wdm.estimation.joint.fit_joint) | Run joint state-parameter estimation across all episodes, in date order. |
+| [initial_body_fat_fraction](#wdm.estimation.joint.initial_body_fat_fraction) | Body-fat fraction to initialize the fat-mass state. |
+| [state_frame](#wdm.estimation.joint.state_frame) | Smoothed state trajectory as plain arrays, keyed by state name. |
+
+### fit_joint { #wdm.estimation.joint.fit_joint }
+
+```python
+estimation.joint.fit_joint(
+    episodes,
+    cfg,
+    noise,
+    *,
+    prior_scale=1.0,
+    param_drift=PARAM_DRIFT_PER_DAY,
+    substeps=4,
+    spec=None,
+    n_samples=20000,
+    seed=0,
+    dof=None,
+)
+```
+
+Run joint state-parameter estimation across all episodes, in date order.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name        | Type          | Description                                                                                                                                                                              | Default               |
+|-------------|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
+| noise       | NoiseModel    | Process and observation noise. The observation standard deviation should come from `~wdm.estimation.noise_id.identify_noise` rather than the default, which is a population guess. | _required_            |
+| prior_scale | float         | Multiplier on the prior parameter covariance. Above 1 to express less confidence in the literature priors.                                                                               | `1.0`                 |
+| param_drift | float         | Per-day random-walk scale on the unconstrained parameters.                                                                                                                               | `PARAM_DRIFT_PER_DAY` |
+| dof         | float \| None | Student-t degrees of freedom for the observation noise, or ``None`` for Gaussian with the gross-error gate. Use the same choice as phase 1.                                              | `None`                |
+
+### initial_body_fat_fraction { #wdm.estimation.joint.initial_body_fat_fraction }
+
+```python
+estimation.joint.initial_body_fat_fraction(cfg, weight_kg)
+```
+
+Body-fat fraction to initialize the fat-mass state.
+
+Uses the configured value when supplied. Otherwise falls back to the
+Deurenberg equation, which predicts body-fat percentage from BMI, age, and
+sex. Its standard error is around 4 percentage points -- poor for a single
+person, which is precisely why the initial covariance on fat mass is set
+wide and why fat mass is reported with an interval rather than a number.
+
+### state_frame { #wdm.estimation.joint.state_frame }
+
+```python
+estimation.joint.state_frame(fit)
+```
+
+Smoothed state trajectory as plain arrays, keyed by state name.

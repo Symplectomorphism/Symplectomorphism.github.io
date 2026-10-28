@@ -1,0 +1,151 @@
+# viz { #wdm.viz }
+
+`viz`
+
+Diagnostic figures.
+
+Design rules followed throughout, and worth stating because they are choices
+rather than defaults:
+
+*No dual-axis plots.* Where two quantities of different scale must be shown over
+the same period -- prescribed intake and predicted weight, say -- they get
+stacked panels sharing an x-axis, never two y-scales on one frame. A dual axis
+lets the author place the crossing point anywhere, which makes the visual claim
+arbitrary.
+
+*Direct labels on every series.* Colour alone never carries identity. This
+matters for color-vision deficiency generally, and specifically because the aqua
+series sits below a 3:1 contrast ratio against the surface, so it must be
+labelled to be legible at all.
+
+*Recessive chrome.* Gridlines and axes are hairlines in muted ink; the data is
+the only thing with weight.
+
+*Uncertainty is drawn, not implied.* Every state estimate is a posterior with a
+credible band, and plotting the mean alone would misrepresent how much is
+actually known -- particularly for fat mass, whose band is wide enough to be the
+main thing worth seeing.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [mdates_num](#wdm.viz.mdates_num) | A plotted x value (date or number) in matplotlib's internal units. |
+| [plot_composition](#wdm.viz.plot_composition) | Fat and lean mass over time, with bands. |
+| [plot_innovations](#wdm.viz.plot_innovations) | Standardised one-step-ahead residuals, over time and as a histogram. |
+| [plot_intake_log](#wdm.viz.plot_intake_log) | What was actually logged, day by day: intake, macros, fiber, sodium, |
+| [plot_parameters](#wdm.viz.plot_parameters) | Posterior medians and 90 % intervals, normalized to the prior center. |
+| [plot_plan](#wdm.viz.plot_plan) | Prescribed intake and predicted weight, as stacked panels. |
+| [plot_trajectory](#wdm.viz.plot_trajectory) | Raw weigh-ins, the smoothed trend, and its credible band. |
+
+### mdates_num { #wdm.viz.mdates_num }
+
+```python
+viz.mdates_num(x)
+```
+
+A plotted x value (date or number) in matplotlib's internal units.
+
+### plot_composition { #wdm.viz.plot_composition }
+
+```python
+viz.plot_composition(fit_episode, *, path=None)
+```
+
+Fat and lean mass over time, with bands.
+
+Worth reading with the bands rather than the lines. Fat mass is only weakly
+identified from scale data -- it enters the dynamics solely through the
+effective energy density -- so its interval is wide, and a narrow reading of
+the mean would be overclaiming.
+
+### plot_innovations { #wdm.viz.plot_innovations }
+
+```python
+viz.plot_innovations(fit_episode, *, path=None)
+```
+
+Standardised one-step-ahead residuals, over time and as a histogram.
+
+The primary check that the model is adequate. If it is, these are white noise
+with unit variance. Structure in the left panel means the dynamics are
+missing something; a histogram wider than the reference curve means the noise
+model is understated, which shows up downstream as overconfident intervals.
+
+### plot_intake_log { #wdm.viz.plot_intake_log }
+
+```python
+viz.plot_intake_log(episode, *, steps=None, path=None)
+```
+
+What was actually logged, day by day: intake, macros, fiber, sodium,
+exercise, steps.
+
+Unlike the other figures here, this one plots inputs rather than filtered
+state -- there is no estimation to distrust, only gaps to be honest about.
+Days without a food log are left as gaps rather than the reference values
+the model substitutes internally (`~wdm.io.Episode` fills unknown
+carbohydrate and sodium with the reference intake, habitual eating, so the
+water states have something to condition on); plotting those fill values here would make
+logging coverage look better than it is. Exercise is the one series where
+zero *is* the honest default for an unlogged day, per ``Episode``'s own
+convention, and steps -- not part of the model at all -- are passed in
+separately from the raw CSV.
+
+### plot_parameters { #wdm.viz.plot_parameters }
+
+```python
+viz.plot_parameters(fit, *, path=None)
+```
+
+Posterior medians and 90 % intervals, normalized to the prior center.
+
+Normalising is what makes the figure readable: the parameters span nine
+orders of magnitude in natural units, and the interesting question is not
+their absolute values but whether the data moved them off the prior at all.
+A point sitting on the dashed line with a wide interval learned nothing.
+
+### plot_plan { #wdm.viz.plot_plan }
+
+```python
+viz.plot_plan(plan, *, fit_episode=None, episode=None, max_days=28, path=None)
+```
+
+Prescribed intake and predicted weight, as stacked panels.
+
+Two panels rather than two y-axes. Intake is in kilocalories and weight in
+pounds; overlaying them on a shared frame would require choosing where the
+two scales cross, and that choice would silently determine which of the two
+"leads" the other.
+
+``max_days`` caps how much of the plan is drawn, independent of how long a
+horizon it was actually solved over. Deadline-mode plans can span months;
+plotting all of it would swamp the readable near-term detail with a long,
+increasingly speculative tail, when only the first stretch is close to
+being acted on. ``None`` plots the whole thing.
+
+The weight panel is future-only -- just the optimizer's horizon -- unless
+``fit_episode`` is given, in which case the filtered scale/tissue trend
+leading up to today is drawn in the same two series, distinguished from the
+plan only by a lower alpha and a "today" marker. Without that context a
+plan reads as an isolated, disconnected forecast; with it, the plan reads
+as a continuation of where you actually are. ``episode`` adds the raw
+weigh-ins the trend was fitted to, when available.
+
+### plot_trajectory { #wdm.viz.plot_trajectory }
+
+```python
+viz.plot_trajectory(
+    fit_episode,
+    episode,
+    *,
+    path=None,
+    title='Weight trajectory',
+)
+```
+
+Raw weigh-ins, the smoothed trend, and its credible band.
+
+The single most useful figure here. The raw points scatter by a pound or more
+day to day; the trend line is what actually moved. Seeing both together is
+the whole argument for filtering.

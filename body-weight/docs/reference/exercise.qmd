@@ -1,0 +1,181 @@
+# exercise { #wdm.exercise }
+
+`exercise`
+
+Estimating exercise energy expenditure from a logged lifting session.
+
+The `exercise_kcal` column in the observations schema (see ``data/schema.md``)
+is optional, and left blank it is absorbed into the estimated maintenance
+parameter along with everything else unmodeled -- harmless if your training
+volume is roughly stable, but a real gap if you want expenditure to track a
+session that actually happened.
+
+This module estimates it from a set-by-set lifting log using the standard
+MET (metabolic equivalent of task) method:
+
+$$
+\text{kcal} = \text{MET} \times W_{\text{kg}} \times \text{hours}
+$$
+
+with MET values from the Compendium of Physical Activities
+(Ainsworth et al.): resistance training at vigorous effort is coded 6.0,
+light-to-moderate effort 3.5. This is a rule-of-thumb estimate, not a
+measurement -- treat it with the same suspicion the report gives wearable
+calorie counters. It answers "roughly how much," not "exactly how much."
+
+**Session duration is estimated, not logged**, since the tracker records sets
+and reps rather than a stopwatch. Per set: working time is reps times a
+seconds-per-rep figure parsed from the tempo column when present (a
+dash-separated tempo like ``4-2-2-0`` is standard notation for
+eccentric/pause/concentric/pause in seconds, and the four numbers sum to a
+per-rep duration), plus a fixed rest period that depends on how demanding the
+movement is. Isometric holds (no reps logged) use a duration parsed from the
+notes column when it matches an ``M:SS`` pattern, and a flat default
+otherwise.
+
+**Exercises are classified compound / isolation / core from the tracker's own
+Muscle Guide sheet**, via its "Movement Pattern" column, rather than a
+separately maintained lookup table. This is a deliberate choice: it means the
+classification updates automatically if you add exercises to the Muscle
+Guide, instead of silently falling back to a default the moment your workout
+log outgrows a hardcoded list.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [SessionEstimate](#wdm.exercise.SessionEstimate) | Estimated energy cost of one calendar day's logged training. |
+
+### SessionEstimate { #wdm.exercise.SessionEstimate }
+
+```python
+exercise.SessionEstimate(date, kcal, n_sets, duration_min)
+```
+
+Estimated energy cost of one calendar day's logged training.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [classify_movement](#wdm.exercise.classify_movement) | Map a Muscle Guide "Movement Pattern" string to compound / isolation / core. |
+| [estimate_session_kcal](#wdm.exercise.estimate_session_kcal) | Estimate exercise_kcal for each calendar date present in a loaded tracker. |
+| [load_tracker](#wdm.exercise.load_tracker) | Read the workout tracker's log sheets, joined against its Muscle Guide. |
+| [repeat_session_kcal](#wdm.exercise.repeat_session_kcal) | Estimate a session's kcal by reusing its most recently logged instance. |
+| [set_duration_seconds](#wdm.exercise.set_duration_seconds) | Estimated wall-clock time for one logged set, including its rest, seconds. |
+| [unmatched_exercises](#wdm.exercise.unmatched_exercises) | Distinct (Session, Exercise) pairs logged with no Muscle Guide entry. |
+
+### classify_movement { #wdm.exercise.classify_movement }
+
+```python
+exercise.classify_movement(movement_pattern)
+```
+
+Map a Muscle Guide "Movement Pattern" string to compound / isolation / core.
+
+Isometric core work ("Isometric Core") and unlabelled core-only movements
+both fall under "core" rather than "isolation": both are lower-MET,
+non-loaded-to-failure work, and lumping them keeps the category count
+small enough that each one's MET assumption is defensible rather than a
+guess per exercise.
+
+### estimate_session_kcal { #wdm.exercise.estimate_session_kcal }
+
+```python
+exercise.estimate_session_kcal(log, weight_lb)
+```
+
+Estimate exercise_kcal for each calendar date present in a loaded tracker.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name      | Type         | Description                                                                                                                                                                                          | Default    |
+|-----------|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| log       | pd.DataFrame | Output of `load_tracker`, or any frame with the same columns (Date, category, Reps, Tempo, Notes).                                                                                             | _required_ |
+| weight_lb | float        | Body weight to use in the MET formula. This is *your* weight, not the dumbbell load logged per set -- the two are easy to conflate since both are in pounds. Pull it from your most recent weigh-in. | _required_ |
+
+### load_tracker { #wdm.exercise.load_tracker }
+
+```python
+exercise.load_tracker(path)
+```
+
+Read the workout tracker's log sheets, joined against its Muscle Guide.
+
+Expects the three-sheet layout produced by the tracker template: "Upper"
+and "Lower" log sheets with columns (Date, Session, Exercise, Set #,
+Weight (lb/hand), Reps, Tempo, Equipment Cap?, Notes), and a "Muscle
+Guide" sheet keyed by (Session, Exercise) with a "Movement Pattern"
+column.
+
+Returns a long-format frame, one row per logged set, with a `category`
+column already attached. Title and instruction rows, and any trailing
+free-text notes rows, are dropped by requiring a parseable date.
+
+An exercise with no matching Muscle Guide entry -- new, or logged under a
+slightly different name than the Muscle Guide uses -- classifies here as
+"compound" via `classify_movement`'s fallback, silently. This
+function does not surface that; call `unmatched_exercises` on the
+same path to check, since a fallback that never announces itself is easy
+to carry for months without noticing.
+
+### repeat_session_kcal { #wdm.exercise.repeat_session_kcal }
+
+```python
+exercise.repeat_session_kcal(log, session, as_of, weight_lb)
+```
+
+Estimate a session's kcal by reusing its most recently logged instance.
+
+Built for a tracker used as a standing routine reference rather than a
+live diary: a session gets logged once in full, and then simply repeated
+-- same exercises, same weights, same reps -- until the routine changes,
+with no new dated row added each time it recurs. There is then no row for
+"today" to read directly. This takes the most recently logged occurrence
+of `session`, re-dates a copy of it to `as_of`, and estimates from that --
+which is exactly correct as long as the routine has not changed since that
+entry, since the estimate depends only on the sets logged, not on which
+calendar day they are dated.
+
+If the routine *has* changed since the last logged instance -- different
+weights, added or dropped exercises -- this will estimate the old
+session, not today's. There is no way to detect that from the file alone;
+log a fresh dated block when you actually change something.
+
+#### Returns {.doc-section .doc-section-returns}
+
+| Name   | Type                    | Description                                                                                                                                                                          |
+|--------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|        | (estimate, source_date) | The estimate re-dated to `as_of`, and the date it was copied from -- the caller should say so, rather than presenting a copied estimate as if it were read directly off today's log. |
+
+#### Raises {.doc-section .doc-section-raises}
+
+| Name   | Type       | Description                                                                              |
+|--------|------------|------------------------------------------------------------------------------------------|
+|        | ValueError | If no row in the log matches `session` (comparison is case- and whitespace-insensitive). |
+
+### set_duration_seconds { #wdm.exercise.set_duration_seconds }
+
+```python
+exercise.set_duration_seconds(row)
+```
+
+Estimated wall-clock time for one logged set, including its rest, seconds.
+
+### unmatched_exercises { #wdm.exercise.unmatched_exercises }
+
+```python
+exercise.unmatched_exercises(path)
+```
+
+Distinct (Session, Exercise) pairs logged with no Muscle Guide entry.
+
+The join in `load_tracker` is exact string matching, deliberately --
+fuzzy matching an exercise name would silently paper over a real typo
+just as easily as a real rename. The cost of exactness is that a mismatch
+produces no error, only the quiet "compound" fallback, so this exists to
+make that visible: run it whenever you add an exercise, since "compound"
+(MET 6.0) and "isolation" (MET 3.5) are a real difference in the
+resulting estimate, not a rounding error.
+
+Returns pairs sorted for stable output, empty if everything matched.

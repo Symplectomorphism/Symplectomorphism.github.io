@@ -1,0 +1,130 @@
+# filters.common { #wdm.filters.common }
+
+`filters.common`
+
+Shared filter types and numerical helpers.
+
+The filters in this package are deliberately *generic*: they know about a
+transition function, an observation matrix, and covariances, and nothing about
+body weight. The model-specific wiring lives in `wdm.estimation`. This
+separation is what lets the same unscented filter be tested against a linear
+system with a known closed-form answer, which is the only honest way to be
+confident it works.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [FilterResult](#wdm.filters.common.FilterResult) | Output of a forward filtering pass. |
+| [GaussianState](#wdm.filters.common.GaussianState) | A Gaussian belief over the state. |
+| [SmootherResult](#wdm.filters.common.SmootherResult) | Output of a Rauch-Tung-Striebel backward pass. |
+
+### FilterResult { #wdm.filters.common.FilterResult }
+
+```python
+filters.common.FilterResult()
+```
+
+Output of a forward filtering pass.
+
+#### Attributes {.doc-section .doc-section-attributes}
+
+| Name                          | Type                   | Description                                                                                                                                                                                                                           |
+|-------------------------------|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| filtered_mean, filtered_cov   |                        | Belief at each step *after* incorporating that step's observation.                                                                                                                                                                    |
+| predicted_mean, predicted_cov |                        | Belief at each step *before* the observation. Needed by the RTS smoother and for honest one-step-ahead diagnostics.                                                                                                                   |
+| loglik                        | Float\[Array, \'\'\]   | Marginal log-likelihood of the observed data, accumulated via the prediction-error decomposition. This is the objective that parameter estimation maximizes, so its correctness is load-bearing.                                      |
+| innovation, innovation_var    |                        | One-step-ahead residuals and their predicted variances. Standardised innovations should be white and unit-variance if the model is adequate; they are the primary diagnostic and the first place a misspecified noise model shows up. |
+| observed                      | Float\[Array, \' t\'\] | Mask of which steps carried an observation.                                                                                                                                                                                           |
+
+### GaussianState { #wdm.filters.common.GaussianState }
+
+```python
+filters.common.GaussianState()
+```
+
+A Gaussian belief over the state.
+
+### SmootherResult { #wdm.filters.common.SmootherResult }
+
+```python
+filters.common.SmootherResult()
+```
+
+Output of a Rauch-Tung-Striebel backward pass.
+
+The smoothed estimate at time ``k`` conditions on the *entire* record, past
+and future. For reviewing history this is strictly the right thing to look
+at: today's weigh-in genuinely does tell you something about last Tuesday's
+true trend. For deciding what to eat tomorrow, only the filtered estimate at
+the final step is available, since the future has not happened yet.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [gaussian_loglik](#wdm.filters.common.gaussian_loglik) | Log density of a scalar Gaussian residual. |
+| [innovation_loglik](#wdm.filters.common.innovation_loglik) | Log density of a scalar innovation: Student-t with squared scale ``scale2``. |
+| [joseph_update](#wdm.filters.common.joseph_update) | Joseph-form covariance update. |
+| [safe_cholesky](#wdm.filters.common.safe_cholesky) | Lower-triangular Cholesky factor, with symmetrization and jitter. |
+| [symmetrise](#wdm.filters.common.symmetrise) | Force exact symmetry. |
+
+### gaussian_loglik { #wdm.filters.common.gaussian_loglik }
+
+```python
+filters.common.gaussian_loglik(residual, variance)
+```
+
+Log density of a scalar Gaussian residual.
+
+### innovation_loglik { #wdm.filters.common.innovation_loglik }
+
+```python
+filters.common.innovation_loglik(residual, scale2, dof)
+```
+
+Log density of a scalar innovation: Student-t with squared scale ``scale2``.
+
+``dof=None`` gives the Gaussian with variance ``scale2``. Otherwise the
+innovation is treated as Student-t with the predicted innovation variance as
+its squared scale, the same approximation the measurement update makes (see
+`wdm.models.observation.student_t_inflation`).
+
+### joseph_update { #wdm.filters.common.joseph_update }
+
+```python
+filters.common.joseph_update(p, k, h, r)
+```
+
+Joseph-form covariance update.
+
+$$
+P^+ = (I - KH) P (I - KH)^\top + K R K^\top
+$$
+
+Algebraically identical to the shorter $(I - KH)P$, but it stays
+positive semi-definite under round-off because it is manifestly a sum of two
+positive semi-definite terms. Over a few hundred steps the short form can
+accumulate enough error to produce a negative variance, which then poisons
+everything downstream. The extra matrix product is worth it.
+
+### safe_cholesky { #wdm.filters.common.safe_cholesky }
+
+```python
+filters.common.safe_cholesky(p, jitter=JITTER)
+```
+
+Lower-triangular Cholesky factor, with symmetrization and jitter.
+
+### symmetrise { #wdm.filters.common.symmetrise }
+
+```python
+filters.common.symmetrise(p)
+```
+
+Force exact symmetry.
+
+Covariance updates are symmetric in exact arithmetic but drift in floating
+point, and an asymmetric matrix will eventually fail Cholesky in a way whose
+error message points nowhere useful. Cheap insurance, applied after every
+covariance update.

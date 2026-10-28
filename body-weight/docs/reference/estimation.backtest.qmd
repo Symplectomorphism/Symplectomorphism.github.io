@@ -1,0 +1,105 @@
+# estimation.backtest { #wdm.estimation.backtest }
+
+`estimation.backtest`
+
+Out-of-sample check: how well does the fitted model forecast the scale?
+
+Synthetic recovery tests the inference machinery on data the model generated
+itself. It cannot say whether the model describes a person. This module asks
+the question that can: replaying each episode day by day, with the filter
+knowing only what had happened by then, how close were its forecasts of the
+next reading, and of the reading a week later, and were its stated intervals
+honest?
+
+For every origin day ``j`` and horizon ``h`` whose target day ``j + h`` has a
+weigh-in, the filtered belief on the morning of ``j`` is pushed through ``h``
+unscented time updates, driven by the food logged on days ``j`` to
+``j + h - 1``, with no measurement updates. The resulting predictive
+distribution of the reading is scored against what the scale said. Using the
+*logged* inputs isolates model error from adherence: the question is whether
+the model predicts the scale given what was eaten, not whether the plan was
+followed.
+
+Two caveats are part of the result, not footnotes:
+
+* Phase 1 noise scales are fitted on the whole record, so the forecast
+  intervals have seen a little of the future. The effect is small (three
+  scalars) but makes coverage slightly optimistic.
+* Forecasts from neighbouring origins overlap, so at ``h = 7`` the effective
+  sample is several times smaller than the count suggests.
+
+The yardstick is persistence: tomorrow's reading equals the last one. A model
+that cannot beat it at a week is not earning its complexity.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [Forecast](#wdm.estimation.backtest.Forecast) | One scored forecast of a scale reading, in kg. |
+| [HorizonScore](#wdm.estimation.backtest.HorizonScore) | Summary of all forecasts at one horizon. Errors in lb. |
+
+### Forecast { #wdm.estimation.backtest.Forecast }
+
+```python
+estimation.backtest.Forecast(
+    episode,
+    origin,
+    horizon,
+    predicted_kg,
+    sd_kg,
+    observed_kg,
+    persistence_kg,
+)
+```
+
+One scored forecast of a scale reading, in kg.
+
+### HorizonScore { #wdm.estimation.backtest.HorizonScore }
+
+```python
+estimation.backtest.HorizonScore(
+    horizon,
+    n,
+    bias_lb,
+    rmse_lb,
+    persistence_rmse_lb,
+    z_sd,
+    coverage50,
+    coverage90,
+    log_score,
+)
+```
+
+Summary of all forecasts at one horizon. Errors in lb.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [skill](#wdm.estimation.backtest.HorizonScore.skill) | Fractional RMSE improvement over persistence; positive is better. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [backtest](#wdm.estimation.backtest.backtest) | Score the filter's ``h``-day-ahead forecasts of every weigh-in. |
+
+### backtest { #wdm.estimation.backtest.backtest }
+
+```python
+estimation.backtest.backtest(
+    episodes,
+    cfg,
+    noise,
+    *,
+    horizons=(1, 7),
+    dof=None,
+    substeps=4,
+    param_drift=PARAM_DRIFT_PER_DAY,
+    spec=None,
+)
+```
+
+Score the filter's ``h``-day-ahead forecasts of every weigh-in.
+
+``noise`` should come from phase 1 fitted with the same ``dof``.

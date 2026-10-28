@@ -1,0 +1,116 @@
+# models.energetics { #wdm.models.energetics }
+
+`models.energetics`
+
+Energy expenditure: resting metabolism, the thermic effect of food, and
+adaptive thermogenesis.
+
+Total daily energy expenditure is decomposed as
+
+$$
+E(t) = \underbrace{c_0 + c_1 W(t)}_{\text{resting + baseline activity}}
++ \underbrace{\mathrm{TEF}(t)}_{\text{cost of digestion}}
++ \underbrace{X(t)}_{\text{logged exercise}}
++ \underbrace{A(t)}_{\text{adaptation, } \le 0}
+$$
+
+The first three terms are algebraic functions of the current state and input.
+The fourth is a *state* with its own dynamics, because adaptation lags changes
+in intake by roughly a fortnight -- and that lag is the only thing that makes it
+even partially distinguishable from a simple error in $c_0$.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [adaptation_rate](#wdm.models.energetics.adaptation_rate) | Time derivative of adaptive thermogenesis, kcal/day per day. |
+| [baseline_expenditure](#wdm.models.energetics.baseline_expenditure) | Expenditure *excluding* adaptive thermogenesis, kcal/day. |
+| [effective_intake](#wdm.models.energetics.effective_intake) | Metabolisable energy intake for the day, kcal/day. |
+| [thermic_effect](#wdm.models.energetics.thermic_effect) | Energy spent digesting and processing the day's food, kcal/day. |
+| [total_expenditure](#wdm.models.energetics.total_expenditure) | Total daily energy expenditure, kcal/day, including adaptation. |
+
+### adaptation_rate { #wdm.models.energetics.adaptation_rate }
+
+```python
+models.energetics.adaptation_rate(x, u, p, carb_ref_g)
+```
+
+Time derivative of adaptive thermogenesis, kcal/day per day.
+
+First-order relaxation toward a target proportional to the prevailing energy
+gap:
+
+$$
+\dot A = \frac{-\beta_A D - A}{\tau_A},
+\qquad D = E_{\text{base}} - I
+$$
+
+A sustained deficit $D > 0$ drives $A \to -\beta_A D$, lowering
+expenditure and shrinking the effective deficit. Loss therefore decelerates
+toward a new equilibrium even at constant intake -- the plateau, as a
+two-line differential equation rather than a moral failing.
+
+### baseline_expenditure { #wdm.models.energetics.baseline_expenditure }
+
+```python
+models.energetics.baseline_expenditure(x, u, p, carb_ref_g)
+```
+
+Expenditure *excluding* adaptive thermogenesis, kcal/day.
+
+Separated out because it is the reference against which the energy gap
+driving adaptation is measured. Using total expenditure there instead would
+make the adaptation dynamics implicitly self-referential.
+
+### effective_intake { #wdm.models.energetics.effective_intake }
+
+```python
+models.energetics.effective_intake(x, u, p, carb_ref_g)
+```
+
+Metabolisable energy intake for the day, kcal/day.
+
+On days with a food log this is simply the logged (fiber-corrected) value.
+On days without one it is set to the subject's *current* total expenditure,
+which is the neutral assumption: absent evidence, predict no net energy
+imbalance rather than inventing a deficit or a surplus.
+
+This is an approximation, and a slightly optimistic one in a specific sense
+-- unlogged days are, empirically, more often high-intake days than low ones.
+The corresponding process-noise inflation in `wdm.models.dynamics`
+widens the uncertainty on such days but does not correct that bias.
+
+### thermic_effect { #wdm.models.energetics.thermic_effect }
+
+```python
+models.energetics.thermic_effect(u, carb_ref_g)
+```
+
+Energy spent digesting and processing the day's food, kcal/day.
+
+Protein costs 20-30 % of its own energy to process, carbohydrate 5-10 %, and
+fat almost nothing. The practical consequence is that isocaloric diets are
+not metabolically equivalent: shifting 100 g of carbohydrate to protein
+raises expenditure by roughly ``(0.25 - 0.075) * 400 = 70`` kcal/day at
+identical total intake.
+
+#### Parameters {.doc-section .doc-section-parameters}
+
+| Name       | Type       | Description                                                                                                                                                           | Default    |
+|------------|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------|
+| u          | DailyInput | The day's inputs. ``carb_dev_g`` is a deviation from the reference (habitual) intake, so the absolute carbohydrate intake is recovered by adding back ``carb_ref_g``. | _required_ |
+| carb_ref_g | float      | Reference (habitual) carbohydrate intake, g/day; the episode mean only when no habitual reference is given.                                                           | _required_ |
+
+#### Notes {.doc-section .doc-section-notes}
+
+Falls back to a fixed fraction of total intake when the macro split is
+missing, which keeps the term continuous across days with partial logs
+rather than introducing a spurious jump.
+
+### total_expenditure { #wdm.models.energetics.total_expenditure }
+
+```python
+models.energetics.total_expenditure(x, u, p, carb_ref_g)
+```
+
+Total daily energy expenditure, kcal/day, including adaptation.

@@ -1,0 +1,53 @@
+# schema { #wdm.schema }
+
+`schema`
+
+CSV column definitions and validation.
+
+The schema is deliberately permissive about *missing* values and strict about
+*wrong* ones. Missing data is the normal case -- you will skip weigh-ins and
+forget to log meals, and the filter is built for exactly that. Silently wrong
+data is the dangerous case, because nothing downstream can detect it.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [ValidationReport](#wdm.schema.ValidationReport) | Outcome of validating an observations file. |
+
+### ValidationReport { #wdm.schema.ValidationReport }
+
+```python
+schema.ValidationReport(
+    errors=list(),
+    warnings=list(),
+    n_rows=0,
+    n_episodes=0,
+    n_weights=0,
+    n_intake=0,
+)
+```
+
+Outcome of validating an observations file.
+
+``errors`` block loading; ``warnings`` do not. The distinction is that an
+error means the data cannot be interpreted, while a warning means it can be
+interpreted but probably should not be trusted without a look.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [validate](#wdm.schema.validate) | Validate a raw observations dataframe. |
+
+### validate { #wdm.schema.validate }
+
+```python
+schema.validate(df)
+```
+
+Validate a raw observations dataframe.
+
+Checks, in order: required columns present, no unknown columns, dates
+parseable and unique within episode, numeric columns numeric and within
+plausible bounds, and macronutrients consistent with reported total energy.

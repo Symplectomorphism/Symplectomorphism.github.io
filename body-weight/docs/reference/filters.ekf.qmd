@@ -1,0 +1,55 @@
+# filters.ekf { #wdm.filters.ekf }
+
+`filters.ekf`
+
+Extended Kalman filter using JAX automatic differentiation.
+
+Included for comparison rather than as the default. The extended filter
+linearises the transition about the current mean,
+
+$$
+F_k = \left. \frac{\partial f}{\partial z} \right|_{z = \hat z_k},
+$$
+
+and propagates covariance through that linear map. Historically this meant
+deriving and maintaining Jacobians by hand -- error-prone, and the single most
+common source of silent bugs in filtering code. With ``jax.jacfwd`` the Jacobian
+is exact to machine precision and free to obtain, which removes that objection
+entirely and leaves only the approximation-quality one.
+
+That remaining objection is real. Linearisation is first-order accurate; the
+unscented transform is third-order for Gaussian inputs. Where the two disagree
+on this model, the unscented answer is the one to believe. Running both is a
+genuinely informative diagnostic: large divergence means the posterior is
+spread over a region where the dynamics are meaningfully curved, which is itself
+worth knowing.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [extended_filter](#wdm.filters.ekf.extended_filter) | Forward extended-filtering pass with a linear observation. |
+
+### extended_filter { #wdm.filters.ekf.extended_filter }
+
+```python
+filters.ekf.extended_filter(
+    transition,
+    process_cov,
+    h,
+    obs_var,
+    m0,
+    p0,
+    inputs,
+    y,
+    observed,
+    *,
+    gate_sigma=4.0,
+    dof=None,
+)
+```
+
+Forward extended-filtering pass with a linear observation.
+
+Signature matches `wdm.filters.ukf.unscented_filter` so the two can be
+swapped without touching call sites.

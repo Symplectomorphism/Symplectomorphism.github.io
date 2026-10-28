@@ -1,0 +1,73 @@
+# models.glycogen { #wdm.models.glycogen }
+
+`models.glycogen`
+
+Fast water compartments: glycogen-bound and sodium-associated water.
+
+These two states exist to explain the difference between what you weigh and
+what you *are*. Both respond within days to dietary inputs, both move the scale
+by kilograms, and neither has anything to do with fat.
+
+**Glycogen.** Stored carbohydrate is held with roughly three grams of water per
+gram of glycogen. Total stores range over ~300-600 g, so a swing between
+carbohydrate restriction and repletion moves 200 g of glycogen plus 600 g of
+water: nearly a kilogram of scale weight with zero change in tissue. This single
+mechanism explains the notorious first-week "success" of low-carbohydrate diets
+and the equally notorious overnight "relapse" after one high-carbohydrate meal.
+
+**Sodium.** Extracellular fluid volume tracks sodium load on a one-to-two day
+timescale. Frequently a larger source of scale noise than carbohydrate, and
+almost never logged, which is why an unlogged salty meal is the single most
+common explanation for an inexplicable overnight gain.
+
+Both are modeled as first-order lags toward an input-proportional steady state.
+Deviations are measured from the subject's habitual (pre-diet) intake, the
+episode's ``carb_ref_g``/``sodium_ref_mg`` (see `~wdm.io.Episode`), so a
+diet that starts from ordinary eating starts both states at zero, and the drain
+of glycogen water as carbohydrate drops is predicted rather than absorbed.
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [glycogen_rate](#wdm.models.glycogen.glycogen_rate) | Time derivative of the glycogen-water compartment, kg/day. |
+| [glycogen_steady_state](#wdm.models.glycogen.glycogen_steady_state) | Equilibrium glycogen-complex deviation for today's carbohydrate, kg. |
+| [sodium_rate](#wdm.models.glycogen.sodium_rate) | Time derivative of the sodium-water compartment, kg/day. |
+| [sodium_steady_state](#wdm.models.glycogen.sodium_steady_state) | Equilibrium sodium-associated water deviation, kg. |
+
+### glycogen_rate { #wdm.models.glycogen.glycogen_rate }
+
+```python
+models.glycogen.glycogen_rate(x, u, p)
+```
+
+Time derivative of the glycogen-water compartment, kg/day.
+
+### glycogen_steady_state { #wdm.models.glycogen.glycogen_steady_state }
+
+```python
+models.glycogen.glycogen_steady_state(u, p)
+```
+
+Equilibrium glycogen-complex deviation for today's carbohydrate, kg.
+
+### sodium_rate { #wdm.models.glycogen.sodium_rate }
+
+```python
+models.glycogen.sodium_rate(x, u, p)
+```
+
+Time derivative of the sodium-water compartment, kg/day.
+
+### sodium_steady_state { #wdm.models.glycogen.sodium_steady_state }
+
+```python
+models.glycogen.sodium_steady_state(u, p)
+```
+
+Equilibrium sodium-associated water deviation, kg.
+
+Identically zero when no sodium column is supplied, since ``sodium_dev_mg``
+is then zero for every day and the state decays to and stays at zero. The
+compartment costs nothing when unused, which is why it is always present in
+the state vector rather than switched in and out.

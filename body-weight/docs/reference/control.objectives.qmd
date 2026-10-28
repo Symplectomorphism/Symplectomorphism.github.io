@@ -1,0 +1,271 @@
+# control.objectives { #wdm.control.objectives }
+
+`control.objectives`
+
+Cost functions for the model-predictive controller.
+
+Two objectives are offered, and the choice between them is a genuine choice
+about what you want, not a tuning detail.
+
+**Deadline.** Reach a target weight by a target date. The cost is dominated by
+terminal and tracking error against a reference trajectory. If the target is
+aggressive relative to what the safety constraints permit, this objective will
+push against those constraints and the resulting plan will sit at the calorie
+floor for weeks -- which is the controller telling you, in the only way it can,
+that the deadline and the constraints are incompatible.
+
+**Sustainable.** Lose as fast as the constraints allow, with no deadline. The
+timeline becomes an output rather than an input. Usually the more honest mode,
+because it surfaces the achievable date instead of quietly assuming one.
+
+Both share the same auxiliary terms: a smoothness penalty so the plan does not
+oscillate between feast and famine, and soft penalties enforcing the rate-of-loss
+limit that box constraints cannot express.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [CostWeights](#wdm.control.objectives.CostWeights) | Relative weights of the cost terms. |
+
+### CostWeights { #wdm.control.objectives.CostWeights }
+
+```python
+control.objectives.CostWeights()
+```
+
+Relative weights of the cost terms.
+
+Units are chosen so each term is roughly O(1) at a "typical" deviation:
+kilograms squared for the mass terms, and normalized calorie deviations for
+the control terms. Adjusting these changes the *character* of the plan, not
+merely its aggressiveness.
+
+#### Attributes
+
+| Name | Description |
+| --- | --- |
+| [carb_aversion](#wdm.control.objectives.CostWeights.carb_aversion) | Weight on squared carbohydrate grams, per (100 g)^2. Zero by default. |
+| [effort](#wdm.control.objectives.CostWeights.effort) | Mild penalty on the squared deficit itself, per (1000 kcal)^2. |
+| [progress](#wdm.control.objectives.CostWeights.progress) | Weight on final mass in sustainable mode, per kg. Drives loss. |
+| [rate_violation](#wdm.control.objectives.CostWeights.rate_violation) | Penalty on exceeding the maximum rate of loss, per (kg/day)^2. |
+| [smoothness](#wdm.control.objectives.CostWeights.smoothness) | Penalty on day-to-day changes in prescribed intake, per (1000 kcal)^2. |
+| [terminal](#wdm.control.objectives.CostWeights.terminal) | Weight on squared terminal miss, per kg^2. Dominant in deadline mode. |
+| [tracking](#wdm.control.objectives.CostWeights.tracking) | Weight on squared deviation from the reference path, per kg^2 per day. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [carb_floor_cost](#wdm.control.objectives.carb_floor_cost) | Hinge penalty on carbohydrate falling below its floor, in (100 g)^2. |
+| [carb_preference_cost](#wdm.control.objectives.carb_preference_cost) | Sum of squared carbohydrate grams, in (100 g)^2 units. |
+| [deadline_cost](#wdm.control.objectives.deadline_cost) | Total cost in deadline mode. |
+| [effort_cost](#wdm.control.objectives.effort_cost) | Sum of squared energy deficits, in (1000 kcal)^2. |
+| [macro_fraction_cost](#wdm.control.objectives.macro_fraction_cost) | Squared deviation of one macro's energy share from a target, unweighted. |
+| [rate_violation_cost](#wdm.control.objectives.rate_violation_cost) | Hinge penalty on daily *tissue* loss exceeding the permitted rate. |
+| [reference_trajectory](#wdm.control.objectives.reference_trajectory) | Linear reference path from the current weight toward the target. |
+| [smoothness_cost](#wdm.control.objectives.smoothness_cost) | Sum of squared day-to-day changes in prescribed intake, in (1000 kcal)^2. |
+| [sustainable_cost](#wdm.control.objectives.sustainable_cost) | Total cost in sustainable mode. |
+
+### carb_floor_cost { #wdm.control.objectives.carb_floor_cost }
+
+```python
+control.objectives.carb_floor_cost(carb, min_carb_g)
+```
+
+Hinge penalty on carbohydrate falling below its floor, in (100 g)^2.
+
+### carb_preference_cost { #wdm.control.objectives.carb_preference_cost }
+
+```python
+control.objectives.carb_preference_cost(carb)
+```
+
+Sum of squared carbohydrate grams, in (100 g)^2 units.
+
+A continuous preference for low carbohydrate, in contrast to
+`carb_floor_cost`'s one-sided guard against crashing carbs to zero:
+this is active at any level, not just near the floor, and grows with
+``carb`` rather than only with how far below a threshold it falls.
+Weighted by `CostWeights.carb_aversion`, which is zero by default,
+so this contributes nothing unless deliberately turned on.
+
+### deadline_cost { #wdm.control.objectives.deadline_cost }
+
+```python
+control.objectives.deadline_cost(
+    tissue,
+    reference,
+    kcal,
+    carb,
+    fat_g,
+    maintenance,
+    previous_kcal,
+    t_start,
+    max_frac_per_day,
+    weights,
+    min_carb_g,
+    neutral_fat_fraction,
+    fat_fraction_weight,
+    carb_target_fraction,
+    carb_fraction_weight,
+    penalty_scale,
+)
+```
+
+Total cost in deadline mode.
+
+The terminal term tracks the *reference at the end of the horizon*, not the
+final goal weight. This distinction is easy to get wrong and the consequence
+is severe: penalizing the gap to the ultimate target over a 28-day horizon
+asks the controller to arrive within 28 days no matter how far away the
+deadline actually is, and it will pin intake to the calorie floor for the
+entire horizon trying. Tracking the reference instead makes the horizon a
+window onto a longer plan rather than a deadline in itself.
+
+Tracks tissue mass against the reference, not scale weight, even though the
+reference itself is built from the goal's scale-weight target. Scale weight
+includes the fast glycogen- and sodium-water compartments, both of which
+carbohydrate and sodium intake move directly and reversibly -- so a cost
+scored against scale weight can be paid down by cutting carbohydrate alone,
+with zero tissue lost. Scoring tissue closes that loophole: the only way to
+reduce this cost is to actually lose tissue.
+
+``penalty_scale`` multiplies the constraint-violation terms only. The solver
+escalates it until the returned solution actually satisfies the hard limits,
+which is what turns these soft penalties into effective constraints.
+
+### effort_cost { #wdm.control.objectives.effort_cost }
+
+```python
+control.objectives.effort_cost(kcal, maintenance)
+```
+
+Sum of squared energy deficits, in (1000 kcal)^2.
+
+### macro_fraction_cost { #wdm.control.objectives.macro_fraction_cost }
+
+```python
+control.objectives.macro_fraction_cost(
+    kcal,
+    macro_g,
+    kcal_per_g,
+    target_fraction,
+)
+```
+
+Squared deviation of one macro's energy share from a target, unweighted.
+
+The "energy share" convention throughout this module is ``macro_g *
+kcal_per_g / kcal`` -- e.g. fat's 9 kcal/g against carbohydrate's 4 makes
+an energy-share fraction a very different number from a gram-share
+fraction, and everywhere a fraction is named (``min_fat_fraction``,
+``target_carb_fraction``, ...) it means the energy one.
+
+Shared by both macros pulled toward a target -- fat via
+`NEUTRAL_FAT_FRAC_WEIGHT`/`FAT_TARGET_WEIGHT`, carbohydrate
+via `CARB_TARGET_WEIGHT` -- since the deviation itself is identical
+in form regardless of which macro or which of the two purposes:
+
+- **Numerical conditioning** (fat only, no stated preference): once
+  carbohydrate clears its floor, nothing else in the objective
+  distinguishes one fat/carb split from another (tissue dynamics do not
+  depend on it), leaving a perfectly flat direction in the decision space
+  that a quasi-Newton line search can fail on. Weighted small enough to
+  be dominated by any term that has a real preference.
+- **A real preference** (either macro, user-stated target): weighted
+  large enough to actually bind, on the same footing as
+  ``carb_aversion`` -- e.g. a keto-style ``target_carb_fraction`` of
+  0.05-0.10 needs enough pull to hold carbohydrate down against protein's
+  own, largely kcal-independent claim on the energy budget.
+
+### rate_violation_cost { #wdm.control.objectives.rate_violation_cost }
+
+```python
+control.objectives.rate_violation_cost(tissue, t_start, max_frac_per_day)
+```
+
+Hinge penalty on daily *tissue* loss exceeding the permitted rate.
+
+Applied to tissue mass, not scale weight, and the distinction is the whole
+point. Cutting carbohydrate sharply drops a kilogram of glycogen-bound water
+within days. On the scale that looks like a 4 lb/week loss and would trip any
+rate limit written against scale weight -- but no tissue was lost, nothing
+unsafe happened, and a controller constrained on scale weight would refuse a
+perfectly reasonable plan or, worse, compensate by *raising* calories.
+
+The limit that matters physiologically is on how fast lean and fat tissue are
+mobilised. That is what this penalizes.
+
+The limit is a fraction of each day's tissue, ``-dT_k <= frac * T_k``, so it
+tightens as tissue falls, which is what "a fraction of body mass per week"
+means and what `~wdm.control.mpc.check_constraints` verifies. A cap
+fixed in kg/day at the starting tissue would let a long deadline plan exceed
+the stated percentage in its later weeks.
+
+One-sided: rapid *gain* is not penalized here. Uses a hinge rather than a
+barrier so an infeasible starting guess still yields usable gradients.
+
+### reference_trajectory { #wdm.control.objectives.reference_trajectory }
+
+```python
+control.objectives.reference_trajectory(
+    w_start,
+    w_target,
+    n_days,
+    days_remaining,
+)
+```
+
+Linear reference path from the current weight toward the target.
+
+Linear rather than exponential. A constant-rate path is what people actually
+plan against, and it keeps the implied deficit roughly constant, which is
+easier to adhere to than a front-loaded schedule.
+
+When the horizon is shorter than the time remaining -- the usual case, since
+we replan every day -- the reference covers only the horizon's share of the
+total journey.
+
+### smoothness_cost { #wdm.control.objectives.smoothness_cost }
+
+```python
+control.objectives.smoothness_cost(kcal, previous_kcal)
+```
+
+Sum of squared day-to-day changes in prescribed intake, in (1000 kcal)^2.
+
+### sustainable_cost { #wdm.control.objectives.sustainable_cost }
+
+```python
+control.objectives.sustainable_cost(
+    tissue,
+    kcal,
+    carb,
+    fat_g,
+    maintenance,
+    previous_kcal,
+    t_start,
+    max_frac_per_day,
+    weights,
+    min_carb_g,
+    neutral_fat_fraction,
+    fat_fraction_weight,
+    carb_target_fraction,
+    carb_fraction_weight,
+    penalty_scale,
+)
+```
+
+Total cost in sustainable mode.
+
+Linear in final tissue mass rather than quadratic: a quadratic reward for
+losing would grow without bound and drive the solution straight to the
+calorie floor for the entire horizon regardless of the other terms. Linear
+progress traded against quadratic effort produces an interior optimum, which
+is the behavior worth having.
+
+Scored against tissue rather than scale weight for the same reason as
+`deadline_cost`: scale weight is partly water, and water responds to
+carbohydrate directly, so a scale-weight reward is gameable by cutting carbs
+with no tissue actually lost.

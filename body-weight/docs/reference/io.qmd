@@ -1,0 +1,102 @@
+# io { #wdm.io }
+
+`io`
+
+Loading observations from CSV into episode arrays.
+
+Two decisions here shape everything downstream.
+
+**Gaps are expanded, not skipped.** Each episode is reindexed onto a complete
+daily calendar, inserting blank rows for missing days. This guarantees a uniform
+one-day timestep, which lets the filter use a single fixed step map instead of
+carrying a variable-dt code path everywhere. Missing days then appear honestly
+as missing *observations*, and the filter's uncertainty grows across them, which
+is exactly the desired behavior.
+
+**Unknown intake is a modeled uncertainty, not an imputation.** On days with no
+food log, intake is set to the subject's estimated maintenance level and a flag
+is raised so the dynamics can inflate process noise for that step. Quietly
+imputing a number and then treating it as known would make the filter
+overconfident about a day it has no information on.
+
+## Classes
+
+| Name | Description |
+| --- | --- |
+| [Episode](#wdm.io.Episode) | One continuous diet attempt, on a gap-free daily calendar. |
+
+### Episode { #wdm.io.Episode }
+
+```python
+io.Episode(
+    name,
+    dates,
+    weight_kg,
+    weight_observed,
+    energy_kcal,
+    protein_g,
+    carb_g,
+    fat_g,
+    fiber_g,
+    alcohol_g,
+    sodium_mg,
+    exercise_kcal,
+    intake_known,
+    macro_known,
+    sodium_known,
+    carb_ref_g,
+    sodium_ref_mg,
+    waist_cm=None,
+)
+```
+
+One continuous diet attempt, on a gap-free daily calendar.
+
+All arrays have length ``n_days``. Numeric arrays are plain float64 NumPy;
+they are converted to JAX arrays at the point of use so that this module
+stays free of JAX and remains easy to inspect interactively.
+
+#### Attributes {.doc-section .doc-section-attributes}
+
+| Name                      | Type               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|---------------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name                      | str                | Episode label from the CSV.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| dates                     | np.ndarray         | ``datetime64[D]``, contiguous, one entry per day.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| weight_kg                 | np.ndarray         | Scale reading in kg, ``NaN`` where no weigh-in happened.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| weight_observed           | np.ndarray         | Boolean mask, ``True`` where ``weight_kg`` is finite.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| energy_kcal               | np.ndarray         | Metabolisable energy intake, fiber-corrected. Filled with ``NaN`` where unknown; see ``intake_known``.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| intake_known              | np.ndarray         | Boolean mask, ``True`` where a usable food log exists for that day.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| macro_known               | np.ndarray         | Boolean mask, ``True`` where the protein/carb/fat split is available. Strictly implies ``intake_known``.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| waist_cm                  | np.ndarray \| None | Waist circumference in cm, ``NaN`` where not measured. Optional: an all-``NaN`` array (the default) means no tape-measure data at all.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| carb_ref_g, sodium_ref_mg |                    | Reference levels against which the water compartments measure deviations: the subject's habitual (pre-diet) intake when known (see `wdm.config.Subject.habitual_intake`), else the episode's own logged means. The habitual level is the physically right one: a diet that starts from ordinary eating starts with both compartments at their habitual fill, so ``G(0) = 0`` is a defensible prior, and the drain of glycogen water in the first days is predicted from the drop in carbohydrate instead of being mistaken for tissue loss. The episode mean, by contrast, hides that drop and changes as days are added. |
+
+## Functions
+
+| Name | Description |
+| --- | --- |
+| [load_episodes](#wdm.io.load_episodes) | Load an observations CSV into a list of `Episode`. |
+| [read_csv](#wdm.io.read_csv) | Read and validate an observations CSV. |
+
+### load_episodes { #wdm.io.load_episodes }
+
+```python
+io.load_episodes(path, *, strict=True, habitual=None)
+```
+
+Load an observations CSV into a list of `Episode`.
+
+Episodes are returned in order of first date. ``habitual`` is the
+(carbohydrate g/day, sodium mg/day) reference for the water compartments,
+normally `wdm.config.Subject.habitual_intake`; without it each
+episode falls back to its own logged means.
+
+### read_csv { #wdm.io.read_csv }
+
+```python
+io.read_csv(path, *, strict=True)
+```
+
+Read and validate an observations CSV.
+
+Raises on validation errors when ``strict``; warnings are always returned in
+the report and are the caller's business to surface.
