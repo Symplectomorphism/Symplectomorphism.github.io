@@ -79,6 +79,62 @@ Both optional. Left blank, steady activity is absorbed into the estimated mainte
 
 Optional, and the only reading that responds to fat mass directly. Weekly is plenty and daily does no harm; protocol in [The daily routine](daily-routine.md#the-waist-tape). The filter learns your personal offset and slope, so the tape needs no calibration, but expect a modest effect: it narrows the fat-mass estimate by about a tenth, because how many centimeters of waist a kilogram of fat is worth differs from person to person.
 
+## When you don't know exactly {#estimating}
+
+**Estimate.** A rough figure on the right day beats a blank, because a blank is not "unknown" to the model in the way you might expect:
+
+| Left blank | What the model assumes that day |
+|---|---|
+| `kcal`, with no macros either | You ate exactly what you spent, give or take 600 kcal: no information about the day's balance |
+| The macros, with `kcal` given | Carbohydrate at your habitual level (260 g by default), no protein effect on the fat/lean split, a flat thermic effect of food |
+| One or two macros | The same as all three: a partial split (protein only, say) is ignored, because the model needs all three |
+| `sodium_mg` | Your habitual sodium (4,000 mg by default): about a restaurant day, which is wrong for a quiet day at home |
+
+So at a restaurant or a friend's, log your best guess at all of it, and write `est.` in `notes` so you know later which numbers were guesses:
+
+```bash
+wdm log --kcal 1100 --protein 45 --carb 90 --fat 62 --sodium 2200
+```
+
+### Calories
+
+Use the posted number when there is one (US chains with 20 or more locations must post calories; many publish full nutrition online). Posted values are close on average, but individual dishes can be off by 100 kcal or more. Otherwise take the closest entry in your food tracker, and count the extras: bread, drinks, dressing, dessert, the cooking oil.
+
+### Macronutrients
+
+When the restaurant publishes them, use them. Otherwise estimate in order of what matters to the model:
+
+1. **Carbohydrate first.** It drives the glycogen water, the largest day-to-day swing on the scale.
+2. **Protein second.** It shifts the fat/lean split and costs the most to digest.
+3. **Fat by difference**, so the three add up to the calories: fat ≈ (kcal − 4 × protein − 4 × carb) / 9. This also keeps `wdm validate` from flagging the day.
+
+| Portion | Roughly |
+|---|---|
+| Palm-sized piece of cooked meat or fish (about 4 oz) | 25 to 35 g protein |
+| Two eggs | 12 g protein |
+| A cup of cooked rice or pasta | 45 g carbohydrate |
+| A slice of bread or a small roll | 15 g carbohydrate |
+| A large flour tortilla | 35 g carbohydrate |
+| A medium potato, or a medium order of fries | 35 to 45 g carbohydrate |
+| A can of regular soda | 40 g carbohydrate |
+| Restaurant dishes generally | 40 to 50% of calories from fat (butter, oil, sauces) |
+
+### Sodium
+
+| Meal | Sodium, roughly |
+|---|---|
+| Sit-down restaurant entrée | 1,500 to 2,500 mg, more with bread, soup or appetizers |
+| Fast-food meal | 1,000 to 2,000 mg |
+| Soy-sauce dishes, ramen, pho, curries | 3,000 mg or more |
+| Pizza | 600 to 700 mg per slice |
+| Home cooking at a friend's | 800 to 1,200 mg per plate |
+
+### What an error costs
+
+- **Calories.** A random error averages out over the days around it; a consistent under-estimate (everyone's) is absorbed into the estimated maintenance and cancels out of the prescriptions. What hurts is a habit that drifts ([On accuracy](#the-food-columns)).
+- **Carbohydrate.** An error of 100 g shifts the predicted glycogen water by up to about 0.3 kg for a day or two: less than one weigh-in's own noise. Guessing 80 g when it was 130 g is fine; leaving it blank on a 60 g day (and so assuming 260 g) is not.
+- **Sodium.** It moves only water, and only for a day or two; its error never reaches the tissue estimate.
+
 ## Missing data and outliers
 
 | Situation | What to do |

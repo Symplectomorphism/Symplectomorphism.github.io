@@ -175,10 +175,11 @@ Roughly in order of value per unit of effort:
 3. **Log macronutrients, not just calories.** This unlocks the glycogen compartment and the thermic effect of food.
 4. **Log with constant rigor**, not increasing rigor: a drifting log bias looks like metabolic adaptation. Note any change of method in `notes`.
 5. **Track sodium** if your tracker reports it. Before reading anything into an overnight gain, think about the previous evening.
-6. **Set your habitual intake** in `subject.toml` if you know it.
-7. **Measure your waist weekly.** Expect a fat-mass interval about a tenth narrower.
-8. **Log `exercise_kcal`** on training days ([Exercise energy](exercise.md)).
-9. **Vary intake deliberately.** A diet break or refeed week creates the transient that makes adaptation identifiable: for once the experimentally optimal action is the pleasant one.
+6. **Estimate what you cannot measure.** At a restaurant or a friend's, log a best guess at calories, all three macronutrients and sodium; to the model a blank means a specific assumption, usually a worse one than your guess ([When you don't know exactly](data.md#estimating)).
+7. **Set your habitual intake** in `subject.toml` if you know it.
+8. **Measure your waist weekly.** Expect a fat-mass interval about a tenth narrower.
+9. **Log `exercise_kcal`** on training days ([Exercise energy](exercise.md)).
+10. **Vary intake deliberately.** A diet break or refeed week creates the transient that makes adaptation identifiable: for once the experimentally optimal action is the pleasant one.
 
 **Outliers.** Leave a mistyped weight in the file for the outlier gate to downweight; deleting readings by hand corrupts the noise estimate. A real excursion (illness, a long flight, a salty meal) is downweighted too. If one dominates a week, note it and read that period cautiously, or start a new episode.
 

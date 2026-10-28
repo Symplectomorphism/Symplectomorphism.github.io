@@ -92,6 +92,8 @@ wdm log                              # no flags: just show today's totals agains
 wdm log --date 2026-10-27 --kcal 180 # a snack you forgot yesterday
 ```
 
+Eating out, or at a friend's, without exact numbers? Estimate all of it (calories, the three macros, sodium) rather than leaving cells blank; [When you don't know exactly](data.md#estimating) has rules of thumb and explains why a blank is worse than a rough guess.
+
 Logging never shifts the plan. Today's prescription is fixed by the latest plan that starts today (the last row of `data/plans/log.csv` with today's start date), and `wdm log` compares against it. If you have not run `wdm daily` yet today it shows the totals alone and says so.
 
 `wdm eat` is an older name for the same command and still works.
