@@ -218,7 +218,11 @@ def first_days():
                 markeredgecolor="white", markeredgewidth=1.2, zorder=4,
                 label=EPISODE_TITLES[e["name"]])
         last = np.flatnonzero(m)[-1]
-        label(ax, t[last], d[last], EPISODE_TITLES[e["name"]].replace(": now", ""), c, dx=8)
+        name = EPISODE_TITLES[e["name"]].replace(": now", "")
+        if e["name"] == "current":  # still short, so its end sits among the other lines
+            label(ax, t[last], d[last], name, c, dx=0, dy=-12, ha="center", va="top")
+        else:
+            label(ax, t[last], d[last], name, c, dx=8)
     ax.axhline(0, color=FAINT, linewidth=1.0, zorder=1)
     style(ax, xlabel="day of attempt", ylabel="change since first weigh-in (lb)")
     ax.set_xlim(-0.4, 15.5)
