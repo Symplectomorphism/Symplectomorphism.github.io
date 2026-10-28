@@ -77,6 +77,9 @@ def dates(x) -> np.ndarray:
     return np.array([np.datetime64(d) for d in x])
 
 
+MIN_KCAL = 1200.0  # the subject.toml [safety] floor, for labeling the plan figure
+
+
 def style(ax, xlabel=None, ylabel=None, title=None):
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
@@ -495,11 +498,12 @@ def plan():
     for edge in (P, P + C):  # a surface gap between stacked bands
         ax.step(d, edge, where="post", color="white", linewidth=1.5)
     style(ax, ylabel="kcal/day")
-    ax.set_ylim(0, 1650)
+    ax.set_ylim(0, 1.18 * max(p["kcal"]))  # headroom for the legend and labels
     ax.legend(loc="upper right", ncol=3, bbox_to_anchor=(1.0, 1.2))
     label(ax, d[0], P[0] + C[0] + F[0], f"{p['kcal'][0]:.0f} kcal", dx=0, dy=8, ha="left",
           va="bottom")
-    label(ax, d[-1], p["kcal"][-1], f"{p['kcal'][-1]:.0f} kcal: the floor", dx=0, dy=8,
+    floor = ": the floor" if p["kcal"][-1] <= MIN_KCAL + 0.5 else ""
+    label(ax, d[-1], p["kcal"][-1], f"{p['kcal'][-1]:.0f} kcal{floor}", dx=0, dy=8,
           ha="right", va="bottom")
 
     ax = axes[1]
