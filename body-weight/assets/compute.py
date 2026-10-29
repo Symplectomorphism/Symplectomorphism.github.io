@@ -34,7 +34,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from wdm.cli import _load_noise
-from wdm.config import Config, Goal, Preferences, Safety, Subject
+from wdm.config import Config, Subject
 from wdm.constants import LB_PER_KG
 from wdm.estimation import fit_joint, identify_noise
 from wdm.filters.linear import local_linear_trend_matrices, rts_smoother, trend_filter
@@ -43,7 +43,7 @@ from wdm.models.dynamics import simulate
 from wdm.models.energetics import total_expenditure
 from wdm.models.partition import forbes_fat_fraction
 from wdm.models.types import DailyInput, Params, State
-from wdm.synthetic import SyntheticSpec, make_episode, make_weight_only_episode
+from wdm.synthetic import demo_subject
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "data"
@@ -70,6 +70,9 @@ def _summaries(fit, truth: Params | None = None) -> list[dict]:
             "q95": s.q95,
             "prior": s.prior_center,
             "shift_sd": fit.transform.transforms[s.name].inverse(s.median),
+            # The prior's coordinate, so make_figures needs no copy of reparam.py.
+            "kind": fit.transform.transforms[s.name].kind,
+            "scale": float(fit.transform.transforms[s.name].scale),
         }
         if truth is not None:
             row["truth"] = float(getattr(truth, s.name))
@@ -195,37 +198,8 @@ def real(data_dir: Path) -> dict:
 
 def synthetic(days: int = 120) -> dict:
     """The `wdm demo` subject, verbatim, so the deck matches the package."""
-    subj = Subject(sex="male", age_years=40, height_cm=175.0, body_fat_frac=0.30)
-    cfg = Config(
-        subject=subj,
-        goal=Goal(target_weight_lb=170.0, target_date=dt.date(2026, 12, 31)),
-        safety=Safety(),
-        preferences=Preferences(),
-    )
-    c0, c1 = subj.expenditure_prior(100.0)
-    true = Params(
-        rmr_intercept=jnp.asarray(c0 * 1.18),
-        rmr_slope=jnp.asarray(c1 * 0.90),
-        at_gain=jnp.asarray(0.22),
-        at_tau=jnp.asarray(11.0),
-        gly_gain=jnp.asarray(0.0042),
-        gly_tau=jnp.asarray(2.0),
-        na_gain=jnp.asarray(1.5e-5),
-        na_tau=jnp.asarray(1.0),
-        partition_kappa=jnp.asarray(0.06),
-    )
-    past = [
-        make_weight_only_episode(
-            SyntheticSpec(n_days=40, start_weight_kg=105.0),
-            true, name=f"past-0{i}", start_date=d, seed=10 + i,
-        )
-        for i, d in enumerate(["2023-03-01", "2024-01-15"], start=1)
-    ]
-    current, truth = make_episode(
-        SyntheticSpec(n_days=days, start_weight_kg=100.0),
-        true, name="current", start_date="2026-08-03", seed=7,
-    )
-    episodes = [*past, current]
+    cfg, true, episodes, truth = demo_subject(days)
+    current = episodes[-1]
     ni = identify_noise(episodes)
     fit = fit_joint(episodes, cfg, _load_noise(ni.obs_sd))
     last = fit.episodes[-1]

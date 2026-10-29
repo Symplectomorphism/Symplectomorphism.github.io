@@ -347,24 +347,19 @@ def timescales():
 
 # ------------------------------------------------------------------ estimation
 
-# Prior scale of each parameter's unconstrained coordinate, from
-# wdm.estimation.reparam.ParamTransform. Centers come from the JSON.
-TRANSFORMS = {
-    "rmr_intercept": ("log", 0.15), "rmr_slope": ("log", 0.25), "at_gain": ("logit", 0.70),
-    "at_tau": ("log", 0.50), "gly_gain": ("log", 0.50), "gly_tau": ("log", 0.40),
-    "na_gain": ("log", 0.70), "na_tau": ("log", 0.40), "partition_kappa": ("affine", 0.05),
-}
+#: As wdm.viz.PARAM_LABELS: the report's symbols, with a few words of meaning.
 SYMBOLS = {
-    "rmr_intercept": r"$c_0$  intercept", "rmr_slope": r"$c_1$  per-kg slope",
+    "rmr_intercept": r"$c_0$  expenditure intercept", "rmr_slope": r"$c_1$  expenditure per kg",
     "at_gain": r"$\beta_A$  adaptation gain", "at_tau": r"$\tau_A$  adaptation lag",
-    "gly_gain": r"$k_G$  glycogen gain", "gly_tau": r"$\tau_G$  glycogen lag",
-    "na_gain": r"$k_{Na}$  sodium gain", "na_tau": r"$\tau_{Na}$  sodium lag",
+    "gly_gain": r"$k_G$  glycogen-water gain", "gly_tau": r"$\tau_G$  glycogen-water lag",
+    "na_gain": r"$k_{Na}$  sodium-water gain", "na_tau": r"$\tau_{Na}$  sodium-water lag",
     "partition_kappa": r"$\kappa_P$  protein sparing",
 }
 
 
-def to_eta(name, v, center):
-    kind, s = TRANSFORMS[name]
+def to_eta(p, v):
+    """``v`` in the parameter's unconstrained prior coordinate (prior sd units)."""
+    kind, s, center = p["kind"], p["scale"], p["prior"]
     if kind == "log":
         return np.log(v / center) / s
     if kind == "logit":
@@ -377,10 +372,10 @@ def parameters():
     """Posterior 90% intervals in prior-sigma units: synthetic beside real."""
     syn, real = load("synthetic"), load("real")
     fig, axes = plt.subplots(1, 2, figsize=(12.6, 4.9), sharey=True, gridspec_kw={"wspace": 0.08})
-    names = list(TRANSFORMS)
+    names = list(SYMBOLS)
     ypos = np.arange(len(names))[::-1]
     # Same x-range on both panels, wide enough for the farthest interval end.
-    reach = max(to_eta(p["name"], p["q95"], p["prior"]) for p in syn["params"] + real["params"])
+    reach = max(to_eta(p, p["q95"]) for p in syn["params"] + real["params"])
     xmax = max(6.4, np.ceil(reach) + 0.6)
     for ax, src, title in (
         (axes[0], syn, "Synthetic subject, 120 logged days"),
@@ -391,12 +386,12 @@ def parameters():
         rows = {p["name"]: p for p in src["params"]}
         for y, n in zip(ypos, names, strict=True):
             p = rows[n]
-            lo, med, hi = (to_eta(n, p[k], p["prior"]) for k in ("q05", "median", "q95"))
+            lo, med, hi = (to_eta(p, p[k]) for k in ("q05", "median", "q95"))
             ax.plot([lo, hi], [y, y], color=GREEN, linewidth=3.0, solid_capstyle="round", zorder=3)
             ax.plot([med], [y], "o", color=GREEN, markersize=8, markeredgecolor="white",
                     markeredgewidth=1.4, zorder=4)
             if "truth" in p:
-                tr = to_eta(n, p["truth"], p["prior"])
+                tr = to_eta(p, p["truth"])
                 ax.plot([tr], [y], "D", color=RED, markersize=7.5, markeredgecolor="white",
                         markeredgewidth=1.2, zorder=5)
         style(ax, xlabel="shift from prior center (prior standard deviations)", title=title)
