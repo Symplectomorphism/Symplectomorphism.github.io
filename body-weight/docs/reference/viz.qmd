@@ -34,8 +34,11 @@ main thing worth seeing.
 | [plot_composition](#wdm.viz.plot_composition) | Fat and lean mass over time, with bands. |
 | [plot_innovations](#wdm.viz.plot_innovations) | Standardised one-step-ahead residuals, over time and as a histogram. |
 | [plot_intake_log](#wdm.viz.plot_intake_log) | What was actually logged, day by day: intake, macros, fiber, sodium, |
+| [plot_maintenance](#wdm.viz.plot_maintenance) | The maintenance estimate as it evolved, against what was eaten. |
+| [plot_parameter_evolution](#wdm.viz.plot_parameter_evolution) | What the filter believed about each parameter, day by day. |
 | [plot_parameters](#wdm.viz.plot_parameters) | Posterior medians and 90 % intervals, normalized to the prior center. |
 | [plot_plan](#wdm.viz.plot_plan) | Prescribed intake and predicted weight, as stacked panels. |
+| [plot_plan_vs_actual](#wdm.viz.plot_plan_vs_actual) | Each day's prescription, from the plans log, against what was eaten. |
 | [plot_trajectory](#wdm.viz.plot_trajectory) | Raw weigh-ins, the smoothed trend, and its credible band. |
 
 ### mdates_num { #wdm.viz.mdates_num }
@@ -92,6 +95,45 @@ zero *is* the honest default for an unlogged day, per ``Episode``'s own
 convention, and steps -- not part of the model at all -- are passed in
 separately from the raw CSV.
 
+### plot_maintenance { #wdm.viz.plot_maintenance }
+
+```python
+viz.plot_maintenance(
+    fit,
+    fit_episode,
+    episode,
+    *,
+    path=None,
+    n_samples=2000,
+    seed=0,
+)
+```
+
+The maintenance estimate as it evolved, against what was eaten.
+
+Maintenance here is the non-adaptive expenditure at each day's trend weight,
+``c0 + c1 W``, under that day's filtered belief about the two coefficients.
+The band comes from sampling their joint filtered distribution: the two are
+strongly correlated, so their sum is far better known than either, and
+adding marginal variances would overstate the band. The logged intake on the
+same axis makes the deficit visible directly; both are kcal/day, so one
+axis is honest.
+
+### plot_parameter_evolution { #wdm.viz.plot_parameter_evolution }
+
+```python
+viz.plot_parameter_evolution(fit, fit_episode, *, path=None)
+```
+
+What the filter believed about each parameter, day by day.
+
+The filtered (not smoothed) estimate: each day shows only what the record up
+to that morning implied, so the panels replay how the evidence accumulated.
+Values are relative to the prior center, as in `plot_parameters`; a
+band that stays as wide as it started has learned nothing, whatever its
+median does. Small multiples rather than one crowded frame, since the nine
+parameters share no scale and need no comparison by color.
+
 ### plot_parameters { #wdm.viz.plot_parameters }
 
 ```python
@@ -131,6 +173,17 @@ plan only by a lower alpha and a "today" marker. Without that context a
 plan reads as an isolated, disconnected forecast; with it, the plan reads
 as a continuation of where you actually are. ``episode`` adds the raw
 weigh-ins the trend was fitted to, when available.
+
+### plot_plan_vs_actual { #wdm.viz.plot_plan_vs_actual }
+
+```python
+viz.plot_plan_vs_actual(log_rows, episode, *, path=None)
+```
+
+Each day's prescription, from the plans log, against what was eaten.
+
+``log_rows`` are the rows of ``plans/log.csv``; a day's prescription is the
+last plan logged with that start date, the one ``wdm log`` compares against.
 
 ### plot_trajectory { #wdm.viz.plot_trajectory }
 

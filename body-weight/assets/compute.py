@@ -425,6 +425,7 @@ def numbers(data_dir: Path) -> dict[str, str]:
     last_obs = next(x for x in reversed(obs) if x is not None)
     lo, med, hi = r["maintenance"]["interval"]
     v["day"] = str(len(cur["dates"]))
+    v["as_of"] = dt.date.fromisoformat(cur["dates"][-1]).strftime("%B %-d, %Y")
     v["trend_lb"] = f"{cur['trend_lb']:.1f} lb"
     v["last_reading"] = f"{last_obs:.1f}"
     v["maint"] = f"{_n(med)} kcal"

@@ -1,5 +1,6 @@
 ---
 title: "Control"
+metadata-files: [../numbers_synthetic.yml]
 ---
 
 Given today's belief about your state and metabolism, what should you eat today?
@@ -115,6 +116,28 @@ carbohydrate landed on its floor at every floor setting tried. The reference is
 still built from the goal's scale weight, so it differs from $T$ by the water
 offset present at the start.
 :::
+
+### Maintain mode {#maintain}
+
+Once the goal is reached the question becomes "how much keeps me here". Maintain
+mode uses the deadline objective with a different reference: from today's tissue
+$T_0$ to the held weight $W_h$ (`[maintain] weight_lb` in the subject file, or
+$T_0$ itself when none is set) over the horizon,
+
+$$
+r_k = T_0 + \frac{k}{H}\,(W_h - T_0), \qquad k = 1, \dots, H,
+$$
+
+with no goal date. Tissue is the right basis: at maintenance, eating as usual,
+the water compartments return to their habitual level and the scale settles at
+tissue. Mid-diet the scale sits below tissue by the drained water, so holding
+"today's weight" on the scale would cut tissue to stay there; holding today's
+tissue does not. At the held weight the reference is flat and the effort term
+pulls intake to the weight-stable level; after a drift of 3 lb the correction is
+spread over the 28-day horizon, under 1 lb a week, instead of a crash. Every
+constraint still applies, and there is no feasibility report, since there is no
+deadline to miss. A `[maintain]` section makes this mode the default for
+`wdm plan` and `wdm daily` ([The subject file](../configuration.md#maintain)).
 
 ## Constraints {#constraints}
 
@@ -258,14 +281,16 @@ of adherence ([Limitations](limitations.md#statistical)).
 
 ## Behavior on synthetic data {#behavior}
 
-On the `wdm demo` subject (195.8 lb after 120 simulated days, estimated
-maintenance near 2730 kcal/day) with the default limits and a 28-day horizon, a
-reachable deadline (175 lb by 2027-03-01) gave weekly intakes of 2079, 2034, 2029
-and 2056 kcal at a peak tissue loss of 0.97% a week. The sustainable plan and an
-impossible deadline (150 lb by 2027-01-31) both rode the rate limit at about
-1890 kcal, well above the floor, and the impossible one was flagged infeasible:
-with the default weights, the optimum of progress against effort lies beyond 1%
-a week. All three plans came straight from SLSQP and passed the check.
+On the `wdm demo` subject ({{< meta sy.BehWeightLb >}} lb after {{< meta sy.Days >}} simulated days, estimated
+maintenance near {{< meta sy.BehMaint >}} kcal/day) with the default limits and a 28-day horizon:
+
+| Scenario | kcal by week | lb/wk | Peak %/wk | Outcome |
+|:--|:--|--:|--:|:--|
+| Reachable deadline, 175 lb by 2027-03-01 | {{< meta sy.BehDeadWeeks >}} | {{< meta sy.BehDeadRate >}} | {{< meta sy.BehDeadPct >}} | {{< meta sy.BehDeadOutcome >}} |
+| Sustainable | {{< meta sy.BehSustWeeks >}} | {{< meta sy.BehSustRate >}} | {{< meta sy.BehSustPct >}} | {{< meta sy.BehSustOutcome >}} |
+| Impossible deadline, 150 lb by 2027-01-31 | {{< meta sy.BehImpWeeks >}} | {{< meta sy.BehImpRate >}} | {{< meta sy.BehImpPct >}} | {{< meta sy.BehImpOutcome >}} |
+
+An impossible deadline pushes intake to whichever limit binds first, here {{< meta sy.BehImpBinds >}}. With the default weights the sustainable plan's optimum of progress against effort sits at or beyond the 1% limit. {{< meta sy.BehSolver >}}
 
 ## References {#references}
 

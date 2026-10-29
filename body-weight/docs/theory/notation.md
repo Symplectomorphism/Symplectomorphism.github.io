@@ -83,6 +83,7 @@ Priors for all of them are in the [parameter table](model.md#parameters).
 | | Fiber correction subtracted from logged energy | 2 kcal/g | `KCAL_PER_G_FIBER_OVERCOUNT` |
 | $\sigma_w$ | Waist-reading noise standard deviation | 1.5 cm | `WAIST_OBS_SD_CM` |
 | $\sigma_I$ | Spread of intake on an unlogged day | 600 kcal/day (default) | `unlogged_intake_sd` |
+| $s_k$ | Uncertainty of an estimated day's logged energy | a quarter of it | `intake_sd_kcal` |
 
 ## Inputs {#inputs}
 

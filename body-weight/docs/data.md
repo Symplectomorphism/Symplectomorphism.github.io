@@ -31,6 +31,7 @@ Row *k* is day *k*: the weigh-in on its morning and everything eaten during it. 
 | `exercise_kcal` | kcal/day | 0 to 8,000 | Deliberate exercise energy above baseline. Blank counts as 0. |
 | `steps` | count | 0 to 150,000 | Step count. Kept as a diagnostic, not used in the energy balance. |
 | `waist_in` | in | 15 to 90 | Waist at the navel. (`waist_cm`, 38 to 230, also accepted.) |
+| `estimated` | 1 or blank | 0 to 1 | 1 when the day's food is an estimate; the filter then treats its energy as uncertain by about a quarter. `wdm log --estimate` sets it (and adds the column if the file lacks it). |
 | `notes` | text | | Free text, never parsed. Useful when reviewing outliers. |
 
 The ranges catch unit errors and typos (a weight in kg typed into the lb column, a slipped decimal point), not unusual days. A row may give a quantity in one unit only: `weight_lb` or `weight_kg`, `waist_in` or `waist_cm`. Columns not listed here are ignored with a warning.
@@ -69,7 +70,7 @@ A day counts as logged when it has `kcal` or a full protein/carb/fat split. A da
 
 ### `sodium_mg`
 
-Optional but valuable if your tracker reports it. Sodium shifts extracellular water over one to two days and is often a larger source of scale noise than carbohydrate. Supplied, it enters the sodium-water compartment as a second driver; left blank, its effect is absorbed into the observation noise, which makes your data noisier but not wrong. A restaurant meal can carry 3 g of extra sodium and hold a kilogram of water for two days.
+Optional but valuable if your tracker reports it. Sodium shifts extracellular water over one to two days and is often a larger source of scale noise than carbohydrate. Supplied, it drives the sodium-water compartment: roughly 0.2 kg of water per 1,000 mg/day of sustained change, and about half a kilogram the morning after a salty restaurant meal, gone in two or three days. Left blank, the day is taken at your habitual sodium (4,000 mg by default), so estimate rather than leave it blank on days you eat out ([When you don't know exactly](#estimating)).
 
 ### `exercise_kcal` and `steps`
 
@@ -90,11 +91,13 @@ Optional, and the only reading that responds to fat mass directly. Weekly is ple
 | One or two macros | The same as all three: a partial split (protein only, say) is ignored, because the model needs all three |
 | `sodium_mg` | Your habitual sodium (4,000 mg by default): about a restaurant day, which is wrong for a quiet day at home |
 
-So at a restaurant or a friend's, log your best guess at all of it, and write `est.` in `notes` so you know later which numbers were guesses:
+So at a restaurant or a friend's, log your best guess at all of it, and mark the day as an estimate:
 
 ```bash
-wdm log --kcal 1100 --protein 45 --carb 90 --fat 62 --sodium 2200
+wdm log --kcal 1100 --protein 45 --carb 90 --fat 62 --sodium 2200 --estimate
 ```
+
+`--estimate` sets the day's `estimated` column to 1. The filter then takes the day's energy as the logged value give or take a quarter of it, instead of exactly, so a guessed day teaches it less about your metabolism than a weighed one. A day without a food log is still worth more as a rough estimate than as a blank: a blank says "no information", an estimate says "about this much".
 
 ### Calories
 

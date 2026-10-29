@@ -38,7 +38,7 @@ true = Params(
     at_tau=jnp.asarray(11.0),
     gly_gain=jnp.asarray(0.0042),
     gly_tau=jnp.asarray(2.0),
-    na_gain=jnp.asarray(1.5e-5),
+    na_gain=jnp.asarray(2.5e-4),
     na_tau=jnp.asarray(1.0),
     partition_kappa=jnp.asarray(0.06),
 )
@@ -53,13 +53,17 @@ print(ni.render())
 print()
 
 # What "reading noise" means to phase 1: everything faster than a smooth trend.
-# The truth has two such sources: the scale's own 0.45 kg, and glycogen water,
-# which the generator jitters by gly_sd per day and which relaxes with gly_tau.
+# The truth has three such sources: the scale's own 0.45 kg; glycogen water,
+# which the generator jitters by gly_sd per day and which relaxes with gly_tau;
+# and sodium water, which follows each day's random sodium through na_tau.
 a = np.exp(-1.0 / float(true.gly_tau))
 gly_sd = float(NoiseModel.default().gly_sd) / np.sqrt(1.0 - a**2)
+b = np.exp(-1.0 / float(true.na_tau))
+na_sd = float(true.na_gain) * spec.sodium_sd_mg * np.sqrt((1.0 - b) / (1.0 + b))
+fast = np.sqrt(spec.obs_sd_kg**2 + gly_sd**2 + na_sd**2)
 print(
-    f"true reading noise {spec.obs_sd_kg:.3f} kg; glycogen-water scatter {gly_sd:.3f} kg;"
-    f" combined {np.hypot(spec.obs_sd_kg, gly_sd):.3f} kg"
+    f"true reading noise {spec.obs_sd_kg:.3f} kg; water scatter: glycogen {gly_sd:.3f} kg,"
+    f" sodium {na_sd:.3f} kg; combined {fast:.3f} kg"
 )
 
 # Run the trend filter at the fitted scales and score it against the hidden truth.
@@ -102,30 +106,31 @@ print(
 Phase 1 -- noise identification
   episodes used         1
   weigh-ins used        107
-  log-likelihood        -87.41
+  log-likelihood        -86.53
 
-  observation sd        0.492 kg (1.08 lb)   x/1.07
+  observation sd        0.488 kg (1.08 lb)   x/1.07
   level innovation sd   0.00010 kg/day   unidentified
-  slope innovation sd   0.00397 kg/day^2 x/2.05
+  slope innovation sd   0.00367 kg/day^2 x/1.88
 
-  steady-state gain     0.119
-  effective window      8.4 days
+  steady-state gain     0.115
+  effective window      8.7 days
 
-true reading noise 0.450 kg; glycogen-water scatter 0.189 kg; combined 0.488 kg
-error vs the true scale weight: one reading 0.418 kg, filtered trend (days 30-119) 0.278 kg
+true reading noise 0.450 kg; water scatter: glycogen 0.189 kg, sodium 0.136 kg; combined 0.507 kg
+error vs the true scale weight: one reading 0.418 kg, filtered trend (days 30-119) 0.290 kg
 
 with two past weight-only episodes added
-  weigh-ins 170, observation sd 0.488 kg (x/1.06), gain 0.113, window 8.8 days
+  weigh-ins 170, observation sd 0.491 kg (x/1.06), gain 0.111, window 9.0 days
 ```
 
 ## What to notice
 
-- **The reading noise is pinned down.** 107 weigh-ins give an observation standard deviation of 0.492 kg (1.08 lb), known to within a factor of 1.07 either way.
-- **It is larger than the 0.45 kg that was set, and the second block says why.** Phase 1 has no glycogen compartment, so anything faster than a smooth trend counts as reading noise. The generator jitters glycogen water by 0.15 kg/day, and with its 2-day time constant that settles to a day-to-day spread of 0.15 / √(1 − e^(−1)) = 0.189 kg. Combined with the scale's 0.45 kg this gives √(0.45² + 0.189²) = 0.488 kg, close to the fitted 0.492.
-- **The level innovation is "unidentified".** It sits at 0.00010 kg/day, the lower bound of the search. The maximum-likelihood trend moves only through its slope, which is a legitimate fit, but an estimate on a bound has no two-sided standard error, so the report says so instead of printing one. The slope innovation, 0.00397 kg/day², is known only to a factor of 2.05.
-- **Gain and window.** A steady-state gain of 0.119 means each weigh-in moves the trend 11.9 % of the way toward itself; the effective window is its reciprocal, 8.4 days. A single surprising morning moves the estimate by about an eighth of the surprise.
-- **The trend beats a single reading.** Against the true scale weight, one reading is off by 0.418 kg (root mean square), the causal trend by 0.278 kg (days 30 to 119, after start-up). The trend cannot do better than the glycogen-water wiggle it is not built to follow.
-- **More history, same answer.** Two older 40-day weight-only episodes raise the count to 170 weigh-ins and barely move anything: 0.488 kg, a factor of 1.06, gain 0.113, window 8.8 days. They come from the same generator, so this is expected; on a real record, old episodes are how a short current one gets a usable noise estimate. Phase 2 ignores weight-only episodes ([Which episodes are filtered](../theory/estimation.md#which-episodes)).
+- **The reading noise is pinned down.** 107 weigh-ins give an observation standard deviation of 0.488 kg (1.08 lb), known to within a factor of 1.07 either way.
+- **It is larger than the 0.45 kg that was set, and the second block says why.** Phase 1 has no water compartments, so anything faster than a smooth trend counts as reading noise. The generator jitters glycogen water by 0.15 kg/day, and with its 2-day time constant that settles to a day-to-day spread of 0.15 / √(1 − e^(−1)) = 0.189 kg.
+- **Sodium water now adds its own share.** Each day's sodium is drawn with an 800 mg spread, and at the true gain of 2.5·10⁻⁴ kg per mg/day with a 1-day time constant that gives 2.5·10⁻⁴ × 800 × √((1 − e^(−1)) / (1 + e^(−1))) = 0.136 kg of day-to-day scatter. All three together give √(0.45² + 0.189² + 0.136²) = 0.507 kg; the fitted 0.488 is within its factor of 1.07 of that. Phase 2 models sodium water from the sodium log, so this share is counted twice once phase 2 takes phase 1's figure (step 6 sees the result).
+- **The level innovation is "unidentified".** It sits at 0.00010 kg/day, the lower bound of the search. The maximum-likelihood trend moves only through its slope, which is a legitimate fit, but an estimate on a bound has no two-sided standard error, so the report says so instead of printing one. The slope innovation, 0.00367 kg/day², is known only to a factor of 1.88.
+- **Gain and window.** A steady-state gain of 0.115 means each weigh-in moves the trend 11.5 % of the way toward itself; the effective window is its reciprocal, 8.7 days. A single surprising morning moves the estimate by about a ninth of the surprise.
+- **The trend beats a single reading.** Against the true scale weight, one reading is off by 0.418 kg (root mean square), the causal trend by 0.290 kg (days 30 to 119, after start-up). The trend cannot do better than the water wiggle it is not built to follow.
+- **More history, same answer.** Two older 40-day weight-only episodes raise the count to 170 weigh-ins and barely move anything: 0.491 kg, a factor of 1.06, gain 0.111, window 9.0 days. They come from the same generator, so this is expected; on a real record, old episodes are how a short current one gets a usable noise estimate. Phase 2 ignores weight-only episodes ([Which episodes are filtered](../theory/estimation.md#which-episodes)).
 
 ## The code
 
@@ -147,10 +152,10 @@ with two past weight-only episodes added
 | Gaussian readings by default | `estimation/noise_id.py:153` (`dof=None`) | Phase 1 and phase 2 must make the same choice |
 | Search bounds: reading noise 0.03 to 5 kg | `estimation/noise_id.py:200` | Keeps the optimizer in physically sane territory |
 | Standard errors from the Hessian at the optimum | `estimation/noise_id.py:248` | Optimistic: the trend model is misspecified (no water, no food) |
-| The fast water that phase 1 calls reading noise is also process noise in phase 2 | `models/dynamics.py:75` (`gly_sd`) | Counted twice, it is a likely reason step 6 finds the forecast intervals a little wide |
+| The fast water that phase 1 calls reading noise is also in phase 2: glycogen jitter as process noise, sodium water as a state driven by the log | `models/dynamics.py:75` (`gly_sd`), `models/glycogen.py:52` (`sodium_rate`) | Counted twice, it is a likely reason step 6 finds the forecast intervals a little wide |
 
 ## Try this
 
-- Set `obs_sd_kg=0.25` in the spec. The fit gives 0.308 kg (the rule above predicts √(0.25² + 0.189²) = 0.313), a gain of 0.322 and a 3.1-day window: a quieter scale is trusted more.
-- Fit Student-t noise with `identify_noise([ep], dof=4.0)`. The log-likelihood falls from −87.41 to −93.26 and the reading noise drops to 0.362 kg, because heavy tails let the variance shrink. On Gaussian data the Gaussian fits better, as it should.
-- Run [`wdm fit-noise`](../commands.md#wdm-fit-noise) on your own file and compare your window with 8.4 days.
+- Set `obs_sd_kg=0.25` in the spec. The fit gives 0.273 kg, below the 0.341 kg the rule above predicts (√(0.25² + 0.189² + 0.136²)), because the level innovation is no longer pinned at its bound: at 0.175 kg/day it now follows part of the water wiggle as level moves. The gain rises to 0.468 and the window shrinks to 2.1 days: a quieter scale is trusted more.
+- Fit Student-t noise with `identify_noise([ep], dof=4.0)`. The log-likelihood falls from −86.53 to −93.96 and the reading noise drops to 0.359 kg, because heavy tails let the variance shrink. On Gaussian data the Gaussian fits better, as it should.
+- Run [`wdm fit-noise`](../commands.md#wdm-fit-noise) on your own file and compare your window with 8.7 days.

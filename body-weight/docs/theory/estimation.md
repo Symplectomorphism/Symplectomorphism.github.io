@@ -1,5 +1,6 @@
 ---
 title: "Estimation"
+metadata-files: [../numbers_synthetic.yml]
 ---
 
 The [model](model.md) is continuous and deterministic; the data are daily, noisy
@@ -51,13 +52,16 @@ without weigh-ins widens the band by $\sqrt{7}$, not 7:
 
 $$
 Q_k = \operatorname{diag}(\sigma_T^2, \sigma_F^2, \sigma_G^2, \sigma_N^2, \sigma_A^2)
-    + (1 - m_k)\,\sigma_I^2\, b b^{\top},
+    + \bigl[(1 - m_k)\,\sigma_I^2 + m_k\, s_k^2\bigr]\, b b^{\top},
 \qquad
 b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0)^{\top},
 $$
 
-where $m_k \in \{0, 1\}$ indicates a food log and $\sigma_I = 600$ kcal/day is
-the spread of plausible intake on an unlogged day. The code's diagonal defaults
+where $m_k \in \{0, 1\}$ indicates a food log, $\sigma_I = 600$ kcal/day is
+the spread of plausible intake on an unlogged day, and $s_k$ is a logged day's own
+uncertainty: zero for a day logged as eaten, a quarter of its energy for a day
+marked as an estimate (`wdm log --estimate`), which then informs the energy
+balance less than a weighed day. The code's diagonal defaults
 are $\sigma_T = 0.08$, $\sigma_F = 0.04$, $\sigma_G = 0.15$, $\sigma_N = 0.10$ kg
 and $\sigma_A = 3.0$ kcal/day.
 
@@ -183,12 +187,12 @@ recursion to a fixed point) rather than $\sigma_\ell/\sigma_v$. Its reciprocal
 is the effective averaging window in days. The trend $\ell$ with its slope $b$
 is, on its own, the package's most useful output.
 
-| Synthetic: 170 weigh-ins, 3 episodes, true $\sigma_v = 0.45$ kg | Estimate | Uncertainty |
+| Synthetic: {{< meta sy.NWeighIns >}} weigh-ins, {{< meta sy.NEpisodes >}} episodes, true $\sigma_v = 0.45$ kg | Estimate | Uncertainty |
 |:--|--:|:--|
-| Observation sd | 0.487 kg | ×/1.06 |
-| Level innovation sd | 0.0001 kg/day | unidentified (at bound) |
-| Slope innovation sd | 0.0033 kg/day² | ×/1.98 |
-| Steady-state gain; effective window | 0.109; 9.2 days | |
+| Observation sd | {{< meta sy.ObsSd >}} kg | {{< meta sy.ObsSdFactor >}} |
+| Level innovation sd | {{< meta sy.LevelSd >}} kg/day | {{< meta sy.LevelSdFactor >}} |
+| Slope innovation sd | {{< meta sy.SlopeSd >}} kg/day² | {{< meta sy.SlopeSdFactor >}} |
+| Steady-state gain; effective window | {{< meta sy.Gain >}}; {{< meta sy.Window >}} days | |
 
 ## Phase 2: joint state and parameter estimation {#phase-2}
 
@@ -346,11 +350,11 @@ starting value.
 
 | Synthetic, 120 days, waist weekly | With tape | Without |
 |:--|--:|--:|
-| Final fat mass, posterior sd | 3.38 kg | 3.75 kg |
-| Final fat mass, estimate (truth 22.6 kg) | 23.9 kg | 22.9 kg |
-| Waist slope, 90% interval (truth 1.2; prior [0.89, 1.71]) | [0.96, 1.58] | n/a |
+| Final fat mass, posterior sd | {{< meta sy.TapeFatSdWith >}} kg | {{< meta sy.TapeFatSdWithout >}} kg |
+| Final fat mass, estimate (truth {{< meta sy.TapeFatTruth >}} kg) | {{< meta sy.TapeFatWith >}} kg | {{< meta sy.TapeFatWithout >}} kg |
+| Waist slope, 90% interval (truth 1.2; prior [{{< meta sy.TapePriorLo >}}, {{< meta sy.TapePriorHi >}}]) | [{{< meta sy.TapeSlopeLo >}}, {{< meta sy.TapeSlopeHi >}}] | n/a |
 
-The fat-mass interval narrows by about a tenth and still contains the truth. A
+The fat-mass interval narrows by {{< meta sy.TapeNarrowPct >}}%. A
 test asserts this much (at least 5% narrower, truth inside) and no more.
 
 ## Identifiability {#identifiability}
@@ -361,7 +365,7 @@ Read this before quoting any parameter. Synthetic figures are from the run
 | Status | Quantity | Why |
 |:--|:--|:------|
 | Well identified | Maintenance $c_0 + c_1 W$ at a given weight | Over the narrow mass range of one dataset, raising $c_0$ and lowering $c_1$ barely changes the fit, so each coefficient is wide while their combination is well determined. |
-| Well identified | $k_G$, $\tau_G$ | Carbohydrate varies daily and the water swings are large next to the noise. On synthetic data $k_G$ moved 37% off its prior, the largest shift. |
+| Well identified | $k_G$, $\tau_G$ | Carbohydrate varies daily and the water swings are large next to the noise. On synthetic data $k_G$ moved {{< meta sy.ShiftKG >}}% off its prior. |
 | Weak | $\beta_A$, $\tau_A$ | Separable from a mis-estimated $c_0$ only through the lag; constant intake gives almost no information. A diet break or refeed week helps. |
 | Weak | Fat mass $F$ | The scale sees it only through $\rho_{\mathrm{eff}}$, which a 15 kg loss changes by under 10%. Always shown with a credible band. |
 | Not identified | $\kappa_P$ | Second-order effect through $\rho_{\mathrm{eff}}$. On synthetic data it moved less than 1%, with a 90% interval spanning zero. |
@@ -377,14 +381,14 @@ more than 20% narrower than the naive independent interval.
 ## Validation on synthetic data {#synthetic}
 
 `wdm demo` generates two weight-only past episodes of 40 days and a current
-episode of 120 days with macronutrients (89% weigh-in and 88% logging coverage),
+episode of {{< meta sy.Days >}} days with macronutrients ({{< meta sy.WeighInPct >}}% weigh-in and {{< meta sy.LoggedPct >}}% logging coverage),
 from true parameters deliberately offset from the priors (if the truth sat at
-the prior center, an estimator that ignored the data would pass). All nine true
+the prior center, an estimator that ignored the data would pass). {{< meta sy.HitsWord >}} true
 values lie inside their 90% posterior intervals; for example, $k_G$ (truth
-0.0042) has median 0.0041, and $\kappa_P$ (truth 0.06) has median 0.050 with an
-interval from $-0.032$ to 0.135 that spans zero. Maintenance at 100 kg is
-estimated at 2905 kcal/day [2714, 3163] against a true 2843 (2.2% error), and the
-smoothed trend's error against the hidden truth is 197 g RMS, against 487 g of
+{{< meta sy.TruthKG >}}) has median {{< meta sy.MedKG >}}, and $\kappa_P$ (truth {{< meta sy.TruthKappaP >}}) has median {{< meta sy.MedKappaP >}} with an
+interval from {{< meta sy.LoKappaP >}} to {{< meta sy.HiKappaP >}}. Maintenance at 100 kg is
+estimated at {{< meta sy.MaintMed >}} kcal/day [{{< meta sy.MaintLo >}}, {{< meta sy.MaintHi >}}] against a true {{< meta sy.TrueMaint >}} ({{< meta sy.MaintErrPct >}}% error), and the
+smoothed trend's error against the hidden truth is {{< meta sy.TrendRmseG >}} g RMS, against {{< meta sy.ObsNoiseG >}} g of
 single-weigh-in noise. This validates the inference machinery and says nothing
 about whether the model resembles a person: the data come from the dynamics the
 estimator assumes.
@@ -407,11 +411,11 @@ models.
 
 | Synthetic | $h$ | $n$ | Bias | RMSE | Persist. | Skill | $z$ sd | Cov. 50/90 | Log score |
 |:--|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| Current episode | 1 | 106 | -0.07 | 1.10 | 1.41 | +22% | 0.85 | 56/92 | -0.74 |
-| Current episode | 7 | 100 | -0.07 | 1.18 | 1.97 | +40% | 0.78 | 63/95 | -0.81 |
+| Current episode | 1 | {{< meta sy.BtOneN >}} | {{< meta sy.BtOneBias >}} | {{< meta sy.BtOneRmse >}} | {{< meta sy.BtOnePersist >}} | +{{< meta sy.BtOneSkill >}}% | {{< meta sy.BtOneZsd >}} | {{< meta sy.BtOneCovFifty >}}/{{< meta sy.BtOneCovNinety >}} | {{< meta sy.BtOneLogScore >}} |
+| Current episode | 7 | {{< meta sy.BtSevenN >}} | {{< meta sy.BtSevenBias >}} | {{< meta sy.BtSevenRmse >}} | {{< meta sy.BtSevenPersist >}} | +{{< meta sy.BtSevenSkill >}}% | {{< meta sy.BtSevenZsd >}} | {{< meta sy.BtSevenCovFifty >}}/{{< meta sy.BtSevenCovNinety >}} | {{< meta sy.BtSevenLogScore >}} |
 
 On its own synthetic data the model's intervals are honest to slightly wide, and
-it beats persistence by 22% at a day and 40% at a week. A test asserts the
+it beats persistence by {{< meta sy.BtOneSkill >}}% at a day and {{< meta sy.BtSevenSkill >}}% at a week. A test asserts the
 one-day calibration, the one-week skill, and that the one-day forecast equals the
 filter's own prediction. On real data the first mornings of a diet drop more
 than the water compartments explain, most likely gut contents, which no state

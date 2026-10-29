@@ -47,19 +47,19 @@ The [API reference](reference/index.qmd) documents every module from its docstri
 
 ```bash
 cd weight-dynamics/code
-uv run python -m pytest              # 194 tests, a few minutes on a CPU
+uv run python -m pytest              # 203 tests, a few minutes on a CPU
 uv run python -m pytest tests/test_daily.py -q
 ```
 
 | File | Tests | Focus |
 |---|---|---|
-| `test_models.py` | 21 | Closed-form checks, energy conservation, integrator agreement, the waist prior |
+| `test_models.py` | 22 | Closed-form checks, energy conservation, integrator agreement, the waist prior |
 | `test_filters.py` | 16 | Comparison with exact batch posteriors, sigma-point properties, the gate, Student-t |
 | `test_estimation.py` | 21 | Parameter recovery and calibration, the tape, weight-only episodes, timing, the habitual reference, the backtest |
-| `test_control.py` | 37 | Constraints, SLSQP without the fallback, the per-day rate limit, the protein check's basis, infeasibility, objective behavior |
-| `test_io.py` | 29 | Schema validation, gaps, units, waist columns, habitual intake |
-| `test_cli.py` | 6 | Staleness arithmetic, the plan's start, the default mode |
-| `test_daily.py` | 10 | Recording readings, food, meals and steps; the plans log; prompting; `log` and its `eat` alias |
+| `test_control.py` | 40 | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, infeasibility, objective behavior, maintain mode |
+| `test_io.py` | 31 | Schema validation, gaps, units, waist columns, habitual intake, estimated days, the `[maintain]` section |
+| `test_cli.py` | 6 | Staleness arithmetic, the plan's start, the default mode (maintain, deadline, sustainable) |
+| `test_daily.py` | 13 | Recording readings, food, meals and steps; `--estimate`, `--set` and `--clear`; the plans log; prompting; `log` and its `eat` alias; the planned-versus-eaten figure |
 | `test_exercise.py` | 25 | MET arithmetic, tempo and hold parsing, classification |
 | `test_tracker_write.py` | 17 | Spreadsheet mutation, merged ranges, duplicate guards |
 | `test_routine.py` | 12 | The routine CSV, cross-checked against the set-level estimator |
@@ -74,18 +74,24 @@ Each test checks against something **independent**: a closed-form result, a sepa
 
 No dual axes: quantities on different scales get stacked panels, since a dual axis lets the author choose where the scales cross. Every series is labeled. Every state estimate carries its credible band, because a mean alone misstates how much is known, fat mass above all.
 
-## The technical report
-
-The full derivation lives in a LaTeX report in `weight-dynamics/report/`; these pages condense it. To rebuild it with fresh figures:
+## Refreshing everything
 
 ```bash
-cd weight-dynamics/code
-uv run wdm demo --days 120 --mode deadline --figures ../report/figures     # synthetic figures
-uv run wdm filter --figures ../report/figures/real                         # real-data figures
-uv run wdm plan --out /tmp/plan.csv --figures ../report/figures/real
-uv run wdm backtest
-cd ../report && make            # lualatex, biber, lualatex twice
+cd weight-dynamics && ./refresh.sh
 ```
+
+regenerates every figure and every quoted number from the current data and code, for the report and the website alike, then rebuilds the report:
+
+| Step | Writes |
+|---|---|
+| `wdm demo --figures report/figures` | The report's synthetic figures |
+| `report/synthetic_numbers.py` | `report/numbers_synthetic.tex` (LaTeX macros) and `.yml` (for these pages): every number quoted about the synthetic subject |
+| `wdm plots --format pdf svg` | The real-data figures: PDFs into `report/figures/real/`, SVGs into the site's `body-weight/assets/wdm/` |
+| `report/realdata_numbers.py` | `report/numbers.tex`: every number the real-data chapter quotes |
+| `body-weight/assets/compute.py`, `make_figures.py` | The deck's `numbers.yml` and figures |
+| `make` in `report/` | `report/main.pdf` |
+
+It commits and publishes nothing. Afterwards look over the PDF, `quarto render body-weight` in the site repository, and publish. No number in the report's validation and real-data chapters, the deck, or these pages' synthetic results is typed by hand.
 
 ## The presentation and these pages
 

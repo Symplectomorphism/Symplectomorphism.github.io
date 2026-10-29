@@ -185,6 +185,16 @@ $$
 with $\mathrm{Na}$ in mg/day. Days without a sodium entry have
 $\Delta\mathrm{Na} = 0$.
 
+The gain is the equilibrium water per unit of sustained sodium change.
+Extracellular fluid holds sodium at about 140 mmol/L (3.2 g per liter), and its
+volume moves until excretion matches intake: raising intake by about 4,400 mg/day
+adds on the order of a kilogram over several days, about $2.3 \times 10^{-4}$ kg
+per mg/day. The prior is centered at $2 \times 10^{-4}$ with a log-scale spread of
+1.0 (a factor of about 2.7 either way), since some studies find sodium stored
+without water. Excretion is the lag's job: a salty restaurant meal, a one-day
+pulse of 3,000 mg, raises the next morning's weight by roughly 0.4 to 0.7 kg,
+gone within two or three days.
+
 ### The habitual-intake reference {#habitual}
 
 $\bar C$ and $\overline{\mathrm{Na}}$ are the subject's habitual, pre-diet
@@ -237,7 +247,7 @@ logistic function, and "normal, $s$" means $\theta = c + s\eta$.
 | `at_tau` | $\tau_A$ | Adaptation time constant | 14 | log, 0.50 | days | Order of magnitude |
 | `gly_gain` | $k_G$ | Glycogen-water gain | 0.0030 | log, 0.50 | kg per g/day | Olsson and Saltin (1970) |
 | `gly_tau` | $\tau_G$ | Glycogen-water time constant | 1.5 | log, 0.40 | days | Assumed fast lag |
-| `na_gain` | $k_{Na}$ | Sodium-water gain | $1.2 \times 10^{-5}$ | log, 0.70 | kg per mg/day | Standard physiology |
+| `na_gain` | $k_{Na}$ | Sodium-water gain | $2 \times 10^{-4}$ | log, 1.0 | kg per mg/day | Extracellular fluid at 140 mmol/L |
 | `na_tau` | $\tau_{Na}$ | Sodium-water time constant | 1.0 | log, 0.40 | days | Standard physiology |
 | `partition_kappa` | $\kappa_P$ | Fat-share shift per g/kg/day of protein above 1.6 | 0.05 | normal, 0.05 | per g/kg/day | Helms et al. (2014) |
 

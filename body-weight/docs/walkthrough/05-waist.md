@@ -39,7 +39,7 @@ true = Params(
     at_tau=jnp.asarray(11.0),
     gly_gain=jnp.asarray(0.0042),
     gly_tau=jnp.asarray(2.0),
-    na_gain=jnp.asarray(1.5e-5),
+    na_gain=jnp.asarray(2.5e-4),
     na_tau=jnp.asarray(1.0),
     partition_kappa=jnp.asarray(0.06),
 )
@@ -91,27 +91,27 @@ for s in fits[0.30, "with waist"].waist_summaries():
 </details>
 
 ```text
-waist prior at 30 % fat: offset 64.8 +- 7.2 cm, slope 1.236 cm/kg (+-20 %)
+waist prior at 30 % fat: offset 64.8 +- 7.2 cm, slope 1.238 cm/kg (+-20 %)
 waist truth: offset 75.0 cm, slope 1.200 cm/kg; 18 readings, sd 1.5 cm
-true fat mass: day 0 30.00 kg, day 119 22.40 kg
+true fat mass: day 0 30.00 kg, day 119 22.43 kg
 
 configured   data          fat day 0         fat day 119      error day 119
-  30% fat    scale only   30.09 +- 3.99     22.53 +- 3.78     +0.13 kg (+0.04 sd)
-  30% fat    with waist   31.39 +- 3.57     23.89 +- 3.39     +1.49 kg (+0.44 sd)
-  25% fat    scale only   25.19 +- 3.98     18.06 +- 3.67     -4.33 kg (-1.18 sd)
-  25% fat    with waist   27.99 +- 3.47     20.85 +- 3.24     -1.55 kg (-0.48 sd)
+  30% fat    scale only   30.05 +- 3.99     22.53 +- 3.79     +0.11 kg (+0.03 sd)
+  30% fat    with waist   31.36 +- 3.57     23.90 +- 3.39     +1.47 kg (+0.44 sd)
+  25% fat    scale only   25.15 +- 3.98     18.07 +- 3.68     -4.35 kg (-1.18 sd)
+  25% fat    with waist   27.97 +- 3.47     20.87 +- 3.25     -1.56 kg (-0.48 sd)
 
 waist calibration with 30 % configured: posterior median and 90% interval
-  waist_offset_cm         69.828  [61.439, 78.141]  shift +7.7%
-  waist_slope_cm_per_kg    1.301  [1.018, 1.670]  shift +5.2%
+  waist_offset_cm         69.799  [61.396, 78.126]  shift +7.7%
+  waist_slope_cm_per_kg    1.303  [1.020, 1.672]  shift +5.3%
 ```
 
 ## What to notice
 
-- **The tape narrows the fat interval by about a tenth.** At 30 % configured, the day-119 standard deviation falls from 3.78 to 3.39 kg (−10 %); at 25 %, from 3.67 to 3.24 kg (−12 %). The tape sees the product of a personal slope, known only to ±20 %, and the fat change, so it cannot pin fat mass down; what it adds is the population waist-to-fat relation as a second, independent anchor.
-- **A wrong starting guess is where the tape earns its keep.** With 25 % configured, the scale-only fit starts at 25.19 kg and stays wrong: −4.33 kg on day 119, −1.18 standard deviations. The scale has no way to correct the starting fat level. With the tape, day 0 moves to 27.99 kg and the day-119 error shrinks to −1.55 kg (−0.48 standard deviations).
-- **With a right guess, the tape adds a little bias.** At 30 % configured, the scale-only fit is off by +0.13 kg, but only because it was told the truth. With the tape it is off by +1.49 kg (+0.44 standard deviations). The prior line predicts 64.8 + 1.236 × 30 = 101.9 cm on day 0, while the subject's true line gives 75 + 1.2 × 30 = 111 cm (step 2 read 111.0). The filter splits that 9 cm excess between a larger offset (posterior 69.8 cm, shift +7.7 %) and more fat (31.39 kg on day 0 instead of 30.09). Offset and fat level trade off; only the prior on the offset, ±7.2 cm, decides the split.
-- **The true subject is unusual for the prior.** The true offset, 75.0 cm, is (75.0 − 64.8) / 7.2 = 1.4 prior standard deviations above the population line; the true slope, 1.200 cm/kg, is 3 % below the prior's 1.236. Both true values sit inside the posterior intervals: offset [61.4, 78.1] cm, slope [1.018, 1.670] cm/kg.
+- **The tape narrows the fat interval by about a tenth.** At 30 % configured, the day-119 standard deviation falls from 3.79 to 3.39 kg (−11 %); at 25 %, from 3.68 to 3.25 kg (−12 %). The tape sees the product of a personal slope, known only to ±20 %, and the fat change, so it cannot pin fat mass down; what it adds is the population waist-to-fat relation as a second, independent anchor.
+- **A wrong starting guess is where the tape earns its keep.** With 25 % configured, the scale-only fit starts at 25.15 kg and stays wrong: −4.35 kg on day 119, −1.18 standard deviations. The scale has no way to correct the starting fat level. With the tape, day 0 moves to 27.97 kg and the day-119 error shrinks to −1.56 kg (−0.48 standard deviations).
+- **With a right guess, the tape adds a little bias.** At 30 % configured, the scale-only fit is off by +0.11 kg, but only because it was told the truth. With the tape it is off by +1.47 kg (+0.44 standard deviations). The prior line predicts 64.8 + 1.238 × 30 = 101.9 cm on day 0, while the subject's true line gives 75 + 1.2 × 30 = 111 cm (step 2 read 111.0). The filter splits that 9 cm excess between a larger offset (posterior 69.8 cm, shift +7.7 %) and more fat (31.36 kg on day 0 instead of 30.05). Offset and fat level trade off; only the prior on the offset, ±7.2 cm, decides the split.
+- **The true subject is unusual for the prior.** The true offset, 75.0 cm, is (75.0 − 64.8) / 7.2 = 1.4 prior standard deviations above the population line; the true slope, 1.200 cm/kg, is 3 % below the prior's 1.238. Both true values sit inside the posterior intervals: offset [61.4, 78.1] cm, slope [1.020, 1.672] cm/kg.
 - **Every error here is inside 1.645 standard deviations.** The intervals are honest in all four fits; the tape makes them narrower without making them dishonest.
 
 ## The code
@@ -139,6 +139,6 @@ waist calibration with 30 % configured: posterior median and 90% interval
 
 ## Try this
 
-- Make the subject typical: set `waist_offset_cm=70.0` in the spec. With 30 % configured, the with-waist fit's day-119 fat mass then comes out at 23.14 kg (+0.74 kg), about half the bias above.
+- Make the subject typical: set `waist_offset_cm=70.0` in the spec. With 30 % configured, the with-waist fit's day-119 fat mass then comes out at 23.15 kg (+0.73 kg), about half the bias above.
 - Read the tape daily (`waist_every_days=1`) and see how far the fat interval narrows when the slope uncertainty, not the reading noise, is the limit.
-- Configure 35 % body fat (5 points high). The tape cannot help here: this subject's high true offset makes the readings look like extra fat, which is the direction of the error already made. The day-119 fat estimate barely moves, 27.14 kg from the scale alone and 27.16 kg with the tape, against a truth of 22.40; only the interval narrows.
+- Configure 35 % body fat (5 points high). The tape cannot help here: this subject's high true offset makes the readings look like extra fat, which is the direction of the error already made. The day-119 fat estimate barely moves, 27.14 kg from the scale alone and 27.16 kg with the tape, against a truth of 22.43; only the interval narrows.

@@ -48,7 +48,9 @@ The plan starts this morning while today's row is dated today, however much food
 | `Refusing to plan: the most recent state estimate is from ... days ago` | The current episode's last weigh-in is more than three days old. Weigh in and log it. |
 | `goal date ... has already passed` | Set a new `target_date`. |
 
-In **deadline mode** the controller aims at the goal by its date, without exceeding the limits. In **sustainable mode** there is no date: it loses at a safe steady rate over a 28-day window and reports the timeline that results. Without a real date in mind, sustainable mode is the more honest choice.
+In **deadline mode** the controller aims at the goal by its date, without exceeding the limits. In **sustainable mode** there is no date: it loses at a safe steady rate over a 28-day window and reports the timeline that results. Without a real date in mind, sustainable mode is the more honest choice. In **maintain mode** it holds the weight in `[maintain]`: expect intake near the weight-stable level, a flat `pred lb` column, and no `NOTE`.
+
+`wdm plots` writes all of this as figures, along with the history of the parameter estimates and of the maintenance estimate ([Commands](commands.md#wdm-plots)).
 
 ## Phase 1: the scale's noise
 
@@ -195,6 +197,6 @@ Roughly in order of value per unit of effort:
 | Fat-mass interval enormous | Expected. Read the trend, not the level. |
 | `wdm fit-noise` refuses: too few weigh-ins | Correct. Three noise scales cannot be identified from a handful of points. |
 | Warning or refusal: the state is days old | The latest episode's last weigh-in is more than three days old. Weigh in (`wdm daily`). |
-| `wdm daily` or `wdm log` refuses to write a value | The cell already holds a different value. Fix the file by hand if the old one is wrong. |
+| `wdm daily` refuses to write a value | The cell already holds a different value. If the old one is wrong, `wdm log --date ... --set` replaces it. |
 | `wdm log` says no plan is logged for today | Run `wdm daily` first. |
 | `wdm daily` asks for yesterday's food when you did eat | Yesterday's row has neither `kcal` nor a full macro split. Answer, or fill it in by hand. A day of zeros is read as a fast, not as unknown. |

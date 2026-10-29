@@ -9,7 +9,7 @@ The prerequisite is [`uv`](https://docs.astral.sh/uv/). The package pins Python 
 ```bash
 cd weight-dynamics/code
 uv sync --extra dev            # one time: creates .venv with the pinned dependencies
-uv run python -m pytest        # 194 tests, a few minutes
+uv run python -m pytest        # 203 tests, a few minutes
 uv run wdm demo                # the whole pipeline on synthetic data: confirms the install
 ```
 

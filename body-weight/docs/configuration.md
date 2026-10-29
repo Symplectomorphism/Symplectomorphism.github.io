@@ -17,6 +17,9 @@ height_cm = 175.0
 target_weight_lb = 170.0
 target_date = "2027-04-01"
 
+# [maintain]          # once the goal is reached, replaces [goal]
+# weight_lb = 170.0
+
 [safety]
 min_kcal = 1500.0
 max_loss_frac_per_week = 0.01
@@ -52,9 +55,19 @@ These build the **priors**, the starting beliefs the filter updates from your da
 | `target_weight_lb` | Goal weight, lb |
 | `target_date` | The date to reach it, `"YYYY-MM-DD"` |
 
-When this section is present, `wdm plan` and `wdm daily` use **deadline mode** by default; without it they use **sustainable mode**. `--mode` overrides either, and in sustainable mode the goal is ignored. `wdm plan --target-weight-lb` and `--target-date` override it for one run. To change your deadline for good, edit `target_date` here.
+When this section is present (and `[maintain]` is not), `wdm plan` and `wdm daily` use **deadline mode** by default; with neither section they use **sustainable mode**. `--mode` overrides the default, and the goal is ignored outside deadline mode. `wdm plan --target-weight-lb` and `--target-date` override it for one run. To change your deadline for good, edit `target_date` here.
 
 If the goal cannot be reached within your rate limit, the plan still respects the limit, and a `NOTE` gives the earliest date that can be met ([reading the plan](reading-output.md#the-plan)).
+
+## `[maintain]` {#maintain}
+
+| Key | Meaning |
+|---|---|
+| `weight_lb` | The weight to hold, lb |
+
+Once you reach your goal, replace `[goal]` with this section. `wdm plan` and `wdm daily` then use **maintain mode** by default (it takes precedence over a `[goal]` left in the file): the controller holds this weight with no deadline, eating near your weight-stable intake and easing back over about four weeks if the trend drifts off, under 1 lb a week for a 3 lb drift. `wdm plan --mode maintain` works without the section and holds today's tissue (the weight the scale settles at once the water drained by the diet refills); `--target-weight-lb` sets the weight for one run. [Control](theory/control.md#maintain) has the formulation.
+
+The filter keeps learning during maintenance, and by then maintenance energy is the best-determined number in the model. Expect the scale to rise a pound or two in the first days of eating more carbohydrate: that is glycogen water refilling, not fat, and the model tells the two apart.
 
 ## `[safety]`
 
