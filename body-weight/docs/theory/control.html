@@ -782,6 +782,7 @@ window.Quarto = {
   <li><a href="#decisions" id="toc-decisions" class="nav-link" data-scroll-target="#decisions">Decision variables</a></li>
   <li><a href="#objective" id="toc-objective" class="nav-link" data-scroll-target="#objective">The objective</a>
   <ul class="collapse">
+  <li><a href="#settled" id="toc-settled" class="nav-link" data-scroll-target="#settled">Settled tissue</a></li>
   <li><a href="#maintain" id="toc-maintain" class="nav-link" data-scroll-target="#maintain">Maintain mode</a></li>
   </ul></li>
   <li><a href="#constraints" id="toc-constraints" class="nav-link" data-scroll-target="#constraints">Constraints</a></li>
@@ -875,7 +876,7 @@ J = w_T \bigl(T_H - r_H\bigr)^2
   + w_\phi \sum_{k} \bigl(\phi_k - \phi^\star\bigr)^2
   + \mu \Phi .
 \]</span></p>
-<p><span class="math inline">\(T_k\)</span> is predicted tissue at the end of plan day <span class="math inline">\(k\)</span>. The reference <span class="math inline">\(r_k = W_0 + \min(k/N, 1)\,(W^\star - W_0)\)</span> runs linearly from the current scale weight <span class="math inline">\(W_0\)</span> to the target <span class="math inline">\(W^\star\)</span> over the <span class="math inline">\(N\)</span> days remaining. <span class="math inline">\(\Delta I_k = I_k - I_{k-1}\)</span> is the day-to-day change in intake (<span class="math inline">\(I_0\)</span> is the last logged intake, or <span class="math inline">\(I_{\min} + 600\)</span>). <span class="math inline">\(D_k = E_{\mathrm{base}} - I_k\)</span> is the deficit against expenditure without adaptation (<a href="../../../body-weight/docs/theory/model.html#expenditure">model</a>). <span class="math inline">\(C_k\)</span> is the carbohydrate prescribed, <span class="math inline">\(\phi_k\)</span> and <span class="math inline">\(\phi^\star\)</span> are the energy share of the targeted macronutrient and its target (<a href="#macros">macros</a>), and <span class="math inline">\(\mu\Phi\)</span> is a violation penalty, zero for the main solver (<a href="#slsqp">solving</a>). In code <span class="math inline">\(\Delta I\)</span> and <span class="math inline">\(D\)</span> are in thousands of kcal and <span class="math inline">\(C\)</span> in hundreds of grams, so each term is of order one.</p>
+<p><span class="math inline">\(T_k\)</span> is predicted settled tissue at the end of plan day <span class="math inline">\(k\)</span> (<a href="#settled">below</a>). The reference <span class="math inline">\(r_k = W_0 + \min(k/N, 1)\,(W^\star - W_0)\)</span> runs linearly from the current scale weight <span class="math inline">\(W_0\)</span> to the target <span class="math inline">\(W^\star\)</span> over the <span class="math inline">\(N\)</span> days remaining. <span class="math inline">\(\Delta I_k = I_k - I_{k-1}\)</span> is the day-to-day change in intake (<span class="math inline">\(I_0\)</span> is the last logged intake, or <span class="math inline">\(I_{\min} + 600\)</span>). <span class="math inline">\(D_k = E_{\mathrm{base}} - I_k\)</span> is the deficit against expenditure without adaptation (<a href="../../../body-weight/docs/theory/model.html#expenditure">model</a>). <span class="math inline">\(C_k\)</span> is the carbohydrate prescribed, <span class="math inline">\(\phi_k\)</span> and <span class="math inline">\(\phi^\star\)</span> are the energy share of the targeted macronutrient and its target (<a href="#macros">macros</a>), and <span class="math inline">\(\mu\Phi\)</span> is a violation penalty, zero for the main solver (<a href="#slsqp">solving</a>). In code <span class="math inline">\(\Delta I\)</span> and <span class="math inline">\(D\)</span> are in thousands of kcal and <span class="math inline">\(C\)</span> in hundreds of grams, so each term is of order one.</p>
 <p><strong>Sustainable mode.</strong></p>
 <p><span class="math display">\[
 J = w_p T_H + w_s \sum_k \Delta I_k^2 + w_e \sum_k D_k^2 + w_c \sum_k C_k^2
@@ -956,6 +957,14 @@ J = w_p T_H + w_s \sum_k \Delta I_k^2 + w_e \sum_k D_k^2 + w_c \sum_k C_k^2
 <p><strong>Both objectives score tissue <span class="math inline">\(T\)</span>, not scale weight <span class="math inline">\(W\)</span>.</strong> Since <span class="math inline">\(W = T + G_c + G_n\)</span> and carbohydrate moves <span class="math inline">\(G_c\)</span> directly, a cost on <span class="math inline">\(W\)</span> can be lowered by cutting carbohydrate alone; with no carbohydrate preference, carbohydrate landed on its floor at every floor setting tried. The reference is still built from the goal’s scale weight, so it differs from <span class="math inline">\(T\)</span> by the water offset present at the start.</p>
 </div>
 </div>
+<section id="settled" class="level3">
+<h3 class="anchored" data-anchor-id="settled">Settled tissue</h3>
+<p>Bare tissue leaves a smaller loophole of the same kind. Energy stored as glycogen is withheld from tissue (the <span class="math inline">\(\rho_G \dot G_c\)</span> term of the <a href="../../../body-weight/docs/theory/model.html">energy balance</a>) and handed back when glycogen drains. Scored on bare tissue, deadline plans loaded carbohydrate in their last weeks: in an 84-day synthetic plan it rose from 115 g to 254 g a day while fat fell to its floor. The refill lowers <span class="math inline">\(T_H\)</span>, and the energy returns to tissue after the horizon closes, where the objective cannot see it. The controller therefore scores <strong>settled tissue</strong>, the tissue left once glycogen returns to its habitual level,</p>
+<p><span class="math display">\[
+T^{\mathrm{s}}_k = T_k + \frac{\rho_G}{\rho_{\mathrm{eff}}}\,G_{c,k},
+\]</span></p>
+<p>and every <span class="math inline">\(T\)</span> in the objectives and the rate limit on this page means <span class="math inline">\(T^{\mathrm{s}}\)</span>. A carbohydrate-for-fat swap then moves the score only through its real effect, carbohydrate’s higher thermic cost. The rate limit needs the same treatment: on bare tissue it can be loosened by draining glycogen, whose energy props tissue up for a few days, and plans crashed carbohydrate to its floor in the final week instead.</p>
+</section>
 <section id="maintain" class="level3">
 <h3 class="anchored" data-anchor-id="maintain">Maintain mode</h3>
 <p>Once the goal is reached the question becomes “how much keeps me here”. Maintain mode uses the deadline objective with a different reference: from today’s tissue <span class="math inline">\(T_0\)</span> to the held weight <span class="math inline">\(W_h\)</span> (<code>[maintain] weight_lb</code> in the subject file, or <span class="math inline">\(T_0\)</span> itself when none is set) over the horizon,</p>
@@ -1026,7 +1035,7 @@ r_k = T_0 + \frac{k}{H}\,(W_h - T_0), \qquad k = 1, \dots, H,
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Cutting carbohydrate sharply sheds a kilogram of glycogen water within days. On the scale that reads as 4 lb/week and would trip any limit on scale weight, yet no tissue was lost; a controller limited on scale weight would refuse a reasonable plan or raise calories in response to water loss. The limit is therefore a fraction <span class="math inline">\(\gamma\)</span> per week of each day’s tissue. It tightens as tissue falls, which is what “a fraction of body mass per week” means; a fixed cap of <span class="math inline">\(\gamma T_0/7\)</span> kg a day would let a long plan exceed <span class="math inline">\(\gamma\)</span> in its later weeks.</p>
+<p>Cutting carbohydrate sharply sheds a kilogram of glycogen water within days. On the scale that reads as 4 lb/week and would trip any limit on scale weight, yet no tissue was lost; a controller limited on scale weight would refuse a reasonable plan or raise calories in response to water loss. The limit is therefore a fraction <span class="math inline">\(\gamma\)</span> per week of each day’s settled tissue (<a href="#settled">above</a>), which is the energy deficit. It tightens as tissue falls, which is what “a fraction of body mass per week” means; a fixed cap of <span class="math inline">\(\gamma T_0/7\)</span> kg a day would let a long plan exceed <span class="math inline">\(\gamma\)</span> in its later weeks.</p>
 </div>
 </div>
 <p>The carbohydrate floor is a safety limit, distinct from the carbohydrate preference: it stops the optimizer crashing carbohydrate for a fast water drop, and no value of <span class="math inline">\(w_c\)</span> crosses it.</p>
@@ -1100,22 +1109,22 @@ n_{\min} = \frac{-\ln\bigl(1 - \Delta/T_0\bigr)}{\ln(1 + \gamma/7)} ,
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Reachable deadline, 175 lb by 2027-03-01</td>
-<td style="text-align: left;"><p>2081, 2036, 2031, 2057</p></td>
-<td style="text-align: right;"><p>1.41</p></td>
-<td style="text-align: right;"><p>0.97</p></td>
+<td style="text-align: left;"><p>2087, 2028, 1987, 1957</p></td>
+<td style="text-align: right;"><p>1.72</p></td>
+<td style="text-align: right;"><p>0.93</p></td>
 <td style="text-align: left;"><p>SLSQP; satisfied</p></td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Sustainable</td>
-<td style="text-align: left;"><p>1898, 1890, 1886, 1884</p></td>
-<td style="text-align: right;"><p>1.92</p></td>
+<td style="text-align: left;"><p>1906, 1882, 1877, 1877</p></td>
+<td style="text-align: right;"><p>2.00</p></td>
 <td style="text-align: right;"><p>1.00</p></td>
 <td style="text-align: left;"><p>SLSQP; satisfied</p></td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Impossible deadline, 150 lb by 2027-01-31</td>
-<td style="text-align: left;"><p>1896, 1888, 1885, 1884</p></td>
-<td style="text-align: right;"><p>1.92</p></td>
+<td style="text-align: left;"><p>1913, 1915, 1912, 1912</p></td>
+<td style="text-align: right;"><p>1.77</p></td>
 <td style="text-align: right;"><p>1.00</p></td>
 <td style="text-align: left;"><p>SLSQP; satisfied, flagged infeasible</p></td>
 </tr>
