@@ -411,6 +411,12 @@ window.MathJax = {
  <span class="menu-text">Presentation</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../body-weight/figures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Latest figures</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../../body-weight/docs/index.html" class="sidebar-item-text sidebar-link">
@@ -522,6 +528,12 @@ window.MathJax = {
   <div class="sidebar-item-container"> 
   <a href="../../body-weight/docs/walkthrough/07-plan.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">7. Planning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../body-weight/docs/walkthrough/08-maintain.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">8. Maintain</span></a>
   </div>
 </li>
       </ul>
@@ -781,6 +793,7 @@ window.MathJax = {
   <li><a href="#wdm-fit-noise" id="toc-wdm-fit-noise" class="nav-link" data-scroll-target="#wdm-fit-noise"><code>wdm fit-noise</code></a></li>
   <li><a href="#wdm-filter" id="toc-wdm-filter" class="nav-link" data-scroll-target="#wdm-filter"><code>wdm filter</code></a></li>
   <li><a href="#wdm-backtest" id="toc-wdm-backtest" class="nav-link" data-scroll-target="#wdm-backtest"><code>wdm backtest</code></a></li>
+  <li><a href="#wdm-plots" id="toc-wdm-plots" class="nav-link" data-scroll-target="#wdm-plots"><code>wdm plots</code></a></li>
   </ul></li>
   <li><a href="#exercise-energy" id="toc-exercise-energy" class="nav-link" data-scroll-target="#exercise-energy">Exercise energy</a>
   <ul class="collapse">
@@ -841,7 +854,7 @@ $$
 <pre class="text"><code>wdm COMMAND [options]
 
 COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
-         session-kcal, exercise-kcal, demo</code></pre>
+         plots, session-kcal, exercise-kcal, demo</code></pre>
 <p>Every command that reads data takes the observations file as an optional first argument and the subject file as <code>--config</code>. Both default to the repository’s own copies, <code>data/raw/observations.csv</code> and <code>data/raw/subject.toml</code>, so the commands work from any directory with no paths at all. Give paths to work on another file (a copy, a test set, someone else’s data). <code>wdm COMMAND --help</code> prints the options below.</p>
 <table class="caption-top table">
 <thead>
@@ -880,14 +893,18 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td>Scores out-of-sample forecasts of every weigh-in</td>
 </tr>
 <tr class="even">
+<td><a href="#wdm-plots"><code>plots</code></a></td>
+<td>Writes every figure (weight, composition, parameters over time, maintenance, plan) to a folder</td>
+</tr>
+<tr class="odd">
 <td><a href="#wdm-session-kcal"><code>session-kcal</code></a></td>
 <td>Exercise energy of a named session in a routine CSV</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="#wdm-exercise-kcal"><code>exercise-kcal</code></a></td>
 <td>Exercise energy from a dated workout spreadsheet</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="#wdm-demo"><code>demo</code></a></td>
 <td>The whole pipeline on synthetic data with known truth</td>
 </tr>
@@ -898,8 +915,8 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <section id="wdm-daily" class="level3">
 <h3 class="anchored" data-anchor-id="wdm-daily"><code>wdm daily</code></h3>
 <pre class="text"><code>wdm daily [CSV] [--config TOML] [--weight LB] [--waist IN]
-        [--date YYYY-MM-DD] [--mode {deadline,sustainable}] [--out FILE]
-        [--log-dir DIR] [--no-input]</code></pre>
+        [--date YYYY-MM-DD] [--mode {deadline,sustainable,maintain}]
+        [--out FILE] [--log-dir DIR] [--no-input]</code></pre>
 <p>Records this morning’s readings and any missing food from yesterday (asking in a terminal), validates the file, runs <a href="#wdm-plan"><code>plan</code></a> with <code>--log-dir</code>, and prints today’s prescription. It reminds you when a waist measurement is due. Walkthrough: <a href="../../body-weight/docs/daily-routine.html#morning-wdm-daily">The daily routine</a>.</p>
 <table class="caption-top table">
 <colgroup>
@@ -942,8 +959,8 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 </tr>
 <tr class="even">
 <td><code>--mode</code></td>
-<td><code>deadline</code> or <code>sustainable</code></td>
-<td><code>deadline</code> if the subject file has a <code>[goal]</code>, else <code>sustainable</code></td>
+<td><code>deadline</code>, <code>sustainable</code>, or <code>maintain</code></td>
+<td><code>maintain</code> if the subject file has a <code>[maintain]</code> section, else <code>deadline</code> if it has a <code>[goal]</code>, else <code>sustainable</code></td>
 </tr>
 <tr class="odd">
 <td><code>--out FILE</code></td>
@@ -968,14 +985,10 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <h3 class="anchored" data-anchor-id="wdm-log"><code>wdm log</code></h3>
 <pre class="text"><code>wdm log [CSV] [--kcal KCAL] [--protein G] [--carb G] [--fat G]
         [--fiber G] [--alcohol G] [--sodium MG] [--exercise KCAL]
-        [--steps N] [--date YYYY-MM-DD] [--log-dir DIR]</code></pre>
+        [--steps N] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
+        [--log-dir DIR]</code></pre>
 <p>Adds to a day’s row, then prints the day’s energy and macronutrient totals against today’s prescription with what remains. With no value flags it only prints. Walkthrough: <a href="../../body-weight/docs/daily-routine.html#during-the-day-wdm-log">During the day</a>.</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
-</colgroup>
 <thead>
 <tr class="header">
 <th>Option</th>
@@ -1030,16 +1043,31 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td><strong>replaces</strong> (a step count is a running total)</td>
 </tr>
 <tr class="even">
+<td><code>--estimate</code></td>
+<td><code>estimated</code></td>
+<td>sets it to 1: the day’s food is a guess (eating out), so the filter treats its energy as uncertain by about a quarter; adds the column if the file lacks it (<a href="../../body-weight/docs/data.html#estimating">When you don’t know exactly</a>)</td>
+</tr>
+<tr class="odd">
+<td><code>--set</code></td>
+<td></td>
+<td><strong>replace</strong> the values of the columns given instead of adding to them, to correct a day; columns not given are left alone, and each change is printed (<code>kcal 1460 → 1850</code>)</td>
+</tr>
+<tr class="even">
+<td><code>--clear</code></td>
+<td></td>
+<td>empty the day’s food, exercise and estimate cells first; the weigh-in, waist and steps stay. With value flags, the day is cleared and then they are added</td>
+</tr>
+<tr class="odd">
 <td><code>--date YYYY-MM-DD</code></td>
 <td></td>
 <td>the day to add to; default today</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir DIR</code></td>
 <td></td>
 <td>where to read today’s plan from; default <code>data/plans</code> beside the data directory</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>CSV</code></td>
 <td></td>
 <td>observations file; default <code>data/raw/observations.csv</code></td>
@@ -1049,12 +1077,15 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <p>The full command, every option at once:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--kcal</span> 650 <span class="at">--protein</span> 45 <span class="at">--carb</span> 60 <span class="at">--fat</span> 22 <span class="dt">\</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">--fiber</span> 9 <span class="at">--alcohol</span> 0 <span class="at">--sodium</span> 900 <span class="dt">\</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">--exercise</span> 310 <span class="at">--steps</span> 8400 <span class="at">--date</span> 2026-10-28</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">--exercise</span> 310 <span class="at">--steps</span> 8400 <span class="at">--estimate</span> <span class="at">--date</span> 2026-10-28</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To correct a day, for example with your tracker’s end-of-day totals:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--date</span> 2026-10-28 <span class="at">--set</span> <span class="at">--kcal</span> 1850 <span class="at">--protein</span> 120 <span class="at">--carb</span> 95 <span class="at">--fat</span> 80</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--date</span> 2026-10-28 <span class="at">--clear</span>     <span class="co"># the day's food was wrong: leave it unknown</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>A day without a row gets one in the latest episode, as long as it comes after the file’s last date; add earlier rows by hand. <code>wdm eat</code> is an alias.</p>
 </section>
 <section id="wdm-plan" class="level3">
 <h3 class="anchored" data-anchor-id="wdm-plan"><code>wdm plan</code></h3>
-<pre class="text"><code>wdm plan [CSV] [--config TOML] [--mode {deadline,sustainable}]
+<pre class="text"><code>wdm plan [CSV] [--config TOML] [--mode {deadline,sustainable,maintain}]
         [--horizon DAYS] [--block DAYS] [--target-weight-lb LB]
         [--target-date YYYY-MM-DD] [--max-fat-fraction FRAC]
         [--carb-aversion W] [--min-carb-g G] [--target-carb-fraction FRAC]
@@ -1062,11 +1093,6 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
         [--figures DIR] [--full]</code></pre>
 <p>Runs phase 1, phase 2, and the controller, then checks the plan against every safety constraint independently of the optimizer. Prints the first 14 days, writes the whole plan to <code>--out</code>, and prints today’s prescription. Theory: <a href="../../body-weight/docs/theory/control.html">Control</a>; output: <a href="../../body-weight/docs/reading-output.html#the-plan">Reading the output</a>.</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
-</colgroup>
 <thead>
 <tr class="header">
 <th>Option</th>
@@ -1082,13 +1108,13 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 </tr>
 <tr class="even">
 <td><code>--mode</code></td>
-<td><code>deadline</code>: reach <code>[goal]</code> by its date. <code>sustainable</code>: lose at the safe rate, no date</td>
-<td><code>deadline</code> if there is a <code>[goal]</code>, else <code>sustainable</code></td>
+<td><code>deadline</code>: reach <code>[goal]</code> by its date. <code>sustainable</code>: lose at the safe rate, no date. <code>maintain</code>: hold the <code>[maintain]</code> weight (<a href="../../body-weight/docs/theory/control.html#maintain">Control</a>)</td>
+<td><code>maintain</code> if there is a <code>[maintain]</code> section, else <code>deadline</code> if there is a <code>[goal]</code>, else <code>sustainable</code></td>
 </tr>
 <tr class="odd">
 <td><code>--horizon DAYS</code></td>
 <td>Planning window</td>
-<td>deadline: the days to the goal date, at most 365 (at least one block); sustainable: 28</td>
+<td>deadline: the days to the goal date, at most 365 (at least one block); sustainable and maintain: 28</td>
 </tr>
 <tr class="even">
 <td><code>--block DAYS</code></td>
@@ -1097,7 +1123,7 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 </tr>
 <tr class="odd">
 <td><code>--target-weight-lb LB</code></td>
-<td>Override <code>[goal] target_weight_lb</code> for this run</td>
+<td>Override <code>[goal] target_weight_lb</code> for this run; in maintain mode, the weight to hold</td>
 <td>the subject file</td>
 </tr>
 <tr class="even">
@@ -1152,7 +1178,7 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 </tr>
 </tbody>
 </table>
-<p>Both overrides must be given together if the subject file has no <code>[goal]</code> to fall back on. Planning is refused when the latest estimate is more than three days old (the current episode has no recent weigh-in), and when the goal date has passed.</p>
+<p>In deadline mode both overrides must be given together if the subject file has no <code>[goal]</code> to fall back on. Planning is refused when the latest estimate is more than three days old (the current episode has no recent weigh-in), and, in deadline mode, when the goal date has passed.</p>
 <p>The plan CSV has one row per day: <code>date, kcal, protein_g, carb_g, fat_g, protein_pct, carb_pct, fat_pct, predicted_weight_lb, lb_per_week, tissue_loss_pct_per_week</code>.</p>
 </section>
 </section>
@@ -1228,6 +1254,48 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td><code>--out FILE</code></td>
 <td>Write every scored forecast: <code>episode, origin, horizon, predicted_lb, sd_lb, observed_lb, persistence_lb, z</code></td>
 <td>off</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="wdm-plots" class="level3">
+<h3 class="anchored" data-anchor-id="wdm-plots"><code>wdm plots</code></h3>
+<pre class="text"><code>wdm plots [CSV] [--config TOML] [--out DIR] [--format {pdf,png,svg} ...]
+        [--mode {deadline,sustainable,maintain}] [--log-dir DIR]</code></pre>
+<p>Fits the model once and writes every figure for the latest episode into one folder: <code>trajectory</code> (readings, trend, band), <code>composition</code> (fat and lean with bands), <code>innovations</code>, <code>parameters</code> (posteriors against priors), <code>parameter_evolution</code> (what the filter believed about each parameter, day by day), <code>maintenance</code> (the maintenance estimate over time, against logged intake), <code>intake_log</code>, <code>plan</code> (as <code>wdm plan</code> would make it), and <code>plan_vs_actual</code> (each day’s prescription from the plans log, against what was eaten; until a plan is logged, only what was eaten). If planning refuses, the other figures are still written. The site’s <a href="../../body-weight/figures.html">Latest figures</a> page shows the current set.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Option</th>
+<th>Meaning</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--out DIR</code></td>
+<td>Where to write</td>
+<td><code>figures/</code> in the repository</td>
+</tr>
+<tr class="even">
+<td><code>--format ...</code></td>
+<td>One or more of <code>pdf</code>, <code>png</code>, <code>svg</code>; each figure is written in each</td>
+<td><code>pdf</code></td>
+</tr>
+<tr class="odd">
+<td><code>--mode</code></td>
+<td>Planning mode for the plan figure</td>
+<td>as for <code>plan</code></td>
+</tr>
+<tr class="even">
+<td><code>--log-dir DIR</code></td>
+<td>Plans log to read for <code>plan_vs_actual</code></td>
+<td><code>data/plans</code></td>
 </tr>
 </tbody>
 </table>
@@ -1326,7 +1394,7 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 </section>
 <section id="wdm-demo" class="level2">
 <h2 class="anchored" data-anchor-id="wdm-demo"><code>wdm demo</code></h2>
-<pre class="text"><code>wdm demo [--days N] [--mode {deadline,sustainable}] [--figures DIR]
+<pre class="text"><code>wdm demo [--days N] [--mode {deadline,sustainable,maintain}] [--figures DIR]
         [--max-fat-fraction FRAC] [--carb-aversion W] [--min-carb-g G]
         [--target-fat-fraction FRAC] [--target-carb-fraction FRAC]</code></pre>
 <p>Generates a synthetic subject with known parameters (two weight-only past episodes and a current one), runs phase 1, phase 2, and the controller, and reports parameter recovery against the truth. Its subject and limits are built in; it reads and writes nothing of yours.</p>

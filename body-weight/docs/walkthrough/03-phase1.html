@@ -411,6 +411,12 @@ window.MathJax = {
  <span class="menu-text">Presentation</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../body-weight/figures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Latest figures</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../../../body-weight/docs/index.html" class="sidebar-item-text sidebar-link">
@@ -522,6 +528,12 @@ window.MathJax = {
   <div class="sidebar-item-container"> 
   <a href="../../../body-weight/docs/walkthrough/07-plan.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">7. Planning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../body-weight/docs/walkthrough/08-maintain.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">8. Maintain</span></a>
   </div>
 </li>
       </ul>
@@ -855,7 +867,7 @@ The script
 <span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    at_tau<span class="op">=</span>jnp.asarray(<span class="fl">11.0</span>),</span>
 <span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    gly_gain<span class="op">=</span>jnp.asarray(<span class="fl">0.0042</span>),</span>
 <span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    gly_tau<span class="op">=</span>jnp.asarray(<span class="fl">2.0</span>),</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    na_gain<span class="op">=</span>jnp.asarray(<span class="fl">1.5e-5</span>),</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    na_gain<span class="op">=</span>jnp.asarray(<span class="fl">2.5e-4</span>),</span>
 <span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    na_tau<span class="op">=</span>jnp.asarray(<span class="fl">1.0</span>),</span>
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    partition_kappa<span class="op">=</span>jnp.asarray(<span class="fl">0.06</span>),</span>
 <span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>)</span>
@@ -870,74 +882,79 @@ The script
 <span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
 <span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># What "reading noise" means to phase 1: everything faster than a smooth trend.</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co"># The truth has two such sources: the scale's own 0.45 kg, and glycogen water,</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># which the generator jitters by gly_sd per day and which relaxes with gly_tau.</span></span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> np.exp(<span class="op">-</span><span class="fl">1.0</span> <span class="op">/</span> <span class="bu">float</span>(true.gly_tau))</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>gly_sd <span class="op">=</span> <span class="bu">float</span>(NoiseModel.default().gly_sd) <span class="op">/</span> np.sqrt(<span class="fl">1.0</span> <span class="op">-</span> a<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"true reading noise </span><span class="sc">{</span>spec<span class="sc">.</span>obs_sd_kg<span class="sc">:.3f}</span><span class="ss"> kg; glycogen-water scatter </span><span class="sc">{</span>gly_sd<span class="sc">:.3f}</span><span class="ss"> kg;"</span></span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" combined </span><span class="sc">{</span>np<span class="sc">.</span>hypot(spec.obs_sd_kg, gly_sd)<span class="sc">:.3f}</span><span class="ss"> kg"</span></span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the trend filter at the fitted scales and score it against the hidden truth.</span></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> jnp.asarray(np.nan_to_num(ep.weight_kg))</span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>o <span class="op">=</span> jnp.asarray(ep.weight_observed.astype(<span class="bu">float</span>))</span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>res <span class="op">=</span> trend_filter(y, o, ni.level_sd, ni.slope_sd, ni.obs_sd)</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>level <span class="op">=</span> np.asarray(res.filtered_mean)[:, <span class="dv">0</span>]</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>obs <span class="op">=</span> ep.weight_observed</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>rmse_read <span class="op">=</span> np.sqrt(np.mean((ep.weight_kg[obs] <span class="op">-</span> truth[<span class="st">"scale_kg"</span>][obs]) <span class="op">**</span> <span class="dv">2</span>))</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>rmse_trend <span class="op">=</span> np.sqrt(np.mean((level[<span class="dv">30</span>:] <span class="op">-</span> truth[<span class="st">"scale_kg"</span>][<span class="dv">30</span>:]) <span class="op">**</span> <span class="dv">2</span>))</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"error vs the true scale weight: one reading </span><span class="sc">{</span>rmse_read<span class="sc">:.3f}</span><span class="ss"> kg,"</span></span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" filtered trend (days 30-119) </span><span class="sc">{</span>rmse_trend<span class="sc">:.3f}</span><span class="ss"> kg"</span></span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="co"># Two older episodes with weigh-ins but no food log: more data for phase 1 only.</span></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>past <span class="op">=</span> [</span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>    make_weight_only_episode(</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>        SyntheticSpec(n_days<span class="op">=</span><span class="dv">40</span>, start_weight_kg<span class="op">=</span><span class="fl">105.0</span>),</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>        true,</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="ss">f"past-0</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span>,</span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>        start_date<span class="op">=</span>d,</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>        seed<span class="op">=</span><span class="dv">10</span> <span class="op">+</span> i,</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, d <span class="kw">in</span> <span class="bu">enumerate</span>([<span class="st">"2023-03-01"</span>, <span class="st">"2024-01-15"</span>], start<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>ni_all <span class="op">=</span> identify_noise([<span class="op">*</span>past, ep])</span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"with two past weight-only episodes added"</span>)</span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"  weigh-ins </span><span class="sc">{</span>ni_all<span class="sc">.</span>n_observations<span class="sc">}</span><span class="ss">, observation sd </span><span class="sc">{</span>ni_all<span class="sc">.</span>obs_sd<span class="sc">:.3f}</span><span class="ss"> kg"</span></span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" (x/</span><span class="sc">{</span>ni_all<span class="sc">.</span>obs_sd_factor<span class="sc">:.2f}</span><span class="ss">), gain </span><span class="sc">{</span>ni_all<span class="sc">.</span>steady_state_gain<span class="sc">:.3f}</span><span class="ss">,"</span></span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" window </span><span class="sc">{</span>ni_all<span class="sc">.</span>effective_window_days<span class="sc">:.1f}</span><span class="ss"> days"</span></span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co"># The truth has three such sources: the scale's own 0.45 kg; glycogen water,</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># which the generator jitters by gly_sd per day and which relaxes with gly_tau;</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co"># and sodium water, which follows each day's random sodium through na_tau.</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> np.exp(<span class="op">-</span><span class="fl">1.0</span> <span class="op">/</span> <span class="bu">float</span>(true.gly_tau))</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>gly_sd <span class="op">=</span> <span class="bu">float</span>(NoiseModel.default().gly_sd) <span class="op">/</span> np.sqrt(<span class="fl">1.0</span> <span class="op">-</span> a<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> np.exp(<span class="op">-</span><span class="fl">1.0</span> <span class="op">/</span> <span class="bu">float</span>(true.na_tau))</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>na_sd <span class="op">=</span> <span class="bu">float</span>(true.na_gain) <span class="op">*</span> spec.sodium_sd_mg <span class="op">*</span> np.sqrt((<span class="fl">1.0</span> <span class="op">-</span> b) <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">+</span> b))</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>fast <span class="op">=</span> np.sqrt(spec.obs_sd_kg<span class="op">**</span><span class="dv">2</span> <span class="op">+</span> gly_sd<span class="op">**</span><span class="dv">2</span> <span class="op">+</span> na_sd<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"true reading noise </span><span class="sc">{</span>spec<span class="sc">.</span>obs_sd_kg<span class="sc">:.3f}</span><span class="ss"> kg; water scatter: glycogen </span><span class="sc">{</span>gly_sd<span class="sc">:.3f}</span><span class="ss"> kg,"</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" sodium </span><span class="sc">{</span>na_sd<span class="sc">:.3f}</span><span class="ss"> kg; combined </span><span class="sc">{</span>fast<span class="sc">:.3f}</span><span class="ss"> kg"</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the trend filter at the fitted scales and score it against the hidden truth.</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> jnp.asarray(np.nan_to_num(ep.weight_kg))</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>o <span class="op">=</span> jnp.asarray(ep.weight_observed.astype(<span class="bu">float</span>))</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>res <span class="op">=</span> trend_filter(y, o, ni.level_sd, ni.slope_sd, ni.obs_sd)</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>level <span class="op">=</span> np.asarray(res.filtered_mean)[:, <span class="dv">0</span>]</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>obs <span class="op">=</span> ep.weight_observed</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>rmse_read <span class="op">=</span> np.sqrt(np.mean((ep.weight_kg[obs] <span class="op">-</span> truth[<span class="st">"scale_kg"</span>][obs]) <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>rmse_trend <span class="op">=</span> np.sqrt(np.mean((level[<span class="dv">30</span>:] <span class="op">-</span> truth[<span class="st">"scale_kg"</span>][<span class="dv">30</span>:]) <span class="op">**</span> <span class="dv">2</span>))</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"error vs the true scale weight: one reading </span><span class="sc">{</span>rmse_read<span class="sc">:.3f}</span><span class="ss"> kg,"</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" filtered trend (days 30-119) </span><span class="sc">{</span>rmse_trend<span class="sc">:.3f}</span><span class="ss"> kg"</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="co"># Two older episodes with weigh-ins but no food log: more data for phase 1 only.</span></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>past <span class="op">=</span> [</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>    make_weight_only_episode(</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>        SyntheticSpec(n_days<span class="op">=</span><span class="dv">40</span>, start_weight_kg<span class="op">=</span><span class="fl">105.0</span>),</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        true,</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        name<span class="op">=</span><span class="ss">f"past-0</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>        start_date<span class="op">=</span>d,</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        seed<span class="op">=</span><span class="dv">10</span> <span class="op">+</span> i,</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, d <span class="kw">in</span> <span class="bu">enumerate</span>([<span class="st">"2023-03-01"</span>, <span class="st">"2024-01-15"</span>], start<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>ni_all <span class="op">=</span> identify_noise([<span class="op">*</span>past, ep])</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"with two past weight-only episodes added"</span>)</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"  weigh-ins </span><span class="sc">{</span>ni_all<span class="sc">.</span>n_observations<span class="sc">}</span><span class="ss">, observation sd </span><span class="sc">{</span>ni_all<span class="sc">.</span>obs_sd<span class="sc">:.3f}</span><span class="ss"> kg"</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" (x/</span><span class="sc">{</span>ni_all<span class="sc">.</span>obs_sd_factor<span class="sc">:.2f}</span><span class="ss">), gain </span><span class="sc">{</span>ni_all<span class="sc">.</span>steady_state_gain<span class="sc">:.3f}</span><span class="ss">,"</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" window </span><span class="sc">{</span>ni_all<span class="sc">.</span>effective_window_days<span class="sc">:.1f}</span><span class="ss"> days"</span></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <pre class="text"><code>Phase 1 -- noise identification
   episodes used         1
   weigh-ins used        107
-  log-likelihood        -87.41
+  log-likelihood        -86.53
 
-  observation sd        0.492 kg (1.08 lb)   x/1.07
+  observation sd        0.488 kg (1.08 lb)   x/1.07
   level innovation sd   0.00010 kg/day   unidentified
-  slope innovation sd   0.00397 kg/day^2 x/2.05
+  slope innovation sd   0.00367 kg/day^2 x/1.88
 
-  steady-state gain     0.119
-  effective window      8.4 days
+  steady-state gain     0.115
+  effective window      8.7 days
 
-true reading noise 0.450 kg; glycogen-water scatter 0.189 kg; combined 0.488 kg
-error vs the true scale weight: one reading 0.418 kg, filtered trend (days 30-119) 0.278 kg
+true reading noise 0.450 kg; water scatter: glycogen 0.189 kg, sodium 0.136 kg; combined 0.507 kg
+error vs the true scale weight: one reading 0.418 kg, filtered trend (days 30-119) 0.290 kg
 
 with two past weight-only episodes added
-  weigh-ins 170, observation sd 0.488 kg (x/1.06), gain 0.113, window 8.8 days</code></pre>
+  weigh-ins 170, observation sd 0.491 kg (x/1.06), gain 0.111, window 9.0 days</code></pre>
 <section id="what-to-notice" class="level2">
 <h2 class="anchored" data-anchor-id="what-to-notice">What to notice</h2>
 <ul>
-<li><strong>The reading noise is pinned down.</strong> 107 weigh-ins give an observation standard deviation of 0.492 kg (1.08 lb), known to within a factor of 1.07 either way.</li>
-<li><strong>It is larger than the 0.45 kg that was set, and the second block says why.</strong> Phase 1 has no glycogen compartment, so anything faster than a smooth trend counts as reading noise. The generator jitters glycogen water by 0.15 kg/day, and with its 2-day time constant that settles to a day-to-day spread of 0.15 / √(1 − e^(−1)) = 0.189 kg. Combined with the scale’s 0.45 kg this gives √(0.45² + 0.189²) = 0.488 kg, close to the fitted 0.492.</li>
-<li><strong>The level innovation is “unidentified”.</strong> It sits at 0.00010 kg/day, the lower bound of the search. The maximum-likelihood trend moves only through its slope, which is a legitimate fit, but an estimate on a bound has no two-sided standard error, so the report says so instead of printing one. The slope innovation, 0.00397 kg/day², is known only to a factor of 2.05.</li>
-<li><strong>Gain and window.</strong> A steady-state gain of 0.119 means each weigh-in moves the trend 11.9 % of the way toward itself; the effective window is its reciprocal, 8.4 days. A single surprising morning moves the estimate by about an eighth of the surprise.</li>
-<li><strong>The trend beats a single reading.</strong> Against the true scale weight, one reading is off by 0.418 kg (root mean square), the causal trend by 0.278 kg (days 30 to 119, after start-up). The trend cannot do better than the glycogen-water wiggle it is not built to follow.</li>
-<li><strong>More history, same answer.</strong> Two older 40-day weight-only episodes raise the count to 170 weigh-ins and barely move anything: 0.488 kg, a factor of 1.06, gain 0.113, window 8.8 days. They come from the same generator, so this is expected; on a real record, old episodes are how a short current one gets a usable noise estimate. Phase 2 ignores weight-only episodes (<a href="../../../body-weight/docs/theory/estimation.html#which-episodes">Which episodes are filtered</a>).</li>
+<li><strong>The reading noise is pinned down.</strong> 107 weigh-ins give an observation standard deviation of 0.488 kg (1.08 lb), known to within a factor of 1.07 either way.</li>
+<li><strong>It is larger than the 0.45 kg that was set, and the second block says why.</strong> Phase 1 has no water compartments, so anything faster than a smooth trend counts as reading noise. The generator jitters glycogen water by 0.15 kg/day, and with its 2-day time constant that settles to a day-to-day spread of 0.15 / √(1 − e^(−1)) = 0.189 kg.</li>
+<li><strong>Sodium water now adds its own share.</strong> Each day’s sodium is drawn with an 800 mg spread, and at the true gain of 2.5·10⁻⁴ kg per mg/day with a 1-day time constant that gives 2.5·10⁻⁴ × 800 × √((1 − e^(−1)) / (1 + e^(−1))) = 0.136 kg of day-to-day scatter. All three together give √(0.45² + 0.189² + 0.136²) = 0.507 kg; the fitted 0.488 is within its factor of 1.07 of that. Phase 2 models sodium water from the sodium log, so this share is counted twice once phase 2 takes phase 1’s figure (step 6 sees the result).</li>
+<li><strong>The level innovation is “unidentified”.</strong> It sits at 0.00010 kg/day, the lower bound of the search. The maximum-likelihood trend moves only through its slope, which is a legitimate fit, but an estimate on a bound has no two-sided standard error, so the report says so instead of printing one. The slope innovation, 0.00367 kg/day², is known only to a factor of 1.88.</li>
+<li><strong>Gain and window.</strong> A steady-state gain of 0.115 means each weigh-in moves the trend 11.5 % of the way toward itself; the effective window is its reciprocal, 8.7 days. A single surprising morning moves the estimate by about a ninth of the surprise.</li>
+<li><strong>The trend beats a single reading.</strong> Against the true scale weight, one reading is off by 0.418 kg (root mean square), the causal trend by 0.290 kg (days 30 to 119, after start-up). The trend cannot do better than the water wiggle it is not built to follow.</li>
+<li><strong>More history, same answer.</strong> Two older 40-day weight-only episodes raise the count to 170 weigh-ins and barely move anything: 0.491 kg, a factor of 1.06, gain 0.111, window 9.0 days. They come from the same generator, so this is expected; on a real record, old episodes are how a short current one gets a usable noise estimate. Phase 2 ignores weight-only episodes (<a href="../../../body-weight/docs/theory/estimation.html#which-episodes">Which episodes are filtered</a>).</li>
 </ul>
 </section>
 <section id="the-code" class="level2">
@@ -1023,8 +1040,8 @@ with two past weight-only episodes added
 <td>Optimistic: the trend model is misspecified (no water, no food)</td>
 </tr>
 <tr class="even">
-<td>The fast water that phase 1 calls reading noise is also process noise in phase 2</td>
-<td><code>models/dynamics.py:75</code> (<code>gly_sd</code>)</td>
+<td>The fast water that phase 1 calls reading noise is also in phase 2: glycogen jitter as process noise, sodium water as a state driven by the log</td>
+<td><code>models/dynamics.py:75</code> (<code>gly_sd</code>), <code>models/glycogen.py:52</code> (<code>sodium_rate</code>)</td>
 <td>Counted twice, it is a likely reason step 6 finds the forecast intervals a little wide</td>
 </tr>
 </tbody>
@@ -1033,9 +1050,9 @@ with two past weight-only episodes added
 <section id="try-this" class="level2">
 <h2 class="anchored" data-anchor-id="try-this">Try this</h2>
 <ul>
-<li>Set <code>obs_sd_kg=0.25</code> in the spec. The fit gives 0.308 kg (the rule above predicts √(0.25² + 0.189²) = 0.313), a gain of 0.322 and a 3.1-day window: a quieter scale is trusted more.</li>
-<li>Fit Student-t noise with <code>identify_noise([ep], dof=4.0)</code>. The log-likelihood falls from −87.41 to −93.26 and the reading noise drops to 0.362 kg, because heavy tails let the variance shrink. On Gaussian data the Gaussian fits better, as it should.</li>
-<li>Run <a href="../../../body-weight/docs/commands.html#wdm-fit-noise"><code>wdm fit-noise</code></a> on your own file and compare your window with 8.4 days.</li>
+<li>Set <code>obs_sd_kg=0.25</code> in the spec. The fit gives 0.273 kg, below the 0.341 kg the rule above predicts (√(0.25² + 0.189² + 0.136²)), because the level innovation is no longer pinned at its bound: at 0.175 kg/day it now follows part of the water wiggle as level moves. The gain rises to 0.468 and the window shrinks to 2.1 days: a quieter scale is trusted more.</li>
+<li>Fit Student-t noise with <code>identify_noise([ep], dof=4.0)</code>. The log-likelihood falls from −86.53 to −93.96 and the reading noise drops to 0.359 kg, because heavy tails let the variance shrink. On Gaussian data the Gaussian fits better, as it should.</li>
+<li>Run <a href="../../../body-weight/docs/commands.html#wdm-fit-noise"><code>wdm fit-noise</code></a> on your own file and compare your window with 8.7 days.</li>
 </ul>
 
 

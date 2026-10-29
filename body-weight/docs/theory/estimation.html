@@ -405,6 +405,12 @@ window.Quarto = {
  <span class="menu-text">Presentation</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../body-weight/figures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Latest figures</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../../../body-weight/docs/index.html" class="sidebar-item-text sidebar-link">
@@ -516,6 +522,12 @@ window.Quarto = {
   <div class="sidebar-item-container"> 
   <a href="../../../body-weight/docs/walkthrough/07-plan.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">7. Planning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../body-weight/docs/walkthrough/08-maintain.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">8. Maintain</span></a>
   </div>
 </li>
       </ul>
@@ -852,11 +864,11 @@ x_{k+1} = f(x_k, u_k), \qquad y_k = H x_k + v_k .
 <p>Process noise stands for unlogged snacks, hydration swings, log error and changes in spontaneous activity. Standard deviations are per day, so a week without weigh-ins widens the band by <span class="math inline">\(\sqrt{7}\)</span>, not 7:</p>
 <p><span class="math display">\[
 Q_k = \operatorname{diag}(\sigma_T^2, \sigma_F^2, \sigma_G^2, \sigma_N^2, \sigma_A^2)
-    + (1 - m_k)\,\sigma_I^2\, b b^{\top},
+    + \bigl[(1 - m_k)\,\sigma_I^2 + m_k\, s_k^2\bigr]\, b b^{\top},
 \qquad
 b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0)^{\top},
 \]</span></p>
-<p>where <span class="math inline">\(m_k \in \{0, 1\}\)</span> indicates a food log and <span class="math inline">\(\sigma_I = 600\)</span> kcal/day is the spread of plausible intake on an unlogged day. The code’s diagonal defaults are <span class="math inline">\(\sigma_T = 0.08\)</span>, <span class="math inline">\(\sigma_F = 0.04\)</span>, <span class="math inline">\(\sigma_G = 0.15\)</span>, <span class="math inline">\(\sigma_N = 0.10\)</span> kg and <span class="math inline">\(\sigma_A = 3.0\)</span> kcal/day.</p>
+<p>where <span class="math inline">\(m_k \in \{0, 1\}\)</span> indicates a food log, <span class="math inline">\(\sigma_I = 600\)</span> kcal/day is the spread of plausible intake on an unlogged day, and <span class="math inline">\(s_k\)</span> is a logged day’s own uncertainty: zero for a day logged as eaten, a quarter of its energy for a day marked as an estimate (<code>wdm log --estimate</code>), which then informs the energy balance less than a weighed day. The code’s diagonal defaults are <span class="math inline">\(\sigma_T = 0.08\)</span>, <span class="math inline">\(\sigma_F = 0.04\)</span>, <span class="math inline">\(\sigma_G = 0.15\)</span>, <span class="math inline">\(\sigma_N = 0.10\)</span> kg and <span class="math inline">\(\sigma_A = 3.0\)</span> kcal/day.</p>
 <!-- Source note: the report does not state the diagonal process-noise defaults; they are NoiseModel.default() in models/dynamics.py. -->
 <p>The inflation is rank one because an unknown intake moves tissue and fat together, in the ratio <span class="math inline">\(p\)</span> and with the physical sensitivity <span class="math inline">\(1/\rho_{\mathrm{eff}}\)</span>; independent noise on <span class="math inline">\(T\)</span> and <span class="math inline">\(F\)</span> would let the filter learn about body composition from a day it knows nothing about.</p>
 </section>
@@ -936,22 +948,22 @@ F^{\top}\)</span>. Figures show the smoothed history; the <a href="../../../body
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Observation sd</td>
-<td style="text-align: right;">0.487 kg</td>
-<td style="text-align: left;">×/1.06</td>
+<td style="text-align: right;">0.488 kg</td>
+<td style="text-align: left;"><p>×/1.06</p></td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Level innovation sd</td>
 <td style="text-align: right;">0.0001 kg/day</td>
-<td style="text-align: left;">unidentified (at bound)</td>
+<td style="text-align: left;"><p>unidentified</p></td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Slope innovation sd</td>
-<td style="text-align: right;">0.0033 kg/day²</td>
-<td style="text-align: left;">×/1.98</td>
+<td style="text-align: right;">0.0031 kg/day²</td>
+<td style="text-align: left;"><p>×/1.89</p></td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Steady-state gain; effective window</td>
-<td style="text-align: right;">0.109; 9.2 days</td>
+<td style="text-align: right;">0.107; 9.4 days</td>
 <td style="text-align: left;"></td>
 </tr>
 </tbody>
@@ -1071,22 +1083,22 @@ P_{k \mid k} &amp;= P^{+} - S^w_k K^w_k K^{w\top}_k .
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Final fat mass, posterior sd</td>
-<td style="text-align: right;">3.38 kg</td>
-<td style="text-align: right;">3.75 kg</td>
+<td style="text-align: right;">3.39 kg</td>
+<td style="text-align: right;">3.78 kg</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">Final fat mass, estimate (truth 22.6 kg)</td>
+<td style="text-align: left;">Final fat mass, estimate (truth 22.4 kg)</td>
 <td style="text-align: right;">23.9 kg</td>
-<td style="text-align: right;">22.9 kg</td>
+<td style="text-align: right;">22.6 kg</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">Waist slope, 90% interval (truth 1.2; prior [0.89, 1.71])</td>
-<td style="text-align: right;">[0.96, 1.58]</td>
+<td style="text-align: left;">Waist slope, 90% interval (truth 1.2; prior [0.89, 1.72])</td>
+<td style="text-align: right;">[1.02, 1.67]</td>
 <td style="text-align: right;">n/a</td>
 </tr>
 </tbody>
 </table>
-<p>The fat-mass interval narrows by about a tenth and still contains the truth. A test asserts this much (at least 5% narrower, truth inside) and no more.</p>
+<p>The fat-mass interval narrows by 10%. A test asserts this much (at least 5% narrower, truth inside) and no more.</p>
 </section>
 <section id="identifiability" class="level2">
 <h2 class="anchored" data-anchor-id="identifiability">Identifiability</h2>
@@ -1113,7 +1125,7 @@ P_{k \mid k} &amp;= P^{+} - S^w_k K^w_k K^{w\top}_k .
 <tr class="even">
 <td style="text-align: left;">Well identified</td>
 <td style="text-align: left;"><span class="math inline">\(k_G\)</span>, <span class="math inline">\(\tau_G\)</span></td>
-<td style="text-align: left;">Carbohydrate varies daily and the water swings are large next to the noise. On synthetic data <span class="math inline">\(k_G\)</span> moved 37% off its prior, the largest shift.</td>
+<td style="text-align: left;">Carbohydrate varies daily and the water swings are large next to the noise. On synthetic data <span class="math inline">\(k_G\)</span> moved 33% off its prior.</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Weak</td>
@@ -1153,7 +1165,7 @@ P_{k \mid k} &amp;= P^{+} - S^w_k K^w_k K^{w\top}_k .
 </section>
 <section id="synthetic" class="level2">
 <h2 class="anchored" data-anchor-id="synthetic">Validation on synthetic data</h2>
-<p><code>wdm demo</code> generates two weight-only past episodes of 40 days and a current episode of 120 days with macronutrients (89% weigh-in and 88% logging coverage), from true parameters deliberately offset from the priors (if the truth sat at the prior center, an estimator that ignored the data would pass). All nine true values lie inside their 90% posterior intervals; for example, <span class="math inline">\(k_G\)</span> (truth 0.0042) has median 0.0041, and <span class="math inline">\(\kappa_P\)</span> (truth 0.06) has median 0.050 with an interval from <span class="math inline">\(-0.032\)</span> to 0.135 that spans zero. Maintenance at 100 kg is estimated at 2905 kcal/day [2714, 3163] against a true 2843 (2.2% error), and the smoothed trend’s error against the hidden truth is 197 g RMS, against 487 g of single-weigh-in noise. This validates the inference machinery and says nothing about whether the model resembles a person: the data come from the dynamics the estimator assumes.</p>
+<p><code>wdm demo</code> generates two weight-only past episodes of 40 days and a current episode of 120 days with macronutrients (89% weigh-in and 88% logging coverage), from true parameters deliberately offset from the priors (if the truth sat at the prior center, an estimator that ignored the data would pass). All nine true values lie inside their 90% posterior intervals; for example, <span class="math inline">\(k_G\)</span> (truth 0.0042) has median 0.00398, and <span class="math inline">\(\kappa_P\)</span> (truth 0.06) has median 0.0497 with an interval from -0.0325 to 0.135. Maintenance at 100 kg is estimated at 2923 kcal/day [2713, 3161] against a true 2843 (2.8% error), and the smoothed trend’s error against the hidden truth is 205 g RMS, against 488 g of single-weigh-in noise. This validates the inference machinery and says nothing about whether the model resembles a person: the data come from the dynamics the estimator assumes.</p>
 </section>
 <section id="backtest" class="level2">
 <h2 class="anchored" data-anchor-id="backtest">Backtest: forecasting readings not yet seen</h2>
@@ -1190,30 +1202,30 @@ P_{k \mid k} &amp;= P^{+} - S^w_k K^w_k K^{w\top}_k .
 <tr class="odd">
 <td style="text-align: left;">Current episode</td>
 <td style="text-align: right;">1</td>
-<td style="text-align: right;">106</td>
-<td style="text-align: right;">-0.07</td>
-<td style="text-align: right;">1.10</td>
-<td style="text-align: right;">1.41</td>
-<td style="text-align: right;">+22%</td>
-<td style="text-align: right;">0.85</td>
-<td style="text-align: right;">56/92</td>
-<td style="text-align: right;">-0.74</td>
+<td style="text-align: right;"><p>106</p></td>
+<td style="text-align: right;"><p>−0.08</p></td>
+<td style="text-align: right;"><p>1.10</p></td>
+<td style="text-align: right;"><p>1.39</p></td>
+<td style="text-align: right;">+21%</td>
+<td style="text-align: right;"><p>0.84</p></td>
+<td style="text-align: right;">51/92</td>
+<td style="text-align: right;"><p>−0.74</p></td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Current episode</td>
 <td style="text-align: right;">7</td>
-<td style="text-align: right;">100</td>
-<td style="text-align: right;">-0.07</td>
-<td style="text-align: right;">1.18</td>
-<td style="text-align: right;">1.97</td>
+<td style="text-align: right;"><p>100</p></td>
+<td style="text-align: right;"><p>−0.08</p></td>
+<td style="text-align: right;"><p>1.16</p></td>
+<td style="text-align: right;"><p>1.95</p></td>
 <td style="text-align: right;">+40%</td>
-<td style="text-align: right;">0.78</td>
-<td style="text-align: right;">63/95</td>
-<td style="text-align: right;">-0.81</td>
+<td style="text-align: right;"><p>0.76</p></td>
+<td style="text-align: right;">64/98</td>
+<td style="text-align: right;"><p>−0.80</p></td>
 </tr>
 </tbody>
 </table>
-<p>On its own synthetic data the model’s intervals are honest to slightly wide, and it beats persistence by 22% at a day and 40% at a week. A test asserts the one-day calibration, the one-week skill, and that the one-day forecast equals the filter’s own prediction. On real data the first mornings of a diet drop more than the water compartments explain, most likely gut contents, which no state represents.</p>
+<p>On its own synthetic data the model’s intervals are honest to slightly wide, and it beats persistence by 21% at a day and 40% at a week. A test asserts the one-day calibration, the one-week skill, and that the one-day forecast equals the filter’s own prediction. On real data the first mornings of a diet drop more than the water compartments explain, most likely gut contents, which no state represents.</p>
 <p><strong>Caveats.</strong> Phase-1 noise is fitted on the whole record, so coverage is slightly optimistic. Forecasts from neighboring origins overlap (at <span class="math inline">\(h = 7\)</span>, consecutive forecasts share six days of inputs), so the effective sample is several times smaller than <span class="math inline">\(n\)</span>.</p>
 </section>
 <section id="references" class="level2">

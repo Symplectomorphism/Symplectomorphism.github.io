@@ -410,6 +410,12 @@ window.MathJax = {
  <span class="menu-text">Presentation</span></a>
   </div>
 </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../body-weight/figures.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Latest figures</span></a>
+  </div>
+</li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../../../body-weight/docs/index.html" class="sidebar-item-text sidebar-link">
@@ -521,6 +527,12 @@ window.MathJax = {
   <div class="sidebar-item-container"> 
   <a href="../../../body-weight/docs/walkthrough/07-plan.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">7. Planning</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../body-weight/docs/walkthrough/08-maintain.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">8. Maintain</span></a>
   </div>
 </li>
       </ul>
@@ -776,8 +788,11 @@ window.MathJax = {
   <li><a href="#wdm.viz.plot_composition" id="toc-wdm.viz.plot_composition" class="nav-link" data-scroll-target="#wdm.viz.plot_composition">plot_composition</a></li>
   <li><a href="#wdm.viz.plot_innovations" id="toc-wdm.viz.plot_innovations" class="nav-link" data-scroll-target="#wdm.viz.plot_innovations">plot_innovations</a></li>
   <li><a href="#wdm.viz.plot_intake_log" id="toc-wdm.viz.plot_intake_log" class="nav-link" data-scroll-target="#wdm.viz.plot_intake_log">plot_intake_log</a></li>
+  <li><a href="#wdm.viz.plot_maintenance" id="toc-wdm.viz.plot_maintenance" class="nav-link" data-scroll-target="#wdm.viz.plot_maintenance">plot_maintenance</a></li>
+  <li><a href="#wdm.viz.plot_parameter_evolution" id="toc-wdm.viz.plot_parameter_evolution" class="nav-link" data-scroll-target="#wdm.viz.plot_parameter_evolution">plot_parameter_evolution</a></li>
   <li><a href="#wdm.viz.plot_parameters" id="toc-wdm.viz.plot_parameters" class="nav-link" data-scroll-target="#wdm.viz.plot_parameters">plot_parameters</a></li>
   <li><a href="#wdm.viz.plot_plan" id="toc-wdm.viz.plot_plan" class="nav-link" data-scroll-target="#wdm.viz.plot_plan">plot_plan</a></li>
+  <li><a href="#wdm.viz.plot_plan_vs_actual" id="toc-wdm.viz.plot_plan_vs_actual" class="nav-link" data-scroll-target="#wdm.viz.plot_plan_vs_actual">plot_plan_vs_actual</a></li>
   <li><a href="#wdm.viz.plot_trajectory" id="toc-wdm.viz.plot_trajectory" class="nav-link" data-scroll-target="#wdm.viz.plot_trajectory">plot_trajectory</a></li>
   </ul></li>
   </ul></li>
@@ -850,6 +865,14 @@ $$
 <td>What was actually logged, day by day: intake, macros, fiber, sodium,</td>
 </tr>
 <tr class="odd">
+<td><a href="#wdm.viz.plot_maintenance">plot_maintenance</a></td>
+<td>The maintenance estimate as it evolved, against what was eaten.</td>
+</tr>
+<tr class="even">
+<td><a href="#wdm.viz.plot_parameter_evolution">plot_parameter_evolution</a></td>
+<td>What the filter believed about each parameter, day by day.</td>
+</tr>
+<tr class="odd">
 <td><a href="#wdm.viz.plot_parameters">plot_parameters</a></td>
 <td>Posterior medians and 90 % intervals, normalized to the prior center.</td>
 </tr>
@@ -858,6 +881,10 @@ $$
 <td>Prescribed intake and predicted weight, as stacked panels.</td>
 </tr>
 <tr class="odd">
+<td><a href="#wdm.viz.plot_plan_vs_actual">plot_plan_vs_actual</a></td>
+<td>Each day’s prescription, from the plans log, against what was eaten.</td>
+</tr>
+<tr class="even">
 <td><a href="#wdm.viz.plot_trajectory">plot_trajectory</a></td>
 <td>Raw weigh-ins, the smoothed trend, and its credible band.</td>
 </tr>
@@ -886,29 +913,55 @@ $$
 <p>What was actually logged, day by day: intake, macros, fiber, sodium, exercise, steps.</p>
 <p>Unlike the other figures here, this one plots inputs rather than filtered state – there is no estimation to distrust, only gaps to be honest about. Days without a food log are left as gaps rather than the reference values the model substitutes internally (<code>~wdm.io.Episode</code> fills unknown carbohydrate and sodium with the reference intake, habitual eating, so the water states have something to condition on); plotting those fill values here would make logging coverage look better than it is. Exercise is the one series where zero <em>is</em> the honest default for an unlogged day, per <code>Episode</code>’s own convention, and steps – not part of the model at all – are passed in separately from the raw CSV.</p>
 </section>
+<section id="wdm.viz.plot_maintenance" class="level3">
+<h3 class="anchored" data-anchor-id="wdm.viz.plot_maintenance">plot_maintenance</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>viz.plot_maintenance(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    fit,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    fit_episode,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    episode,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    path<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    n_samples<span class="op">=</span><span class="dv">2000</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span><span class="dv">0</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The maintenance estimate as it evolved, against what was eaten.</p>
+<p>Maintenance here is the non-adaptive expenditure at each day’s trend weight, <code>c0 + c1 W</code>, under that day’s filtered belief about the two coefficients. The band comes from sampling their joint filtered distribution: the two are strongly correlated, so their sum is far better known than either, and adding marginal variances would overstate the band. The logged intake on the same axis makes the deficit visible directly; both are kcal/day, so one axis is honest.</p>
+</section>
+<section id="wdm.viz.plot_parameter_evolution" class="level3">
+<h3 class="anchored" data-anchor-id="wdm.viz.plot_parameter_evolution">plot_parameter_evolution</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>viz.plot_parameter_evolution(fit, fit_episode, <span class="op">*</span>, path<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>What the filter believed about each parameter, day by day.</p>
+<p>The filtered (not smoothed) estimate: each day shows only what the record up to that morning implied, so the panels replay how the evidence accumulated. Values are relative to the prior center, as in <code>plot_parameters</code>; a band that stays as wide as it started has learned nothing, whatever its median does. Small multiples rather than one crowded frame, since the nine parameters share no scale and need no comparison by color.</p>
+</section>
 <section id="wdm.viz.plot_parameters" class="level3">
 <h3 class="anchored" data-anchor-id="wdm.viz.plot_parameters">plot_parameters</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>viz.plot_parameters(fit, <span class="op">*</span>, path<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>viz.plot_parameters(fit, <span class="op">*</span>, path<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Posterior medians and 90 % intervals, normalized to the prior center.</p>
 <p>Normalising is what makes the figure readable: the parameters span nine orders of magnitude in natural units, and the interesting question is not their absolute values but whether the data moved them off the prior at all. A point sitting on the dashed line with a wide interval learned nothing.</p>
 </section>
 <section id="wdm.viz.plot_plan" class="level3">
 <h3 class="anchored" data-anchor-id="wdm.viz.plot_plan">plot_plan</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>viz.plot_plan(plan, <span class="op">*</span>, fit_episode<span class="op">=</span><span class="va">None</span>, episode<span class="op">=</span><span class="va">None</span>, max_days<span class="op">=</span><span class="dv">28</span>, path<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>viz.plot_plan(plan, <span class="op">*</span>, fit_episode<span class="op">=</span><span class="va">None</span>, episode<span class="op">=</span><span class="va">None</span>, max_days<span class="op">=</span><span class="dv">28</span>, path<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Prescribed intake and predicted weight, as stacked panels.</p>
 <p>Two panels rather than two y-axes. Intake is in kilocalories and weight in pounds; overlaying them on a shared frame would require choosing where the two scales cross, and that choice would silently determine which of the two “leads” the other.</p>
 <p><code>max_days</code> caps how much of the plan is drawn, independent of how long a horizon it was actually solved over. Deadline-mode plans can span months; plotting all of it would swamp the readable near-term detail with a long, increasingly speculative tail, when only the first stretch is close to being acted on. <code>None</code> plots the whole thing.</p>
 <p>The weight panel is future-only – just the optimizer’s horizon – unless <code>fit_episode</code> is given, in which case the filtered scale/tissue trend leading up to today is drawn in the same two series, distinguished from the plan only by a lower alpha and a “today” marker. Without that context a plan reads as an isolated, disconnected forecast; with it, the plan reads as a continuation of where you actually are. <code>episode</code> adds the raw weigh-ins the trend was fitted to, when available.</p>
 </section>
+<section id="wdm.viz.plot_plan_vs_actual" class="level3">
+<h3 class="anchored" data-anchor-id="wdm.viz.plot_plan_vs_actual">plot_plan_vs_actual</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>viz.plot_plan_vs_actual(log_rows, episode, <span class="op">*</span>, path<span class="op">=</span><span class="va">None</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Each day’s prescription, from the plans log, against what was eaten.</p>
+<p><code>log_rows</code> are the rows of <code>plans/log.csv</code>; a day’s prescription is the last plan logged with that start date, the one <code>wdm log</code> compares against.</p>
+</section>
 <section id="wdm.viz.plot_trajectory" class="level3">
 <h3 class="anchored" data-anchor-id="wdm.viz.plot_trajectory">plot_trajectory</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>viz.plot_trajectory(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    fit_episode,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    episode,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    path<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">'Weight trajectory'</span>,</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>viz.plot_trajectory(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    fit_episode,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    episode,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    path<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">'Weight trajectory'</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Raw weigh-ins, the smoothed trend, and its credible band.</p>
 <p>The single most useful figure here. The raw points scatter by a pound or more day to day; the trend line is what actually moved. Seeing both together is the whole argument for filtering.</p>
 
