@@ -67,7 +67,8 @@ J = w_T \bigl(T_H - r_H\bigr)^2
   + \mu \Phi .
 $$
 
-$T_k$ is predicted tissue at the end of plan day $k$. The reference
+$T_k$ is predicted settled tissue at the end of plan day $k$
+([below](#settled)). The reference
 $r_k = W_0 + \min(k/N, 1)\,(W^\star - W_0)$ runs linearly from the current scale
 weight $W_0$ to the target $W^\star$ over the $N$ days remaining.
 $\Delta I_k = I_k - I_{k-1}$ is the day-to-day change in intake ($I_0$ is the last
@@ -117,6 +118,28 @@ still built from the goal's scale weight, so it differs from $T$ by the water
 offset present at the start.
 :::
 
+### Settled tissue {#settled}
+
+Bare tissue leaves a smaller loophole of the same kind. Energy stored as glycogen
+is withheld from tissue (the $\rho_G \dot G_c$ term of the
+[energy balance](model.md)) and handed back when glycogen drains. Scored on bare
+tissue, deadline plans loaded carbohydrate in their last weeks: in an 84-day
+synthetic plan it rose from 115 g to 254 g a day while fat fell to its floor. The
+refill lowers $T_H$, and the energy returns to tissue after the horizon closes,
+where the objective cannot see it. The controller therefore scores **settled
+tissue**, the tissue left once glycogen returns to its habitual level,
+
+$$
+T^{\mathrm{s}}_k = T_k + \frac{\rho_G}{\rho_{\mathrm{eff}}}\,G_{c,k},
+$$
+
+and every $T$ in the objectives and the rate limit on this page means
+$T^{\mathrm{s}}$. A carbohydrate-for-fat swap then moves the score only through
+its real effect, carbohydrate's higher thermic cost. The rate limit needs the same
+treatment: on bare tissue it can be loosened by draining glycogen, whose energy
+props tissue up for a few days, and plans crashed carbohydrate to its floor in the
+final week instead.
+
 ### Maintain mode {#maintain}
 
 Once the goal is reached the question becomes "how much keeps me here". Maintain
@@ -157,7 +180,8 @@ Cutting carbohydrate sharply sheds a kilogram of glycogen water within days. On
 the scale that reads as 4 lb/week and would trip any limit on scale weight, yet
 no tissue was lost; a controller limited on scale weight would refuse a
 reasonable plan or raise calories in response to water loss. The limit is
-therefore a fraction $\gamma$ per week of each day's tissue. It tightens as
+therefore a fraction $\gamma$ per week of each day's settled tissue
+([above](#settled)), which is the energy deficit. It tightens as
 tissue falls, which is what "a fraction of body mass per week" means; a fixed cap
 of $\gamma T_0/7$ kg a day would let a long plan exceed $\gamma$ in its later
 weeks.
