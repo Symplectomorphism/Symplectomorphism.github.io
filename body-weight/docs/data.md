@@ -66,6 +66,8 @@ Within an episode, dates should be contiguous. Between episodes, gaps are fine. 
 
 A day counts as logged when it has `kcal` or a full protein/carb/fat split. A day with neither is treated as intake unknown, not as a fast; a real fast is `kcal` = 0.
 
+**Total carbohydrate, not net.** Log `carb_g` as the label's total carbohydrate, fiber included, and fiber in `fiber_g`. The model removes the energy fiber doesn't deliver itself, 2 kcal per gram of fiber off the day's energy. Net carbs would leave the macros 4 kcal per gram of fiber short of `kcal`, which `wdm validate` flags, and a log that mixes the two moves the carbohydrate input, and with it the predicted glycogen water, by the day's fiber when nothing changed. Labels that list carbohydrate without fiber (European ones, and the net-carb view of many apps) need the fiber added back. A blank `fiber_g` reads as zero, overstating energy by 2 kcal a gram of fiber: about 60 kcal on a 30 g day. To fix days already logged as net, `wdm log --set --carb TOTAL --date YYYY-MM-DD`.
+
 **On accuracy.** Self-reported intake under-reports true intake by roughly 20% on average in doubly-labeled-water studies. A **constant** proportional bias is mostly harmless here: it is absorbed into the estimated maintenance energy and cancels out of the prescriptions. What hurts is a bias that **shrinks over time** as your logging improves, because "apparently eating more while losing the same" is exactly the signature of metabolic adaptation, and the filter cannot tell the two apart from weight data alone. Log with the same rigor on day 90 as on day 1, and note any change of method in `notes`.
 
 ### `sodium_mg`
