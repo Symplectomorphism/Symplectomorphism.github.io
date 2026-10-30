@@ -38,6 +38,7 @@
   </style>
   <link rel="stylesheet" href="../../../site_libs/revealjs/dist/theme/quarto-0427d8d92a431aa6a6430e53ec02a470.css">
   <link rel="stylesheet" href="revealjs-styles.css">
+  <link rel="stylesheet" href="chapter10-tables.css">
   <link href="../../../site_libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="../../../site_libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -156,7 +157,8 @@ Aykut C. Satici
 <ul>
 <li>Chapter 9 established the architect’s role: reduce ambiguity, employ creativity, manage complexity</li>
 <li>Much of that ambiguity comes from <strong>upstream</strong> influences (strategy, marketing, customers, technology, regulation) and <strong>downstream</strong> influences (implementation, operations, Design for X, product evolution)</li>
-<li>The architect doesn’t control these: but must understand them well enough to make good decisions</li>
+<li>The architect doesn’t control these, but must understand them well enough to make good decisions</li>
+<li>For each influence, ask how much it affects <strong>architectural</strong> decisions. Will marketing affect whether the car is two-wheel or four-wheel drive?</li>
 </ul>
 <div class="fragment" title="Roadmap: the ABCD Product Case">
 <div class="callout callout-tip callout-titled callout-style-default">
@@ -243,22 +245,317 @@ Aykut C. Satici
 <h1>10.2 Upstream Influence: Corporate Strategy</h1>
 
 </section>
-<section id="corporate-and-business-unit-strategy" class="slide level2 smaller">
-<h2>Corporate and Business Unit Strategy</h2>
+<section id="a-strategy-must-say-what-it-excludes" class="slide level2 smaller">
+<h2>A Strategy Must Say What It Excludes</h2>
 <ul>
-<li>Corporate and business unit <strong>strategy</strong> identifies markets, capabilities, and sources of competitive advantage</li>
-<li>The architect must interpret strategy, often incomplete or ambiguous, into concrete goals for the system</li>
-<li>Strategy rarely specifies architecture directly; it specifies <strong>intent</strong>, and the architect must translate intent into form and function</li>
+<li><strong>Corporate strategy</strong> is the means by which an enterprise achieves its goals: profitability and shareholder value for a firm, the mission for a government agency</li>
+<li>A useful strategy defines the mission, the scope of activities, long- and intermediate-term goals, resource allocation decisions, and planned initiatives</li>
+<li>It must <strong>differentiate</strong>: which markets, features, and customers are considered, and which are <strong>excluded</strong></li>
+<li>“Grow the revenue of the firm while maintaining the product margins” conveys almost nothing about the decisions the firm has made</li>
 </ul>
+<div class="fragment">
+<div class="callout callout-note no-icon callout-style-simple">
+<div class="callout-body">
+<div class="callout-content">
+<p>“Strategy involves calculated gambles. If success were assured, strategy would be called investing in risk-free bonds!” (Crawley, Cameron &amp; Selva, §10.2)</p>
+</div>
+</div>
+</div>
+</div>
 <aside class="notes">
 <ul>
-<li>Corporate strategy describes how an enterprise intends to achieve its goals. For a firm, these may concern profitability and competitive position. For a government agency, they concern its mission.</li>
-<li>A useful strategy identifies activities, scope, goals, resource allocation, and planned initiatives. A statement such as growing revenue while maintaining margins provides little guidance by itself.</li>
-<li>Distinguish public annual-report objectives from executive corporate strategy, business-unit strategy, and functional strategies in marketing, R&amp;D, manufacturing, and development. Public statements may omit priorities that would reveal information to competitors.</li>
-<li>The book’s BMW example contrasts continued Formula 1 participation with redirecting investment toward small, efficient urban vehicles. The architect needs to understand how such choices affect the product’s goals.</li>
+<li>An effective strategy communicates vision and direction to stakeholders and the team, and guides the investment of scarce resources. It should form a coherent, unifying, and integrative pattern of decisions.</li>
+<li>Exclusions make a strategy useful to the architect. Knowing which segments, features, and customers will not be served removes ambiguity from the goals.</li>
+<li>A strategy that excludes nothing gives no guidance for architectural decisions.</li>
 </ul>
-<p><strong>Discussion:</strong> How could a change in company strategy alter an architecture?</p>
-<p><strong>Suggested answer:</strong> A shift toward service provision can make maintainability, monitoring, and lifecycle cost more valuable. The same technical capability may need a different allocation of ownership and operating responsibility.</p>
+<p><strong>Discussion:</strong> Rewrite “grow revenue while maintaining margins” as a statement an architect could act on.</p>
+<p><strong>Suggested answer:</strong> Name a target segment, a basis of competition, and an exclusion. For example (an illustration, not from the book): “Enter the commercial inspection-drone market by competing on endurance; do not pursue the consumer segment.” The architect can now derive goals for endurance, payload, and certification, and drop consumer-oriented features.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="strategy-and-architecture-shape-each-other" class="slide level2 smaller">
+<h2>Strategy and Architecture Shape Each Other</h2>
+<p>In many technology firms, the architecture has an enormous impact on corporate strategy, and vice versa.</p>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><strong>IBM PC</strong></p>
+<ul>
+<li>Strategy decision: outsource the operating system to Microsoft</li>
+<li>Architecture decision: a stable architecture for the PC</li>
+<li>Together, these shaped the desktop computer market for 25 years</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><strong>Airbus A319 / A320 / A321</strong></p>
+<ul>
+<li>Architecture decision: a common glass cockpit across the family</li>
+<li>Strategy effect: Airbus could sell airlines the benefits of <strong>commonality</strong> through training and maintenance savings</li>
+</ul>
+</div></div>
+<aside class="notes">
+<ul>
+<li>IBM: a sourcing decision combined with an architectural decision. A commonly told consequence, beyond what the book states: the stable, well-documented architecture enabled compatible machines from other manufacturers, and much of the industry’s value moved to the operating system and processor suppliers.</li>
+<li>Airbus: an architectural choice created a market strategy. Training and maintenance savings became part of the sales argument for the whole family.</li>
+<li>The architect therefore needs to understand strategy well enough to see when an architectural choice creates or forecloses strategic options.</li>
+</ul>
+<p><strong>Discussion:</strong> In each example, which way does the influence run?</p>
+<p><strong>Suggested answer:</strong> IBM: strategy (outsourcing) and architecture (a stable PC architecture) together shaped the market, which in turn constrained IBM’s later strategic options. Airbus: architecture (the common cockpit) enabled a market strategy (selling commonality). The influence runs in both directions.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="four-levels-of-strategy" class="slide level2 smaller">
+<h2>Four Levels of Strategy</h2>
+<div class="chapter10-table">
+<table class="caption-top">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 38%">
+<col style="width: 38%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Level</th>
+<th style="text-align: left;">What it tells the architect</th>
+<th style="text-align: left;">Example from the book</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Shareholder annual report</strong></td>
+<td style="text-align: left;">Public long-term objectives, action programs, and resource priorities; says little about what is excluded</td>
+<td style="text-align: left;">“Be the largest automotive OEM by units sold in 2018”</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Executive</strong></td>
+<td style="text-align: left;">Which businesses the firm is in; where it invests selectively; what it excludes</td>
+<td style="text-align: left;">BMW exits Formula 1 in 2009 and creates BMW i for small, efficient city vehicles</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Business unit</strong></td>
+<td style="text-align: left;">How the unit segments its customers, which threats it mitigates, which opportunities it excludes</td>
+<td style="text-align: left;">How BMW i segments customers and chooses its investments</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Functional</strong></td>
+<td style="text-align: left;">How marketing, R&amp;D, sourcing, and product development serve the corporate goals</td>
+<td style="text-align: left;">“What must sourcing do if the firm wants to be first to market with technology?”</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="side-caption">
+<p>Adapted from Crawley, Cameron &amp; Selva (2016), §10.2. The architect must be intimately familiar with the business unit strategy and deeply engaged with the functional strategies.</p>
+</div>
+<aside class="notes">
+<ul>
+<li>Public statements say little because information shared with competitors cannot reveal real priorities. Which of the five largest automakers doesn’t want to be the largest?</li>
+<li>Financial analysts’ reports are another window. They assess opportunities and threats in the competitive environment and the firm’s strengths and weaknesses, such as a core competency in paper-routing mechanisms or a weakness in crafting service plans.</li>
+<li>BMW weighed brand awareness, brand association with F1, and technology trickle-down against the opportunity cost of other marketing and R&amp;D investments. It forecast that “premium” would increasingly mean sustainability. The executive decision was an explicit exclusion, and it created a new business segment.</li>
+<li>The business unit level is where strategy becomes specific enough to set goals for a product.</li>
+</ul>
+<p><strong>Discussion:</strong> Why is the shareholder annual report the least useful level for an architect?</p>
+<p><strong>Suggested answer:</strong> It is written for a public audience that includes competitors, so it states broad objectives without revealing priorities or exclusions. The architect needs the executive, business unit, and functional levels, which are usually internal.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="functional-strategies-questions-the-architect-asks" class="slide level2 smaller">
+<h2>Functional Strategies: Questions the Architect Asks</h2>
+<div class="chapter10-table">
+<table class="caption-top">
+<colgroup>
+<col style="width: 29%">
+<col style="width: 70%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Function</th>
+<th style="text-align: left;">Key strategy questions</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Marketing</strong></td>
+<td style="text-align: left;">Where does the company compete (markets, segments, competitors, geography)? How does it compete (cost, quality, services, feature innovator or follower)?</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>R&amp;D / Technology</strong></td>
+<td style="text-align: left;">How important is new technology? Will it be developed or acquired, at what level of investment, with what multiproduct planning?</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Manufacturing / Sourcing</strong></td>
+<td style="text-align: left;">How important is low-cost manufacturing? Internal manufacturing or outsourcing? How will suppliers be integrated?</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Product Development</strong></td>
+<td style="text-align: left;">How will new products be developed? Any platforming? Global or regional products? Internal, outsourced, or an alliance?</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="side-caption">
+<p>From Crawley, Cameron &amp; Selva (2016), §10.2.</p>
+</div>
+<aside class="notes">
+<ul>
+<li>Each answer constrains the architecture. Competing as a feature innovator rather than a follower changes how much technology risk is acceptable. Outsourcing turns supplier boundaries into architectural boundaries (Section 10.6). Platforming commits the enterprise to a product-family architecture (Section 10.9).</li>
+<li>Several of these functional strategies return later in the chapter as influences in their own right.</li>
+</ul>
+<p><strong>Discussion:</strong> Which of these answers would most change the architecture of a consumer drone?</p>
+<p><strong>Suggested answer:</strong> Several could. A decision to platform across a family forces shared modules and stable interfaces. A decision to outsource the flight controller makes it a supplier-defined module. A decision to compete on cost may rule out expensive sensors. Ask these questions before concept selection.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="reading-strategy-in-financial-terms" class="slide level2 smaller">
+<h2>Reading Strategy in Financial Terms</h2>
+<p>At every level, strategic goals are often stated in <strong>corporate finance</strong> terms. The architect must translate them into product implications.</p>
+<div class="chapter10-table">
+<table class="caption-top">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Goal as stated</th>
+<th style="text-align: left;">The architect’s question</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">20% compound annual growth rate (CAGR) for a market entry in Asia</td>
+<td style="text-align: left;">What product development timeline does this imply?</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">R&amp;D at 3% of revenues</td>
+<td style="text-align: left;">Is that enough to develop the lead variant of a product family?</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Second and third variants</td>
+<td style="text-align: left;">Will they help amortize the lead variant’s investment? What is the ROI of each variant compared with the platform as a whole?</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="fragment" title="Quick check">
+<div class="callout callout-tip callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<p><strong>Quick check</strong></p>
+</div>
+<div class="callout-content">
+<p>At 20% CAGR, revenue doubles in about ln 2 / ln 1.2 ≈ 3.8 years. Can the product, its variants, and its supply chain be ready in time to carry that growth?</p>
+</div>
+</div>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>The book’s warning: an architect who cannot interpret a 20% CAGR target in terms of development timelines will fail at communicating goals for the project.</li>
+<li>The doubling time is an added illustration, not from the book: solving 1.2^t = 2 gives t ≈ 3.8 years.</li>
+<li>The lead variant often carries the platform investment. Whether later variants actually share it decides whether the platform earns more than standalone products would (see divergence in Section 10.9).</li>
+</ul>
+<p><strong>Discussion:</strong> A firm sets R&amp;D at 3% of revenues. What would you need to know to judge whether that funds the lead variant?</p>
+<p><strong>Suggested answer:</strong> The revenue base, the lead variant’s estimated development cost and schedule, how much of that cost later variants will share, and when the variants will start producing revenue. Compare the cumulative R&amp;D budget with the cumulative development cost over the schedule.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="four-couplings-between-strategy-and-architecture" class="slide level2 smaller">
+<h2>Four Couplings Between Strategy and Architecture</h2>
+<div class="chapter10-table">
+<table class="caption-top">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 38%">
+<col style="width: 38%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Aspect</th>
+<th style="text-align: left;">Strategy → architecture</th>
+<th style="text-align: left;">Architecture → strategy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Mission and scope</strong></td>
+<td style="text-align: left;">Address the enterprise’s mission and stakeholder needs; respect the activities strategy excludes</td>
+<td style="text-align: left;">The architecture can constrain the scope available to strategy; communicate that constraint</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Enterprise goals</strong></td>
+<td style="text-align: left;">Meet revenue, margin, ROI, and growth goals; align with a market opportunity or defend against a threat; build on core competencies</td>
+<td style="text-align: left;">Advocate for expanding competencies, or plan to go outside the enterprise</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Resource allocation</strong></td>
+<td style="text-align: left;">Fit within the resource allocation guidelines</td>
+<td style="text-align: left;">Know the decision process and defend the allocation</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Initiatives and action plans</strong></td>
+<td style="text-align: left;">Leverage corporate initiatives and functional strategies</td>
+<td style="text-align: left;">Enable new functional strategies, or communicate constraints that complicate them</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="side-caption">
+<p>Condensed from Crawley, Cameron &amp; Selva (2016), §10.2.</p>
+</div>
+<aside class="notes">
+<ul>
+<li>The book asks two questions together: how does strategy affect architecture, and how does architecture affect strategy? Students tend to forget the right-hand column.</li>
+<li>The Airbus cockpit is a right-column example: an architectural decision enabled a commonality strategy.</li>
+</ul>
+<p><strong>Discussion:</strong> Give an example of an architecture constraining the scope available to corporate strategy.</p>
+<p><strong>Suggested answer:</strong> A product built around a closed, proprietary interface can make it hard for the firm to later open it to third parties or build a services business on it. A power architecture designed for one grid standard can exclude markets with another. The architect must make such limits visible to the strategists.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -307,20 +604,76 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
-<section id="working-with-marketing" class="slide level2 smaller">
-<h2>Working with Marketing</h2>
+<section id="market-size-and-competitors-are-uncertain-inputs" class="slide level2 smaller">
+<h2>Market Size and Competitors Are Uncertain Inputs</h2>
 <ul>
-<li>Inbound marketing generates the <strong>voice of the customer</strong>: needs, preferences, willingness to pay: which the architect must translate into solution-neutral function (Ch. 7)</li>
-<li>Outbound marketing determines how the product and its architecture are presented to customers</li>
-<li>The architect and marketing function are natural partners: marketing knows <em>what</em> customers want, the architect determines <em>whether and how</em> it can be delivered</li>
+<li>The business case starts from the <strong>total addressable market</strong> (yearly sales if 100% of the market is captured), then estimates initial and steady-state <strong>penetration</strong> to get sales volumes</li>
+<li>For complex systems, markets have been misestimated by <strong>two orders of magnitude</strong>, up and down. In capital-intensive industries, a factor of 2 can separate success from failure</li>
+<li>Example: optical communications for satellites promise higher data rates with lower mass, but pointing accuracy, cloud cover, and demand for the underlying services are uncertain (the market rejected the size of Iridium’s handset)</li>
+<li><strong>Competitive analysis:</strong> a common mistake in technology firms is to assume competitors’ technology <strong>will not improve</strong>. Characterize competing products and predict their trends</li>
 </ul>
 <aside class="notes">
 <ul>
-<li>Market segmentation groups customers with similar needs and responses to an offering. Segment size helps determine where to invest development effort.</li>
-<li>Total addressable market estimates annual sales at full market capture. A business case then needs a defensible penetration estimate, rather than assuming the whole market will buy the product.</li>
-<li>Estimates for complex or unfamiliar products are uncertain. Examine the assumptions and evidence behind market size and expected sales.</li>
-<li>Translate the voice of the customer into solution-neutral functions. Customer preferences and willingness to pay inform the goals, while engineering establishes feasibility and likely cost.</li>
-<li>Outbound marketing also needs a clear explanation of the product’s benefits and distinguishing features. Maintain communication between marketing and the architecture team.</li>
+<li>Segmentation groups customers with similar needs who respond similarly to outbound marketing. Segment descriptions can seed use cases, structure needs interviews, and guide prototype evaluations.</li>
+<li>A few complex systems are easier to size because very few customers can afford them, such as military attack helicopters or 200-MW gas turbines. Most complex systems compete in markets that are harder to predict.</li>
+<li>Competitors are not all bad: their presence informs and educates customers and helps grow the market.</li>
+</ul>
+<p><strong>Discussion:</strong> Why is a market estimate an architectural input and not only a business one?</p>
+<p><strong>Suggested answer:</strong> Volume determines which manufacturing processes, tooling investments, and platform strategies are justified, and how long the architecture must stay competitive. A factor-of-2 error can change the preferred concept.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="four-interactions-between-marketing-and-architecture" class="slide level2 smaller">
+<h2>Four Interactions Between Marketing and Architecture</h2>
+<div class="chapter10-table">
+<table class="caption-top">
+<colgroup>
+<col style="width: 29%">
+<col style="width: 70%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Interaction</th>
+<th style="text-align: left;">What it means for the architect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Stakeholders and their needs</strong></td>
+<td style="text-align: left;">The architecture can satisfy some needs and place others out of reach</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Segmentation, market size, penetration</strong></td>
+<td style="text-align: left;">Requirements must reflect a real customer community; estimated sales drive the business case; penetration timing affects how stable the architecture will be in the market</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Competitors and competing products</strong></td>
+<td style="text-align: left;">Customers compare function and performance with competitors; estimate competitors’ systems as well as possible</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Outbound marketing</strong></td>
+<td style="text-align: left;">Outbound marketing defines revenue, so the architecture must enable it; know the plans for product definition, communications, and distribution channels (which affect service)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="side-caption">
+<p>Condensed from Crawley, Cameron &amp; Selva (2016), §10.3. Marketing knows <em>what</em> customers want; the architect determines <em>whether and how</em> it can be delivered.</p>
+</div>
+<aside class="notes">
+<ul>
+<li>Inbound marketing generates the voice of the customer (needs, preferences, willingness to pay), which the architect translates into solution-neutral function (Chapter 7) and goals (Chapter 11).</li>
+<li>Successful firms link marketing and product development closely. Separate marketing and engineering roadmaps may work for toothpaste, but not for complex systems.</li>
+<li>Outbound marketing needs a clear explanation of the product’s benefits and distinguishing features. Keep marketing and the architecture team in regular contact.</li>
 </ul>
 <p><strong>Discussion:</strong> How would you respond to a request to match every competitor feature?</p>
 <p><strong>Suggested answer:</strong> Ask which stakeholder outcome each feature supports and at what cost. Compare concepts against prioritized needs; indiscriminate matching can add complexity without corresponding value.</p>
@@ -339,12 +692,17 @@ Aykut C. Satici
 <section id="sections-10.210.3-summary" class="slide level2 smaller">
 <h2>Sections 10.2–10.3 Summary</h2>
 <ul>
-<li>Corporate strategy and marketing are major upstream influences the architect must interpret, not just receive</li>
-<li>Inbound marketing (creating value) and outbound marketing (delivering value) both interact with the architecture: inbound shapes goals, outbound shapes communication</li>
-<li>The architect’s job is translation: converting ambiguous strategic and market intent into concrete, solution-neutral functional goals</li>
+<li>A strategy helps the architect when it states priorities and <strong>exclusions</strong>; the useful levels are executive, business unit, and functional, not the public annual report</li>
+<li>Strategy and architecture shape each other (IBM PC, Airbus cockpit), and strategic goals arrive in financial terms the architect must translate</li>
+<li>Inbound marketing shapes goals through needs, segmentation, market size, and competitors; the architecture must also enable outbound marketing</li>
 </ul>
 <aside class="notes">
-<p>Use this as a checkpoint before moving to the next upstream influence. By this point students should be able to state, in their own words, why corporate strategy rarely specifies architecture directly (it specifies intent, at several nested levels: shareholder-report, executive, business-unit, functional: and the architect has to translate that intent). They should also be comfortable with the inbound/outbound marketing distinction, and be able to explain why the architect and marketing are natural partners rather than adversaries, despite the tension the <em>Office Space</em> quote pokes fun at. The unifying theme across both strategy and marketing, worth restating explicitly: the architect’s core job with respect to every upstream influence in this chapter is <em>translation</em>: converting something ambiguous, high-level, and not inherently architectural (a strategy statement, a customer need) into something concrete enough to shape form and function. That’s the same lens we’ll apply next to regulation, then to technology.</p>
+<ul>
+<li>Checkpoint before the next upstream influence. Students should be able to explain why a strategy without exclusions gives no architectural guidance, and name the four levels of strategy.</li>
+<li>They should be able to state at least one coupling in each direction between strategy and architecture.</li>
+<li>For marketing, they should distinguish inbound from outbound and explain why market-size uncertainty matters to the architecture.</li>
+<li>The common theme is translation: turning an ambiguous strategy statement or customer need into goals concrete enough to shape form and function. The same lens applies next to regulation, then to technology.</li>
+</ul>
 <p><strong>Discussion:</strong> Why must strategy and marketing be interpreted together?</p>
 <p><strong>Suggested answer:</strong> Marketing identifies opportunities and needs; strategy shapes which opportunities the enterprise intends and is able to pursue. Architectural goals must reflect both.</p>
 <style type="text/css">
@@ -368,8 +726,8 @@ Aykut C. Satici
 <h2>Regulation: Enabler and Barrier</h2>
 <ul>
 <li>Regulation can be both an <strong>enabler</strong> of competitive advantage and a <strong>barrier</strong> to entry</li>
-<li>It can preserve an existing architecture well past its useful life: or generate an opportunity for new architectures to disrupt the market</li>
-<li>Example: Tier 4 Final emissions regulations for off-highway trucks upheld stricter standards, forcing firms to update their engine portfolios: but also opened a new competitive axis on fuel efficiency</li>
+<li>It can preserve an existing architecture well past its useful life, or generate an opportunity for new architectures to disrupt the market</li>
+<li>Example: Tier 4 Final emissions regulations for off-highway trucks imposed stricter standards and forced firms to update their engine portfolios, but also opened a new competitive axis on fuel efficiency</li>
 </ul>
 <div class="fragment" title="Direct and indirect effects">
 <div class="callout callout-tip callout-titled callout-style-default">
@@ -387,8 +745,12 @@ Aykut C. Satici
 </div>
 </div>
 <aside class="notes">
-<p>Move to the second upstream influence. Open with the dual-edged framing on the slide, since it’s the section’s central thesis: regulation can act to <em>preserve</em> an existing architecture well past its natural useful life (protecting incumbents who’ve already invested in compliance), or it can <em>generate an opportunity</em> for new architectures to disrupt an otherwise-stable market. The Tier 4 Final emissions example is the book’s own worked case, worth walking through carefully: these regulations imposed essentially held off-highway truck manufacturers to stricter emissions standards, which forced firms to update their entire engine portfolios, a real burden, but simultaneously it reset the competitive playing field and opened up a new axis (fuel efficiency) on which firms could newly differentiate themselves, inviting them to compete on new dimensions after the compliance deadline passed.</p>
-<p>The fragment gives students the two distinct pathways by which regulation reaches into architecture, and it’s worth being precise that these are different mechanisms. The <em>direct</em> pathway is the obvious one: a regulation explicitly requires some feature or property of the product itself: mandatory backup cameras on U.S. cars, or regulation on which materials may be used in medical devices. The <em>indirect</em> pathway is subtler and easy to overlook: regulations can shape downstream factors: where manufacturing facilities can be sited, how quickly team members can be hired or fired, which markets a product may legally be sold into: and those downstream constraints feed back and affect the economic viability, and therefore the architecture, of the product just as surely as a direct technical mandate would. A good architect has to be alert to both pathways, not just the visible direct one.</p>
+<ul>
+<li>Regulation can protect incumbents who have already invested in compliance, or reset a stable market and let new architectures compete.</li>
+<li>Tier 4 Final required stricter emissions from off-highway trucks. Firms had to update their entire engine portfolios, but the reset also let them compete anew on fuel efficiency.</li>
+<li>The direct pathway: a regulation requires a feature or property of the product itself, such as backup cameras on U.S. cars or restrictions on materials in medical devices.</li>
+<li>The indirect pathway: regulation shapes where manufacturing can be located, how quickly staff can be hired or released, and where the product can be sold. These factors change the product’s economic viability, and therefore its architecture.</li>
+</ul>
 <p><strong>Discussion:</strong> How can a constraint also create an opportunity?</p>
 <p><strong>Suggested answer:</strong> A new requirement may favor a concept or capability the enterprise can deliver well. It restricts the feasible space while potentially changing the value of alternatives within that space.</p>
 <style type="text/css">
@@ -414,9 +776,12 @@ Aykut C. Satici
 <p>Four categories, each demanding a different level of engagement: <strong>regulation</strong> (compliance), <strong>anticipated regulation</strong> (awareness), <strong>standards</strong> (alignment), <strong>liability</strong> (compliance with enterprise procedures). Source: Crawley, Cameron &amp; Selva (2016), Fig. 10.2.</p>
 </div>
 <aside class="notes">
-<p>Walk through each of the four categories in this figure individually, since each demands a different level of engagement from the architect, and that distinction is the purpose of the diagram. <em>Regulation</em> proper demands straightforward compliance: it’s a matter of law, so compliance is mandatory, and the architect’s job is understanding the <em>regulatory intent</em> well enough to implement it correctly (the book lists five typical regulatory intents worth mentioning as examples: protecting the consumer, as with credit-card payback disclosure rules; setting workplace-safety standards, as with OSHA ventilation requirements; protecting the environment, as with CAFE fuel-economy standards; implementing industrial policy through incentives or disincentives, as with electric-vehicle tax credits; and preventing dissemination of sensitive technology, as with ITAR munitions-data controls).</p>
-<p><em>Anticipated regulation</em> demands only awareness, not yet compliance: proposed rules can often be tracked as they move through the government rulemaking process, and the architect can watch leading global jurisdictions as an indicator of where regulation elsewhere may eventually head (the book’s examples: Switzerland’s stringent noise regulations for domestic appliances, Sweden’s automotive safety rules, and California’s fleet emissions standards, all of which have historically been “leading indicators” later echoed by other jurisdictions).</p>
-<p><em>Standards</em> demand alignment rather than strict compliance, since they’re typically voluntary: though often the price of industry-association membership, adopted as a form of self-regulation intended to stave off stricter external government regulation. Standards can also be a competitive tool: a firm that sets and controls an industry standard (the book cites Intel’s long-running role in setting semiconductor wafer-size transitions) gains real strategic leverage. Finally, <em>liability</em> demands compliance with enterprise procedures: legal risk from product-liability litigation or breach-of-contract claims (the book’s example: Sun Microsystems, owner of Java, suing Microsoft for improperly implementing the Java 1.1 standard) acts as a pseudo-regulatory pressure even without any government rule requiring it directly.</p>
+<ul>
+<li>Regulation is law, so compliance is mandatory. The architect’s job is to understand the regulatory intent well enough to implement compliance correctly (next slides).</li>
+<li>Anticipated regulation calls for awareness: track proposed rules and watch leading jurisdictions.</li>
+<li>Standards call for alignment. They are often voluntary and aimed at interoperability, such as ISO 14001 or MIL-STD-1553, but industry associations may require them as self-regulation to stave off government rules. A firm that sets a standard gains leverage, as Intel has with semiconductor wafer-size transitions.</li>
+<li>Liability calls for compliance with enterprise procedures. Litigation over product liability or contractual compliance acts as pseudo-regulation; Sun Microsystems, owner of Java, sued Microsoft for improperly implementing the Java 1.1 standard.</li>
+</ul>
 <p><strong>Discussion:</strong> Why distinguish legal requirements from industry expectations?</p>
 <p><strong>Suggested answer:</strong> Their authority and consequences differ. Both may influence adoption, but the model should record which are binding constraints and which are preferences or market conditions.</p>
 <style type="text/css">
@@ -435,14 +800,129 @@ Aykut C. Satici
 <h2>Sources and Levels of Regulation</h2>
 <ul>
 <li>Regulations occur at <strong>federal, state, and city/county levels</strong> in the U.S., plus international regulations: agencies like the FDA, USDA, FAA, and EPA oversee federal rules</li>
-<li><strong>Pseudo-regulations</strong> matter too: standards (voluntary but expected), anticipated regulation (not yet law, but coming), and litigation/liability precedent</li>
+<li><strong>Anticipated regulation</strong> can be forecast: in the short term, track notices of proposed rulemaking; in the long term, watch leading jurisdictions (Swiss appliance noise limits, Swedish automotive safety rules, California fleet emissions)</li>
 <li>The architect must decide: which elements of regulation are important enough to shape the <em>architecture</em>, and which can be addressed later in detailed design and testing?</li>
 </ul>
 <aside class="notes">
-<p>Give students the practical, jurisdictional texture behind the four-category figure just covered. Using the United States as the reference case (while noting other major industrialized nations show broadly similar patterns), regulation occurs at multiple nested levels: federal (agencies like the FDA, USDA, FAA, and EPA), state (for instance California’s CARB and various state motor-vehicle safety equipment laws), and city/county (though these tend to be too diffuse and locally variable for a complex system to comprehensively address). Point out a practical wrinkle worth mentioning: regulations aren’t always hard to locate for environments requiring formal certification (aircraft type certificates being the clean example): but in other cases they can be challenging to unearth, and it’s ultimately the architect’s responsibility, often working with the enterprise’s legal function, to be aware of everything relevant.</p>
-<p>Close on the key architectural judgment call this section keeps returning to, and worth stating explicitly as the section’s takeaway: not every element of regulation deserves to shape the <em>architecture</em> itself. Some regulatory requirements can perfectly well be addressed later, in detailed design and testing, without touching the fundamental form-function mapping: the architect’s job is discriminating between the two, deciding which regulatory and pseudo-regulatory factors are consequential enough to bake into the architecture now, versus which can be deferred.</p>
+<ul>
+<li>Using the United States as the reference case: federal agencies (FDA, USDA, FAA, EPA), state rules (California’s CARB, state motor-vehicle safety equipment laws), and city/county codes, which are usually too diffuse for a complex system to cover exhaustively.</li>
+<li>Regulations are easy to find where certification is required, such as aircraft type certificates, but can be hard to unearth elsewhere. The architect, often working with the legal function, is responsible for knowing all relevant regulations.</li>
+<li>Proposed rules move through a public process, and industry is often invited to comment. Automotive firms lobbied against mandatory backup cameras and commented on implementation deadlines relative to development lead times.</li>
+<li>Not every regulatory requirement deserves to shape the architecture. Some can be handled in detailed design and testing without changing the form-function mapping.</li>
+</ul>
 <p><strong>Discussion:</strong> What belongs in the architecture model when a requirement’s applicability is unresolved?</p>
 <p><strong>Suggested answer:</strong> An explicit assumption and a dependency on clarification by the responsible specialist. Explore how alternative interpretations affect feasibility before committing to a costly configuration.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="regulatory-intent-and-rigidity" class="slide level2 smaller">
+<h2>Regulatory Intent and Rigidity</h2>
+<p>The first step in complying with any regulation is to understand its <strong>intent</strong>.</p>
+<div class="chapter10-table">
+<table class="caption-top">
+<colgroup>
+<col style="width: 42%">
+<col style="width: 57%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Intent</th>
+<th style="text-align: left;">Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Protect the consumer</td>
+<td style="text-align: left;">Credit card bills must show the payback period if only the minimum is paid</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Prevent workplace injury</td>
+<td style="text-align: left;">OSHA ventilation and protection standards for toxic materials</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Protect the environment</td>
+<td style="text-align: left;">CAFE fleet-average standards for car manufacturers</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Implement industrial policy</td>
+<td style="text-align: left;">Tax credits for plug-in electric vehicles; implicit tariffs</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Prevent dissemination of sensitive technology</td>
+<td style="text-align: left;">ITAR limits on sharing munitions-related data with non-U.S. citizens</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="fragment" title="How rigid is the limit?">
+<div class="callout callout-tip callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<p><strong>How rigid is the limit?</strong></p>
+</div>
+<div class="callout-content">
+<p>Leading firms often <strong>exceed</strong> regulations because doing so adds customer value or marketing benefit. Where regulation pushes an industry toward a social good, firms engineer <strong>as close to the limit as possible</strong>. Intent helps predict which case applies.</p>
+</div>
+</div>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>Understanding intent serves two purposes: it shows how compliance will be implemented, and it helps predict anticipated regulation.</li>
+<li>Compliance is overseen in several ways: a certificate required to operate the system, plans submitted for review and approval, designated examiners, regular or surprise inspections, or, at the extreme, self-certification with records that must be produced if a complaint or lawsuit arises.</li>
+<li>As a general rule, regulations lag the leading edge of the market. Where they lead instead, firms design to the limit to deliver more operating value at lower cost.</li>
+</ul>
+<p><strong>Discussion:</strong> Why does rigidity matter to the architecture?</p>
+<p><strong>Suggested answer:</strong> A limit the product will comfortably exceed can be handled in detailed design. A limit the product must approach closely becomes a sizing constraint that can decide between concepts, and it needs margin and evidence planned from the start.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="the-architect-and-the-legal-department" class="slide level2 smaller">
+<h2>The Architect and the Legal Department</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><strong>Legal counsel</strong></p>
+<ul>
+<li>Role is to be conservative: protect the firm from risk and liability</li>
+<li>Not incentivized by the product’s success in the market</li>
+<li>Works from existing law; rarely tasked with anticipating regulation</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><strong>The architect</strong></p>
+<ul>
+<li>Understands corporate and legal strategy as they relate to regulation and pseudo-regulation</li>
+<li>Complies where mandatory; otherwise implements to the extent necessary or desirable</li>
+<li><strong>Bridges the gap</strong> with legal counsel and provides comprehensive guidance for the product</li>
+</ul>
+</div></div>
+<aside class="notes">
+<ul>
+<li>The two roles have different objectives. Legal minimizes risk under current law; the architect has to weigh compliance against product value and anticipate rules that may arrive during the product’s life.</li>
+<li>Neither can replace the other. The architect needs legal expertise on what the law requires; legal needs the architect to explain which design choices are affected and how.</li>
+</ul>
+<p><strong>Discussion:</strong> Why can’t the architect simply hand regulatory questions to the legal department?</p>
+<p><strong>Suggested answer:</strong> Legal counsel is not optimizing product value and does not usually forecast regulation. The architect must decide which regulatory factors shape the architecture, how far to exceed or approach limits, and how to prepare for anticipated rules.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -460,10 +940,15 @@ Aykut C. Satici
 <ul>
 <li>Regulation is a two-edged upstream influence: it can protect incumbents or create openings for disruption</li>
 <li>Beyond formal regulation, the architect must track pseudo-regulatory influences: anticipated regulation, standards, and liability exposure</li>
-<li>The key architectural judgment: separate regulatory elements that must shape the architecture from those addressable later, in detailed design</li>
+<li>Understanding regulatory <strong>intent</strong> shows how compliance will work, how rigid a limit is, and where regulation is heading</li>
+<li>The architect bridges the gap with legal counsel and separates regulatory elements that must shape the architecture from those addressable later in detailed design</li>
 </ul>
 <aside class="notes">
-<p>Review before moving to technology. Students should now be comfortable that regulation isn’t purely a compliance headache: it’s a two-edged strategic influence that can lock in incumbents or crack open a market for disruption, exactly like the Tier 4 Final emissions example demonstrated. They should also be able to name and distinguish all four categories from Figure 10.2 (regulation, anticipated regulation, standards, liability) and the different level of engagement each demands, and articulate the core architectural judgment call: deciding which regulatory factors are consequential enough to shape the architecture now, versus deferrable to detailed design later.</p>
+<ul>
+<li>Review before moving to technology. Students should see regulation as a strategic influence, not only a compliance burden, as in the Tier 4 Final example.</li>
+<li>They should be able to name the four categories of Figure 10.2 and the level of engagement each demands.</li>
+<li>They should be able to explain why the architect, not the legal department, must anticipate regulation and decide which factors shape the architecture now.</li>
+</ul>
 <p><strong>Discussion:</strong> What is the risk of adding regulatory checks only after concept selection?</p>
 <p><strong>Suggested answer:</strong> They may invalidate the preferred concept or require major redesign. Relevant constraints should inform exploration early and remain traceable as the design develops.</p>
 <style type="text/css">
@@ -504,7 +989,36 @@ Aykut C. Satici
 <li>Readiness concerns performance in the intended environment and availability by the integration deadline. Value concerns benefits relative to cost, risk, and alternatives. Transfer concerns how the receiving team will acquire and apply the technology.</li>
 <li>These questions interact. Integration difficulty can change the readiness assessment and the expected benefit.</li>
 </ul>
+<p><strong>Discussion:</strong> What evidence should an architect require before committing to a new technology?</p>
 <p><strong>Suggested answer:</strong> Require evidence on all three questions. <strong>Readiness:</strong> can the technology meet the required operating conditions by the integration deadline? <strong>Value:</strong> does its system-level benefit justify cost, risk, and supporting changes relative to a credible alternative? <strong>Transfer:</strong> who will supply the expertise, process control, documentation, and integration support? These checks can proceed iteratively; transfer difficulty can change both readiness and value. Keep a fallback or staged introduction when a promising technology remains uncertain.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="readiness-and-value-what-can-go-wrong" class="slide level2 smaller">
+<h2>Readiness and Value: What Can Go Wrong</h2>
+<ul>
+<li>Technology develops <strong>at its own pace</strong>, independent of the product schedule. It may be ready in time, late, or have lain fallow so long that its development team has dispersed</li>
+<li><strong>Advocates sometimes overstate readiness.</strong> The TRL scale (next slides) gives developers and architects a common vocabulary for evidence</li>
+<li>Development is not linear: setbacks and iteration before infusion are common, despite the impression a TRL rating gives</li>
+<li><strong>Value</strong> is best judged by comparing architectures possible <em>with</em> the technology against those <em>without</em> it (Chapter 12), including the risk of timely delivery and the long-term supplier base</li>
+</ul>
+<aside class="notes">
+<ul>
+<li>The book focuses on technologies early in their “S” curve, where readiness is most uncertain.</li>
+<li>The architect is responsible for understanding the candidate technologies, not just accepting a readiness claim.</li>
+<li>A with/without comparison guards against assuming the new technology is better because it is new. The alternative architecture without it is the baseline.</li>
+</ul>
+<p><strong>Discussion:</strong> A supplier says its new sensor “will be TRL 7 by next spring.” How should you respond?</p>
+<p><strong>Suggested answer:</strong> Treat it as a forecast, not evidence. Ask what has been demonstrated, in what environment, and what the plan to reach the next level depends on. Carry an architecture that works without the sensor until the evidence arrives.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -663,21 +1177,21 @@ Aykut C. Satici
 <section id="technology-transfer-and-know-how" class="slide level2 smaller">
 <h2>Technology Transfer and Know-How</h2>
 <ul>
-<li>Technology transfer discussions often jump straight to <strong>IP ownership</strong>: necessary, but not sufficient</li>
-<li>IP agreements establish rights to use a technology. Teams also need the <strong>know-how</strong> to apply it reliably</li>
-<li>Experienced developers help transfer <strong>know-how</strong>, often by working with the receiving product team</li>
+<li>Technology transfer discussions often jump straight to <strong>IP ownership</strong>, which is necessary but not sufficient</li>
+<li>IP ownership or licensing covers the <strong>“know what”</strong>; the real problem is transferring the <strong>“know how”</strong></li>
+<li><strong>People</strong> are by far the most effective means of transfer: in firms with research labs, the developers often move with the technology into the product team</li>
 </ul>
-<div class="fragment" title="Acquiring know-how">
+<div class="fragment" title="An inefficient market for technology">
 <div class="callout callout-tip callout-titled callout-style-default">
 <div class="callout-body">
 <div class="callout-title">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
-<p><strong>Acquiring know-how</strong></p>
+<p><strong>An inefficient market for technology</strong></p>
 </div>
 <div class="callout-content">
-<p>External technology suppliers may have limited knowledge of the intended application or limited resources for development. Plan how the receiving team will acquire the expertise needed to integrate the technology.</p>
+<p>Many firms now acquire technology from suppliers, universities, government laboratories, and small companies. Those developers often don’t know the technology’s potential value, almost certainly don’t know the architect’s intended application, and rarely have the money and time to mature it. The architect must devise a mechanism for transfer.</p>
 </div>
 </div>
 </div>
@@ -686,9 +1200,9 @@ Aykut C. Satici
 <ul>
 <li>IP ownership or licensing establishes rights to use the technology. Reliable use also requires practical knowledge about production, operating limits, and troubleshooting.</li>
 <li>Experienced developers can transfer this knowledge by working with the receiving team. Internal research staff may move into product development with the technology.</li>
-<li>External suppliers, universities, government laboratories, and acquired firms may provide technology without knowing the intended application or having resources to complete its development.</li>
-<li>Plan training, documentation, joint integration work, and evidence that the receiving team can reproduce the required results.</li>
+<li>With external sources, the architect works with the enterprise’s technology team to plan the transfer: training, documentation, joint integration work, and evidence that the receiving team can reproduce the required results.</li>
 </ul>
+<p><strong>Discussion:</strong> What should a technology transfer plan include beyond a license?</p>
 <p><strong>Suggested answer:</strong> Transfer the ability to reproduce reliable results, not only the right to use a design. Pair receiving engineers with experienced developers, document operating windows and failure modes, train staff on representative equipment, and demonstrate repeatable performance at the receiving site. Licensing can establish permission without transferring tacit production and troubleshooting knowledge. Acceptance evidence should show that the receiving team can operate and maintain the technology without indefinite dependence on its inventors.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -707,10 +1221,14 @@ Aykut C. Satici
 <ul>
 <li>The architect must judge technology readiness (TRL), value creation, and transfer mechanism before infusing new technology</li>
 <li>Technology development is not linear: setbacks and iteration before final readiness are the norm, despite what a TRL rating might suggest</li>
-<li>Effective transfer includes both IP arrangements and the expertise needed to use the technology reliably</li>
+<li>Effective transfer includes both IP arrangements (“know what”) and the people and expertise needed to use the technology reliably (“know how”)</li>
 </ul>
 <aside class="notes">
-<p>Review before turning from upstream to downstream influences. Students should be able to recite the three-question sequence for technology infusion decisions (readiness, value, transfer), explain the TRL scale’s general shape and its explicit caveat about nonlinear development, and articulate why “know-how” transfer (people) matters more than pure IP ownership. This closes out the upstream half of the chapter: strategy and marketing, regulation, and technology: all three of which the architect has to interpret and translate into concrete architectural goals, without controlling any of them directly. The chapter now pivots to the mirror-image problem: downstream influences, where the architect similarly doesn’t control implementation, operations, or product evolution, but must compress relevant detail from each of them back into decisions made early.</p>
+<ul>
+<li>Review before turning from upstream to downstream influences. Students should be able to state the three questions (readiness, value, transfer), explain the TRL scale and its caveat about nonlinear development, and explain why know-how matters more than IP ownership alone.</li>
+<li>This closes the upstream half of the chapter: strategy, marketing, regulation, and technology. The architect interprets each of them without controlling it.</li>
+<li>The downstream half is the mirror image. The architect doesn’t control implementation, operations, or product evolution, but must bring their relevant details into early decisions.</li>
+</ul>
 <p><strong>Discussion:</strong> What three checks should precede technology infusion?</p>
 <p><strong>Suggested answer:</strong> Assess readiness for the relevant environment, system-level value relative to alternatives, and the ability to transfer know-how into the receiving organization. Weakness in any one can undermine the expected benefit.</p>
 <style type="text/css">
@@ -787,15 +1305,101 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
+<section id="make-or-buy" class="slide level2 smaller">
+<h2>Make or Buy?</h2>
+<ul>
+<li>Implementation is an <strong>ongoing business process</strong>: the product joins a queue of other projects in the implementation system, so the architect must understand that process and work with implementers from early in development</li>
+<li>It spans sourcing, capitalization and ramp-up, software development and test, hardware manufacturing and quality control, supply chain management, integration, system test, and certification</li>
+</ul>
+<div class="fragment">
+<div class="callout callout-important no-icon callout-style-simple">
+<div class="callout-body">
+<div class="callout-content">
+<p>The key implementation decision for the architect is <strong>make or buy</strong>: will the product be implemented within the enterprise or at a supplier?</p>
+<p><strong>1. Competence.</strong> Is it within the enterprise’s core implementation competence, or one the firm wants to develop? <strong>2. Capacity.</strong> Is there “space” in the implementation process to realize this product?</p>
+</div>
+</div>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>Competence comes first: does the firm have, or want to develop, the capabilities to build the entire system? Capacity is the secondary question.</li>
+<li>A make decision ties the product to the enterprise’s own processes and queue. A buy decision ties it to a supplier’s capabilities, interfaces, and schedule.</li>
+</ul>
+<p><strong>Discussion:</strong> A drone company is deciding whether to make its own motors. What would you ask?</p>
+<p><strong>Suggested answer:</strong> Whether motor design and production are a core competence the firm has or wants to build (does it differentiate the product?), whether the factory has capacity for them, and what buying would do to the architecture: the supplier’s motor sizes, interfaces, and roadmap would become constraints on the airframe and power system.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="suppliers-can-define-or-defy-decomposition" class="slide level2 smaller">
+<h2>Suppliers Can Define or Defy Decomposition</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><strong>Benefits of early supplier involvement</strong></p>
+<ul>
+<li>Access to more technology</li>
+<li>Implementation expertise</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><strong>Drawbacks</strong></p>
+<ul>
+<li>Suppliers start influencing the architecture for their own good</li>
+</ul>
+</div></div>
+<div class="callout callout-important no-icon callout-style-simple">
+<div class="callout-body">
+<div class="callout-content">
+<p>Once a supplier is slated to provide a component, that component becomes a <strong>hard boundary</strong> and will influence decomposition. Suppliers can <strong>define</strong> decomposition or <strong>defy</strong> decomposition.</p>
+</div>
+</div>
+</div>
+<ul>
+<li>Involve the implementation team early, take part in make/buy discussions, and carefully <strong>time</strong> the introduction of suppliers into architecting</li>
+<li>Supply chains have many coordination points, incomplete information, and lags; these dynamics affect timing decisions such as time to market of the first product</li>
+</ul>
+<aside class="notes">
+<ul>
+<li>Two questions arise when key suppliers are involved: how early to bring them in, and how to handle their effect on the architectural decomposition.</li>
+<li>Bringing a supplier in too early can let its product line shape the architecture. Bringing it in too late can miss technology and expertise, or discover that its component doesn’t fit the planned boundary.</li>
+</ul>
+<p><strong>Discussion:</strong> What does “defy decomposition” look like in practice?</p>
+<p><strong>Suggested answer:</strong> The supplier’s module bundles functions the architect intended to separate, or splits functions the architect intended to keep together, or its interface doesn’t match the planned boundary. The architecture then adapts to the supplier’s product rather than the reverse.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
 <section id="section-10.6-summary" class="slide level2 smaller">
 <h2>Section 10.6 Summary</h2>
 <ul>
-<li>Implementation covers both coding and manufacturing: the point where design and supply chain flows converge</li>
-<li>The architect’s job is to compress downstream implementation detail into decisions that can be made early, rather than discovering constraints too late</li>
-<li>Coordinating the conceive/design flow with the source/supply flow is a joint responsibility of the architect and the implementation team</li>
+<li>Implementation covers both coding and manufacturing; it is where the design flow and the supply chain flow converge</li>
+<li>The key architectural decision is <strong>make or buy</strong>, based on core competence and capacity</li>
+<li>Suppliers become hard boundaries: they can define or defy decomposition, so the timing of their involvement matters</li>
+<li>The architect’s job is to compress downstream implementation detail into decisions made early, rather than discovering constraints too late</li>
 </ul>
 <aside class="notes">
-<p>Review. Students should be comfortable with why “implementation” replaces “manufacturing” as the vocabulary here (to cover software as naturally as hardware), able to describe the two converging flows in Figure 10.4 (conceive/design vs.&nbsp;source/supply), and able to state the make/buy decision and the “suppliers can define decomposition or defy decomposition” principle as the two central architectural stakes in this section. One more downstream influence beyond a program’s supply-chain dynamics is worth a final mention before moving on: the book notes that the implementation system is large, with many points of coordination: often working from incomplete information, and subject to real lags: so the architect should be prepared to understand these dynamics, because they affect major timing decisions, such as time-to-market for the first product. Next, we move from <em>building</em> the system to <em>operating</em> it once fielded.</p>
+<ul>
+<li>Review. Students should be able to explain why “implementation” replaces “manufacturing” (to cover software as naturally as hardware) and describe the two converging flows in Figure 10.4.</li>
+<li>They should be able to state the make/buy questions (competence, then capacity) and explain how a supplier can define or defy decomposition.</li>
+<li>Supply chain dynamics affect major timing decisions such as time to market for the first product.</li>
+<li>Next, we move from building the system to operating it.</li>
+</ul>
 <p><strong>Discussion:</strong> When is a technically feasible concept not implementable by the enterprise?</p>
 <p><strong>Suggested answer:</strong> When necessary skills, suppliers, tooling, resources, or schedule are unavailable. Technical feasibility is only one part of the realization problem.</p>
 <style type="text/css">
@@ -1020,7 +1624,7 @@ Aykut C. Satici
 <p><strong>Stand-alone operations</strong></p>
 </div>
 <div class="callout-content">
-<p><strong>Stand-alone operations</strong>: the system must operate without connection to its normal supporting systems: common during test, but sometimes also in the field (e.g., a refrigerator keeping food cold through a power outage).</p>
+<p><strong>Stand-alone operations</strong>: the system must operate without connection to its normal supporting systems. This is common during test, but sometimes also happens in the field (e.g., a refrigerator keeping food cold through a power outage).</p>
 </div>
 </div>
 </div>
@@ -1032,6 +1636,7 @@ Aykut C. Satici
 <li>Stand-alone operations occur without some normally available supporting systems. Examples include isolated testing and maintaining refrigeration during a power interruption.</li>
 <li>Define the boundary and operating conditions before classifying an event. The same event may be recoverable in one design and an emergency in another.</li>
 </ul>
+<p><strong>Discussion:</strong> How would you state a stand-alone operation requirement for a laptop?</p>
 <p><strong>Suggested answer:</strong> Example requirement for a laptop: maintain a defined essential workload on battery for a specified duration when mains power is unavailable, with a stated initial charge and power profile. The precise duration would come from stakeholder needs, not from this example. Identify which normal support is absent, what reduced service remains, and when safe shutdown is required. Stand-alone operation is a capability or mode; whether it is a contingency or emergency depends on the circumstances and consequences.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -1158,6 +1763,42 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
+<section id="which-ilities-distinguish-architectures" class="slide level2 smaller">
+<h2>Which Ilities Distinguish Architectures?</h2>
+<div class="columns">
+<div class="column" style="width:50%;">
+<p><strong>Not every ility is architecturally distinguishing, and none always is</strong></p>
+<ul>
+<li><strong>Reliability</strong> may distinguish between pump architectures, but not between vehicle architectures if it arises only from detailed design or the assembly method</li>
+<li><strong>Maintainability</strong> of a tablet may depend on an integral vs.&nbsp;modular case (architectural), or on how easily the screen coating cleans (not architectural)</li>
+</ul>
+</div><div class="column" style="width:50%;">
+<p><strong>The ilities are not independent</strong></p>
+<ul>
+<li><strong>Durability</strong> may correlate with the emphasis on manufacturing quality</li>
+<li><strong>Modularity</strong> may affect <strong>adaptability</strong></li>
+<li><strong>Robustness</strong> may be inversely related to <strong>flexibility</strong></li>
+</ul>
+</div></div>
+<aside class="notes">
+<ul>
+<li>The test for any ility: does it take different values across the candidate architectures because of architectural decisions? If it only varies with detailed design, it belongs later.</li>
+<li>Because ilities interact, improving one can degrade another. Robustness (insensitivity to change) and flexibility (ease of change) often pull in opposite directions.</li>
+</ul>
+<p><strong>Discussion:</strong> For a sidewalk delivery robot, name one ility that would likely distinguish architectures and one that would not.</p>
+<p><strong>Suggested answer:</strong> Maintainability is likely distinguishing if the concepts differ between a swappable battery module and an integrated pack. Usability of the customer’s phone app is unlikely to distinguish the robot’s architectures. The answer depends on the actual candidate concepts.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
 <section id="section-10.8-summary" class="slide level2 smaller">
 <h2>Section 10.8 Summary</h2>
 <ul>
@@ -1197,9 +1838,10 @@ Aykut C. Satici
 </div>
 <aside class="notes">
 <ul>
-<li>Starting from a blank slate is rarely possible or desirable. Legacy knowledge can be valuable, but some behavior may be poorly documented.</li>
-<li>Do not equate previously tested with validated in the new context. Recheck loads, interfaces, environment, and failure behavior.</li>
-<li>The book uses a printer-software rewrite and the Space Shuttle to show why legacy choices can be consequential.</li>
+<li>Starting from a blank slate is rarely possible or desirable. A printing company estimated that recoding the legacy software for its mid-size printers, accreted over 15 years, would cost its entire operating profit for a year.</li>
+<li>Benefits of reuse: development cost is already expensed, tooling is paid for, and performance is known. The downside: legacy elements impose constraints, such as a reused network bus limiting achievable data rates.</li>
+<li>Do not equate previously tested with validated in the new context. NASA’s reuse of Space Shuttle solid rocket motors and main engines involved requalifying spares and potentially redesigning 40-year-old pumps and valves.</li>
+<li>Reuse is sharing that was not intended in the original design; platforming is intended sharing.</li>
 </ul>
 <p><strong>Discussion:</strong> What would you verify before reusing a control module in another product?</p>
 <p><strong>Suggested answer:</strong> Its assumptions about inputs, timing, environment, dependencies, and interaction with new components, followed by integration tests in the new context.</p>
@@ -1234,6 +1876,41 @@ Aykut C. Satici
 </ul>
 <p><strong>Discussion:</strong> Why should an architect think about the second product variant while designing the first?</p>
 <p><strong>Suggested answer:</strong> Initial interfaces and shared modules determine whether the next variant can change cheaply or requires system-wide redesign.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="clockspeed-where-to-put-the-stable-interfaces" class="slide level2 smaller">
+<h2>Clockspeed: Where to Put the Stable Interfaces</h2>
+<ul>
+<li>Much of product family evolution is <strong>unforeseeable</strong></li>
+<li>Industry <strong>clockspeed</strong> limits how far ahead the architect can forecast: stable markets such as rail tend to see component-level innovation within a stable architecture, while mobile phones move far faster</li>
+<li>The architect can invest in <strong>real options</strong> during design, such as additional interfaces that enable future modularity</li>
+</ul>
+<div class="fragment">
+<div class="callout callout-important no-icon callout-style-simple">
+<div class="callout-body">
+<div class="callout-content">
+<p><strong>Best practice:</strong> explicitly set interfaces between <strong>slow- and fast-clockspeed components</strong>, on the presumption that unplanned evolution will occur on the fast side of the interface.</p>
+</div>
+</div>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>A real option costs something now (an extra interface, reserved space or power) and pays off only if a future change happens. Its value grows with the uncertainty about which change will come.</li>
+<li>The B-52 at the end of this chapter is a worked example: its engines evolved faster than its airframe, and their modular placement allowed several engine upgrades.</li>
+</ul>
+<p><strong>Discussion:</strong> In a laptop, where would you put interfaces between slow and fast clockspeed?</p>
+<p><strong>Suggested answer:</strong> Between the chassis, display, and keyboard (slow) and the storage, memory, and wireless modules (fast). Standard slots for the fast-changing parts let them be upgraded or swapped across generations without redesigning the enclosure.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -1285,14 +1962,20 @@ Aykut C. Satici
 <h2>Figure 10.6 · GE Healthcare’s LOGIQ Product Family</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="assets/chapter10/fig10_6_logiq_family.jpg" class="quarto-figure quarto-figure-center" height="440"></p>
+<p><img data-src="assets/chapter10/fig10_6_logiq_family.jpg" class="quarto-figure quarto-figure-center" height="400"></p>
 </figure>
 </div>
 <div class="side-caption">
 <p>The figure shows eight variants in GE Healthcare’s LOGIQ ultrasound family. Compare the range of products when considering opportunities for shared architecture and components. Source: Crawley, Cameron &amp; Selva (2016), Fig. 10.6. Used with permission of GE Healthcare.</p>
 </div>
 <aside class="notes">
-<p>Use this figure as the concrete, practical illustration of a product line/product family: linked groups of products, in the book’s phrasing, such as this GE Healthcare LOGIQ family of ultrasound machines. Point out an important nuance the book is careful about: product families don’t necessarily share underlying components or architecture at all: they can be grouped under similar names and stratified purely for feature-content marketing purposes, entirely separate from any objective like reducing development time that would explicitly require sharing components or architecture. So looking at a marketing family tree like this one doesn’t by itself tell you whether genuine platforming is happening underneath: that’s a separate, deeper architectural question. Ask students, rhetorically, to look at the range shown (from the flagship E9 down to the compact, portable <em>e</em> Ultrasound) and consider: conceiving a product family like this requires the architect to explicitly decide how much variety is demanded (will one machine serve the whole market, or are differentiated offerings required?), and conceiving a family also hints at product evolution (will the whole family launch in parallel, or will it be phased into the market over time?): questions that matter regardless of whether the underlying platforming is extensive or minimal.</p>
+<ul>
+<li>A product line or product family is a linked group of products, such as this LOGIQ family of ultrasound machines.</li>
+<li>Product families do not necessarily share components or architecture. They can be named and stratified by feature content for marketing alone. A family tree like this one does not by itself show whether platforming happens underneath.</li>
+<li>Conceiving a family requires deciding how much variety is demanded: will one machine serve the whole market, or are differentiated offerings needed?</li>
+<li>It also raises product evolution: will the family launch in parallel, or be phased into the market?</li>
+</ul>
+<p><strong>Discussion:</strong> How would you decide how many LOGIQ variants to offer, and whether to launch them together?</p>
 <p><strong>Suggested answer:</strong> Different user settings can justify different combinations of portability, imaging capability, workflow, serviceability, and cost. A flagship and a portable product need not share all internal components merely because they share branding. Decide the needed variants from segment requirements, then investigate actual reusable architecture and interfaces. Parallel launch may shorten market rollout but require more simultaneous resources; phased launch can enable learning while introducing divergence and compatibility risks. The historical family picture alone cannot establish the best strategy.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -1475,15 +2158,56 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
+<section id="linchpin-parts-and-divergence" class="slide level2 smaller">
+<h2>Linchpin Parts and Divergence</h2>
+<ul>
+<li>Commonality can be <strong>non-architectural</strong> (standardizing on M8 and M10 bolts) or <strong>architectural</strong> (sharing engines across trucks, or a whole rolling chassis, drivetrain, and geometry). The architecture defines which modules can be paired, such as which axles with which transmissions</li>
+<li>Platforms that save development cost often share <strong>linchpin</strong> parts at the heart of the architecture, such as Black &amp; Decker’s common motor across its hand tools. Changes to a linchpin cascade through many other parts</li>
+<li>Other examples of cost sharing: Volkswagen’s A platform (VW Jetta, Audi TT, Seat Toledo) and the Joint Strike Fighter’s Air Force, Marine, and Navy variants</li>
+</ul>
+<div class="fragment">
+<div class="callout callout-important no-icon callout-style-simple">
+<div class="callout-body">
+<div class="callout-content">
+<p><strong>Divergence.</strong> In the MIT Commonality Study, platform development cost up to 50% more than standalone development, yet many firms realized less sharing than they planned. Divergence is often set early: by long schedule offsets between variants, and by variant goals that don’t say where over-performance will be carried for the sake of common parts.</p>
+</div>
+</div>
+</div>
+</div>
+<aside class="notes">
+<ul>
+<li>Platforms increase development complexity: the architect must judge the variety demanded, decide where over-performance can be carried for shared components, and define interfaces that work for several modules.</li>
+<li>Offsets of months or years between variants let requirements, technology, and suppliers change, and each later team has reasons to depart from the shared design.</li>
+<li>The architecture chosen shapes the product’s longevity and its modularity for new functionality.</li>
+</ul>
+<p><strong>Discussion:</strong> How can an architect reduce divergence when variants are planned years apart?</p>
+<p><strong>Suggested answer:</strong> Write explicit goals for each variant that accept a stated amount of over-performance from shared parts, place the shared parts behind stable interfaces, and identify which elements are expected to diverge (the fast-clockspeed side) so that divergence there does not spread to the linchpin parts.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
 <section id="section-10.9-summary" class="slide level2 smaller">
 <h2>Section 10.9 Summary</h2>
 <ul>
-<li>Platforming is the deliberate, forward-looking sharing of parts and process across a product family: distinct from simple reuse</li>
-<li>Sharing supports product variety, but requires investment and introduces costs and risks throughout the lifecycle</li>
-<li>The architect must weigh the benefit of shared investment against the constraints it locks in for every future variant</li>
+<li>Reuse is unintended sharing of a known element; platforming is deliberate, forward-looking sharing across a product family</li>
+<li>Put stable interfaces between slow- and fast-clockspeed components, where unplanned evolution is most likely</li>
+<li>Sharing supports product variety, but requires investment, introduces costs and risks throughout the lifecycle, and often <strong>diverges</strong> from the plan</li>
 </ul>
 <aside class="notes">
-<p>Review. Students should be able to state the reuse/platforming distinction precisely (known-vs-predicted performance and use case), describe what a product line or product family is (and that it doesn’t necessarily imply shared architecture), and name at least one cost or drawback of platforming from each of the four phases (conception, development, production, operations). This closes out the downstream half of the chapter: implementation, operations, Design for X, and product evolution: mirroring the upstream half covered earlier (strategy, marketing, regulation, technology). We’ve now surveyed four upstream influences and four downstream influences on the architect’s decisions. The next section shows these don’t operate independently or additively: they interact, in a iterative model the book calls the ABCD Product Case.</p>
+<ul>
+<li>Review. Students should be able to state the reuse/platforming distinction (known vs.&nbsp;predicted performance and use case) and explain that a product family does not necessarily imply shared architecture.</li>
+<li>They should be able to explain the slow/fast clockspeed interface practice and name at least one platforming cost from each of the four phases.</li>
+<li>They should be able to explain divergence and why linchpin parts make platform changes expensive.</li>
+<li>This closes the downstream half of the chapter: implementation, operations, Design for X, and product evolution. These influences interact rather than add up, which motivates the iterative ABCD Product Case.</li>
+</ul>
 <p><strong>Discussion:</strong> What evidence would justify investing in a platform?</p>
 <p><strong>Suggested answer:</strong> Credible demand for the variants, meaningful common requirements, and lifecycle benefits that outweigh development overhead, compromises, and shared risks. Common branding alone is insufficient.</p>
 <style type="text/css">
@@ -1508,12 +2232,14 @@ Aykut C. Satici
 <ul>
 <li>Upstream and downstream influences interact. Revisit goals and constraints as concept options develop</li>
 <li>Innovation traditionally derives from one of two sources: a <strong>new customer need</strong>, or a <strong>new technology</strong> that improves the performance/cost ratio of meeting an existing need</li>
-<li>This is a simplified view: it misses value-chain integration, market expansion strategies, and installed-base service strategies: but it’s a useful anchor</li>
+<li>This view is simplified (it omits value-chain integration, market expansion strategies, and installed-base service strategies), but it is a useful anchor</li>
 </ul>
 <aside class="notes">
-<p>Introduce the chapter’s synthesizing framework. State plainly why a simple additive approach fails, since it’s the section’s opening thesis: having discussed upstream and downstream influences, it’s tempting to think of them as a checklist: tackle each influence in sequence, enumerate its goals and constraints, then sum them all up to produce the concept. The book explicitly rejects this as too <em>linear</em>; it’s not possible to treat these influences that way in reality, because they interact with and constrain each other.</p>
-<p>Give students the book’s own simplified starting point for how innovation actually gets triggered, while being honest about its limits. Traditionally, innovation in products and systems is thought to derive from one of two sources: the firm has identified a new <em>customer need</em>, or the firm has identified (or commercialized) a new <em>technology</em> that delivers a higher performance-to-cost ratio in satisfying an existing need. The book’s own example pairing nicely illustrates the two: adding an icemaker to a refrigerator is responding to a customer need using existing, well-understood technology, whereas adding automatic tracking of stored food depends specifically on the development of new RFID (radio-frequency identification) technology: technology-driven, not need-driven, innovation.</p>
-<p>Be candid with students, exactly as the book is, that this two-source model is a deliberately simplified perspective on product strategy: it does not express strategies that capture new value in the value chain through backward or forward integration, strategies that leverage home markets against regional or global expansion, or strategies that leverage a firm’s installed base of hardware to deliver high-margin service offerings. Despite this simplification, it’s useful as an anchor around which to organize the highest-level considerations when introducing an architectural innovation into a corporation: which is exactly the role it plays in the ABCD framework diagram on the next slide.</p>
+<ul>
+<li>Treating the influences as a checklist (enumerate each one’s goals and constraints, then sum them) is too linear. The book rejects it because the influences interact and constrain each other.</li>
+<li>Need-driven innovation: adding an icemaker to a refrigerator answers a customer need with existing technology. Technology-driven innovation: automatic tracking of stored food depends on new RFID technology.</li>
+<li>The two-source model leaves out strategies that capture value through backward or forward integration, that leverage home markets for regional or global expansion, or that use an installed base of hardware to sell high-margin services. It is still a useful anchor for the framework on the next slide.</li>
+</ul>
 <p><strong>Discussion:</strong> Why can’t upstream influences simply be added into one score once?</p>
 <p><strong>Suggested answer:</strong> They interact: a technology changes cost, which changes the business case and potentially the target market. Iteration is needed to obtain a mutually consistent architecture and business proposition.</p>
 <style type="text/css">
@@ -1536,11 +2262,16 @@ Aykut C. Satici
 </figure>
 </div>
 <div class="side-caption">
-<p><strong>A</strong>rchitecture <strong>B</strong>usiness <strong>C</strong>ase <strong>D</strong>ecision: two iterative cycles. Technology and customer needs feed in; system architecture sets <em>goals</em> for the business case, which returns <em>solutions</em> back to the architecture. Source: Crawley, Cameron &amp; Selva (2016), Fig. 10.9.</p>
+<p><strong>A</strong>rchitecture <strong>B</strong>usiness <strong>C</strong>ase <strong>D</strong>ecision: two iterative cycles. Technology feeds the architecture cycle and customer needs feed the business case cycle; the business case sets <em>goals</em> for the architecture, which returns <em>solutions</em> to the business case. Source: Crawley, Cameron &amp; Selva (2016), Fig. 10.9.</p>
 </div>
 <aside class="notes">
-<p>Walk through this diagram slowly, since it’s the conceptual core the rest of the chapter builds on, and its central claim, two circles connected by two arrows going in opposite directions, is easy to glance past without absorbing. On the left, a “System Architecture” cycle; on the right, a “Business Case” cycle; both are fed from outside by the two innovation sources just discussed (technology feeding in from above the left circle, customer needs feeding in from above the right circle). The two circles are connected by two distinct arrows, and it’s the <em>direction</em> of each arrow that carries the real content: “Goals” flows from the System Architecture circle <em>toward</em> the Business Case circle, and “Solutions” flows from the Business Case circle <em>back toward</em> the System Architecture circle.</p>
-<p>Spell out exactly what that means in practice, since the diagram alone is abstract: when a customer need has been identified, that need first sets <em>goals</em> for the system architecture: and the architect’s job is to evaluate whether a solution meeting those goals is technically feasible, which in turn helps determine whether the business case actually “closes” (survives financial scrutiny) based on the cost of that solution. When, instead, product innovation derives from a new technology, the direction of the interaction reverses somewhat: the architect must evaluate whether the resulting technical solution actually addresses genuine customer needs, feeding back into the business case from the technology side. Either way, needs-driven or technology-driven, the deep point of this figure is that architecture and business case are not two independent workstreams that get combined at the end; they co-evolve, iterating against each other continuously as the “acronym” ABCD’s name suggests: Architecture, Business Case, Decision.</p>
+<ul>
+<li>Two cycles: system architecture on the left, business case on the right. Technology enters the architecture cycle; customer needs enter the business case cycle.</li>
+<li>Read the arrow directions carefully. “Goals” runs from the business case to the system architecture. “Solutions” runs from the system architecture to the business case.</li>
+<li>Need-driven path: a customer need sets goals for the architecture; the architect evaluates whether a solution is feasible and helps decide whether the business case closes at that solution’s cost.</li>
+<li>Technology-driven path: a new technology suggests a solution; the architect evaluates whether it addresses real customer needs.</li>
+<li>Either way, architecture and business case are not separate workstreams combined at the end. They iterate against each other.</li>
+</ul>
 <p><strong>Discussion:</strong> What feedback should flow from architecture to the business case?</p>
 <p><strong>Suggested answer:</strong> Achievable performance, development and lifecycle costs, schedule, and risks. These can change projected demand, price, investment, and whether the product remains attractive.</p>
 <style type="text/css">
@@ -1563,8 +2294,13 @@ Aykut C. Satici
 <li>Architecture and the business case develop together, with each informing revisions to the other</li>
 </ul>
 <aside class="notes">
-<p>Consolidate the two-directional interaction from the previous slide into precise, restatable language, since this is exactly the kind of thing worth being able to explain crisply on an exam or in a design review. Needs-driven path: customer need → goals for system architecture → architect evaluates technical feasibility → informs whether the business case “closes.” Technology-driven path: new technology → candidate solution → architect evaluates whether that solution addresses a real customer need → informs the business case from the other direction. In both directions, notice the architect sits precisely at the hinge point between the technical and the financial: translating goals into feasibility assessments, or translating available solutions into value assessments.</p>
-<p>It’s worth flagging, since it recurs throughout the whole chapter’s framing: “closing” is standard business terminology worth defining precisely for students who haven’t encountered it: a business case is said to “close” when the projected revenues are earning sufficient margin to merit the investment. The book draws a deliberate parallel: just as the <em>business case</em> has to close, the <em>technical architecture</em> similarly has to close: meaning the goals are actually met by the proposed technical solutions, the required technology is present or developed, and the architecture can be delivered by the planned supply chain. Both cycles have to close simultaneously, not just the financial one, before you have a viable product proposal.</p>
+<ul>
+<li>Need-driven: customer need → goals for the architecture → feasibility assessment → does the business case close?</li>
+<li>Technology-driven: new technology → candidate solution → does it address a real need? → business case.</li>
+<li>The architect sits at the hinge between the technical and the financial.</li>
+<li>A business case “closes” when projected revenues earn enough margin to merit the investment. The technical architecture must close too: the goals are met by solutions, the required technology is present or developed, and the planned supply chain can deliver the architecture.</li>
+</ul>
+<p><strong>Discussion:</strong> What does it mean for both the technical architecture and the business case to close?</p>
 <p><strong>Suggested answer:</strong> Technical closure means a credible integrated solution meets the goals with available or developable technology, suppliers, and implementation resources. Business closure means the projected benefits and revenues justify the full investment and lifecycle costs under stated assumptions. Neither is sufficient alone: a feasible product can be economically unattractive, while a profitable spreadsheet can depend on impossible performance or schedules. Iterate both models and test the assumptions linking price, demand, performance, cost, and delivery.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -1608,15 +2344,49 @@ Aykut C. Satici
           display:block!important;
       }</style></aside>
 </section>
+<section id="currencies-drivers-and-channels" class="slide level2 smaller">
+<h2>Currencies, Drivers, and Channels</h2>
+<ul>
+<li>Each cycle has its own <strong>currency</strong>: the architecture is assessed in <strong>benefit</strong>, the business case in <strong>dollars</strong>. Together they inform the <strong>value proposition</strong>, benefit at cost</li>
+<li><strong>Competitive environment</strong> acts mainly on the business case (barriers to entry, competitor offerings, market timing). <strong>Regulation</strong> mainly constrains technical solutions, but can reshape the business case: Tier 4 Final made firms sell off inventory before the deadline and compete on new dimensions after it</li>
+<li>Internal drivers: the architecture absorbs goals set by the firm’s <strong>strategy</strong> and by its <strong>supply chain</strong> competence</li>
+<li><strong>Platforms ?= product lines</strong>: in some businesses they coincide; in others the platform is a technical artifact and the product line is channel-focused</li>
+</ul>
+<aside class="notes">
+<ul>
+<li>The two external drivers (competitive environment, regulation) and two internal drivers (strategy, supply chain competence) are the first additions to the initial framework. Channels, product lines, legacy elements, and platforms complete it.</li>
+<li>Firm-level investments should contribute positively to the product’s business case rather than only impose constraints on it.</li>
+<li>Channels example: in one case, the retail channels selling a heavy-equipment product were responsible for adding five new variants to a product line of four. Matching competitor price points started it, but the channel customer identified the opportunity and lobbied hard for it.</li>
+<li>The combined architecture and business case is sometimes called the “product case.” The Decision is the point where both close and the enterprise commits to the product.</li>
+</ul>
+<p><strong>Discussion:</strong> What should the architect check when a channel asks for unplanned variants?</p>
+<p><strong>Suggested answer:</strong> Whether the platform’s interfaces and shared parts can support the new variants without divergence, what they add to configuration management and production capacity, and whether the added revenue still closes the business case once those costs are included.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
 <section id="section-10.10-summary" class="slide level2 smaller">
 <h2>Section 10.10 Summary</h2>
 <ul>
-<li>The ABCD framework models architecture and business case as two interacting cycles</li>
-<li>Technology and customer needs are the two most common entry points: but the full framework adds regulation, competence, competitive environment, and strategy as further external drivers</li>
+<li>The ABCD framework models architecture and business case as two interacting cycles: the business case sets goals for the architecture, and the architecture returns solutions</li>
+<li>Technology and customer needs are the two most common entry points; the full framework adds external drivers (competitive environment, regulation) and internal drivers (strategy, supply chain competence), plus channels, product lines, legacy elements, and platforms</li>
 <li>The two cycles converge on a single decision: proceed with the product, or not</li>
 </ul>
 <aside class="notes">
-<p>Review before the closing case study. Students should be able to draw the ABCD framework’s basic two-circle shape from memory, correctly place “goals” and “solutions” as the two directional arrows connecting the circles, name the six additional influences layered onto the full version (competitive environment and regulation on the architecture side, competence/supply chain and legacy on the architecture side as internal drivers, and competitive environment, strategy, and channels on the business-case side), and explain what it means for both the architecture and the business case to “close” simultaneously at the Decision point. This chapter’s upstream and downstream influences are now unified into this single framework: which sets up the closing case study perfectly, since the B-52/B-2 comparison is a real historical instance of exactly these kinds of influences producing different architectural outcomes for what is, on paper, the same mission.</p>
+<ul>
+<li>Review before the closing case study. Students should be able to sketch the two-circle framework and place “goals” (business case → architecture) and “solutions” (architecture → business case) correctly.</li>
+<li>They should be able to place the added influences: regulation and standards, competence and supply chain, and legacy elements with platforms act on the architecture; competitive environment, strategy, and channels with product lines act on the business case.</li>
+<li>They should be able to explain the two currencies (benefit and dollars) and what it means for both cycles to close at the Decision.</li>
+<li>The B-52/B-2 case study next shows how these influences produce different architectures for similar missions.</li>
+</ul>
 <p><strong>Discussion:</strong> What does reaching a product decision require from both framework cycles?</p>
 <p><strong>Suggested answer:</strong> A credible technical solution and a credible business case with consistent assumptions. Resolve major disagreements about performance, resources, timing, and value before commitment.</p>
 <style type="text/css">
@@ -1641,23 +2411,26 @@ Aykut C. Satici
 <div class="columns">
 <div class="column" style="width:55%;">
 <ul>
-<li>Both aircraft deliver the same primary function, long-range strategic bombing, with different architectures</li>
-<li>The B-52: a conventional <strong>tube-and-wing</strong> design. The B-2: a <strong>flying wing</strong></li>
-<li>What upstream and downstream influences led to such different architectural choices for the same mission?</li>
+<li>Same mission, different architectures: <strong>tube-and-wing</strong> (B-52) vs.&nbsp;<strong>flying wing</strong> (B-2)</li>
+<li>Which differences were decided <strong>early</strong>, and which most shape the performance envelope? (Box 10.1)</li>
+<li><strong>Tail:</strong> the B-52 has separate horizontal and vertical surfaces; the B-2 has none, which changes pitch and yaw stability</li>
+<li><strong>Engines:</strong> the B-2’s are concealed and integral (low radar signature); the B-52’s are under-wing and modular, allowing several upgrades</li>
 </ul>
 </div><div class="column" style="width:45%;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="assets/chapter10/fig10_11_b52_b2.jpg" class="quarto-figure quarto-figure-center" height="380"></p>
+<p><img data-src="assets/chapter10/fig10_11_b52_b2.jpg" class="quarto-figure quarto-figure-center" height="320"></p>
 </figure>
 </div>
 </div></div>
 <aside class="notes">
 <ul>
-<li>The B-52 and B-2 both serve long-range strategic bombing missions, but use different forms: tube-and-wing and flying wing.</li>
-<li>Compare how mission requirements, technology, and lifecycle considerations affect their architectures. Similar primary functions do not imply identical requirements or tradeoffs.</li>
-<li>The following civil-transport examples examine a related downstream issue: how different aircraft architectures accommodate product families.</li>
+<li>The book frames the case around legacy, product evolution, and platforms: which architectural decisions were made early, and what did they lock in?</li>
+<li>Tail: without separated horizontal and vertical control surfaces, the B-2 must achieve pitch and yaw stability through the wing itself.</li>
+<li>Engines: the B-52 has had several engine upgrades because engine technology has a faster clockspeed than the airframe structure. This is the slow/fast interface principle from Section 10.9 in action.</li>
+<li>The following civil-transport examples examine a related downstream issue: how the two architectures scale into product families.</li>
 </ul>
+<p><strong>Discussion:</strong> Which of these differences are architectural decisions in the sense of Box 10.1?</p>
 <p><strong>Suggested answer:</strong> Early choices include overall tube-and-wing versus flying-wing configuration, tail arrangement, and exposed versus integrated engine placement. These couple structural, aerodynamic, signature, control, integration, and maintainability considerations and help define the feasible performance envelope. Different mission priorities, available technologies, and development contexts can favor different solutions despite the same broad functional label. Keep the comparison at the chapter’s architectural level: detailed geometry and operating requirements are needed to quantify performance, and a photograph cannot prove which specific tradeoff dominated the historical decision.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -1688,6 +2461,7 @@ Aykut C. Satici
 <li>The proposed flying-wing family adds center-body sections. Its lifting area changes with capacity rather than relying on a separately stretched fuselage.</li>
 <li>Use the figures to examine the consequences of each sharing strategy.</li>
 </ul>
+<p><strong>Discussion:</strong> How does each family change its passenger capacity?</p>
 <p><strong>Suggested answer:</strong> In the book’s conceptual comparison, a tube-and-wing family changes capacity mainly by altering fuselage length while seeking wing and subsystem commonality. A blended-wing-body proposal adds center-body sections, changing the integrated lifting and volume geometry. Commonality can save development effort while imposing excess capability, mass, or constraints on smaller variants. Treat the illustration as a platforming argument rather than proof that every production A350 variant has identical wings or that scaling requires no aerodynamic, structural, control, or certification changes.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -1704,8 +2478,8 @@ Aykut C. Satici
 <section id="why-the-architectures-scale-differently" class="slide level2 smaller">
 <h2>Why the Architectures Scale Differently</h2>
 <ul>
-<li>For tube-and-wing aircraft, the wing is sized for the <strong>heaviest</strong> family member: since wings are expensive to optimize, they’re shared across the family with minor changes</li>
-<li>Net effect: the wing is “overdesigned” for the <em>smallest</em> family member: it can produce more lift than that aircraft needs</li>
+<li>For tube-and-wing aircraft, the wing is sized for the <strong>heaviest</strong> family member; since wings are expensive to optimize, they’re shared across the family with minor changes</li>
+<li>Net effect: the wing is “overdesigned” for the <em>smallest</em> family member, producing more lift than that aircraft needs</li>
 <li>The flying-wing family instead scales by <strong>splitting along the centerline</strong> and inserting center-body sections: a different scaling mechanism</li>
 </ul>
 <aside class="notes">
@@ -1768,13 +2542,14 @@ Aykut C. Satici
 </div>
 </div>
 <ul>
-<li>Both architectures deliver the mission function; the B-2’s flying wing also buys low radar cross-section (a <em>different</em> downstream/upstream driver: stealth requirements)</li>
+<li>Both bombers deliver the mission function; the B-2’s concealed, integral engines reduce its radar signature, while the B-52’s modular engines have allowed several upgrades over its life</li>
 <li>The civil-aircraft family comparison shows how scaling requirements can favor different forms; the bomber comparison adds distinct mission and technology pressures</li>
 </ul>
 <aside class="notes">
 <ul>
 <li>A product-family requirement can influence the initial architecture because different forms accommodate capacity changes differently.</li>
-<li>Stealth provides another influence in the military examples: the B-2’s flying-wing form contributes to its low radar cross-section.</li>
+<li>Stealth is another influence in the military examples: concealed engines and the absence of a tail contribute to the B-2’s low radar signature.</li>
+<li>The B-52’s modular engine placement shows the evolution side: a long-lived airframe absorbed several generations of faster-moving engine technology.</li>
 <li>Keep the product-family illustration distinct from the complete historical explanation of either bomber. Mission requirements, technology, and implementation constraints must also be considered.</li>
 </ul>
 <p><strong>Discussion:</strong> What is the general lesson beyond the aircraft example?</p>
@@ -1794,10 +2569,11 @@ Aykut C. Satici
 <section id="chapter-10-summary" class="slide level2 smaller">
 <h2>Chapter 10 Summary</h2>
 <ul>
-<li>Upstream influences: strategy, marketing, regulation, and technology: shape the goals and constraints the architect must resolve before architecture can begin</li>
-<li>Downstream influences: implementation, operations, Design for X, and product evolution: must be compressed and fed back into decisions made much earlier</li>
+<li>Upstream influences (strategy, marketing, regulation, and technology) shape the goals and constraints the architect must resolve before architecture can begin</li>
+<li>Downstream influences (implementation, operations, Design for X, and product evolution) must be compressed and fed back into decisions made much earlier</li>
 <li>The <strong>ABCD Product Case</strong> frames architecture and business case as two coupled iterative cycles, converging on a proceed/no-proceed decision</li>
 <li>The aircraft case study illustrates how mission requirements and lifecycle considerations can lead to different architectures</li>
+<li>Throughout, the architect must be prepared to declare a <strong>current valid information set</strong> so others can work, knowing it may be corrected and updated</li>
 </ul>
 <div title="Reference">
 <div class="callout callout-tip callout-titled callout-style-default">
@@ -1820,6 +2596,7 @@ Aykut C. Satici
 <li>Review downstream influences from implementation, operations, and product evolution. Bring the relevant details into early decisions.</li>
 <li>The ABCD framework connects architecture and business-case development through iteration.</li>
 <li>Use the aircraft examples to explain why similar primary functions can lead to different architectures under different requirements and constraints.</li>
+<li>Reducing ambiguity does not mean waiting for certainty. The architect publishes the best current information so the team can proceed, and revises it as influences change.</li>
 </ul>
 <p><strong>Discussion:</strong> What is one question to ask before freezing a concept?</p>
 <p><strong>Suggested answer:</strong> Ask whether implementation, operation, evolution, and business assumptions support it. A concept attractive under one narrow metric may fail under the full enterprise and lifecycle context.</p>
