@@ -71,8 +71,9 @@ $T_k$ is predicted settled tissue at the end of plan day $k$
 ([below](#settled)). The reference
 $r_k = W_0 + \min(k/N, 1)\,(W^\star - W_0)$ runs linearly from the current scale
 weight $W_0$ to the target $W^\star$ over the $N$ days remaining.
-$\Delta I_k = I_k - I_{k-1}$ is the day-to-day change in intake ($I_0$ is the last
-logged intake, or $I_{\min} + 600$). $D_k = E_{\mathrm{base}} - I_k$ is the
+$\Delta I_k = I_k - I_{k-1}$ is the day-to-day change in intake ($I_0$ is the logged
+intake of the last finished day, or $I_{\min} + 600$; a day still being logged
+meal by meal does not count). $D_k = E_{\mathrm{base}} - I_k$ is the
 deficit against expenditure without adaptation ([model](model.md#expenditure)).
 $C_k$ is the carbohydrate prescribed, $\phi_k$ and $\phi^\star$ are the energy
 share of the targeted macronutrient and its target ([macros](#macros)), and
