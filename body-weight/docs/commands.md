@@ -195,7 +195,7 @@ Fits the model once and writes every figure for the latest episode into one fold
 - `parameter_evolution`: what the filter believed about each parameter, day by day
 - `maintenance`: the maintenance estimate over time, against logged intake
 - `innovations`: the standardized one-step-ahead surprises
-- `intake_log`: the inputs no other figure shows (exercise, fiber, sodium, steps)
+- `intake_log`: logged exercise, fiber, sodium, and steps
 
 If planning refuses, the other figures are still written. [Latest figures](../figures.qmd) shows the current set, with how to read each.
 
