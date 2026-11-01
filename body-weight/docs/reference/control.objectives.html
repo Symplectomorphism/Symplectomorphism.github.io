@@ -987,6 +987,7 @@ $$
 <p>Total cost in deadline mode.</p>
 <p>The terminal term tracks the <em>reference at the end of the horizon</em>, not the final goal weight. This distinction is easy to get wrong and the consequence is severe: penalizing the gap to the ultimate target over a 28-day horizon asks the controller to arrive within 28 days no matter how far away the deadline actually is, and it will pin intake to the calorie floor for the entire horizon trying. Tracking the reference instead makes the horizon a window onto a longer plan rather than a deadline in itself.</p>
 <p>Tracks tissue mass against the reference, not scale weight, even though the reference itself is built from the goal’s scale-weight target. Scale weight includes the fast glycogen- and sodium-water compartments, both of which carbohydrate and sodium intake move directly and reversibly – so a cost scored against scale weight can be paid down by cutting carbohydrate alone, with zero tissue lost. Scoring tissue closes that loophole: the only way to reduce this cost is to actually lose tissue.</p>
+<p><code>tissue</code> is <em>settled</em> tissue (<code>wdm.control.mpc.settled_tissue</code>): tissue plus the energy banked in glycogen, which returns to tissue once glycogen drains. Bare tissue leaves a smaller loophole of the same kind. A glycogen refill withholds energy from tissue only until the next week, so scoring bare tissue rewards a carbohydrate load in the horizon’s last weeks, and limiting its rate rewards the opposite, a carbohydrate crash whose drained glycogen props tissue up. With settled tissue in every term, carbohydrate keeps only its real effect on expenditure.</p>
 <p><code>penalty_scale</code> multiplies the constraint-violation terms only. The solver escalates it until the returned solution actually satisfies the hard limits, which is what turns these soft penalties into effective constraints.</p>
 </section>
 <section id="wdm.control.objectives.effort_cost" class="level3">
@@ -1015,7 +1016,8 @@ $$
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>control.objectives.rate_violation_cost(tissue, t_start, max_frac_per_day)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Hinge penalty on daily <em>tissue</em> loss exceeding the permitted rate.</p>
 <p>Applied to tissue mass, not scale weight, and the distinction is the whole point. Cutting carbohydrate sharply drops a kilogram of glycogen-bound water within days. On the scale that looks like a 4 lb/week loss and would trip any rate limit written against scale weight – but no tissue was lost, nothing unsafe happened, and a controller constrained on scale weight would refuse a perfectly reasonable plan or, worse, compensate by <em>raising</em> calories.</p>
-<p>The limit that matters physiologically is on how fast lean and fat tissue are mobilised. That is what this penalizes.</p>
+<p>The limit that matters physiologically is on how fast lean and fat tissue are mobilized. That is what this penalizes.</p>
+<p>The solver passes settled tissue (see <code>deadline_cost</code>), so the limit is on the energy deficit, and glycogen moving in or out cannot loosen it.</p>
 <p>The limit is a fraction of each day’s tissue, <code>-dT_k &lt;= frac * T_k</code>, so it tightens as tissue falls, which is what “a fraction of body mass per week” means and what <code>~wdm.control.mpc.check_constraints</code> verifies. A cap fixed in kg/day at the starting tissue would let a long deadline plan exceed the stated percentage in its later weeks.</p>
 <p>One-sided: rapid <em>gain</em> is not penalized here. Uses a hinge rather than a barrier so an infeasible starting guess still yields usable gradients.</p>
 </section>
@@ -1057,7 +1059,7 @@ $$
 <span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Total cost in sustainable mode.</p>
 <p>Linear in final tissue mass rather than quadratic: a quadratic reward for losing would grow without bound and drive the solution straight to the calorie floor for the entire horizon regardless of the other terms. Linear progress traded against quadratic effort produces an interior optimum, which is the behavior worth having.</p>
-<p>Scored against tissue rather than scale weight for the same reason as <code>deadline_cost</code>: scale weight is partly water, and water responds to carbohydrate directly, so a scale-weight reward is gameable by cutting carbs with no tissue actually lost.</p>
+<p>Scored against tissue rather than scale weight for the same reason as <code>deadline_cost</code>: scale weight is partly water, and water responds to carbohydrate directly, so a scale-weight reward is gameable by cutting carbs with no tissue actually lost. <code>tissue</code> is settled tissue, as in <code>deadline_cost</code>.</p>
 
 
 </section>

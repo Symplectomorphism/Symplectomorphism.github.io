@@ -911,9 +911,10 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <section id="wdm-daily" class="level3">
 <h3 class="anchored" data-anchor-id="wdm-daily"><code>wdm daily</code></h3>
 <pre class="text"><code>wdm daily [CSV] [--config TOML] [--weight LB] [--waist IN]
+        [--glucose MG_DL] [--ketones MMOL_L] [--hr BPM] [--bp SYS DIA]
         [--date YYYY-MM-DD] [--mode {deadline,sustainable,maintain}]
         [--out FILE] [--log-dir DIR] [--no-input]</code></pre>
-<p>Records this morning’s readings and any missing food from yesterday (asking in a terminal), validates the file, runs <a href="#wdm-plan"><code>plan</code></a> with <code>--log-dir</code>, and prints today’s prescription. It asks for the waist when a measurement is due. In context: <a href="../../body-weight/docs/daily-routine.html#morning-wdm-daily">The daily routine</a>.</p>
+<p>Records this morning’s readings and any missing food from yesterday (asking in a terminal), validates the file, runs <a href="#wdm-plan"><code>plan</code></a> with <code>--log-dir</code>, and prints today’s prescription. It asks for the waist when a measurement is due, and for the <a href="../../body-weight/docs/data.html#health-readings">health readings</a>. In context: <a href="../../body-weight/docs/daily-routine.html#morning-wdm-daily">The daily routine</a>.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -944,26 +945,31 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td>asked when 7 days have passed</td>
 </tr>
 <tr class="odd">
+<td><code>--glucose</code>, <code>--ketones</code>, <code>--hr</code>, <code>--bp SYS DIA</code></td>
+<td>This morning’s health readings: mg/dL, mmol/L, bpm, mmHg</td>
+<td>asked</td>
+</tr>
+<tr class="even">
 <td><code>--date YYYY-MM-DD</code></td>
 <td>The morning to record</td>
 <td>today</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--mode</code></td>
 <td><code>deadline</code>, <code>sustainable</code>, or <code>maintain</code></td>
 <td><a href="../../body-weight/docs/configuration.html#mode">set by the subject file</a></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--out FILE</code></td>
 <td>The plan as CSV, overwritten every run</td>
 <td><code>code/plan.csv</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--log-dir DIR</code></td>
 <td>Plans archive and log</td>
 <td><code>data/plans</code> (a <code>plans</code> directory beside the CSV’s directory)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--no-input</code></td>
 <td>Never prompt; use only the flags; warn about missing food</td>
 <td>off (prompts in a terminal)</td>
@@ -976,7 +982,8 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <h3 class="anchored" data-anchor-id="wdm-log"><code>wdm log</code></h3>
 <pre class="text"><code>wdm log [CSV] [--kcal KCAL] [--protein G] [--carb G] [--fat G]
         [--fiber G] [--alcohol G] [--sodium MG] [--exercise KCAL]
-        [--steps N] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
+        [--steps N] [--glucose MG_DL] [--ketones MMOL_L] [--hr BPM]
+        [--bp SYS DIA] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
         [--log-dir DIR]</code></pre>
 <p>Adds to a day’s row, then prints the day’s energy and macronutrient totals against today’s prescription with what remains. With no value flags it only prints. <code>wdm eat</code> is an alias. In context: <a href="../../body-weight/docs/daily-routine.html#during-the-day-wdm-log">During the day</a>.</p>
 <table class="caption-top table">
@@ -1034,31 +1041,36 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td><strong>replaces</strong> (a step count is a running total)</td>
 </tr>
 <tr class="even">
+<td><code>--glucose</code>, <code>--ketones</code>, <code>--hr</code>, <code>--bp SYS DIA</code></td>
+<td>the <a href="../../body-weight/docs/data.html#health-readings">health readings</a></td>
+<td>fills an empty cell, refusing a different value unless <code>--set</code>; adds the column if the file lacks it</td>
+</tr>
+<tr class="odd">
 <td><code>--estimate</code></td>
 <td><code>estimated</code></td>
 <td>sets it to 1: the day’s food is a guess (<a href="../../body-weight/docs/data.html#estimating">When you don’t know exactly</a>); adds the column if the file lacks it</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--set</code></td>
 <td></td>
 <td><strong>replace</strong> the values of the columns given instead of adding to them, to correct a day; columns not given are left alone, and each change is printed (<code>kcal 1460 → 1850</code>)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--clear</code></td>
 <td></td>
-<td>empty the day’s food, exercise and estimate cells first; the weigh-in, waist and steps stay. With value flags, the day is cleared and then they are added</td>
+<td>empty the day’s food, exercise and estimate cells first; the weigh-in, waist, steps and health readings stay. With value flags, the day is cleared and then they are added</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--date YYYY-MM-DD</code></td>
 <td></td>
 <td>the day to add to; default today</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--log-dir DIR</code></td>
 <td></td>
 <td>where to read today’s plan from; default <code>data/plans</code> beside the data directory</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>CSV</code></td>
 <td></td>
 <td>observations file; default <code>data/raw/observations.csv</code></td>
@@ -1258,6 +1270,7 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <li><code>maintenance</code>: the maintenance estimate over time, against logged intake</li>
 <li><code>innovations</code>: the standardized one-step-ahead surprises</li>
 <li><code>intake_log</code>: logged exercise, fiber, sodium, and steps</li>
+<li><code>health</code>: logged fasting glucose, ketones, resting heart rate, and blood pressure; written only once any is logged</li>
 </ul>
 <p>If planning refuses, the other figures are still written. <a href="../../body-weight/figures.html">Latest figures</a> shows the current set, with how to read each.</p>
 <table class="caption-top table">

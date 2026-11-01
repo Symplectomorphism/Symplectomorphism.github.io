@@ -126,6 +126,35 @@ window.MathJax = {
 };
 </script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="../../../assets/mathjax/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../../styles.css">
 <link rel="stylesheet" href="../../../research/research.css">
@@ -792,6 +821,7 @@ window.MathJax = {
   <ul class="collapse">
   <li><a href="#wdm.control.mpc.check_constraints" id="toc-wdm.control.mpc.check_constraints" class="nav-link" data-scroll-target="#wdm.control.mpc.check_constraints">check_constraints</a></li>
   <li><a href="#wdm.control.mpc.feasibility_report" id="toc-wdm.control.mpc.feasibility_report" class="nav-link" data-scroll-target="#wdm.control.mpc.feasibility_report">feasibility_report</a></li>
+  <li><a href="#wdm.control.mpc.settled_tissue" id="toc-wdm.control.mpc.settled_tissue" class="nav-link" data-scroll-target="#wdm.control.mpc.settled_tissue">settled_tissue</a></li>
   <li><a href="#wdm.control.mpc.solve" id="toc-wdm.control.mpc.solve" class="nav-link" data-scroll-target="#wdm.control.mpc.solve">solve</a></li>
   </ul></li>
   </ul></li>
@@ -866,16 +896,17 @@ $$
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    fat_g,</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    predicted_weight_kg,</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    predicted_tissue_kg,</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    predicted_fat_kg,</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    predicted_adapt_kcal,</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    mode,</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    converged,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    cost,</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    message,</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    penalty_scale<span class="op">=</span><span class="fl">1.0</span>,</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    start_weight_kg<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    start_tissue_kg<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    predicted_settled_kg,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    predicted_fat_kg,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    predicted_adapt_kcal,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    mode,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    converged,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    cost,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    message,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    penalty_scale<span class="op">=</span><span class="fl">1.0</span>,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    start_weight_kg<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    start_settled_kg<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>An optimized intake trajectory and its predicted consequences.</p>
 <section id="attributes" class="level4">
 <h4 class="anchored" data-anchor-id="attributes">Attributes</h4>
@@ -896,14 +927,18 @@ $$
 <td>Fat’s share of energy, in percent.</td>
 </tr>
 <tr class="odd">
+<td><a href="#wdm.control.mpc.Plan.predicted_settled_kg">predicted_settled_kg</a></td>
+<td>Tissue once glycogen returns to its habitual level; see</td>
+</tr>
+<tr class="even">
 <td><a href="#wdm.control.mpc.Plan.protein_pct">protein_pct</a></td>
 <td>Protein’s share of energy, in percent.</td>
 </tr>
-<tr class="even">
-<td><a href="#wdm.control.mpc.Plan.start_tissue_kg">start_tissue_kg</a></td>
-<td>Tissue the plan starts from: day 1’s loss is measured against it.</td>
-</tr>
 <tr class="odd">
+<td><a href="#wdm.control.mpc.Plan.start_settled_kg">start_settled_kg</a></td>
+<td>Settled tissue the plan starts from: day 1’s loss is measured against it.</td>
+</tr>
+<tr class="even">
 <td><a href="#wdm.control.mpc.Plan.start_weight_kg">start_weight_kg</a></td>
 <td>Scale weight the plan starts from: the basis of the protein bound.</td>
 </tr>
@@ -938,7 +973,7 @@ $$
 <h5 class="anchored" data-anchor-id="wdm.control.mpc.Plan.tissue_loss_frac_per_week">tissue_loss_frac_per_week</h5>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>control.mpc.Plan.tissue_loss_frac_per_week()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Predicted fractional <em>tissue</em> loss per week, in percent.</p>
-<p>This is the same basis the rate-of-loss safety limit (<code>max_loss_frac_per_week</code>) is checked against – tissue, not scale weight, for the reason given in <code>rate_violation_cost</code> – so it is what to compare directly against that config value to see how much headroom a plan is using, unlike <code>weekly_rate_lb</code>, which is on scale weight and includes water.</p>
+<p>This is the same basis the rate-of-loss safety limit (<code>max_loss_frac_per_week</code>) is checked against – settled tissue, not scale weight, for the reason given in <code>rate_violation_cost</code> – so it is what to compare directly against that config value to see how much headroom a plan is using, unlike <code>weekly_rate_lb</code>, which is on scale weight and includes water.</p>
 </section>
 <section id="wdm.control.mpc.Plan.today" class="level5">
 <h5 class="anchored" data-anchor-id="wdm.control.mpc.Plan.today">today</h5>
@@ -1021,8 +1056,12 @@ $$
 <td>Report whether a deadline target is reachable within the safety limits.</td>
 </tr>
 <tr class="odd">
+<td><a href="#wdm.control.mpc.settled_tissue">settled_tissue</a></td>
+<td>Tissue once the glycogen compartment returns to its habitual level, kg.</td>
+</tr>
+<tr class="even">
 <td><a href="#wdm.control.mpc.solve">solve</a></td>
-<td>Optimise an intake trajectory from the current state.</td>
+<td>Optimize an intake trajectory from the current state.</td>
 </tr>
 </tbody>
 </table>
@@ -1037,23 +1076,32 @@ $$
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>control.mpc.feasibility_report(plan, cfg)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Report whether a deadline target is reachable within the safety limits.</p>
 <p>Returns <code>None</code> when the plan is on track, otherwise a plain statement of the earliest date the target could be reached at the maximum permitted rate.</p>
-<p>The rate is the one <code>solve</code> enforces: a fraction of each day’s <em>tissue</em>, not scale weight, so at the maximum rate tissue falls geometrically, <code>T_n = T_0 / (1 + frac/7)**n</code>. The distance to cover is measured on the scale, since that is how the target is stated, which assumes the water compartments end where they are today.</p>
+<p>The rate is the one <code>solve</code> enforces: a fraction of each day’s <em>settled tissue</em>, not scale weight, so at the maximum rate it falls geometrically, <code>T_n = T_0 / (1 + frac/7)**n</code>. The distance to cover is measured on the scale, since that is how the target is stated, which assumes the water compartments end where they are today.</p>
 <p>This exists because the alternative is worse. A controller handed an impossible deadline will silently return the closest thing it can manage – typically the calorie floor, held for the entire horizon – and that output looks like a plan rather than like a refusal. Saying so explicitly is the difference between a tool that informs you and one that quietly agrees with whatever you typed.</p>
+</section>
+<section id="wdm.control.mpc.settled_tissue" class="level3">
+<h3 class="anchored" data-anchor-id="wdm.control.mpc.settled_tissue">settled_tissue</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>control.mpc.settled_tissue(x, u, params)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Tissue once the glycogen compartment returns to its habitual level, kg.</p>
+<p><span class="math display">\[
+T + \rho_G\, G_c / \rho_{\text{eff}}
+\]</span></p>
+<p>Energy stored as glycogen is withheld from tissue (the <span class="math inline">\(\rho_G \dot G_c\)</span> term of the energy balance) and handed back to it when glycogen drains. Scoring tissue alone at the end of the horizon therefore rewards a carbohydrate load in the final weeks: the refill lowers the scored tissue, and the energy returns to tissue the week after the horizon closes, where the objective cannot see it. Scoring this quantity removes that, and leaves carbohydrate only its real effects.</p>
 </section>
 <section id="wdm.control.mpc.solve" class="level3">
 <h3 class="anchored" data-anchor-id="wdm.control.mpc.solve">solve</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>control.mpc.solve(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    x0,</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    params,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    cfg,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    spec,</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    carb_ref_g,</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    start_date,</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    previous_kcal<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    days_remaining<span class="op">=</span><span class="va">None</span>,</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Optimise an intake trajectory from the current state.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>control.mpc.solve(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    x0,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    params,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    cfg,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    spec,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    carb_ref_g,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    start_date,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    previous_kcal<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    days_remaining<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Optimize an intake trajectory from the current state.</p>
 <section id="parameters" class="level4 doc-section doc-section-parameters">
 <h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters">Parameters</h4>
 <table class="caption-top table">
