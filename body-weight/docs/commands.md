@@ -20,9 +20,9 @@ Every command that reads data takes the observations file as an optional first a
 | [`fit-noise`](#wdm-fit-noise) | Phase 1: the scale's noise |
 | [`filter`](#wdm-filter) | Phase 2: metabolic parameters and the current state |
 | [`backtest`](#wdm-backtest) | Scores out-of-sample forecasts of every weigh-in |
-| [`plots`](#wdm-plots) | Writes every figure (weight, composition, parameters over time, maintenance, plan) to a folder |
-| [`session-kcal`](#wdm-session-kcal) | Exercise energy of a named session in a routine CSV |
-| [`exercise-kcal`](#wdm-exercise-kcal) | Exercise energy from a dated workout spreadsheet |
+| [`plots`](#wdm-plots) | Writes every figure to a folder |
+| [`session-kcal`](exercise.md#wdm-session-kcal) | Exercise energy of a named session in a routine CSV |
+| [`exercise-kcal`](exercise.md#wdm-exercise-kcal) | Exercise energy from a dated workout spreadsheet |
 | [`demo`](#wdm-demo) | The whole pipeline on synthetic data with known truth |
 
 ## The everyday commands
@@ -35,7 +35,7 @@ wdm daily [CSV] [--config TOML] [--weight LB] [--waist IN]
         [--out FILE] [--log-dir DIR] [--no-input]
 ```
 
-Records this morning's readings and any missing food from yesterday (asking in a terminal), validates the file, runs [`plan`](#wdm-plan) with `--log-dir`, and prints today's prescription. It reminds you when a waist measurement is due. Walkthrough: [The daily routine](daily-routine.md#morning-wdm-daily).
+Records this morning's readings and any missing food from yesterday (asking in a terminal), validates the file, runs [`plan`](#wdm-plan) with `--log-dir`, and prints today's prescription. It asks for the waist when a measurement is due. In context: [The daily routine](daily-routine.md#morning-wdm-daily).
 
 | Option | Meaning | Default |
 |---|---|---|
@@ -44,7 +44,7 @@ Records this morning's readings and any missing food from yesterday (asking in a
 | `--weight LB` | This morning's weigh-in, lb (not asked for if given) | asked |
 | `--waist IN` | This morning's waist, inches | asked when 7 days have passed |
 | `--date YYYY-MM-DD` | The morning to record | today |
-| `--mode` | `deadline`, `sustainable`, or `maintain` | `maintain` if the subject file has a `[maintain]` section, else `deadline` if it has a `[goal]`, else `sustainable` |
+| `--mode` | `deadline`, `sustainable`, or `maintain` | [set by the subject file](configuration.md#mode) |
 | `--out FILE` | The plan as CSV, overwritten every run | `code/plan.csv` |
 | `--log-dir DIR` | Plans archive and log | `data/plans` (a `plans` directory beside the CSV's directory) |
 | `--no-input` | Never prompt; use only the flags; warn about missing food | off (prompts in a terminal) |
@@ -60,7 +60,7 @@ wdm log [CSV] [--kcal KCAL] [--protein G] [--carb G] [--fat G]
         [--log-dir DIR]
 ```
 
-Adds to a day's row, then prints the day's energy and macronutrient totals against today's prescription with what remains. With no value flags it only prints. Walkthrough: [During the day](daily-routine.md#during-the-day-wdm-log).
+Adds to a day's row, then prints the day's energy and macronutrient totals against today's prescription with what remains. With no value flags it only prints. `wdm eat` is an alias. In context: [During the day](daily-routine.md#during-the-day-wdm-log).
 
 | Option | Column | Behavior |
 |---|---|---|
@@ -73,7 +73,7 @@ Adds to a day's row, then prints the day's energy and macronutrient totals again
 | `--sodium MG` | `sodium_mg` | adds |
 | `--exercise KCAL` | `exercise_kcal` | adds |
 | `--steps N` | `steps` | **replaces** (a step count is a running total) |
-| `--estimate` | `estimated` | sets it to 1: the day's food is a guess (eating out), so the filter treats its energy as uncertain by about a quarter; adds the column if the file lacks it ([When you don't know exactly](data.md#estimating)) |
+| `--estimate` | `estimated` | sets it to 1: the day's food is a guess ([When you don't know exactly](data.md#estimating)); adds the column if the file lacks it |
 | `--set` | | **replace** the values of the columns given instead of adding to them, to correct a day; columns not given are left alone, and each change is printed (`kcal 1460 → 1850`) |
 | `--clear` | | empty the day's food, exercise and estimate cells first; the weigh-in, waist and steps stay. With value flags, the day is cleared and then they are added |
 | `--date YYYY-MM-DD` | | the day to add to; default today |
@@ -95,7 +95,7 @@ wdm log --date 2026-10-28 --set --kcal 1850 --protein 120 --carb 95 --fat 80
 wdm log --date 2026-10-28 --clear     # the day's food was wrong: leave it unknown
 ```
 
-A day without a row gets one in the latest episode, as long as it comes after the file's last date; add earlier rows by hand. `wdm eat` is an alias.
+A day without a row gets one in the latest episode, as long as it comes after the file's last date; add earlier rows by hand. Every food flag adds, so a command run twice counts twice; correct with `--set`.
 
 ### `wdm plan`
 
@@ -113,7 +113,7 @@ Runs phase 1, phase 2, and the controller, then checks the plan against every sa
 | Option | Meaning | Default |
 |---|---|---|
 | `CSV`, `--config TOML` | Observations and subject files | `data/raw/observations.csv`, `data/raw/subject.toml` |
-| `--mode` | `deadline`: reach `[goal]` by its date. `sustainable`: lose at the safe rate, no date. `maintain`: hold the `[maintain]` weight ([Control](theory/control.md#maintain)) | `maintain` if there is a `[maintain]` section, else `deadline` if there is a `[goal]`, else `sustainable` |
+| `--mode` | `deadline`: reach `[goal]` by its date. `sustainable`: lose at the safe rate, no date. `maintain`: hold the `[maintain]` weight | [set by the subject file](configuration.md#mode) |
 | `--horizon DAYS` | Planning window | deadline: the days to the goal date, at most 365 (at least one block); sustainable and maintain: 28 |
 | `--block DAYS` | Days per decision block (intake is constant within a block) | 7 |
 | `--target-weight-lb LB` | Override `[goal] target_weight_lb` for this run; in maintain mode, the weight to hold | the subject file |
@@ -162,7 +162,7 @@ Phase 1, then phase 2: the posterior of every parameter (median, 90% interval, s
 
 | Option | Meaning | Default |
 |---|---|---|
-| `--figures DIR` | Write `trajectory.pdf`, `composition.pdf`, `innovations.pdf`, `parameters.pdf`, `intake_log.pdf` for the latest episode | off |
+| `--figures DIR` | Write the filter's figures for the latest episode as PDFs (a subset of [`wdm plots`](#wdm-plots)) | off |
 
 ### `wdm backtest`
 
@@ -186,47 +186,29 @@ wdm plots [CSV] [--config TOML] [--out DIR] [--format {pdf,png,svg} ...]
         [--mode {deadline,sustainable,maintain}] [--log-dir DIR]
 ```
 
-Fits the model once and writes every figure for the latest episode into one folder: `trajectory` (readings, trend, band), `composition` (fat and lean with bands), `innovations`, `parameters` (posteriors against priors), `parameter_evolution` (what the filter believed about each parameter, day by day), `maintenance` (the maintenance estimate over time, against logged intake), `intake_log`, `plan` (as `wdm plan` would make it), `plan_vs_actual` (each day's prescription from the plans log, against what was eaten; until a plan is logged, only what was eaten), and `adherence` (how closely the plan was followed: each finished day's energy and macronutrients as a percentage off its prescription, and the running total of energy eaten above or below plan). If planning refuses, the other figures are still written. The site's [Latest figures](../figures.qmd) page shows the current set.
+Fits the model once and writes every figure for the latest episode into one folder:
+
+- `trajectory`: readings, the smoothed trend, and its band
+- `composition`: fat and lean mass with bands
+- `plan`: the plan as `wdm plan` would make it, after the trend so far
+- `adherence`: each finished day's energy and macronutrients eaten (dots) against the prescription from the plans log (line), with a 10% band and the latest values labeled, and the running total of energy eaten above or below plan
+- `parameter_evolution`: what the filter believed about each parameter, day by day
+- `maintenance`: the maintenance estimate over time, against logged intake
+- `innovations`: the standardized one-step-ahead surprises
+- `intake_log`: the inputs no other figure shows (exercise, fiber, sodium, steps)
+
+If planning refuses, the other figures are still written. [Latest figures](../figures.qmd) shows the current set, with how to read each.
 
 | Option | Meaning | Default |
 |---|---|---|
 | `--out DIR` | Where to write | `figures/` in the repository |
 | `--format ...` | One or more of `pdf`, `png`, `svg`; each figure is written in each | `pdf` |
 | `--mode` | Planning mode for the plan figure | as for `plan` |
-| `--log-dir DIR` | Plans log to read for `plan_vs_actual` and `adherence` | `data/plans` |
+| `--log-dir DIR` | Plans log to read for `adherence` | `data/plans` |
 
 ## Exercise energy
 
-Both commands print an estimate; neither writes to `observations.csv`. Add the number with `wdm log --exercise KCAL`. Details: [Exercise energy](exercise.md).
-
-### `wdm session-kcal`
-
-```text
-wdm session-kcal [ROUTINE] [--session NAME] [--weight-lb LB]
-        [--list]
-```
-
-| Option | Meaning | Default |
-|---|---|---|
-| `ROUTINE` | Routine CSV, one row per exercise | `data/raw/routine.csv` |
-| `--session NAME` | The session to estimate, such as `"Lower A"` | required unless `--list` |
-| `--weight-lb LB` | Body weight for the MET formula | the last weigh-in in `data/raw/observations.csv` |
-| `--list` | List the sessions in the routine | off |
-
-### `wdm exercise-kcal`
-
-```text
-wdm exercise-kcal [XLSX] [--weight-lb LB]
-        [--repeat SESSION --date YYYY-MM-DD [--append]]
-```
-
-| Option | Meaning | Default |
-|---|---|---|
-| `XLSX` | Workout tracker with `Upper`, `Lower`, and `Muscle Guide` sheets | `data/raw/workout_tracker.xlsx` |
-| `--weight-lb LB` | Body weight for the MET formula | the last weigh-in in `data/raw/observations.csv` |
-| `--repeat SESSION` | Estimate SESSION as if repeated on `--date`, reusing its latest logged instance | off: estimate every logged session |
-| `--date YYYY-MM-DD` | The date for `--repeat` and `--append` | |
-| `--append` | With `--repeat` and `--date`, also write the copied block into the spreadsheet as a dated entry (backs the file up as `.bak` first; refuses a duplicate) | off |
+`wdm session-kcal` (from a routine CSV) and `wdm exercise-kcal` (from a dated workout spreadsheet) print a session's estimated energy; neither writes to `observations.csv`. Add the number with `wdm log --exercise KCAL`. Options and method: [Exercise energy](exercise.md).
 
 ## `wdm demo`
 

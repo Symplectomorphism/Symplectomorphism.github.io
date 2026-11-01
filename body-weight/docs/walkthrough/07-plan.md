@@ -182,42 +182,24 @@ first plan's last day: predicted 185.9 lb; the true subject eating it 187.4 lb
 
 ## What to notice
 
-- **Where the plan starts.** The last row (2026-09-28) has its food logged, so, as `wdm plan` does, the filtered morning state is advanced through that day's 2322 kcal and the plan starts the next morning, 2026-09-29, at 195.2 lb ([Which day the plan starts](../theory/control.md#plan-start)).
-- **A reachable deadline asks for little.** 185 lb by 2026-12-31 is 10.2 lb in 93 days, 0.77 lb a week. The plan eats about 2417 to 2484 kcal and loses 0.69 to 0.79 lb a week through the middle blocks, using under half the rate limit (0.41 to 0.45 % of tissue a week against 1 %).
-- **The first block's water nets out.** Its 174 g of carbohydrate, the plan's lowest, drains glycogen water, but the rollout assumes habitual sodium (4000 mg) from day 1, so the sodium water drained by the last days' below-habitual sodium comes back at the same time (step 8 prints both at the start: −0.18 kg glycogen, −0.12 kg sodium). The first block loses 0.83 lb on the scale, and its tissue alone falls from 88.83 kg (step 8) to 88.46, 0.82 lb. The same refill slows the first block of the other two plans (1.67 and 1.71 lb against about 1.9 after).
-- **Protein sits on its floor in every block of every plan.** 142 g is 1.6 g/kg × 88.5 kg (195.2 lb), the minimum in `Safety`. The objective scores tissue mass and intake, not body composition, so nothing in it rewards protein's leaner loss (`partition_kappa`). A preference for more protein has to be stated as a bound, `Safety(min_protein_g_per_kg=...)`.
-- **The tail of the deadline plan is an end effect, not advice.** In the last two blocks carbohydrate jumps to 288 and 390 g and fat drops to 84 and 42 g at nearly the same energy. Tissue keeps falling, to 83.95 kg, which is the target: 185 lb is 83.91 kg. But the scale rises from 185.6 to 185.9 lb, because carbohydrate above the habitual 260 g refills glycogen water (185.9 lb is 84.32 kg, so 0.37 kg above tissue). The cost tracks tissue, so water on the scale at the horizon's end is free, and energy parked in glycogen is energy that tissue did not get, which shows as faster tissue loss in those blocks (0.57 and 0.61 %/wk, against about 0.42 before). Only today's line is ever prescribed, and the horizon moves every day, but `plan.csv` will show this tail.
-- **Sustainable mode rides the rate limit.** With no target, the default weights trade a linear reward on lost tissue against a quadratic cost on the deficit, and the optimum lands on the constraint: 1.00 % of tissue a week in every block, about 1.9 lb a week after the first, at 1876 to 1897 kcal.
-- **An impossible deadline is reported, not attempted.** 175 lb by 2026-11-15 is 20.2 lb in 47 days, about 3.0 lb a week. The plan runs at the limit (1.00 %/wk in every block) and reaches only 182.7 lb by the end of its horizon. It satisfies every constraint; the feasibility report says separately that the target is out of reach and that the earliest date at the maximum rate is 2026-12-14.
-- **Certainty equivalence has a cost.** The plan is optimal for the posterior-mean parameters. Eaten by the true subject from the true state, the first plan ends at 187.4 lb, not the predicted 185.9. Most of that 1.5 lb is the size of the maintenance error from step 4 (that fit left out the tape; this one uses it): the estimate was 45 kcal/day above the truth, and 45 × 93 days ≈ 4200 kcal is roughly 0.55 kg, 1.2 lb. Replanning every morning with a fresh weigh-in is what corrects this in use ([Certainty equivalence](../theory/control.md#certainty-equivalence)).
+- **Where the plan starts.** The last row (2026-09-28) has its food logged, so the plan starts the next morning, 2026-09-29, at 195.2 lb ([Which day the plan starts](../theory/control.md#plan-start)).
+- **A reachable deadline asks for little.** 185 lb by 2026-12-31 is 0.77 lb a week. The plan eats about 2417 to 2484 kcal and uses under half the rate limit (0.41 to 0.45 % of tissue a week against 1 %).
+- **The first block's water nets out.** Its 174 g of carbohydrate drains glycogen water, but the rollout assumes habitual sodium from day 1, so the sodium water drained by the last days' low sodium comes back at the same time (step 8 prints both). The same refill slows the first block of the other two plans (1.67 and 1.71 lb against about 1.9 after).
+- **Protein sits on its floor in every block.** 142 g is 1.6 g/kg × 88.5 kg, the minimum in `Safety`. The objective scores tissue and intake, not composition, so nothing rewards protein's leaner loss; a preference for more protein has to be stated as a bound, `Safety(min_protein_g_per_kg=...)`.
+- **The tail of the deadline plan is an end effect, not advice.** In the last two blocks carbohydrate jumps to 288 and 390 g at nearly the same energy. Tissue reaches the target (83.95 kg against 83.91), but the scale rises from 185.6 to 185.9 lb as carbohydrate above the habitual 260 g refills glycogen water. The cost tracks tissue, so water on the scale at the horizon's end is free. Only today's line is ever prescribed and the horizon moves every day, but `plan.csv` will show this tail.
+- **Sustainable mode rides the rate limit.** With no target, a linear reward on lost tissue against a quadratic cost on the deficit lands on the constraint: 1.00 % of tissue a week, about 1.9 lb, at 1876 to 1897 kcal.
+- **An impossible deadline is reported, not attempted.** 175 lb by 2026-11-15 needs about 3.0 lb a week. The plan runs at the limit, reaches 182.7 lb, and meets every constraint; the feasibility report says separately that the target is out of reach and that the earliest date at the maximum rate is 2026-12-14.
+- **Certainty equivalence has a cost.** Eaten by the true subject, the first plan ends at 187.4 lb, not the predicted 185.9. Most of that is the maintenance error from step 4: 45 kcal/day × 93 days ≈ 0.55 kg, 1.2 lb. Replanning every morning with a fresh weigh-in corrects this in use ([Certainty equivalence](../theory/control.md#certainty-equivalence)).
 
 ## The code
 
-| What | Where |
+| What | Where (under `wdm`) |
 |---|---|
-| The solver | `control/mpc.py:303` (`solve`) |
-| Decisions per block: energy, protein per kg of starting weight, fat share | `control/mpc.py:285` (`_decode`), protein at 297 |
-| Bounds and the SLSQP call | `control/mpc.py:442` (bounds), `control/mpc.py:460–476` (`method="SLSQP"` at 464) |
-| Trajectory constraints: daily tissue-loss rate, carbohydrate floor | `control/mpc.py:418` |
-| Penalty fallback, used only if SLSQP fails | `control/mpc.py:483` |
-| Deadline and sustainable objectives; the reference path | `control/objectives.py:236`, `control/objectives.py:295`, `control/objectives.py:124` |
-| Terminal and tracking terms on tissue | `control/objectives.py:276–277` |
-| Default cost weights | `control/objectives.py:59` (`CostWeights`) |
-| The independent constraint check, 5 % tolerance on the rate | `control/mpc.py:625` (`check_constraints`; day 1 measured from the starting tissue at 656), `control/mpc.py:525` |
-| The earliest reachable date | `control/mpc.py:578` (`feasibility_report`), formula at 613–614 |
-| Plan start and horizon sizing, as the command does them | `cli.py:304` (`_plan_start`), `cli.py:328` (`_solve_plan`; horizon at 408–415), `cli.py:442` (`cmd_plan`) |
-
-## Assumptions made here
-
-| Assumption | Where | Why |
-|---|---|---|
-| Certainty equivalence: plan with the posterior-mean parameters and state | `control/mpc.py:303` | Cheap; replanning daily corrects the error it causes |
-| Decisions are held for 7-day blocks | `control/mpc.py:68`, `control/mpc.py:285` | Nobody eats to a different target every day |
-| Objective and rate limit are on tissue, not scale weight | `control/objectives.py:153`, `control/objectives.py:236` | A scale-weight objective could be met by cutting carbohydrate alone |
-| Safety: at least 1500 kcal and 1.6 g/kg protein; at most 1 % of tissue a week | `constants.py:281`, `constants.py:291`, `constants.py:288` | Conservative defaults; the subject file can change them |
-| Carbohydrate at least 20 g; fat share 15 % to 75 % | `control/mpc.py:87–93` | A glycogen-exploit guard and a nutritional floor |
-| The rollout assumes habitual sodium, no logged exercise, every day logged | `control/mpc.py:264–276` | The plan prescribes food only |
-| The feasibility check assumes the water compartments end where they start | `control/mpc.py:587–588` | The target is stated in scale weight |
+| The solver: 7-day blocks, bounds, SLSQP, trajectory constraints | `control.mpc`: `solve`, `PlanSpec`, `Plan` |
+| Deadline and sustainable objectives; the reference path; default weights | `control.objectives`: `deadline_cost`, `sustainable_cost`, `reference_trajectory`, `CostWeights` |
+| The independent constraint check and the earliest reachable date | `control.mpc`: `check_constraints`, `feasibility_report` |
+| Safety limits | `config.Safety` |
+| Plan start and horizon, as `wdm plan` does them | `cli` |
 
 ## Try this
 

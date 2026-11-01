@@ -6,9 +6,11 @@ Two commands: `wdm daily` once in the morning, and `wdm log` whenever you eat, t
 
 Row *k* of the file holds the weigh-in on the morning of day *k* and everything eaten during day *k*. The routine follows that order: the weight goes in first thing, and the food fills in as the day goes.
 
+Do not expect the numbers to mean much in the first week: the filter reports its prior back until the data have had time to speak ([what to expect, and when](reading-output.md#what-to-expect-and-when)).
+
 ## Morning: `wdm daily`
 
-Weigh in under identical conditions every day: after the bathroom, before food or drink, same clothing (or none), same scale on the same spot. Then run
+Weigh in under the [same conditions every day](data.md#weighing), then run
 
 ```bash
 wdm daily
@@ -39,32 +41,13 @@ Waist, in (due; last 2026-10-21); blank skips: 38.2
 
 A blank answer skips the item. A value that conflicts with one already in the file is refused, not overwritten, because a silent overwrite is how a typo becomes data; fix the file by hand if the old value is the wrong one. A day's row that does not exist yet is created in the latest episode.
 
-Then it validates the file, runs both estimation phases and the controller, archives the plan in the [plans log](reading-output.md#the-plans-log), and prints the plan and today's prescription:
+Then it validates the file, runs both estimation phases and the controller in the [mode the subject file selects](configuration.md#mode), archives the plan in the [plans log](reading-output.md#the-plans-log), and prints the plan ([how to read it](reading-output.md#the-plan)), ending with today's prescription:
 
 ```text
-150 rows | 3 episodes | 122 weigh-ins | 66 intake records
-  no problems found
-
-Plan (deadline mode, 155 day horizon)
-
-  date           kcal   pro  carb   fat  pro%  carb%  fat%   pred lb   lb/wk loss%/wk
-  2026-10-28     2164   149    64   146    27     12    61     204.5    2.02     0.63
-  2026-10-29     2164   149    64   146    27     12    61     204.2    1.89     0.64
-  ...
-  plan written to /home/you/weight-dynamics/code/plan.csv
-
-  all safety constraints satisfied
-
-  plan logged to /home/you/weight-dynamics/data/plans/log.csv
-
   Today: 2164 kcal | 149 g protein (27%) | 64 g carb (12%) | 146 g fat (61%)
-  Only today's line is a prescription. The rest is what the model currently
-  expects, and it will change as more weigh-ins arrive.
 ```
 
-The run takes a minute or two (the filter passes over your whole history). [Reading the output](reading-output.md#the-plan) explains each column. The mode is maintain when `subject.toml` has a `[maintain]` section, deadline when it has a `[goal]`, and sustainable otherwise; `--mode` overrides it.
-
-**Flags.** `--weight LB` and `--waist IN` supply the readings without prompting; `--date YYYY-MM-DD` records a different morning; `--no-input` never prompts (for scripts and cron jobs; it then only warns about missing food). The [command reference](commands.md#wdm-daily) lists them all.
+That line is the only prescription. The run takes a minute or two. `--weight LB` and `--waist IN` supply the readings without prompting, and `--no-input` never prompts (for scripts); [the command reference](commands.md#wdm-daily) lists every flag.
 
 ## During the day: `wdm log`
 
@@ -83,65 +66,21 @@ wdm log --kcal 520 --protein 38 --carb 41 --fat 22
     fat          22 / 146 g   124 g left
 ```
 
-Every food flag **adds** to what the day already holds, so three meals logged separately sum to the day's totals. The same goes for `--fiber`, `--alcohol`, `--sodium`, and `--exercise`. `--steps` is the exception: a step counter reports a running total, so `--steps` **replaces** the day's value and the latest total wins. `--estimate` marks the day's food as a guess (see below).
+Food flags **add** to the day, so meals logged separately sum to the day's totals. Training goes in its own column (`wdm log --exercise KCAL`; the model does the energy balance, so neither column is subtracted from the other), and the step counter's total with `wdm log --steps N`. Eating out, estimate everything and add `--estimate` ([When you don't know exactly](data.md#estimating)). [Commands](commands.md#wdm-log) covers every flag, including corrections with `--set` and `--clear`.
 
-```bash
-wdm log --exercise 310               # after a training session (see Exercise energy)
-wdm log --steps 8400                 # at night, the counter's total for the day
-wdm log                              # no flags: just show today's totals against the plan
-wdm log --date 2026-10-27 --kcal 180 # a snack you forgot yesterday
-wdm log --kcal 1100 --protein 45 --carb 90 --fat 62 --sodium 2200 --estimate   # dinner out
-wdm log --date 2026-10-27 --set --kcal 1850   # correct a day: replace, don't add
-wdm log --date 2026-10-27 --clear             # wipe a day's food (it becomes unknown)
-```
-
-Eating out, or at a friend's, without exact numbers? Estimate all of it (calories, the three macros, sodium) rather than leaving cells blank, and add `--estimate`: the filter then gives that day's energy an uncertainty of about a quarter, so a guess informs it less than a weighed meal. [When you don't know exactly](data.md#estimating) has rules of thumb and explains why a blank is worse than a rough guess.
-
-Logging never shifts the plan. Today's prescription is fixed by the latest plan that starts today (the last row of `data/plans/log.csv` with today's start date), and `wdm log` compares against it. If you have not run `wdm daily` yet today it shows the totals alone and says so.
-
-`wdm eat` is an older name for the same command and still works.
-
-### Food and exercise are separate columns
-
-`--kcal` adds to `kcal` (energy eaten); `--exercise` adds to `exercise_kcal` (energy spent training). Neither is subtracted from the other: the model does the energy balance itself. Leave `exercise_kcal` blank on rest days; blank counts as zero. If you run the same `--exercise` command twice, the session is counted twice; correct it with `wdm log --set --exercise KCAL`.
+Logging never shifts the plan: `wdm log` compares against the latest plan logged for today, and before `wdm daily` has run it shows the totals alone.
 
 ## The waist tape
 
-A weekly waist measurement is the only reading that responds to fat mass directly, and it narrows the fat-mass interval by roughly a tenth. Measure at the navel, standing, tape level and snug but not compressing, at the end of a relaxed exhale, before eating. The same time and place each time matter more than the exact protocol.
+A weekly waist measurement is the only reading that responds to fat mass directly, and it narrows the fat-mass interval by roughly a tenth: not more, because how many centimeters of waist a kilogram of fat is worth differs from person to person and has to be learned. Measure at the navel, standing, tape level and snug but not compressing, at the end of a relaxed exhale, before eating. The same time and place each time matter more than the exact protocol.
 
-`wdm daily` asks for it every seven days; you can also pass `--waist IN`, or type the value into the `waist_in` column of any row by hand. Measuring more often does no harm. The filter learns your personal offset and slope (centimeters of waist per kilogram of fat), so the tape needs no calibration. See [the model](theory/model.md) for the observation equation.
+`wdm daily` asks for it every seven days; you can also pass `--waist IN`, or type the value into the `waist_in` column of any row. Measuring more often does no harm. The filter learns your personal offset and slope, so the tape needs no calibration ([the model](theory/model.md#waist)).
 
-## Running the plan yourself
+## Beyond the routine
 
-`wdm daily` is `wdm plan` plus the bookkeeping. To replan at any time without recording anything, or to try a different target:
-
-```bash
-wdm plan                           # daily's plan, not logged
-wdm plan --log-dir DIR             # ... logged in DIR (daily: data/plans)
-wdm plan --mode sustainable        # ignore the goal; lose at the safe rate
-wdm plan --target-date 2027-06-01  # a later deadline, this run only
-```
-
-A replan at any time of day gives today's prescription for the same data: the plan starts this morning while today's row is today, however much food it already holds. Change the deadline itself in `subject.toml` (`[goal] target_date`).
-
-## Once you reach your goal
-
-Replace `[goal]` in `subject.toml` with
-
-```toml
-[maintain]
-weight_lb = 170
-```
-
-and carry on with the same two commands. `wdm daily` then plans to hold that weight instead of losing: near your weight-stable intake, easing back gently if the trend drifts. Expect a pound or two on the scale in the first days of eating more carbohydrate; that is glycogen water refilling, not fat ([The subject file](configuration.md#maintain)).
-
-## Seeing it all
-
-```bash
-wdm plots --format png        # every figure, into figures/ in the repository
-```
-
-writes the weight trajectory, body composition, the parameters as they were learned, maintenance over time, the plan, and prescribed against eaten ([Commands](commands.md#wdm-plots)).
+- **Replan or try another target** without recording anything: [`wdm plan`](commands.md#wdm-plan).
+- **At the goal**, replace `[goal]` with [`[maintain]`](configuration.md#maintain) and carry on with the same two commands.
+- **Every figure**: [`wdm plots`](commands.md#wdm-plots); the [Latest figures](../figures.qmd) page shows how to read them.
 
 ## Summary
 
@@ -154,5 +93,4 @@ writes the weight trajectory, body composition, the parameters as they were lear
 | At night (optional) | The day's step count | `wdm log --steps N` |
 | Eating out | Log a best guess, marked as one | `wdm log ... --estimate` |
 | Any time | Replan, or try a different target | `wdm plan ...` |
-| Any time | Every figure | `wdm plots` |
 | At the goal | Hold the weight | `[maintain] weight_lb = ...` in `subject.toml` |

@@ -47,29 +47,29 @@ The [API reference](reference/index.qmd) documents every module from its docstri
 
 ```bash
 cd weight-dynamics/code
-uv run python -m pytest              # 208 tests, about 20 s on every core
+uv run python -m pytest              # the whole suite, about 20 s on every core
 uv run python -m pytest tests/test_daily.py -q
 uv run python -m pytest -n0 --pdb    # one process, to debug a failure
 ```
 
-| File | Tests | Focus |
-|---|---|---|
-| `test_models.py` | 22 | Closed-form checks, energy conservation, integrator agreement, the waist prior |
-| `test_filters.py` | 16 | Comparison with exact batch posteriors, sigma-point properties, the gate, Student-t |
-| `test_estimation.py` | 21 | Parameter recovery and calibration, the tape, weight-only episodes, timing, the habitual reference, the backtest |
-| `test_control.py` | 43 | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, infeasibility, objective behavior, maintain mode |
-| `test_io.py` | 31 | Schema validation, gaps, units, waist columns, habitual intake, estimated days, the `[maintain]` section |
-| `test_cli.py` | 7 | Staleness arithmetic, the plan's start, the default mode (maintain, deadline, sustainable) |
-| `test_daily.py` | 14 | Recording readings, food, meals and steps; `--estimate`, `--set` and `--clear`; the plans log; prompting; `log` and its `eat` alias; the planned-versus-eaten and adherence figures |
-| `test_exercise.py` | 25 | MET arithmetic, tempo and hold parsing, classification |
-| `test_tracker_write.py` | 17 | Spreadsheet mutation, merged ranges, duplicate guards |
-| `test_routine.py` | 12 | The routine CSV, cross-checked against the set-level estimator |
+| File | Focus |
+|---|---|
+| `test_models.py` | Closed-form checks, energy conservation, integrator agreement, the waist prior |
+| `test_filters.py` | Comparison with exact batch posteriors, sigma-point properties, the gate, Student-t |
+| `test_estimation.py` | Parameter recovery and calibration, the tape, weight-only episodes, timing, the habitual reference, the backtest |
+| `test_control.py` | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, infeasibility, objective behavior, maintain mode |
+| `test_io.py` | Schema validation, gaps, units, waist columns, habitual intake, estimated days, the `[maintain]` section |
+| `test_cli.py` | Staleness arithmetic, the plan's start, the default mode (maintain, deadline, sustainable) |
+| `test_daily.py` | Recording readings, food, meals and steps; `--estimate`, `--set` and `--clear`; the plans log; prompting; `log` and its `eat` alias; the adherence figure |
+| `test_exercise.py` | MET arithmetic, tempo and hold parsing, classification |
+| `test_tracker_write.py` | Spreadsheet mutation, merged ranges, duplicate guards |
+| `test_routine.py` | The routine CSV, cross-checked against the set-level estimator |
 
-Each test checks against something **independent**: a closed-form result, a separate integrator, a conservation law the code never uses, or a dense batch computation that shares no code with the recursion under test. Three of them each caught a real bug during development:
+Each test checks against something **independent**: a closed-form result, a separate integrator, a conservation law the code never uses, or a dense batch computation that shares no code with the recursion under test. A test that reuses the code under test can only confirm it agrees with itself. For example:
 
-- `test_energy_balance_closes` rebuilds "intake minus expenditure equals the energy stored in tissue and glycogen" from the returned derivatives, catching sign errors and dropped terms in the glycogen coupling;
+- `test_energy_balance_closes` rebuilds "intake minus expenditure equals the energy stored in tissue and glycogen" from the returned derivatives, so a sign error or a dropped term in the glycogen coupling fails it;
 - `test_rk4_matches_adaptive_solver` guards the substep count, so a discretization error cannot pass for a physiological finding;
-- `test_kalman_matches_batch_gaussian_solution` conditions the joint Gaussian over the whole sequence by dense linear algebra, which would catch a transposed gain or a mishandled missing observation.
+- `test_filter_and_smoother_match_the_batch_posterior` conditions the joint Gaussian over the whole sequence by dense linear algebra and checks the filter and the smoother against it, means and covariances, which catches a transposed gain or a mishandled missing observation.
 
 ## Figures
 

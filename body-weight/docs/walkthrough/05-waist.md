@@ -108,34 +108,21 @@ waist calibration with 30 % configured: posterior median and 90% interval
 
 ## What to notice
 
-- **The tape narrows the fat interval by about a tenth.** At 30 % configured, the day-119 standard deviation falls from 3.79 to 3.39 kg (−11 %); at 25 %, from 3.68 to 3.25 kg (−12 %). The tape sees the product of a personal slope, known only to ±20 %, and the fat change, so it cannot pin fat mass down; what it adds is the population waist-to-fat relation as a second, independent anchor.
-- **A wrong starting guess is where the tape earns its keep.** With 25 % configured, the scale-only fit starts at 25.15 kg and stays wrong: −4.35 kg on day 119, −1.18 standard deviations. The scale has no way to correct the starting fat level. With the tape, day 0 moves to 27.97 kg and the day-119 error shrinks to −1.56 kg (−0.48 standard deviations).
-- **With a right guess, the tape adds a little bias.** At 30 % configured, the scale-only fit is off by +0.11 kg, but only because it was told the truth. With the tape it is off by +1.47 kg (+0.44 standard deviations). The prior line predicts 64.8 + 1.238 × 30 = 101.9 cm on day 0, while the subject's true line gives 75 + 1.2 × 30 = 111 cm (step 2 read 111.0). The filter splits that 9 cm excess between a larger offset (posterior 69.8 cm, shift +7.7 %) and more fat (31.36 kg on day 0 instead of 30.05). Offset and fat level trade off; only the prior on the offset, ±7.2 cm, decides the split.
-- **The true subject is unusual for the prior.** The true offset, 75.0 cm, is (75.0 − 64.8) / 7.2 = 1.4 prior standard deviations above the population line; the true slope, 1.200 cm/kg, is 3 % below the prior's 1.238. Both true values sit inside the posterior intervals: offset [61.4, 78.1] cm, slope [1.020, 1.672] cm/kg.
-- **Every error here is inside 1.645 standard deviations.** The intervals are honest in all four fits; the tape makes them narrower without making them dishonest.
+- **The tape narrows the fat interval by about a tenth.** The day-119 standard deviation falls from 3.79 to 3.39 kg at 30 % configured, and from 3.68 to 3.25 kg at 25 %. The tape sees the product of a personal slope, known only to ±20 %, and the fat change, so it cannot pin fat mass down; it adds the population waist-to-fat relation as a second, independent anchor.
+- **A wrong starting guess is where the tape earns its keep.** With 25 % configured, the scale-only fit cannot correct the starting fat level and ends −4.35 kg off (−1.18 standard deviations). With the tape, day 0 moves to 27.97 kg and the day-119 error shrinks to −1.56 kg.
+- **With a right guess, the tape adds a little bias.** The prior line predicts 64.8 + 1.238 × 30 = 101.9 cm on day 0; the subject's true line gives 111 cm. The filter splits that 9 cm between a larger offset (69.8 cm) and more fat (31.36 kg on day 0 instead of 30.05), so day 119 is off by +1.47 kg. Offset and fat level trade off, and only the ±7.2 cm prior on the offset decides the split.
+- **The true subject is unusual for the prior**: the true offset is (75.0 − 64.8) / 7.2 = 1.4 prior standard deviations above the population line. Both true waist values sit inside their posterior intervals.
+- **Every error here is inside 1.645 standard deviations.** The tape makes the intervals narrower without making them dishonest.
 
 ## The code
 
-| What | Where |
+| What | Where (under `wdm`) |
 |---|---|
-| The waist prior from the Lean, Han and Deurenberg (1996) equation | `models/observation.py:129` (`waist_prior`), coefficients at 123 |
-| Predicted waist; reading noise 1.5 cm | `models/observation.py:174` (`predict_waist`), `models/observation.py:118` |
-| The waist block, added only when readings exist | `estimation/joint.py:433` (`use_waist`); transforms at 351; slope log sd at 86 |
-| The waist as a function of the augmented state | `estimation/joint.py:358` (`_waist_observation`) |
-| The scalar unscented update for the tape | `filters/ukf.py:189` (`aux_update`), gate at 199 |
-| The posterior of offset and slope | `estimation/joint.py:180` (`waist_summaries`) |
-| The configured body fat as the fat prior | `estimation/joint.py:281` (`initial_body_fat_fraction`) |
-
-## Assumptions made here
-
-| Assumption | Where | Why |
-|---|---|---|
-| Waist is linear in fat mass with a personal offset and slope | `models/observation.py:174` | Simple, and the slope is estimated rather than fixed |
-| The prior line comes from a cross-sectional equation, at the configured body fat | `models/observation.py:129`, `estimation/joint.py:351` | No better population anchor is available; its 4.1-point standard error becomes ±7.2 cm on the offset |
-| The slope is known to ±20 % (log scale 0.2) | `estimation/joint.py:86` | The equation's implied slope itself changes as fat is lost |
-| Offset and slope are personal constants with the same slow random walk as the metabolic parameters | `estimation/joint.py:330` | They are carried and relaxed the same way, but never enter the dynamics |
-| One self-measured reading has a 1.5 cm standard deviation | `models/observation.py:118` | Tape placement, posture and breath |
-| The waist block is left out entirely when no reading exists | `estimation/joint.py:433` | The unscented spread depends on the state dimension, so idle entries would perturb every other estimate |
+| The waist prior (Lean, Han and Deurenberg 1996) and the predicted waist | `models.observation`: `waist_prior`, `predict_waist` |
+| The waist block in the fit, added only when readings exist | `estimation.joint.fit_joint` |
+| The scalar unscented update for the tape | `filters.ukf.UnscentedResult.aux_innovation` |
+| The posterior of offset and slope | `estimation.joint.JointFit.waist_summaries` |
+| The configured body fat as the fat prior | `estimation.joint.initial_body_fat_fraction` |
 
 ## Try this
 

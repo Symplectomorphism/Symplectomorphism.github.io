@@ -2,7 +2,7 @@
 title: "Reading the output"
 ---
 
-The examples on this page come from a synthetic subject (70 days of a current diet plus two weight-only past diets), so the numbers are illustrative, not anyone's.
+The examples on this page come from a synthetic subject with 70 days of a current diet and two weight-only past diets. It is not the walkthrough's 120-day subject, and the numbers are illustrative, not anyone's.
 
 ## The plan
 
@@ -30,13 +30,11 @@ Plan (deadline mode, 155 day horizon)
 | `pro%`, `carb%`, `fat%` | Each macronutrient's share of energy |
 | `pred lb` | Predicted morning scale weight, water included |
 | `lb/wk` | Predicted rate of **scale-weight** loss, water included |
-| `loss%/wk` | Predicted rate of **tissue** loss, as a percentage per week: the quantity to compare with `max_loss_frac_per_week` |
+| `loss%/wk` | Predicted rate of loss of [**settled tissue**](theory/control.md#settled), as a percentage per week: the quantity `max_loss_frac_per_week` limits |
 
-**The `Today:` line is the prescription.** Every other row is what the model currently expects, and tomorrow's run replaces it. That is the receding-horizon idea: plan weeks ahead, eat one day, re-estimate, replan.
+**The `Today:` line is the prescription.** Every other row is what the model currently expects, and tomorrow's run replaces it: plan weeks ahead, eat one day, re-estimate, replan. The plan starts this morning while the last row is dated today, however much food it holds, so a rerun gives the same prescription for the same data ([the full rule](theory/control.md#plan-start)).
 
-The plan starts this morning while today's row is dated today, however much food you have already logged, so a rerun at any time of day gives the same prescription for the same data. If the last row is a finished day with its food logged, the plan starts the next morning.
-
-`lb/wk` and `loss%/wk` disagree, especially early: scale weight includes water that moves fast, while the rate limit governs tissue. In the first days of a diet the scale can drop several pounds a week with tissue loss well inside the limit.
+`lb/wk` and `loss%/wk` disagree, especially early, because scale weight includes water that moves fast; in the first days of a diet the scale can drop several pounds a week with tissue loss well inside the limit.
 
 **What can appear below the plan:**
 
@@ -48,9 +46,7 @@ The plan starts this morning while today's row is dated today, however much food
 | `Refusing to plan: the most recent state estimate is from ... days ago` | The current episode's last weigh-in is more than three days old. Weigh in and log it. |
 | `goal date ... has already passed` | Set a new `target_date`. |
 
-In **deadline mode** the controller aims at the goal by its date, without exceeding the limits. In **sustainable mode** there is no date: it loses at a safe steady rate over a 28-day window and reports the timeline that results. Without a real date in mind, sustainable mode is the more honest choice. In **maintain mode** it holds the weight in `[maintain]`: expect intake near the weight-stable level, a flat `pred lb` column, and no `NOTE`.
-
-`wdm plots` writes all of this as figures, along with the history of the parameter estimates and of the maintenance estimate ([Commands](commands.md#wdm-plots)).
+In **deadline mode** the controller aims at the goal by its date, within the limits. In **sustainable mode** there is no date: it loses at a safe steady rate over a 28-day window and reports the timeline that results; without a real date in mind, it is the more honest choice. In **[maintain mode](configuration.md#maintain)** expect intake near the weight-stable level, a flat `pred lb` column, and no `NOTE`.
 
 ## Phase 1: the scale's noise
 
@@ -72,9 +68,9 @@ Phase 1 -- noise identification
 
 - **Observation sd** is how far a single morning reading scatters around your true weight: mostly fluid, not the instrument. `x/1.09` is the multiplicative uncertainty (a factor of 1.09 either way). Well above 0.6 kg usually means inconsistent weighing; fix that before anything else.
 - **Level and slope innovation sd** are how much the underlying trend and its rate wander from day to day. `unidentified` means the data cannot pin that scale down; it is reported, not hidden, and does no harm.
-- **Steady-state gain** is how much of each new reading's surprise moves the trend. **Effective window** is its reciprocal: roughly how many days of readings the trend averages over. Near 10 days, one odd weigh-in moves the trend by a tenth of its error; a short window means the trend follows readings closely. A very long window means the trend looks nearly straight over the record, so readings are averaged heavily.
+- **Steady-state gain** is how much of each new reading's surprise moves the trend; the **effective window** is its reciprocal, roughly how many days of readings the trend averages over. A short window means the trend follows readings closely; a long one, that they are averaged heavily.
 
-Phase 1 uses weight alone, from every episode, food log or not. Theory: [Estimation](theory/estimation.md).
+Phase 1 uses weight alone, from every episode, food log or not ([Estimation](theory/estimation.md#phase-1)).
 
 ## Phase 2: parameters and state
 
@@ -107,9 +103,9 @@ Estimate as of 2026-10-28 (episode 'current')
 
 **Read the `shift` column first.** It is how far each parameter's median has moved from its prior. A shift near zero means the data have not spoken about that parameter yet, and its interval is the prior's. The parameters are defined in [the model](theory/model.md#parameters); the two `waist_` rows appear only when the file has waist readings.
 
-**Then read the state.** *Maintenance* is the energy you would spend today at your trend weight, and *weight-stable intake* the logged intake that would hold your weight steady; these combinations are much better determined than the coefficients behind them. *Fat mass* is weakly identified from a scale: read its trend, not its level, and expect its interval to span several kilograms. *Adaptive thermogenesis* is the expenditure your body has shed in response to the deficit so far.
+**Then read the state.** *Maintenance* is the energy you would spend today at your trend weight, and *weight-stable intake* the logged intake that would hold your weight steady; these combinations are much better determined than the coefficients behind them ([why](theory/estimation.md#identifiability)). *Fat mass* is weakly identified from a scale: read its trend, not its level, and expect its interval to span several kilograms. *Adaptive thermogenesis* is the expenditure your body has shed in response to the deficit so far.
 
-`--figures DIR` writes the trajectory (readings, smoothed trend, 95% band), body composition (fat and lean with bands), the innovations, the parameter posteriors, and the intake log. In the **innovations**, the standardized surprises of each reading, look for a standard deviation near 1 and no structure; an sd far from 1, or a weekly pattern, means something the model does not capture (see [Troubleshooting](#troubleshooting)).
+`--figures DIR` writes the filter's figures; [Latest figures](../figures.qmd) says how to read each.
 
 ## The backtest
 
@@ -127,7 +123,7 @@ Backtest -- forecasts of the scale reading (Gaussian noise)
 - **Calibration** next: `z sd` near 1, and coverage near 50% and 90%, mean the stated intervals are honest. Below 1 and above 90% means the intervals are too wide (cautious); the reverse means overconfident.
 - **`log score`** is the mean log predictive density per reading; higher is better. It is the fair way to compare noise models (`--student-t 4` against the Gaussian default), because it rewards honest intervals as well as accurate means.
 
-Two caveats: the phase-1 noise scales are fitted on the whole record, so coverage is slightly optimistic; and neighboring 7-day forecasts overlap, so the effective sample is several times smaller than `n`.
+The scores are mildly optimistic and the effective sample is smaller than `n` ([caveats](theory/estimation.md#backtest)).
 
 ## The plans log
 
@@ -149,13 +145,7 @@ run_at,start,mode,target_weight_lb,target_date,horizon_days,kcal,protein_g,carb_
 | `wdm_commit` | The package's git commit, with `+dirty` if it had uncommitted changes |
 | `command` | The exact command line |
 
-A replan on the same day overwrites that day's archived plan but adds a log row, so every prescription ever issued is kept. `plan.csv` holds only the latest; the log can reproduce a past decision. `wdm log` reads today's prescription from it.
-
-### How closely you followed it
-
-`wdm plots` draws the log against what you ate in `adherence`. The four small panels give energy, protein, carbohydrate and fat: the prescription as a line with the range within 10% of it shaded, and a dot for what you ate each finished day. The latest prescribed and eaten amounts are labeled at the right; earlier ones read off the axis. Each panel's title counts the days inside that range. Today is left out until it is over, since a half-logged day would read as undereating. Energy is compared as logged, before the model's fiber correction, the same total `wdm log` shows.
-
-The bottom panel is the running total of energy eaten above or below plan. It is the one to watch: a few hundred kcal a day over the plan adds up to the deficit the plan was counting on, and a line climbing steadily means the weight will come off more slowly than the plan predicts. Macronutrients off by a lot on a day when energy is on plan matter less: protein below plan risks lean mass over weeks, and carbohydrate moves water from one day to the next (see [Water compartments](theory/model.md#water)), but neither changes how much you lose.
+A replan on the same day overwrites that day's archived plan but adds a log row, so every prescription ever issued is kept. `plan.csv` holds only the latest; the log can reproduce a past decision. `wdm log` reads today's prescription from it, and `wdm plots` draws it against what was eaten in the [adherence figure](../figures.qmd#the-plan).
 
 ## What to expect, and when
 
@@ -178,18 +168,18 @@ After four months of consistent data, expect a trend much better than the raw sc
 
 Roughly in order of value per unit of effort:
 
-1. **Weigh under identical conditions**, every morning. The noise is fluid variation, not instrument error, so this habit is worth more than a better scale or any refinement of the model.
+1. **[Weigh under identical conditions](data.md#weighing)**, every morning. The noise is fluid variation, not instrument error, so this habit is worth more than a better scale.
 2. **Weigh daily.** Gaps cost precision.
 3. **Log macronutrients, not just calories.** This unlocks the glycogen compartment and the thermic effect of food.
-4. **Log with constant rigor**, not increasing rigor: a drifting log bias looks like metabolic adaptation. Note any change of method in `notes`.
-5. **Track sodium** if your tracker reports it. Before reading anything into an overnight gain, think about the previous evening.
-6. **Estimate what you cannot measure.** At a restaurant or a friend's, log a best guess at calories, all three macronutrients and sodium; to the model a blank means a specific assumption, usually a worse one than your guess ([When you don't know exactly](data.md#estimating)).
+4. **Log with constant rigor**, not increasing rigor: a [drifting log bias](theory/limitations.md#drifting-bias) looks like metabolic adaptation. Note any change of method in `notes`.
+5. **Track sodium** if your tracker reports it.
+6. **[Estimate what you cannot measure](data.md#estimating)** rather than leaving it blank.
 7. **Set your habitual intake** in `subject.toml` if you know it.
-8. **Measure your waist weekly.** Expect a fat-mass interval about a tenth narrower.
+8. **[Measure your waist](daily-routine.md#the-waist-tape)** weekly.
 9. **Log `exercise_kcal`** on training days ([Exercise energy](exercise.md)).
 10. **Vary intake deliberately.** A diet break or refeed week creates the transient that makes adaptation identifiable: for once the experimentally optimal action is the pleasant one.
 
-**Outliers.** Leave a mistyped weight in the file for the outlier gate to downweight; deleting readings by hand corrupts the noise estimate. A real excursion (illness, a long flight, a salty meal) is downweighted too. If one dominates a week, note it and read that period cautiously, or start a new episode.
+Leave a reading that looks wrong in the file, with a note; the outlier gate downweights it ([Missing data and outliers](data.md#missing-data-and-outliers)).
 
 ## Troubleshooting
 

@@ -46,7 +46,7 @@ These build the **priors**, the starting beliefs the filter updates from your da
 | `habitual_carb_g` | Carbohydrate you habitually ate before a diet, g/day | 0 to 1,000 | 260 (male), 200 (female) |
 | `habitual_sodium_mg` | Sodium you habitually ate before a diet, mg/day | 0 to 15,000 | 4,000 (male), 3,000 (female) |
 
-**Why the habitual intake matters.** The water compartments measure deviations from what you ate before the diet, so a diet starting from ordinary eating starts with both at zero, and the drop in glycogen and sodium water over the first days is predicted instead of being mistaken for fat loss. The defaults are rough US adult averages. If a few ordinary days in a food tracker tell you your usual intake, put it here. See [the model](theory/model.md).
+**Why the habitual intake matters.** The water compartments measure deviations from what you ate before the diet, so the drop in glycogen and sodium water over a diet's first days is predicted instead of being mistaken for fat loss ([the model](theory/model.md#habitual)). The defaults are rough US adult averages; if a few ordinary days in a food tracker tell you your usual intake, put it here.
 
 ## `[goal]`
 
@@ -55,9 +55,7 @@ These build the **priors**, the starting beliefs the filter updates from your da
 | `target_weight_lb` | Goal weight, lb |
 | `target_date` | The date to reach it, `"YYYY-MM-DD"` |
 
-When this section is present (and `[maintain]` is not), `wdm plan` and `wdm daily` use **deadline mode** by default; with neither section they use **sustainable mode**. `--mode` overrides the default, and the goal is ignored outside deadline mode. `wdm plan --target-weight-lb` and `--target-date` override it for one run. To change your deadline for good, edit `target_date` here.
-
-If the goal cannot be reached within your rate limit, the plan still respects the limit, and a `NOTE` gives the earliest date that can be met ([reading the plan](reading-output.md#the-plan)).
+This section selects deadline mode ([which mode runs](#mode)). `wdm plan --target-weight-lb` and `--target-date` override it for one run; to change the deadline for good, edit `target_date` here. If the goal cannot be reached within your rate limit, the plan still respects the limit, and a `NOTE` gives the earliest date that can be met ([reading the plan](reading-output.md#the-plan)).
 
 ## `[maintain]` {#maintain}
 
@@ -65,9 +63,13 @@ If the goal cannot be reached within your rate limit, the plan still respects th
 |---|---|
 | `weight_lb` | The weight to hold, lb |
 
-Once you reach your goal, replace `[goal]` with this section. `wdm plan` and `wdm daily` then use **maintain mode** by default (it takes precedence over a `[goal]` left in the file): the controller holds this weight with no deadline, eating near your weight-stable intake and easing back over about four weeks if the trend drifts off, under 1 lb a week for a 3 lb drift. `wdm plan --mode maintain` works without the section and holds today's tissue (the weight the scale settles at once the water drained by the diet refills); `--target-weight-lb` sets the weight for one run. [Control](theory/control.md#maintain) has the formulation.
+Once you reach your goal, replace `[goal]` with this section and carry on with `wdm daily` and `wdm log`; it selects maintain mode, even over a `[goal]` left in the file. The controller holds this weight with no deadline, eating near your weight-stable intake and easing back over about four weeks if the trend drifts off (under 1 lb a week for a 3 lb drift). `wdm plan --mode maintain` works without the section and holds today's settled tissue; `--target-weight-lb` sets the weight for one run. [Control](theory/control.md#maintain) has the formulation.
 
-The filter keeps learning during maintenance, and by then maintenance energy is the best-determined number in the model. Expect the scale to rise a pound or two in the first days of eating more carbohydrate: that is glycogen water refilling, not fat, and the model tells the two apart.
+Expect the scale to rise a pound or two in the first days of eating more carbohydrate: that is glycogen water refilling, not fat, and the model tells the two apart. The filter keeps learning during maintenance.
+
+## Which mode runs {#mode}
+
+`wdm daily`, `wdm plan` and `wdm plots` plan in **maintain mode** if `subject.toml` has a `[maintain]` section, otherwise in **deadline mode** if it has a `[goal]`, otherwise in **sustainable mode** (lose at the safe rate, no date). `--mode` overrides this for one run; the goal is ignored outside deadline mode.
 
 ## `[safety]`
 
@@ -82,7 +84,7 @@ Hard limits. The optimizer treats them as constraints, and an independent check 
 
 `min_kcal` must be positive and below `max_kcal`, and `max_loss_frac_per_week` must lie in (0, 0.10). The defaults are deliberately conservative. Do not lower the intake floor or raise the rate limit without talking to a doctor or dietitian.
 
-The rate limit applies to tissue, not scale weight: a fast water drop in the first days of a diet is neither progress nor danger, and the controller is not fooled by it. [Control](theory/control.md) has the formulation.
+The rate limit applies to settled tissue, not scale weight, so a fast water drop is neither progress nor danger to the controller ([Control](theory/control.md#settled)).
 
 ## `[preferences]`
 

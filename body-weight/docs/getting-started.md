@@ -4,12 +4,12 @@ title: "Getting started"
 
 ## Install
 
-The prerequisite is [`uv`](https://docs.astral.sh/uv/). The package pins Python 3.13, because JAX wheels lag new CPython releases; `uv` fetches 3.13 for this project only.
+The prerequisite is [`uv`](https://docs.astral.sh/uv/). The package pins Python 3.13, because JAX wheels lag new CPython releases; `uv` fetches 3.13 for this project only. The code is in a private repository ([why these pages exist anyway](index.qmd)).
 
 ```bash
 cd weight-dynamics/code
 uv sync --extra dev            # one time: creates .venv with the pinned dependencies
-uv run python -m pytest        # 208 tests, about 20 s
+uv run python -m pytest        # the test suite, about 20 s
 uv run wdm demo                # the whole pipeline on synthetic data: confirms the install
 ```
 
@@ -18,8 +18,6 @@ uv run wdm demo                # the whole pipeline on synthetic data: confirms 
 ```bash
 ln -s "$PWD/.venv/bin/wdm" ~/.local/bin/wdm
 ```
-
-The code is in a private repository. These pages document it in full, and the [API reference](reference/index.qmd) is generated from its docstrings.
 
 ## The repository
 
@@ -34,14 +32,14 @@ weight-dynamics/
 └── report/                the technical report (LaTeX)
 ```
 
-Every command reads `data/raw/observations.csv` and `data/raw/subject.toml` unless you give it other paths, so `wdm daily` and `wdm log` need no arguments. Body-weight and food logs are personal health data: keep `data/raw/` and `data/plans/` out of any public copy.
+Every command reads `data/raw/observations.csv` and `data/raw/subject.toml` unless given other paths, so `wdm daily` and `wdm log` need no arguments. Body-weight and food logs are personal health data: keep `data/raw/` and `data/plans/` out of any public copy.
 
 ## Set up your files
 
-1. **The subject file.** Copy `data/templates/subject_template.toml` to `data/raw/subject.toml`. Fill in sex, age, and height; review the safety limits; add a goal if you have a date in mind. Every field is documented in [The subject file](configuration.md).
-2. **The observations file.** Copy `data/templates/observations_template.csv` to `data/raw/observations.csv` (`observations_example.csv` is a filled-in example). It holds one row per day; [The observations file](data.md) defines every column.
+1. **The subject file.** Copy `data/templates/subject_template.toml` to `data/raw/subject.toml`. Fill in sex, age, and height; review the safety limits; add a goal if you have a date in mind ([The subject file](configuration.md)).
+2. **The observations file.** Copy `data/templates/observations_template.csv` to `data/raw/observations.csv` (`observations_example.csv` is a filled-in example). It holds one row per day ([The observations file](data.md)).
 3. **History, if you have it.** Enter past diets one row per day, each with its own `episode` label (`past-01`, `past-02`, ...). Weight alone is enough: past weigh-ins without a food log still teach phase 1 how noisy your scale is.
-4. **The first row of the current diet.** Add it by hand: the date, a new episode label such as `current`, and that morning's weight. From then on `wdm daily` and `wdm log` add rows to the latest episode for you.
+4. **The first row of the current diet.** Add it by hand: the date, a new episode label such as `current`, and that morning's weight. From then on `wdm daily` and `wdm log` add rows to the latest episode.
 5. **Check it.**
 
    ```bash
@@ -53,20 +51,11 @@ Every command reads `data/raw/observations.csv` and `data/raw/subject.toml` unle
      no problems found
    ```
 
-   Fix anything it reports. It exits with code 1 on errors.
-
-## Run it
-
-```bash
-wdm daily            # each morning: records the weigh-in, plans, prints today's prescription
-wdm log --kcal 520 --protein 38 --carb 41 --fat 22     # before each meal
-```
-
-That is the whole routine; [The daily routine](daily-routine.md) walks through it. Do not expect the numbers to mean much in the first week: the filter reports its prior back until the data have had time to speak ([what to expect, and when](reading-output.md#what-to-expect-and-when)).
+   Fix anything it reports; it exits with code 1 on errors. Then follow [The daily routine](daily-routine.md).
 
 ## Try it without your own data
 
-`wdm demo` generates a synthetic subject with known metabolic parameters (two weight-only past diets and a 120-day current one), runs both estimation phases and the controller on it, and reports how many of the true parameters fall inside their 90% intervals:
+`wdm demo` generates a synthetic subject with known metabolic parameters (two weight-only past diets and a current one, 120 days by default), runs both estimation phases and the controller, and reports how many of the true parameters fall inside their 90% intervals:
 
 ```bash
 wdm demo --days 60 --figures /tmp/wdm-demo

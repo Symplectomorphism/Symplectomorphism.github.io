@@ -2,7 +2,7 @@
 title: "The observations file"
 ---
 
-`data/raw/observations.csv` holds one row per **calendar day**, per **episode**. Every column except `date` and `episode` may be left blank: the filter is built for missing data, which is the reason for a state-space model rather than curve fitting. `wdm daily` and `wdm log` write to it for you; you can also edit it by hand at any time.
+`data/raw/observations.csv` holds one row per **calendar day**, per **episode**. Every column except `date` and `episode` may be left blank: the filter is built for missing data. `wdm daily` and `wdm log` write to it for you; you can also edit it by hand at any time.
 
 Templates: `data/templates/observations_template.csv` (blank) and `observations_example.csv` (filled in).
 
@@ -50,9 +50,9 @@ Within an episode, dates should be contiguous. Between episodes, gaps are fine. 
 
 ## What each column buys
 
-### `weight_lb`
+### `weight_lb` {#weighing}
 
-**Consistency matters far more than precision.** Weigh under the same conditions every time: first thing in the morning, after the bathroom, before eating or drinking, ideally unclothed. A scale that reads 1.5 lb heavy is harmless: the bias is absorbed into the initial condition. A scale used at random times of day injects noise that no filter can remove. If you weighed twice, keep the morning fasted value.
+**Consistency matters far more than precision.** Weigh under the same conditions every time: first thing in the morning, after the bathroom, before eating or drinking, same clothing (ideally none), same scale on the same spot. The day-to-day scatter is fluid, not instrument error, so this habit is worth more than a better scale. A scale that reads 1.5 lb heavy is harmless: the bias is absorbed into the initial condition. A scale used at random times of day injects noise that no filter can remove. If you weighed twice, keep the morning fasted value.
 
 ### The food columns
 
@@ -66,9 +66,9 @@ Within an episode, dates should be contiguous. Between episodes, gaps are fine. 
 
 A day counts as logged when it has `kcal` or a full protein/carb/fat split. A day with neither is treated as intake unknown, not as a fast; a real fast is `kcal` = 0.
 
-**Total carbohydrate, not net.** Log `carb_g` as the label's total carbohydrate, fiber included, and fiber in `fiber_g`. The model removes the energy fiber doesn't deliver itself, 2 kcal per gram of fiber off the day's energy. Net carbs would leave the macros 4 kcal per gram of fiber short of `kcal`, which `wdm validate` flags, and a log that mixes the two moves the carbohydrate input, and with it the predicted glycogen water, by the day's fiber when nothing changed. Labels that list carbohydrate without fiber (European ones, and the net-carb view of many apps) need the fiber added back. A blank `fiber_g` reads as zero, overstating energy by 2 kcal a gram of fiber: about 60 kcal on a 30 g day. To fix days already logged as net, `wdm log --set --carb TOTAL --date YYYY-MM-DD`.
+**Total carbohydrate, not net.** Log `carb_g` as the label's total carbohydrate, fiber included, and fiber in `fiber_g`; the model itself takes 2 kcal per gram of fiber off the day's energy. Net carbs leave the macros short of `kcal` (which `wdm validate` flags), and a log that mixes the two moves the predicted glycogen water when nothing changed. Labels that list carbohydrate without fiber (European ones, and many apps' net-carb view) need the fiber added back. A blank `fiber_g` reads as zero, overstating energy by about 60 kcal on a 30 g day. To fix days logged as net, `wdm log --set --carb TOTAL --date YYYY-MM-DD`.
 
-**On accuracy.** Self-reported intake under-reports true intake by roughly 20% on average in doubly-labeled-water studies. A **constant** proportional bias is mostly harmless here: it is absorbed into the estimated maintenance energy and cancels out of the prescriptions. What hurts is a bias that **shrinks over time** as your logging improves, because "apparently eating more while losing the same" is exactly the signature of metabolic adaptation, and the filter cannot tell the two apart from weight data alone. Log with the same rigor on day 90 as on day 1, and note any change of method in `notes`.
+**On accuracy.** Self-reported intake runs about 20% low on average. A constant bias is harmless; one that drifts as your logging improves looks exactly like metabolic adaptation ([Limitations](theory/limitations.md#drifting-bias)). Log with the same rigor on day 90 as on day 1, and note any change of method in `notes`.
 
 ### `sodium_mg`
 
@@ -80,7 +80,7 @@ Both optional. Left blank, steady activity is absorbed into the estimated mainte
 
 ### `waist_in`
 
-Optional, and the only reading that responds to fat mass directly. Weekly is plenty and daily does no harm; protocol in [The daily routine](daily-routine.md#the-waist-tape). The filter learns your personal offset and slope, so the tape needs no calibration, but expect a modest effect: it narrows the fat-mass estimate by about a tenth, because how many centimeters of waist a kilogram of fat is worth differs from person to person.
+Optional, and the only reading that responds to fat mass directly; weekly is plenty. Protocol and what it buys: [The waist tape](daily-routine.md#the-waist-tape).
 
 ## When you don't know exactly {#estimating}
 
@@ -99,7 +99,7 @@ So at a restaurant or a friend's, log your best guess at all of it, and mark the
 wdm log --kcal 1100 --protein 45 --carb 90 --fat 62 --sodium 2200 --estimate
 ```
 
-`--estimate` sets the day's `estimated` column to 1. The filter then takes the day's energy as the logged value give or take a quarter of it, instead of exactly, so a guessed day teaches it less about your metabolism than a weighed one. A day without a food log is still worth more as a rough estimate than as a blank: a blank says "no information", an estimate says "about this much".
+`--estimate` sets the day's `estimated` column to 1. The filter then takes the day's energy as the logged value give or take a quarter of it, so a guessed day teaches it less than a weighed one, but still more than a blank: a blank says "no information", an estimate says "about this much".
 
 ### Calories
 
@@ -136,7 +136,7 @@ When the restaurant publishes them, use them. Otherwise estimate in order of wha
 
 ### What an error costs
 
-- **Calories.** A random error averages out over the days around it; a consistent under-estimate (everyone's) is absorbed into the estimated maintenance and cancels out of the prescriptions. What hurts is a habit that drifts ([On accuracy](#the-food-columns)).
+- **Calories.** A random error averages out over the days around it, and a consistent under-estimate is absorbed into the estimated maintenance. What hurts is a habit that drifts ([On accuracy](#the-food-columns)).
 - **Carbohydrate.** An error of 100 g shifts the predicted glycogen water by up to about 0.3 kg for a day or two: less than one weigh-in's own noise. Guessing 80 g when it was 130 g is fine; leaving it blank on a 60 g day (and so assuming 260 g) is not.
 - **Sodium.** It moves only water, and only for a day or two; its error never reaches the tissue estimate.
 

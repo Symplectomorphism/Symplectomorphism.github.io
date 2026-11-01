@@ -260,7 +260,7 @@ def structure():
 
     box(0.05, 1.75, 2.85, 1.65, "Person",
         "5 hidden states: tissue, fat,\nglycogen water, sodium\nwater, adaptation")
-    box(3.8, 1.75, 1.9, 1.65, "Scale", "$y = T + G + N + v$\none number a day")
+    box(3.8, 1.75, 1.9, 1.65, "Scale", "$y = T + G_c + G_n + v$\none number a day")
     box(6.6, 1.75, 2.45, 1.65, "Filter", "unscented Kalman,\n14 states: 5 physical\n+ 9 parameters")
     box(9.95, 1.75, 2.4, 1.65, "Controller", "28-day horizon in\nweekly blocks;\nonly day 1 is eaten")
     arrow(2.9, 2.6, 3.8, 2.6)

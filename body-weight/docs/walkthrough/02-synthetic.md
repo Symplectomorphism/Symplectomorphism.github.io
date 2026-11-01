@@ -144,40 +144,33 @@ hidden truth, day 0 -> day 119
 
 ## What to notice
 
-- **Missing days.** 107 of 120 mornings have a weigh-in (89.2 %) and 106 days have a food log (88.3 %), against set rates of 85 % and 90 %. Each is drawn independently every day, so 2026-06-10 has a weigh-in but no food log, and 2026-06-01 has neither (only the tape). The episode keeps every calendar day; a missing value is a missing observation, not a missing row.
-- **The truth is off the prior.** The maintenance intercept is 18 % above the prior and the mass slope 10 % below; adaptation is 47 % stronger and 21 % faster; glycogen holds 40 % more water per gram. The true sodium gain, 2.5·10⁻⁴ kg per mg/day, is 25 % above its prior (not in the printed table; step 4 scores it). These are the same values `wdm demo` and the test suite use. If the truth sat at the prior, an estimator that ignored the data would look perfect.
-- **Readings scatter around the truth.** On 2026-06-05 the scale says 99.64 kg while the truth is 98.78 kg, a +0.86 kg reading (1.9 standard deviations at 0.45). Across all 107 readings the error has mean −0.091 kg and standard deviation 0.410 kg, a sample from the 0.45 kg that was set.
-- **The food log.** Protein is 180 g every day (1.8 g/kg of the starting 100 kg), fat is 30 % of energy, and carbohydrate takes the rest plus a weekly ±60 g cycle: 278 g on 2026-06-02, 116 g on 2026-06-06, back up to 277 g on 2026-06-08. The cycle exercises the glycogen compartment. Logged energy averages 2233 kcal/day; the target was 80 % of the true day-0 maintenance, 0.80 × (1538 + 13.05 × 100) = 2274 kcal/day, with ±250 kcal of day-to-day scatter.
-- **Sodium moves the truth from day to day.** Each day's sodium is drawn around the generator's default 3000 mg with an 800 mg spread, and at the true gain one day's sodium pulls the sodium water toward 2.5·10⁻⁴ × (sodium − 4000). The 1402 mg on 2026-06-04 pulls it toward 2.5·10⁻⁴ × (1402 − 4000) = −0.65 kg, and with a 1-day time constant 63 % of that pull lands by the next morning; the truth on 2026-06-05 is 0.84 kg below the day before (the day's tissue loss and glycogen jitter are in that number too). Step 3 shows what this scatter does to the scale's apparent noise.
-- **The habitual reference.** Carbohydrate averages 211 g/day against the habitual 260 g, and sodium is drawn around 3000 mg against a habitual 4000 mg, so both water compartments sit below zero on average. On day 119 glycogen water is −0.73 kg and sodium water −0.24 kg, close to 2.5·10⁻⁴ × (3000 − 4000) = −0.25 kg. Both are one day's values: glycogen water includes the generator's 0.15 kg/day of random jitter, sodium water that day's sodium draw.
-- **The tape.** 18 readings, on days 0, 7, ..., 119. The day-0 reading of 111.0 cm matches the waist model, 75 + 1.2 × 30.00 = 111.0 cm, plus a 1.5 cm reading error.
-- **The hidden truth.** Over 120 days the scale falls 11.78 kg, tissue 10.80 kg and fat 7.57 kg (70 % of the tissue). Adaptation ends at −161 kcal/day. These are the numbers steps 4 and 5 try to recover.
+- **Missing days.** 107 of 120 mornings have a weigh-in and 106 days a food log, against set rates of 85 % and 90 %, drawn independently: 2026-06-10 has a weigh-in but no food log, 2026-06-01 neither. A missing value is a missing observation, not a missing row.
+- **The truth is off the prior.** The maintenance intercept is 18 % above the prior and the mass slope 10 % below; adaptation is 47 % stronger and 21 % faster; glycogen holds 40 % more water per gram; the sodium gain (not printed; step 4 scores it) is 25 % above its prior. If the truth sat at the prior, an estimator that ignored the data would look perfect.
+- **Readings scatter around the truth.** On 2026-06-05 the scale reads 99.64 kg against a truth of 98.78 kg, +0.86 kg (1.9 standard deviations). Over all 107 readings the error has mean −0.091 kg and standard deviation 0.410 kg, a sample from the 0.45 kg set.
+- **The food log.** Protein is 180 g every day, fat 30 % of energy, and carbohydrate the rest plus a weekly ±60 g cycle (278 g on 06-02, 116 g on 06-06) that exercises the glycogen compartment. Logged energy averages 2233 kcal/day, near the target of 80 % of true day-0 maintenance, 0.80 × (1538 + 13.05 × 100) = 2274.
+- **Sodium moves the truth from day to day.** The 1402 mg on 2026-06-04 pulls sodium water toward 2.5·10⁻⁴ × (1402 − 4000) = −0.65 kg, 63 % of which lands by the next morning: the truth on 06-05 is 0.84 kg below the day before. Step 3 shows what this does to the scale's apparent noise.
+- **Both water compartments sit below zero**, because carbohydrate averages 211 g against a habitual 260 g and sodium is drawn around 3000 mg against 4000 mg. On day 119 sodium water is −0.24 kg, close to 2.5·10⁻⁴ × (3000 − 4000).
+- **The tape.** 18 weekly readings. Day 0's 111.0 cm matches 75 + 1.2 × 30.00 = 111.0 cm plus a 1.5 cm reading error.
+- **The hidden truth.** Over 120 days the scale falls 11.78 kg, tissue 10.80 kg and fat 7.57 kg (70 % of tissue); adaptation ends at −161 kcal/day. Steps 4 and 5 try to recover these.
 
 ## The code
 
-| What | Where |
+| What | Where (under `wdm`) |
 |---|---|
-| The episode's settings | `synthetic.py:27` (`SyntheticSpec`) |
-| The generator | `synthetic.py:69` (`make_episode`) |
-| Intake target, protein, the carbohydrate cycle | `synthetic.py:117`, `synthetic.py:120`, `synthetic.py:123` |
-| Morning state recorded before the day's food | `synthetic.py:144` |
-| Process noise on tissue and glycogen water | `synthetic.py:160–162` (scales from `NoiseModel.default`, `models/dynamics.py:75`) |
-| Daily sodium draw; sodium water reference | `synthetic.py:127–131`, `synthetic.py:134–139` |
-| Readings, missing days, waist | `synthetic.py:167–170`, `synthetic.py:176` |
-| The episode container and its summary line | `io.py:41` (`Episode`), `io.py:143` (`summary`) |
-| Past episodes with weigh-ins only (step 3) | `synthetic.py:219` (`make_weight_only_episode`) |
+| The episode's settings and the generator | `synthetic`: `SyntheticSpec`, `make_episode` |
+| Process noise scales | `models.dynamics.NoiseModel` |
+| The episode container and its summary line | `io.Episode` |
+| Past episodes with weigh-ins only (step 3) | `synthetic.make_weight_only_episode` |
 
-## Assumptions made here
+## How the data are generated
 
-| Assumption | Where | Why |
-|---|---|---|
-| The data come from the estimator's own model | `synthetic.py:69` | This tests the estimator, not the model. Whether the model describes a person is the backtest's question (step 6) and the real record's |
-| The food log is exact when present | `synthetic.py:119–124` | No logging bias. A real log's bias lands in `rmr_intercept` ([Limitations](../theory/limitations.md#drifting-bias)) |
-| Reading noise is Gaussian, 0.45 kg, with no gross errors | `synthetic.py:168` | The filter's 4-sigma gate is not exercised here |
-| Process noise only on tissue (0.08 kg/day) and glycogen water (0.15 kg/day) | `synthetic.py:160–162` | Keeps the data from being cleaner than the filter assumes |
-| Sodium is drawn independently each day, 3000 ± 800 mg, and logged exactly | `synthetic.py:127–131`, defaults in `synthetic.py:27` | Day-to-day sodium is what lets phase 2 see the sodium gain at all |
-| Weigh-ins and logs are missing at random, independently | `synthetic.py:170` | Real missing days are not random: unlogged days tend to be high-intake days |
-| Waist is linear in fat mass, 75 cm + 1.2 cm/kg, read to ±1.5 cm | `synthetic.py:176`, defaults in `synthetic.py:27` | The same form the filter assumes ([The waist tape](../theory/model.md#waist)) |
+- The data come from the estimator's own model, so this tests the estimator, not the model; whether the model describes a person is the backtest's question (step 6).
+- The food log is exact when present. A real log's bias lands in `rmr_intercept` ([Limitations](../theory/limitations.md#drifting-bias)).
+- Reading noise is Gaussian, 0.45 kg, with no gross errors, so the filter's outlier gate is not exercised.
+- Process noise only on tissue (0.08 kg/day) and glycogen water (0.15 kg/day).
+- Sodium is drawn independently each day, 3000 ± 800 mg, and logged exactly; this day-to-day variation is what lets phase 2 see the sodium gain.
+- Weigh-ins and logs are missing at random. Real missing days are not: unlogged days tend to be high-intake days.
+- Waist is linear in fat mass, 75 cm + 1.2 cm/kg, read to ±1.5 cm: the form the filter assumes ([The waist](../theory/model.md#waist)).
 
 ## Try this
 

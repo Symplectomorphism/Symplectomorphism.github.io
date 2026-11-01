@@ -57,7 +57,7 @@ format:
 ::: notes
 Every weigh-in on record, one panel per attempt, on a shared weight axis. The gaps between
 panels are months long and contain no data, so they are not drawn. Each attempt worked
-while it lasted. What this record cannot tell you is why: there is no food log for the first
+while it lasted. What this record cannot say is why: there is no food log for the first
 four attempts, so all it can identify is how noisy a single reading is and how fast the
 trend moves. That turns out to be exactly what the filter needs first.
 :::
@@ -98,7 +98,6 @@ drain is predicted from the cut itself.
 - **Filtered:** the best estimate using only readings up to that day. This is what a
   controller can use. **Smoothed:** conditioned on the whole record, the right way to review
   history.
-- Missing days cost precision, not accuracy: the update is skipped, never filled in.
 
 ::: notes
 The March attempt, which has the densest weigh-ins. The blue line is causal: it is what the
@@ -112,7 +111,7 @@ smoother. A controller only ever gets the blue line.
 ::: card
 [Mass is a mixture]{.cardh}
 A lost pound is part fat (about 9,400 kcal/kg) and part lean tissue (about 1,800 kcal/kg).
-The mix depends on how much fat you carry, so the energy per pound **falls** as the diet
+The mix depends on how much fat the body carries, so the energy per pound **falls** as the diet
 goes on.
 :::
 ::: card
@@ -133,11 +132,6 @@ those states, a filter that estimates them from a scale, and a controller that p
 around them.
 :::
 
-::: notes
-The rule of thumb treats the body as a fixed-density battery. It is wrong three ways, and
-each way becomes one state of the model.
-:::
-
 ## The model {.divider}
 
 Five states, nine parameters, one equation that matters most.
@@ -149,7 +143,7 @@ Five states, nine parameters, one equation that matters most.
 - The person is a nonlinear system with **five hidden states**. The sensors are a scale,
   read each morning, and optionally a tape measure, weekly.
 - The filter estimates the states **and** the person's metabolic parameters, jointly.
-- The controller plans 28 days ahead from that estimate, and the subject eats **only the first
+- The controller plans weeks ahead from that estimate, and the subject eats **only the first
   day** of the plan. Tomorrow it plans again from a new weigh-in.
 
 ::: notes
@@ -163,19 +157,19 @@ its output is one noisy number per day, and its parameters are unknown and perso
 |---|---|---|---|
 | $T$ | kg | tissue: fat plus fat-free solids and their water. What a diet changes | months |
 | $F$ | kg | fat mass, a part of $T$ (lean mass is $T - F$) | months |
-| $G$ | kg | glycogen and bound water, deviation from its habitual fill | 1 to 2 days |
-| $N$ | kg | sodium-associated water, deviation from habitual | about 1 day |
+| $G_c$ | kg | glycogen and bound water, deviation from its habitual fill | 1 to 2 days |
+| $G_n$ | kg | sodium-associated water, deviation from habitual | about 1 day |
 | $A$ | kcal/day | adaptive thermogenesis; negative in a deficit | about 2 weeks |
 
 : {tbl-colwidths="[7,11,62,20]"}
 
 ::: eqbox
 $$
-\rho_{\text{eff}}\,\dot T = I - E - \rho_G\,\dot G,
+\rho_{\text{eff}}\,\dot T = I - E - \rho_G\,\dot G_c,
 \qquad
 \dot F = p\,\dot T,
 \qquad
-y = T + G + N + v
+y = T + G_c + G_n + v
 $$
 :::
 
@@ -183,12 +177,6 @@ Energy eaten $I$ minus energy spent $E$ goes into tissue, except what is diverte
 glycogen ($\rho_G \approx 1{,}025$ kcal/kg of glycogen-water complex). $\rho_{\text{eff}}$ is
 the energy density of the tissue being lost, $p$ its fat fraction, and the scale reads $y$:
 tissue plus both water compartments plus noise $v$.
-
-::: notes
-The boxed equation is the whole model in one line: energy balance, with the energy density
-set by what kind of tissue is moving and a correction for energy parked in glycogen. The
-scale cannot see T alone; it sees T plus water.
-:::
 
 ## Expenditure, and the plateau as an ODE
 
@@ -204,7 +192,7 @@ $$
   food, $X$ logged exercise, and $E_{\text{base}} = E - A$.
 - Under a sustained deficit $D = E_{\text{base}} - I$, adaptation settles at $-\beta_A D$ with
   time constant $\tau_A$. Priors: $\beta_A \approx 0.15$, $\tau_A \approx 14$ days.
-- Water: $\dot G = (k_G\,\Delta C - G)/\tau_G$, with $\Delta C$ carbohydrate relative to
+- Water: $\dot G_c = (k_G\,\Delta C - G_c)/\tau_G$, with $\Delta C$ carbohydrate relative to
   habitual (pre-diet) intake; the same form for sodium.
 
 ::: remark
@@ -213,8 +201,8 @@ another matter: the model cannot tell it apart from adaptation.
 :::
 
 ::: notes
-Nine parameters in all: c0, c1, beta_A, tau_A, the gain and time constant for each water
-compartment, and kappa_P for protein, which appears on the next slide.
+Nine parameters: c0, c1, beta_A, tau_A, a gain and time constant per water compartment, and
+kappa_P (next slide).
 :::
 
 ## What a lost pound is made of {.smaller}
@@ -234,15 +222,15 @@ $$
 clipped to $[0.5, 0.98]$, with $P_g$ grams of protein. Then
 $\rho_{\text{eff}} = p\,\rho_F + (1-p)\,\rho_L$.
 
-The leaner you get, the more of each pound is lean tissue, and the **less energy** each pound
+The leaner the subject gets, the more of each pound is lean tissue, and the **less energy** each pound
 takes. The last stretch of a diet is harder than the first, structurally.
 :::
 :::
 
 ::: notes
 The protein term kappa_P lets higher protein shift the mix toward fat. It is in the model
-because leaving it out would assert protein has no effect; the data, as we will see, cannot
-estimate it.
+because leaving it out would assert protein has no effect; the data cannot estimate it
+(see "Maintenance is identified").
 :::
 
 ## Three clocks {.smaller}
@@ -278,8 +266,8 @@ morning $k$ to morning $k+1$: food never moves the reading taken before it.
 ::: card
 [Observe linearly]{.cardh}
 $y_k = H x_k + v_k$ with $H = (1\ 0\ 1\ 1\ 0)$. The scale is linear in the state, so its update
-is **exact**. A weekly waist reading, $a + bF$ with a personal offset and slope that are
-learned, is the one nonlinear update.
+is **exact**. A weekly waist reading, $a_w + b_w F$ with a personal offset and slope that
+are learned, is the one nonlinear update.
 :::
 ::: card
 [Unlogged days are one unknown]{.cardh}
@@ -297,7 +285,8 @@ everything else rests on.
 
 ::: notes
 These four choices are where most of the care went. The rank-one noise on unlogged days is
-the least obvious and, I think, the most important.
+the least obvious and the most consequential: without it, every unlogged day would teach the
+filter something false about composition.
 :::
 
 ## Estimation {.divider}
@@ -339,8 +328,8 @@ is reported as "unidentified" when the optimum sits on a bound, rather than as a
 
 ::: notes
 The fitted observation noise is what phase 2 inherits. Gaussian on evidence: a
-Student-t was tried and fits this record worse, and a four-sigma gate handles typos. The short window here, about two
-days, reflects how much these past trends bent. It may lengthen as the current attempt adds
+Student-t fits this record worse, and a four-sigma gate handles typos. The short window here,
+{{< meta bw.window >}}, reflects how much these past trends bent. It may lengthen as the current attempt adds
 steadier data.
 :::
 
@@ -466,11 +455,11 @@ against the scale and against **persistence**, "tomorrow equals the last reading
 
 ::: cols2
 ::: card
-[What it caught at once]{.cardh}
-Two bugs that synthetic tests could not see, because the simulator shared them: a day's food
-was credited to that morning's weigh-in, and attempts with no food log were bending the
-parameters to explain a deficit nobody logged (that alone had dragged the glycogen time
-constant from 1.5 days to about 12). Both are fixed.
+[What synthetic tests cannot check]{.cardh}
+A simulator shares the model's assumptions, so a synthetic test cannot catch an error in them.
+Real weigh-ins can: food must be credited to the next morning's reading, never the one taken
+before it, and attempts with no food log must feed phase 1 only, or the parameters bend to
+explain a deficit nobody logged.
 :::
 ::: card
 [What it says so far]{.cardh}
@@ -487,21 +476,21 @@ noise models, since it rewards honest intervals as well as accurate means.
 
 ## Control {.divider}
 
-Plan four weeks, eat one day, replan.
+Plan ahead, eat one day, replan.
 
 ## Receding horizon
 
 ::: cols2
 ::: {}
-Each morning the controller takes the **filtered** state, optimizes intake over a horizon of
-28 days (to the goal date in deadline mode), prescribes the **first day**, and discards the rest. Tomorrow's weigh-in corrects
+Each morning the controller takes the **filtered** state, optimizes intake over a horizon
+running to the goal date (28 days without one), prescribes the **first day**, and discards the rest. Tomorrow's weigh-in corrects
 whatever the model got wrong.
 
 Decisions are held constant over **weekly blocks**:
 
 | Per block | Bounds |
 |---|---|
-| energy $I$ | $[I_{\min}, I_{\max}]$, floor 1,200 kcal |
+| energy $I$ | $[I_{\min}, I_{\max}]$; the subject's floor is 1,200 kcal (default 1,500) |
 | protein per kg | $[P_{\min}, 3.0]$ g/kg |
 | fat share of energy | $[0.15, 0.75]$ |
 
@@ -523,11 +512,6 @@ prescription.
 not follow plans exactly.
 :::
 :::
-:::
-
-::: notes
-The receding-horizon structure is what makes this robust to a model that is certainly wrong
-in its details. Nothing beyond tomorrow is ever acted on.
 :::
 
 ## The objective, term by term
@@ -557,19 +541,21 @@ Deadline mode replaces the progress term with tracking: tissue against a straigh
 today's weight to the goal, scored at the end of the horizon, **not** at the goal itself.
 
 ::: notes
-Scoring the gap to the final goal over a 28-day horizon was a real bug during development:
-it asked to arrive within 28 days no matter how far away the deadline was, and pinned intake
-to the floor. Tracking the reference instead makes the horizon a window onto a longer plan.
+Scoring the gap to the final goal at the end of a shorter horizon would demand arriving within
+the horizon however far off the deadline, and pin intake to the floor. Tracking the reference
+makes the horizon a window onto a longer plan.
 :::
 
 ## Constrain tissue, not the scale
 
 ::: eqbox
 $$
--\Delta T_k \;\le\; \frac{\gamma\, T_k}{7} \qquad \text{for every day } k,
-\qquad \gamma = 1.75\%/\text{week}
+-\Delta T_k \;\le\; \frac{\gamma\, T_k}{7} \qquad \text{for every day } k
 $$
 :::
+
+[$\gamma$ is the permitted weekly tissue-loss fraction: 1.75% in the subject's settings, 1% by
+default.]{.small}
 
 ::: cols2
 ::: card
@@ -588,11 +574,6 @@ The CLI checks the final plan independently, and says so when a goal is out of r
 
 [{{< meta bw.probe >}}]{.small}
 :::
-:::
-
-::: notes
-This is the most important modeling decision in the controller. Separating tissue from water
-is what makes the safety constraint mean anything.
 :::
 
 ## The plan being followed {.smaller}
@@ -617,9 +598,7 @@ is what makes the safety constraint mean anything.
 ::: notes
 Deadline mode: {{< meta bw.plan_target >}} by {{< meta bw.plan_end >}}, starting {{< meta bw.plan_start >}} at {{< meta bw.plan_kcal >}}. The lowest day is
 {{< meta bw.plan_low >}}: {{< meta bw.plan_low_note >}}. A fixed percentage of a shrinking body is a shrinking
-allowance, so the rate limit, if it binds at all, binds late. Only tomorrow's line is a
-prescription; the rest will be replaced as weigh-ins arrive and the parameters move off their
-priors.
+allowance, so the rate limit, if it binds at all, binds late.
 :::
 
 ## Where things stand on day {{< meta bw.day >}}
@@ -689,7 +668,7 @@ anything specific to one person.
 :::
 
 ::: notes
-Chapter 11 of the technical report lists these in full. The first one is the deepest: it is
+The technical report's limitations chapter treats these in full. The first one is the deepest: it is
 structural, not a matter of more data.
 :::
 
@@ -790,17 +769,17 @@ slope innovations rather than level jumps.
 ::: kv
 | Symbol | Meaning |
 |---|---|
-| $T, F, G, N, A$ | tissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day) |
-| $W = T + G + N$ | total mass, what the scale reads before noise $v$ |
+| $T, F, G_c, G_n, A$ | tissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day) |
+| $W = T + G_c + G_n$ | total mass, what the scale reads before noise $v$ |
 | $I, E, X, D$ | intake, expenditure, logged exercise, deficit $E_{\text{base}} - I$ (kcal/day) |
-| $P_g, C, F_g$ | protein, carbohydrate, fat (g/day); $\Delta C$ carbohydrate relative to the mean |
+| $P_g, C, F_g$ | protein, carbohydrate, fat (g/day); $\Delta C$ carbohydrate relative to habitual intake |
 | $c_0, c_1$ | expenditure intercept (kcal/day) and slope (kcal/day per kg) |
 | $\beta_A, \tau_A$ | adaptation gain and time constant |
 | $k_G, \tau_G$; $k_{Na}, \tau_{Na}$ | gain and time constant of the glycogen and sodium water compartments |
 | $p, \kappa_P$ | fat fraction of a mass change; its protein sensitivity |
 | $\rho_F, \rho_L, \rho_G, \rho_{\text{eff}}$ | energy density of fat, lean tissue, glycogen-water complex, and the current mix (kcal/kg) |
 | $\eta, z$ | unconstrained parameters; the augmented state (14 entries, 16 with the tape) |
-| $a, b$ | waist offset (cm) and slope (cm of waist per kg of fat) |
+| $a_w, b_w$ | waist offset (cm) and slope (cm of waist per kg of fat) |
 | $\ell, b$ | level and slope of the local linear trend model |
 | $\gamma$ | permitted weekly tissue-loss fraction |
 

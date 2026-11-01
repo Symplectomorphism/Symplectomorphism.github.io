@@ -132,39 +132,27 @@ RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference 5.49 mg
 
 ## What to notice
 
-- **The prior.** For a 40-year-old, 175 cm, 100 kg man, Mifflin-St Jeor scaled by an activity level of 1.45 gives c0 = 1303 kcal/day and c1 = 14.50 kcal/day per kg. Day-0 expenditure is 2981 kcal/day, so 2981 − 1303 − 14.50 × 100 = 228 kcal/day is the thermic effect of this day's food (25 % of the protein energy, 7.5 % of the carbohydrate, 2 % of the fat). Against 2002 kcal eaten, the gap is 979 kcal/day.
-- **The early water drop.** On day 1 the scale falls 0.52 kg, and 0.42 kg of it is water: 81 %. Eating 100 g of carbohydrate against a habitual 260 g drains glycogen-bound water toward its steady state, gly_gain × (100 − 260) = 0.0030 × (−160) = −0.480 kg, which is the value the column settles at. With a 1.5-day time constant it is 86 % of the way there by day 3 (−0.415 of −0.480, and 1 − e^(−2) = 0.865).
-- **Sodium water is now a real share of it.** The prior sodium gain is 2.0·10⁻⁴ kg per mg/day, so eating 2500 mg against a habitual 4000 mg settles at 2.0·10⁻⁴ × (2500 − 4000) = −0.300 kg, the value the column reaches by day 7. Its time constant is 1 day, so 63 % of that (−0.190 kg, 1 − e^(−1) = 0.632) is gone by the first morning: almost half of day 1's water. The same gain makes a single salty day visible on the scale: 3000 mg above habitual for one day adds about 2.0·10⁻⁴ × 3000 × 0.632 = 0.38 kg the next morning.
-- **Then slower loss.** Week 1 loses 1.58 kg, of which 0.78 kg is water; week 2 loses 0.82 kg and almost no water (the water column stays at 0.78). After that the weekly loss keeps shrinking, to 0.67 kg in week 16, for two reasons: expenditure falls with body mass (c1 × 12.34 kg ≈ 179 kcal/day less by day 112), and adaptation builds.
-- **Adaptation is a lagged state.** A reaches −57 kcal/day after a week and −91 after two (time constant 14 days), peaks at −132 around day 56, then shrinks to −123 by day 112. It relaxes toward −at_gain × gap, and the gap itself closes as mass falls. At day 56 the gap is 1303 + 14.50 × 93.15 + 228 − 2002 ≈ 880 kcal/day, and 0.15 × 880 = 132, the printed value.
-- **What is lost.** Forbes' law at 30 kg of fat gives 30 / (30 + 10.4) = 0.743, and 1.8 g/kg of protein (0.2 above the 1.6 reference) adds 0.05 × 0.2 = 0.010, so the day-0 fat share is 0.753. Over 112 days the share falls as fat falls, and the cumulative split is 8.41 kg of fat in 11.56 kg of tissue, 73 %.
-- **The integrator.** The filter's fixed-step map (RK4, four substeps a day) agrees with an adaptive Tsit5 solve to 5.49 mg of scale weight over 112 days.
+- **The prior.** Mifflin-St Jeor scaled by an activity level of 1.45 gives c0 = 1303 kcal/day and c1 = 14.50 kcal/day per kg. Day-0 expenditure is 2981 kcal/day, so 2981 − 1303 − 14.50 × 100 = 228 kcal/day is the thermic effect of this day's food. Against 2002 kcal eaten, the gap is 979 kcal/day.
+- **The early water drop.** Day 1 loses 0.52 kg, 0.42 kg of it water. Eating 100 g of carbohydrate against a habitual 260 g drains glycogen water toward gly_gain × (100 − 260) = 0.0030 × (−160) = −0.480 kg; with a 1.5-day time constant it is 86 % of the way there by day 3 (1 − e^(−2) = 0.865).
+- **Sodium water is a large share of it.** Water held per milligram of sodium is fixed by the extracellular concentration, so the prior gain is large: 2.0·10⁻⁴ kg per mg/day. Eating 2500 mg against a habitual 4000 mg settles at −0.300 kg, and with a 1-day time constant 63 % of that (−0.190 kg) is gone by the first morning: almost half of day 1's water. The same gain makes one salty day visible: 3000 mg above habitual adds about 0.38 kg the next morning.
+- **Then slower loss.** Week 1 loses 1.58 kg, 0.78 kg of it water; week 2 loses 0.82 kg and almost no water. The weekly loss keeps shrinking, to 0.67 kg in week 16, because expenditure falls with mass (c1 × 12.34 kg ≈ 179 kcal/day by day 112) and adaptation builds.
+- **Adaptation is a lagged state.** A reaches −57 kcal/day after a week (time constant 14 days), peaks at −132 around day 56, then shrinks as the gap closes. It relaxes toward −at_gain × gap: at day 56 the gap is about 880 kcal/day, and 0.15 × 880 = 132.
+- **What is lost.** Forbes' law at 30 kg of fat gives 0.743, and 1.8 g/kg of protein (0.2 above the 1.6 reference) adds 0.010, so the day-0 fat share is 0.753. It falls as fat falls: 8.41 kg of fat in 11.56 kg of tissue over 112 days, 73 %.
+- **The integrator.** The filter's fixed-step map (RK4, four substeps a day) agrees with an adaptive Tsit5 solve to 5.49 mg over 112 days.
 
 ## The code
 
+All under `wdm` (see the [API reference](../reference/index.qmd)).
+
 | What | Where |
 |---|---|
-| State, parameters, daily inputs | `models/types.py:54` (`State`), `models/types.py:109` (`Params`; `prior` at 158), `models/types.py:181` (`DailyInput`) |
-| The vector field; energy into glycogen withheld from tissue | `models/dynamics.py:88` (`rate`), the energy line at 103 |
-| One-day RK4 step | `models/dynamics.py:116` (`step`); `DEFAULT_SUBSTEPS = 4` at 43 |
-| Rollouts | `models/dynamics.py:161` (`simulate`), `models/dynamics.py:184` (`simulate_diffrax`) |
-| Expenditure, thermic effect, adaptation | `models/energetics.py:78` (`baseline_expenditure`), `:40` (`thermic_effect`), `:112` (`adaptation_rate`) |
-| Water compartments | `models/glycogen.py:36` (`glycogen_rate`), `models/glycogen.py:52` (`sodium_rate`); priors `constants.py:202` (glycogen gain), `constants.py:215` (sodium gain), `constants.py:234` (sodium time constant) |
-| Fat share and energy density | `models/partition.py:52` (`forbes_fat_fraction`), `:58` (`fat_fraction`), `:72` (`effective_energy_density`) |
-| Expenditure prior; habitual intake | `config.py:93` (`expenditure_prior`), `config.py:62` (`habitual_intake`), defaults at `config.py:31` |
-
-## Assumptions made here
-
-| Assumption | Where | Why |
-|---|---|---|
-| Each day's intake is held constant over the day | `models/dynamics.py:116` | A food log reports daily totals; this makes the step an exact zero-order hold |
-| Water compartments are measured from habitual intake: 260 g carbohydrate and 4000 mg sodium for a man | `config.py:31` | A diet that starts from ordinary eating starts both at zero, so the first-week drain is predicted rather than credited to tissue |
-| Expenditure prior: Mifflin-St Jeor × 1.45 | `config.py:93`, `constants.py:167` | Only a prior center; phase 2 re-estimates both coefficients (step 4) |
-| Thermic-effect fractions are fixed, not estimated | `constants.py:115–129` | Confounded with maintenance on scale data |
-| Fat share from Forbes' law plus a linear protein shift, clipped to [0.50, 0.98] | `models/partition.py:58`, `constants.py:259–260` | Keeps the energy density physical whatever the parameters do |
-| Sodium water: 2.0·10⁻⁴ kg per mg/day at equilibrium, 1-day time constant | `constants.py:215`, `constants.py:234` | Extracellular fluid holds sodium at a fixed concentration; excretion is the lag, so the gain is the equilibrium value |
-| Glycogen complex stores 1025 kcal/kg | `constants.py:58` | Energy stored as glycogen is not available to tissue, so a refeed is not credited as fat gain |
-| Adaptation is a first-order lag toward −at_gain × gap | `models/energetics.py:112` | The lag is what separates it, partly, from an error in c0 |
+| State, parameters, daily inputs | `models.types`: `State`, `Params` (`Params.prior`), `DailyInput` |
+| The vector field and the one-day RK4 step | `models.dynamics`: `rate`, `step` |
+| Rollouts | `models.dynamics`: `simulate`, `simulate_diffrax` |
+| Expenditure, thermic effect, adaptation | `models.energetics`: `baseline_expenditure`, `thermic_effect`, `adaptation_rate` |
+| Water compartments | `models.glycogen`: `glycogen_rate`, `sodium_rate`; priors in `constants` |
+| Fat share and energy density | `models.partition`: `forbes_fat_fraction`, `fat_fraction`, `effective_energy_density` |
+| Expenditure prior; habitual intake | `config.Subject`: `expenditure_prior`, `habitual_intake` |
 
 ## Try this
 
