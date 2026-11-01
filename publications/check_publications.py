@@ -16,7 +16,7 @@ class Page(HTMLParser):
         self.feed(path.read_text())
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if 'id' in attrs:
+        if 'id' in attrs and tag != 'link':  # Quarto's light/dark stylesheets share ids
             self.ids.append(attrs['id'])
         if tag == 'a':
             self.links.append(attrs.get('href', ''))
@@ -30,7 +30,7 @@ bib = (root / 'references.bib').read_text()
 keys = re.findall(r'@\w+\{([^,]+),', bib)
 assert len(keys) == len(set(keys)), 'Duplicate BibTeX keys'
 assert set(keys) == set(metadata), 'BibTeX and resource metadata disagree'
-page = Page(root / '_site/publications.html')
+page = Page(root / '_site/publications/index.html')
 assert set(page.entries) == {'ref-' + key for key in keys}, 'Missing or extra rendered entries'
 assert len(page.ids) == len(set(page.ids)), 'Duplicate HTML anchors'
 assert page.years == sorted(page.years, reverse=True), 'Years out of order'
@@ -46,10 +46,10 @@ for key, info in metadata.items():
 for file in (root / '_site').rglob('*.html'):
     for href in Page(file).links:
         url = urlsplit(href)
-        if not url.netloc and url.path.endswith('publications.html') and url.fragment:
+        if not url.netloc and url.path.endswith('publications/index.html') and url.fragment:
             assert unquote(url.fragment) in page.ids, f'Broken publication anchor in {file}: {href}'
 assert not re.search(r'accepted, to appear|just-accepted|under review|year\s*=\s*\{submitted', bib, re.I)
-assert len(re.findall(r'class="publication-kind">Preprint<', (root / '_site/publications.html').read_text())) == 2
+assert len(re.findall(r'class="publication-kind">Preprint<', (root / '_site/publications/index.html').read_text())) == 2
 assert any('par.nsf.gov' in href for href in page.links), 'Open manuscript link missing'
 assert any('github.com/mal-boisestate/afilament' in href for href in page.links), 'Code link missing'
 print(f'PASS: {len(keys)} publications, {len(page.years)} year groups, Scholar links, downloads, aliases and all incoming publication anchors.')

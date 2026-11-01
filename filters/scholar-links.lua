@@ -1,7 +1,8 @@
 -- Render a year-grouped bibliography from BibTeX, with curated resource links.
 function Pandoc(doc)
   if not FORMAT:match('html') then return doc end
-  local file = assert(io.open('publications/links.json', 'r'))
+  local here = pandoc.path.directory(PANDOC_SCRIPT_FILE)
+  local file = assert(io.open(pandoc.path.join({here, '..', 'publications', 'links.json'}), 'r'))
   local resources = pandoc.json.decode(file:read('*a'))
   file:close()
   local records = {}
@@ -57,18 +58,14 @@ function Pandoc(doc)
       if b == 'Undated' then return true end
       return a > b
     end)
+    -- The year headings go at the top level, in place of the bibliography div:
+    -- Quarto's table of contents (the page's left pane) skips them inside it.
     local blocks = pandoc.List()
     for _, year in ipairs(years) do
-      blocks:insert(pandoc.Header(2, year .. ' (' .. #groups[year] .. ')', pandoc.Attr('year-' .. year)))
-      for _, entry in ipairs(groups[year]) do blocks:insert(entry) end
+      blocks:insert(pandoc.Header(2, year .. ' (' .. #groups[year] .. ')',
+        pandoc.Attr('year-' .. year, {'publication-year'})))
+      blocks:insert(pandoc.Div(groups[year], pandoc.Attr('', {'publication-list'})))
     end
-    local navigation = pandoc.List({pandoc.Str("Browse by year:"), pandoc.Space()})
-    for i, year in ipairs(years) do
-      if i > 1 then navigation:insert(pandoc.Space()); navigation:insert(pandoc.Str("·")); navigation:insert(pandoc.Space()) end
-      navigation:insert(pandoc.Link(year .. " (" .. #groups[year] .. ")", "#year-" .. year))
-    end
-    blocks:insert(1, pandoc.Div({pandoc.Para(navigation)}, pandoc.Attr("", {"publication-years"})))
-    div.content = blocks
-    return div
+    return blocks
   end})
 end
