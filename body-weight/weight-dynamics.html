@@ -236,7 +236,7 @@ Aykut C. Satici
 </div>
 </div>
 <aside class="notes">
-<p>Every weigh-in on record, one panel per attempt, on a shared weight axis. The gaps between panels are months long and contain no data, so they are not drawn. Each attempt worked while it lasted. What this record cannot tell you is why: there is no food log for the first four attempts, so all it can identify is how noisy a single reading is and how fast the trend moves. That turns out to be exactly what the filter needs first.</p>
+<p>Every weigh-in on record, one panel per attempt, on a shared weight axis. The gaps between panels are months long and contain no data, so they are not drawn. Each attempt worked while it lasted. What this record cannot say is why: there is no food log for the first four attempts, so all it can identify is how noisy a single reading is and how fast the trend moves. That turns out to be exactly what the filter needs first.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -280,7 +280,6 @@ Aykut C. Satici
 <img data-src="assets/smoother.svg" class="fig-wide r-stretch" alt="The March 2026 attempt: weigh-ins scatter about a pound around a filtered and a smoothed trend that agree closely."><ul>
 <li>A morning reading scatters by <strong>0.45 kg (1.0 lb)</strong> about the true trend. That is not the scale’s error, which is tens of grams; it is fluid, gut contents, and glycogen.</li>
 <li><strong>Filtered:</strong> the best estimate using only readings up to that day. This is what a controller can use. <strong>Smoothed:</strong> conditioned on the whole record, the right way to review history.</li>
-<li>Missing days cost precision, not accuracy: the update is skipped, never filled in.</li>
 </ul>
 <aside class="notes">
 <p>The March attempt, which has the densest weigh-ins. The blue line is causal: it is what the filter would have known that morning. The green line uses the future too, which is why it is smoother. A controller only ever gets the blue line.</p>
@@ -300,7 +299,7 @@ Aykut C. Satici
 <h2>Why “3,500 kcal per pound” is wrong</h2>
 <div class="cols3">
 <div class="card">
-<p><span class="cardh">Mass is a mixture</span> A lost pound is part fat (about 9,400 kcal/kg) and part lean tissue (about 1,800 kcal/kg). The mix depends on how much fat you carry, so the energy per pound <strong>falls</strong> as the diet goes on.</p>
+<p><span class="cardh">Mass is a mixture</span> A lost pound is part fat (about 9,400 kcal/kg) and part lean tissue (about 1,800 kcal/kg). The mix depends on how much fat the body carries, so the energy per pound <strong>falls</strong> as the diet goes on.</p>
 </div>
 <div class="card">
 <p><span class="cardh">Water moves first</span> Glycogen is stored with about three times its mass in water. Cutting carbohydrate empties it in days: <strong>pounds on the scale, no tissue lost</strong>. Salt does the same in the other direction.</p>
@@ -312,19 +311,6 @@ Aykut C. Satici
 <div class="claim">
 <p>Each of these is a state with its own time constant. The rest of this talk is a model with those states, a filter that estimates them from a scale, and a controller that plans food around them.</p>
 </div>
-<aside class="notes">
-<p>The rule of thumb treats the body as a fixed-density battery. It is wrong three ways, and each way becomes one state of the model.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
 </section>
 <section id="the-model" class="slide level2 divider">
 <h2>The model</h2>
@@ -336,7 +322,7 @@ Aykut C. Satici
 <img data-src="assets/structure.svg" class="fig-wide r-stretch" alt="Block diagram: person, scale, filter, controller, with the controller's prescription feeding back to the person."><ul>
 <li>The person is a nonlinear system with <strong>five hidden states</strong>. The sensors are a scale, read each morning, and optionally a tape measure, weekly.</li>
 <li>The filter estimates the states <strong>and</strong> the person’s metabolic parameters, jointly.</li>
-<li>The controller plans 28 days ahead from that estimate, and the subject eats <strong>only the first day</strong> of the plan. Tomorrow it plans again from a new weigh-in.</li>
+<li>The controller plans weeks ahead from that estimate, and the subject eats <strong>only the first day</strong> of the plan. Tomorrow it plans again from a new weigh-in.</li>
 </ul>
 <aside class="notes">
 <p>This is a textbook output-feedback loop with an unusual plant. The plant’s input is food, its output is one noisy number per day, and its parameters are unknown and personal.</p>
@@ -383,13 +369,13 @@ Aykut C. Satici
 <td>months</td>
 </tr>
 <tr class="odd">
-<td><span class="math inline">\(G\)</span></td>
+<td><span class="math inline">\(G_c\)</span></td>
 <td>kg</td>
 <td>glycogen and bound water, deviation from its habitual fill</td>
 <td>1 to 2 days</td>
 </tr>
 <tr class="even">
-<td><span class="math inline">\(N\)</span></td>
+<td><span class="math inline">\(G_n\)</span></td>
 <td>kg</td>
 <td>sodium-associated water, deviation from habitual</td>
 <td>about 1 day</td>
@@ -404,27 +390,14 @@ Aykut C. Satici
 </table>
 <div class="eqbox">
 <p><span class="math display">\[
-\rho_{\text{eff}}\,\dot T = I - E - \rho_G\,\dot G,
+\rho_{\text{eff}}\,\dot T = I - E - \rho_G\,\dot G_c,
 \qquad
 \dot F = p\,\dot T,
 \qquad
-y = T + G + N + v
+y = T + G_c + G_n + v
 \]</span></p>
 </div>
 <p>Energy eaten <span class="math inline">\(I\)</span> minus energy spent <span class="math inline">\(E\)</span> goes into tissue, except what is diverted into glycogen (<span class="math inline">\(\rho_G \approx 1{,}025\)</span> kcal/kg of glycogen-water complex). <span class="math inline">\(\rho_{\text{eff}}\)</span> is the energy density of the tissue being lost, <span class="math inline">\(p\)</span> its fat fraction, and the scale reads <span class="math inline">\(y\)</span>: tissue plus both water compartments plus noise <span class="math inline">\(v\)</span>.</p>
-<aside class="notes">
-<p>The boxed equation is the whole model in one line: energy balance, with the energy density set by what kind of tissue is moving and a correction for energy parked in glycogen. The scale cannot see T alone; it sees T plus water.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
 </section>
 <section id="expenditure-and-the-plateau-as-an-ode" class="slide level2">
 <h2>Expenditure, and the plateau as an ODE</h2>
@@ -438,13 +411,13 @@ E = c_0 + c_1 W + \text{TEF} + X + A,
 <ul>
 <li><span class="math inline">\(c_0 + c_1 W\)</span>: resting and baseline expenditure, <span class="math inline">\(W\)</span> total mass, TEF the thermic effect of food, <span class="math inline">\(X\)</span> logged exercise, and <span class="math inline">\(E_{\text{base}} = E - A\)</span>.</li>
 <li>Under a sustained deficit <span class="math inline">\(D = E_{\text{base}} - I\)</span>, adaptation settles at <span class="math inline">\(-\beta_A D\)</span> with time constant <span class="math inline">\(\tau_A\)</span>. Priors: <span class="math inline">\(\beta_A \approx 0.15\)</span>, <span class="math inline">\(\tau_A \approx 14\)</span> days.</li>
-<li>Water: <span class="math inline">\(\dot G = (k_G\,\Delta C - G)/\tau_G\)</span>, with <span class="math inline">\(\Delta C\)</span> carbohydrate relative to habitual (pre-diet) intake; the same form for sodium.</li>
+<li>Water: <span class="math inline">\(\dot G_c = (k_G\,\Delta C - G_c)/\tau_G\)</span>, with <span class="math inline">\(\Delta C\)</span> carbohydrate relative to habitual (pre-diet) intake; the same form for sodium.</li>
 </ul>
 <div class="proof remark">
 <p><span class="proof-title"><em>Remark</em>. </span><span class="math inline">\(c_0\)</span> also absorbs any <strong>constant</strong> bias in the food log, harmlessly. A bias that <strong>drifts</strong> is another matter: the model cannot tell it apart from adaptation.</p>
 </div>
 <aside class="notes">
-<p>Nine parameters in all: c0, c1, beta_A, tau_A, the gain and time constant for each water compartment, and kappa_P for protein, which appears on the next slide.</p>
+<p>Nine parameters: c0, c1, beta_A, tau_A, a gain and time constant per water compartment, and kappa_P (next slide).</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -469,11 +442,11 @@ E = c_0 + c_1 W + \text{TEF} + X + A,
 p = \frac{F}{F + 10.4} + \kappa_P\!\left(\frac{P_g}{W} - 1.6\right)
 \]</span></p>
 <p>clipped to <span class="math inline">\([0.5, 0.98]\)</span>, with <span class="math inline">\(P_g\)</span> grams of protein. Then <span class="math inline">\(\rho_{\text{eff}} = p\,\rho_F + (1-p)\,\rho_L\)</span>.</p>
-<p>The leaner you get, the more of each pound is lean tissue, and the <strong>less energy</strong> each pound takes. The last stretch of a diet is harder than the first, structurally.</p>
+<p>The leaner the subject gets, the more of each pound is lean tissue, and the <strong>less energy</strong> each pound takes. The last stretch of a diet is harder than the first, structurally.</p>
 </div>
 </div>
 <aside class="notes">
-<p>The protein term kappa_P lets higher protein shift the mix toward fat. It is in the model because leaving it out would assert protein has no effect; the data, as we will see, cannot estimate it.</p>
+<p>The protein term kappa_P lets higher protein shift the mix toward fat. It is in the model because leaving it out would assert protein has no effect; the data cannot estimate it (see “Maintenance is identified”).</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -514,7 +487,7 @@ p = \frac{F}{F + 10.4} + \kappa_P\!\left(\frac{P_g}{W} - 1.6\right)
 <p><span class="cardh">Discretize exactly</span> Food logs are daily totals, held for a day (an exact zero-order hold) and integrated by RK4. Row <span class="math inline">\(k\)</span> is the morning weigh-in and that day’s food, so <span class="math inline">\(x_{k+1} = f(x_k, u_k)\)</span> takes morning <span class="math inline">\(k\)</span> to morning <span class="math inline">\(k+1\)</span>: food never moves the reading taken before it.</p>
 </div>
 <div class="card">
-<p><span class="cardh">Observe linearly</span> <span class="math inline">\(y_k = H x_k + v_k\)</span> with <span class="math inline">\(H = (1\ 0\ 1\ 1\ 0)\)</span>. The scale is linear in the state, so its update is <strong>exact</strong>. A weekly waist reading, <span class="math inline">\(a + bF\)</span> with a personal offset and slope that are learned, is the one nonlinear update.</p>
+<p><span class="cardh">Observe linearly</span> <span class="math inline">\(y_k = H x_k + v_k\)</span> with <span class="math inline">\(H = (1\ 0\ 1\ 1\ 0)\)</span>. The scale is linear in the state, so its update is <strong>exact</strong>. A weekly waist reading, <span class="math inline">\(a_w + b_w F\)</span> with a personal offset and slope that are learned, is the one nonlinear update.</p>
 </div>
 <div class="card">
 <p><span class="cardh">Unlogged days are one unknown</span> A day with no food log sets intake to current expenditure and adds process noise along a single direction, <span class="math inline">\(\propto (1, p, 0, 0, 0)/\rho_{\text{eff}}\)</span>. An unknown intake moves tissue and fat <strong>together</strong>; diagonal noise would let the filter learn composition from nothing.</p>
@@ -524,7 +497,7 @@ p = \frac{F}{F + 10.4} + \kappa_P\!\left(\frac{P_g}{W} - 1.6\right)
 </div>
 </div>
 <aside class="notes">
-<p>These four choices are where most of the care went. The rank-one noise on unlogged days is the least obvious and, I think, the most important.</p>
+<p>These four choices are where most of the care went. The rank-one noise on unlogged days is the least obvious and the most consequential: without it, every unlogged day would teach the filter something false about composition.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -592,7 +565,7 @@ p = \frac{F}{F + 10.4} + \kappa_P\!\left(\frac{P_g}{W} - 1.6\right)
 </div>
 </div>
 <aside class="notes">
-<p>The fitted observation noise is what phase 2 inherits. Gaussian on evidence: a Student-t was tried and fits this record worse, and a four-sigma gate handles typos. The short window here, about two days, reflects how much these past trends bent. It may lengthen as the current attempt adds steadier data.</p>
+<p>The fitted observation noise is what phase 2 inherits. Gaussian on evidence: a Student-t fits this record worse, and a four-sigma gate handles typos. The short window here, 1.8 days, reflects how much these past trends bent. It may lengthen as the current attempt adds steadier data.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -700,7 +673,7 @@ z_k = \bigl(\underbrace{T, F, G, N, A}_{x_k \in \mathbb{R}^5},\;
 
 <img data-src="assets/parameters.svg" class="fig-wide r-stretch" alt="Posterior intervals in prior standard deviations. Synthetic: intervals move and contain the truth. Real data: most intervals still sit on the prior."><div class="cols2">
 <div class="claim">
-<p>With 7 logged days, seven of nine parameters sit within half a prior standard deviation of their priors. <strong>That is the correct answer:</strong> the weigh-in history pins down noise, and nothing about metabolism, so the filter reports its ignorance instead of inventing precision.</p>
+<p>With 8 logged days, seven of nine parameters sit within half a prior standard deviation of their priors. <strong>That is the correct answer:</strong> the weigh-in history pins down noise, and nothing about metabolism, so the filter reports its ignorance instead of inventing precision.</p>
 </div>
 <div class="warn">
 <p>The one that has moved most is <span class="math inline">\(k_{Na}\)</span>: 0.000669 against a prior of 0.0002, 1.2 prior standard deviations. From a few days of data that is a lead, not a finding; if it is real, it will keep landing there as data accrues.</p>
@@ -725,7 +698,7 @@ z_k = \bigl(\underbrace{T, F, G, N, A}_{x_k \in \mathbb{R}^5},\;
 <p>Replay every attempt day by day, the filter knowing only what had happened by then; forecast the next morning’s reading, and the one a week out, from the food actually logged; score each against the scale and against <strong>persistence</strong>, “tomorrow equals the last reading”.</p>
 <div class="cols2">
 <div class="card">
-<p><span class="cardh">What it caught at once</span> Two bugs that synthetic tests could not see, because the simulator shared them: a day’s food was credited to that morning’s weigh-in, and attempts with no food log were bending the parameters to explain a deficit nobody logged (that alone had dragged the glycogen time constant from 1.5 days to about 12). Both are fixed.</p>
+<p><span class="cardh">What synthetic tests cannot check</span> A simulator shares the model’s assumptions, so a synthetic test cannot catch an error in them. Real weigh-ins can: food must be credited to the next morning’s reading, never the one taken before it, and attempts with no food log must feed phase 1 only, or the parameters bend to explain a deficit nobody logged.</p>
 </div>
 <div class="card">
 <p><span class="cardh">What it says so far</span> 6 one-day forecasts on logged days: an error of 1.9 lb against 2.7 lb for persistence. All are first mornings of a diet, the hardest days, and so few forecasts are not an evaluation. The point is that the score is recomputed at every refresh.</p>
@@ -747,13 +720,13 @@ z_k = \bigl(\underbrace{T, F, G, N, A}_{x_k \in \mathbb{R}^5},\;
 </section>
 <section id="control" class="slide level2 divider">
 <h2>Control</h2>
-<p>Plan four weeks, eat one day, replan.</p>
+<p>Plan ahead, eat one day, replan.</p>
 </section>
 <section id="receding-horizon" class="slide level2">
 <h2>Receding horizon</h2>
 <div class="cols2">
 <div>
-<p>Each morning the controller takes the <strong>filtered</strong> state, optimizes intake over a horizon of 28 days (to the goal date in deadline mode), prescribes the <strong>first day</strong>, and discards the rest. Tomorrow’s weigh-in corrects whatever the model got wrong.</p>
+<p>Each morning the controller takes the <strong>filtered</strong> state, optimizes intake over a horizon running to the goal date (28 days without one), prescribes the <strong>first day</strong>, and discards the rest. Tomorrow’s weigh-in corrects whatever the model got wrong.</p>
 <p>Decisions are held constant over <strong>weekly blocks</strong>:</p>
 <table class="caption-top">
 <colgroup>
@@ -769,7 +742,7 @@ z_k = \bigl(\underbrace{T, F, G, N, A}_{x_k \in \mathbb{R}^5},\;
 <tbody>
 <tr class="odd">
 <td>energy <span class="math inline">\(I\)</span></td>
-<td><span class="math inline">\([I_{\min}, I_{\max}]\)</span>, floor 1,200 kcal</td>
+<td><span class="math inline">\([I_{\min}, I_{\max}]\)</span>; the subject’s floor is 1,200 kcal (default 1,500)</td>
 </tr>
 <tr class="even">
 <td>protein per kg</td>
@@ -792,19 +765,6 @@ z_k = \bigl(\underbrace{T, F, G, N, A}_{x_k \in \mathbb{R}^5},\;
 </div>
 </div>
 </div>
-<aside class="notes">
-<p>The receding-horizon structure is what makes this robust to a model that is certainly wrong in its details. Nothing beyond tomorrow is ever acted on.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
 </section>
 <section id="the-objective-term-by-term" class="slide level2">
 <h2>The objective, term by term</h2>
@@ -857,7 +817,7 @@ J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w
 </div>
 <p>Deadline mode replaces the progress term with tracking: tissue against a straight path from today’s weight to the goal, scored at the end of the horizon, <strong>not</strong> at the goal itself.</p>
 <aside class="notes">
-<p>Scoring the gap to the final goal over a 28-day horizon was a real bug during development: it asked to arrive within 28 days no matter how far away the deadline was, and pinned intake to the floor. Tracking the reference instead makes the horizon a window onto a longer plan.</p>
+<p>Scoring the gap to the final goal at the end of a shorter horizon would demand arriving within the horizon however far off the deadline, and pin intake to the floor. Tracking the reference makes the horizon a window onto a longer plan.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -874,10 +834,10 @@ J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w
 <h2>Constrain tissue, not the scale</h2>
 <div class="eqbox">
 <p><span class="math display">\[
--\Delta T_k \;\le\; \frac{\gamma\, T_k}{7} \qquad \text{for every day } k,
-\qquad \gamma = 1.75\%/\text{week}
+-\Delta T_k \;\le\; \frac{\gamma\, T_k}{7} \qquad \text{for every day } k
 \]</span></p>
 </div>
+<p><span class="small"><span class="math inline">\(\gamma\)</span> is the permitted weekly tissue-loss fraction: 1.75% in the subject’s settings, 1% by default.</span></p>
 <div class="cols2">
 <div class="card">
 <p><span class="cardh">Why tissue</span> Cutting carbohydrate sheds a kilogram of glycogen water in days. On the scale that reads as 4 lb/week and trips any limit written on scale weight, though no tissue moved. A controller limited on the scale would refuse a sound plan, or <strong>raise</strong> calories in response to water. The objective scores <span class="math inline">\(T\)</span> for the same reason: scored on <span class="math inline">\(W\)</span>, cutting carbohydrate alone would look like progress.</p>
@@ -887,19 +847,6 @@ J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w
 <p><span class="small">target of 170 lb by 2026-12-30 is not reachable within your 1.75%/week limit; the earliest achievable date at that maximum rate is 2027-02-28</span></p>
 </div>
 </div>
-<aside class="notes">
-<p>This is the most important modeling decision in the controller. Separating tissue from water is what makes the safety constraint mean anything.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
 </section>
 <section id="the-plan-being-followed" class="slide level2 smaller">
 <h2>The plan being followed</h2>
@@ -916,7 +863,7 @@ J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w
 </div>
 </div>
 <aside class="notes">
-<p>Deadline mode: 169 lb by March 10, 2027, starting October 31, 2026 at 1,325 kcal. The lowest day is 1,200 kcal: the floor, reached in week 3. A fixed percentage of a shrinking body is a shrinking allowance, so the rate limit, if it binds at all, binds late. Only tomorrow’s line is a prescription; the rest will be replaced as weigh-ins arrive and the parameters move off their priors.</p>
+<p>Deadline mode: 169 lb by March 10, 2027, starting October 31, 2026 at 1,325 kcal. The lowest day is 1,200 kcal: the floor, reached in week 3. A fixed percentage of a shrinking body is a shrinking allowance, so the rate limit, if it binds at all, binds late.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -989,7 +936,7 @@ J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w
 <p><span class="proof-title"><em>Remark</em>. </span>Not medical advice. The safety limits are conservative defaults from general guidance, not anything specific to one person.</p>
 </div>
 <aside class="notes">
-<p>Chapter 11 of the technical report lists these in full. The first one is the deepest: it is structural, not a matter of more data.</p>
+<p>The technical report’s limitations chapter treats these in full. The first one is the deepest: it is structural, not a matter of more data.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -1012,7 +959,7 @@ J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w
 <li>unscented filter and smoother; phase-1 maximum likelihood</li>
 <li>SLSQP controller, constraints on the predicted trajectory</li>
 <li>a backtest scoring every forecast against persistence</li>
-<li><strong>206 tests</strong>, and a 72-page technical report deriving all of it</li>
+<li><strong>184 tests</strong>, and a 61-page technical report deriving all of it</li>
 </ul>
 </div>
 <div>
@@ -1098,11 +1045,11 @@ W_m^{(i)} = W_c^{(i)} = \frac{1}{2(n+\lambda)}
 </thead>
 <tbody>
 <tr class="odd">
-<td><span class="math inline">\(T, F, G, N, A\)</span></td>
+<td><span class="math inline">\(T, F, G_c, G_n, A\)</span></td>
 <td>tissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day)</td>
 </tr>
 <tr class="even">
-<td><span class="math inline">\(W = T + G + N\)</span></td>
+<td><span class="math inline">\(W = T + G_c + G_n\)</span></td>
 <td>total mass, what the scale reads before noise <span class="math inline">\(v\)</span></td>
 </tr>
 <tr class="odd">
@@ -1111,7 +1058,7 @@ W_m^{(i)} = W_c^{(i)} = \frac{1}{2(n+\lambda)}
 </tr>
 <tr class="even">
 <td><span class="math inline">\(P_g, C, F_g\)</span></td>
-<td>protein, carbohydrate, fat (g/day); <span class="math inline">\(\Delta C\)</span> carbohydrate relative to the mean</td>
+<td>protein, carbohydrate, fat (g/day); <span class="math inline">\(\Delta C\)</span> carbohydrate relative to habitual intake</td>
 </tr>
 <tr class="odd">
 <td><span class="math inline">\(c_0, c_1\)</span></td>
@@ -1138,7 +1085,7 @@ W_m^{(i)} = W_c^{(i)} = \frac{1}{2(n+\lambda)}
 <td>unconstrained parameters; the augmented state (14 entries, 16 with the tape)</td>
 </tr>
 <tr class="odd">
-<td><span class="math inline">\(a, b\)</span></td>
+<td><span class="math inline">\(a_w, b_w\)</span></td>
 <td>waist offset (cm) and slope (cm of waist per kg of fat)</td>
 </tr>
 <tr class="even">
