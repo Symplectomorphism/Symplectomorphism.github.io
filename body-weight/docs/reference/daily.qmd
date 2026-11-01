@@ -13,6 +13,8 @@ kept apart so they can be tested without running the filter:
   needed. Row ``k`` holds the morning readings of day ``k`` and the food eaten
   that day, so entering the weight first thing is exactly right; the food
   columns are filled in tomorrow.
+* `record_health` does the same for the optional health readings,
+  adding each one's column the first time it has a value.
 * `log_plan` archives every plan with the facts needed to reproduce it,
   which a plain ``plan.csv``, overwritten daily, cannot do.
 
@@ -26,6 +28,7 @@ what it was.
 | --- | --- |
 | [add_column](#wdm.daily.add_column) | Add an empty column ``col`` (before ``before`` if present); ``False`` if it exists. |
 | [ask_number](#wdm.daily.ask_number) | Prompt until the answer is a number or blank (``None``). |
+| [clear](#wdm.daily.clear) | Empty ``cols`` in ``date``'s row; return what was cleared. |
 | [day_has_food](#wdm.daily.day_has_food) | Whether ``date``'s row has an energy total or a full macro split. |
 | [day_totals](#wdm.daily.day_totals) | The day's logged totals for the prescribed quantities, zero where blank. |
 | [day_value](#wdm.daily.day_value) | The raw cell for ``col`` on ``date``, or ``None`` if the row or cell is empty. |
@@ -33,6 +36,7 @@ what it was.
 | [log_plan](#wdm.daily.log_plan) | Archive ``plan`` as ``<start>.csv`` and append a row to ``log.csv``. |
 | [prescription](#wdm.daily.prescription) | Today's prescription: the latest logged plan that starts on ``date``. |
 | [record](#wdm.daily.record) | Write ``values`` into ``date``'s row; return what was done. |
+| [record_health](#wdm.daily.record_health) | Write health readings into ``date``'s row; return what was done. |
 | [record_morning](#wdm.daily.record_morning) | Write this morning's readings into ``date``'s row; return what was done. |
 
 ### add_column { #wdm.daily.add_column }
@@ -53,6 +57,17 @@ daily.ask_number(prompt, ask=input)
 ```
 
 Prompt until the answer is a number or blank (``None``).
+
+### clear { #wdm.daily.clear }
+
+```python
+daily.clear(path, date, cols=FOOD_COLUMNS)
+```
+
+Empty ``cols`` in ``date``'s row; return what was cleared.
+
+An empty food cell means "unknown" to the model, which is the honest
+reading of a day whose log turned out to be wrong.
 
 ### day_has_food { #wdm.daily.day_has_food }
 
@@ -130,10 +145,21 @@ An existing row keeps its episode and gets the values in its empty cells;
 a value that would overwrite a different one is refused, since a silent
 overwrite is how a typo becomes data. With ``add``, values are summed into
 what is there instead: that is how a meal joins the day's food totals. With
-``replace``, a new value overwrites the old one, for running totals such as
-a step count. A
-missing row is appended to the most recent episode, so a new diet attempt
-still needs its first row by hand. ``None`` values are skipped.
+``replace``, a new value overwrites the old one: a running total such as a
+step count, or a correction (``wdm log --set``). A missing row is appended
+to the most recent episode, so a new diet attempt still needs its first row
+by hand. ``None`` values are skipped.
+
+### record_health { #wdm.daily.record_health }
+
+```python
+daily.record_health(path, date, values, *, replace=False)
+```
+
+Write health readings into ``date``'s row; return what was done.
+
+A file without a reading's column gets it the first time the reading has a
+value, so a record that never logs one is never touched.
 
 ### record_morning { #wdm.daily.record_morning }
 

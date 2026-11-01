@@ -31,11 +31,12 @@ Every command that reads data takes the observations file as an optional first a
 
 ```text
 wdm daily [CSV] [--config TOML] [--weight LB] [--waist IN]
+        [--glucose MG_DL] [--ketones MMOL_L] [--hr BPM] [--bp SYS DIA]
         [--date YYYY-MM-DD] [--mode {deadline,sustainable,maintain}]
         [--out FILE] [--log-dir DIR] [--no-input]
 ```
 
-Records this morning's readings and any missing food from yesterday (asking in a terminal), validates the file, runs [`plan`](#wdm-plan) with `--log-dir`, and prints today's prescription. It asks for the waist when a measurement is due. In context: [The daily routine](daily-routine.md#morning-wdm-daily).
+Records this morning's readings and any missing food from yesterday (asking in a terminal), validates the file, runs [`plan`](#wdm-plan) with `--log-dir`, and prints today's prescription. It asks for the waist when a measurement is due, and for the [health readings](data.md#health-readings). In context: [The daily routine](daily-routine.md#morning-wdm-daily).
 
 | Option | Meaning | Default |
 |---|---|---|
@@ -43,6 +44,7 @@ Records this morning's readings and any missing food from yesterday (asking in a
 | `--config TOML` | Subject file | `data/raw/subject.toml` |
 | `--weight LB` | This morning's weigh-in, lb (not asked for if given) | asked |
 | `--waist IN` | This morning's waist, inches | asked when 7 days have passed |
+| `--glucose`, `--ketones`, `--hr`, `--bp SYS DIA` | This morning's health readings: mg/dL, mmol/L, bpm, mmHg | asked |
 | `--date YYYY-MM-DD` | The morning to record | today |
 | `--mode` | `deadline`, `sustainable`, or `maintain` | [set by the subject file](configuration.md#mode) |
 | `--out FILE` | The plan as CSV, overwritten every run | `code/plan.csv` |
@@ -56,7 +58,8 @@ Exit code 1 if a value conflicts with one already in the file, if validation fai
 ```text
 wdm log [CSV] [--kcal KCAL] [--protein G] [--carb G] [--fat G]
         [--fiber G] [--alcohol G] [--sodium MG] [--exercise KCAL]
-        [--steps N] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
+        [--steps N] [--glucose MG_DL] [--ketones MMOL_L] [--hr BPM]
+        [--bp SYS DIA] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
         [--log-dir DIR]
 ```
 
@@ -73,9 +76,10 @@ Adds to a day's row, then prints the day's energy and macronutrient totals again
 | `--sodium MG` | `sodium_mg` | adds |
 | `--exercise KCAL` | `exercise_kcal` | adds |
 | `--steps N` | `steps` | **replaces** (a step count is a running total) |
+| `--glucose`, `--ketones`, `--hr`, `--bp SYS DIA` | the [health readings](data.md#health-readings) | fills an empty cell, refusing a different value unless `--set`; adds the column if the file lacks it |
 | `--estimate` | `estimated` | sets it to 1: the day's food is a guess ([When you don't know exactly](data.md#estimating)); adds the column if the file lacks it |
 | `--set` | | **replace** the values of the columns given instead of adding to them, to correct a day; columns not given are left alone, and each change is printed (`kcal 1460 → 1850`) |
-| `--clear` | | empty the day's food, exercise and estimate cells first; the weigh-in, waist and steps stay. With value flags, the day is cleared and then they are added |
+| `--clear` | | empty the day's food, exercise and estimate cells first; the weigh-in, waist, steps and health readings stay. With value flags, the day is cleared and then they are added |
 | `--date YYYY-MM-DD` | | the day to add to; default today |
 | `--log-dir DIR` | | where to read today's plan from; default `data/plans` beside the data directory |
 | `CSV` | | observations file; default `data/raw/observations.csv` |
@@ -196,6 +200,7 @@ Fits the model once and writes every figure for the latest episode into one fold
 - `maintenance`: the maintenance estimate over time, against logged intake
 - `innovations`: the standardized one-step-ahead surprises
 - `intake_log`: logged exercise, fiber, sodium, and steps
+- `health`: logged fasting glucose, ketones, resting heart rate, and blood pressure; written only once any is logged
 
 If planning refuses, the other figures are still written. [Latest figures](../figures.qmd) shows the current set, with how to read each.
 

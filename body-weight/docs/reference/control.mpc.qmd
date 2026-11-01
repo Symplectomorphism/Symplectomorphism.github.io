@@ -52,6 +52,7 @@ control.mpc.Plan(
     fat_g,
     predicted_weight_kg,
     predicted_tissue_kg,
+    predicted_settled_kg,
     predicted_fat_kg,
     predicted_adapt_kcal,
     mode,
@@ -60,7 +61,7 @@ control.mpc.Plan(
     message,
     penalty_scale=1.0,
     start_weight_kg=None,
-    start_tissue_kg=None,
+    start_settled_kg=None,
 )
 ```
 
@@ -72,8 +73,9 @@ An optimized intake trajectory and its predicted consequences.
 | --- | --- |
 | [carb_pct](#wdm.control.mpc.Plan.carb_pct) | Carbohydrate's share of energy, in percent. |
 | [fat_pct](#wdm.control.mpc.Plan.fat_pct) | Fat's share of energy, in percent. |
+| [predicted_settled_kg](#wdm.control.mpc.Plan.predicted_settled_kg) | Tissue once glycogen returns to its habitual level; see |
 | [protein_pct](#wdm.control.mpc.Plan.protein_pct) | Protein's share of energy, in percent. |
-| [start_tissue_kg](#wdm.control.mpc.Plan.start_tissue_kg) | Tissue the plan starts from: day 1's loss is measured against it. |
+| [start_settled_kg](#wdm.control.mpc.Plan.start_settled_kg) | Settled tissue the plan starts from: day 1's loss is measured against it. |
 | [start_weight_kg](#wdm.control.mpc.Plan.start_weight_kg) | Scale weight the plan starts from: the basis of the protein bound. |
 
 #### Methods
@@ -93,8 +95,8 @@ control.mpc.Plan.tissue_loss_frac_per_week()
 Predicted fractional *tissue* loss per week, in percent.
 
 This is the same basis the rate-of-loss safety limit
-(``max_loss_frac_per_week``) is checked against -- tissue, not scale
-weight, for the reason given in `rate_violation_cost` -- so it
+(``max_loss_frac_per_week``) is checked against -- settled tissue, not
+scale weight, for the reason given in `rate_violation_cost` -- so it
 is what to compare directly against that config value to see how
 much headroom a plan is using, unlike `weekly_rate_lb`, which
 is on scale weight and includes water.
@@ -150,7 +152,8 @@ Controller configuration.
 | --- | --- |
 | [check_constraints](#wdm.control.mpc.check_constraints) | Verify the returned plan against the hard safety limits. |
 | [feasibility_report](#wdm.control.mpc.feasibility_report) | Report whether a deadline target is reachable within the safety limits. |
-| [solve](#wdm.control.mpc.solve) | Optimise an intake trajectory from the current state. |
+| [settled_tissue](#wdm.control.mpc.settled_tissue) | Tissue once the glycogen compartment returns to its habitual level, kg. |
+| [solve](#wdm.control.mpc.solve) | Optimize an intake trajectory from the current state. |
 
 ### check_constraints { #wdm.control.mpc.check_constraints }
 
@@ -179,7 +182,7 @@ Returns ``None`` when the plan is on track, otherwise a plain statement of
 the earliest date the target could be reached at the maximum permitted rate.
 
 The rate is the one `solve` enforces: a fraction of each day's
-*tissue*, not scale weight, so at the maximum rate tissue falls
+*settled tissue*, not scale weight, so at the maximum rate it falls
 geometrically, ``T_n = T_0 / (1 + frac/7)**n``. The distance to cover is
 measured on the scale, since that is how the target is stated, which assumes
 the water compartments end where they are today.
@@ -190,6 +193,26 @@ typically the calorie floor, held for the entire horizon -- and that output
 looks like a plan rather than like a refusal. Saying so explicitly is the
 difference between a tool that informs you and one that quietly agrees with
 whatever you typed.
+
+### settled_tissue { #wdm.control.mpc.settled_tissue }
+
+```python
+control.mpc.settled_tissue(x, u, params)
+```
+
+Tissue once the glycogen compartment returns to its habitual level, kg.
+
+$$
+T + \rho_G\, G_c / \rho_{\text{eff}}
+$$
+
+Energy stored as glycogen is withheld from tissue (the
+$\rho_G \dot G_c$ term of the energy balance) and handed back to
+it when glycogen drains. Scoring tissue alone at the end of the horizon
+therefore rewards a carbohydrate load in the final weeks: the refill
+lowers the scored tissue, and the energy returns to tissue the week after
+the horizon closes, where the objective cannot see it. Scoring this
+quantity removes that, and leaves carbohydrate only its real effects.
 
 ### solve { #wdm.control.mpc.solve }
 
@@ -207,7 +230,7 @@ control.mpc.solve(
 )
 ```
 
-Optimise an intake trajectory from the current state.
+Optimize an intake trajectory from the current state.
 
 #### Parameters {.doc-section .doc-section-parameters}
 

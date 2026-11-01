@@ -31,6 +31,10 @@ Row *k* is day *k*: the weigh-in on its morning and everything eaten during it. 
 | `exercise_kcal` | kcal/day | 0 to 8,000 | Deliberate exercise energy above baseline. Blank counts as 0. |
 | `steps` | count | 0 to 150,000 | Step count. Kept as a diagnostic, not used in the energy balance. |
 | `waist_in` | in | 15 to 90 | Waist at the navel. (`waist_cm`, 38 to 230, also accepted.) |
+| `glucose_mg_dl` | mg/dL | 20 to 600 | Fasting blood glucose. A [health reading](#health-readings). |
+| `ketones_mmol_l` | mmol/L | 0 to 10 | Blood ketones (beta-hydroxybutyrate). A health reading. |
+| `resting_hr_bpm` | bpm | 25 to 200 | Resting heart rate. A health reading. |
+| `bp_systolic_mmhg`, `bp_diastolic_mmhg` | mmHg | 60 to 260, 30 to 160 | Blood pressure. Health readings; a diastolic at or above the systolic draws a warning. |
 | `estimated` | 1 or blank | 0 to 1 | 1 when the day's food is an estimate; the filter then treats its energy as uncertain by about a quarter. `wdm log --estimate` sets it (and adds the column if the file lacks it). |
 | `notes` | text | | Free text, never parsed. Useful when reviewing outliers. |
 
@@ -81,6 +85,14 @@ Both optional. Left blank, steady activity is absorbed into the estimated mainte
 ### `waist_in`
 
 Optional, and the only reading that responds to fat mass directly; weekly is plenty. Protocol and what it buys: [The waist tape](daily-routine.md#the-waist-tape).
+
+### Health readings {#health-readings}
+
+Fasting glucose, ketones, resting heart rate, and blood pressure are logged and plotted (`wdm plots` draws a `health` figure once any is logged) but never used by the model, so a blank one costs nothing. A file gets each column the first time it has a value. Take them the same way every morning, since the trend is what is worth reading:
+
+- **Glucose and ketones:** finger-stick, on waking, before food or coffee.
+- **Resting heart rate:** the watch's own daily figure, read in the morning; it is measured asleep or at rest, steadier than a spot reading.
+- **Blood pressure:** seated after five quiet minutes, arm supported at heart level, the same arm each time; the average of two readings a minute apart.
 
 ## When you don't know exactly {#estimating}
 

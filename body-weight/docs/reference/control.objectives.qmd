@@ -131,6 +131,15 @@ scored against scale weight can be paid down by cutting carbohydrate alone,
 with zero tissue lost. Scoring tissue closes that loophole: the only way to
 reduce this cost is to actually lose tissue.
 
+``tissue`` is *settled* tissue (`wdm.control.mpc.settled_tissue`):
+tissue plus the energy banked in glycogen, which returns to tissue once
+glycogen drains. Bare tissue leaves a smaller loophole of the same kind.
+A glycogen refill withholds energy from tissue only until the next week,
+so scoring bare tissue rewards a carbohydrate load in the horizon's last
+weeks, and limiting its rate rewards the opposite, a carbohydrate crash
+whose drained glycogen props tissue up. With settled tissue in every term,
+carbohydrate keeps only its real effect on expenditure.
+
 ``penalty_scale`` multiplies the constraint-violation terms only. The solver
 escalates it until the returned solution actually satisfies the hard limits,
 which is what turns these soft penalties into effective constraints.
@@ -195,7 +204,10 @@ unsafe happened, and a controller constrained on scale weight would refuse a
 perfectly reasonable plan or, worse, compensate by *raising* calories.
 
 The limit that matters physiologically is on how fast lean and fat tissue are
-mobilised. That is what this penalizes.
+mobilized. That is what this penalizes.
+
+The solver passes settled tissue (see `deadline_cost`), so the limit
+is on the energy deficit, and glycogen moving in or out cannot loosen it.
 
 The limit is a fraction of each day's tissue, ``-dT_k <= frac * T_k``, so it
 tightens as tissue falls, which is what "a fraction of body mass per week"
@@ -268,4 +280,5 @@ is the behavior worth having.
 Scored against tissue rather than scale weight for the same reason as
 `deadline_cost`: scale weight is partly water, and water responds to
 carbohydrate directly, so a scale-weight reward is gameable by cutting carbs
-with no tissue actually lost.
+with no tissue actually lost. ``tissue`` is settled tissue, as in
+`deadline_cost`.
