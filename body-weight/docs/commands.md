@@ -186,14 +186,14 @@ wdm plots [CSV] [--config TOML] [--out DIR] [--format {pdf,png,svg} ...]
         [--mode {deadline,sustainable,maintain}] [--log-dir DIR]
 ```
 
-Fits the model once and writes every figure for the latest episode into one folder: `trajectory` (readings, trend, band), `composition` (fat and lean with bands), `innovations`, `parameters` (posteriors against priors), `parameter_evolution` (what the filter believed about each parameter, day by day), `maintenance` (the maintenance estimate over time, against logged intake), `intake_log`, `plan` (as `wdm plan` would make it), and `plan_vs_actual` (each day's prescription from the plans log, against what was eaten; until a plan is logged, only what was eaten). If planning refuses, the other figures are still written. The site's [Latest figures](../figures.qmd) page shows the current set.
+Fits the model once and writes every figure for the latest episode into one folder: `trajectory` (readings, trend, band), `composition` (fat and lean with bands), `innovations`, `parameters` (posteriors against priors), `parameter_evolution` (what the filter believed about each parameter, day by day), `maintenance` (the maintenance estimate over time, against logged intake), `intake_log`, `plan` (as `wdm plan` would make it), `plan_vs_actual` (each day's prescription from the plans log, against what was eaten; until a plan is logged, only what was eaten), and `adherence` (how closely the plan was followed: each finished day's energy and macronutrients as a percentage off its prescription, and the running total of energy eaten above or below plan). If planning refuses, the other figures are still written. The site's [Latest figures](../figures.qmd) page shows the current set.
 
 | Option | Meaning | Default |
 |---|---|---|
 | `--out DIR` | Where to write | `figures/` in the repository |
 | `--format ...` | One or more of `pdf`, `png`, `svg`; each figure is written in each | `pdf` |
 | `--mode` | Planning mode for the plan figure | as for `plan` |
-| `--log-dir DIR` | Plans log to read for `plan_vs_actual` | `data/plans` |
+| `--log-dir DIR` | Plans log to read for `plan_vs_actual` and `adherence` | `data/plans` |
 
 ## Exercise energy
 

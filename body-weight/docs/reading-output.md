@@ -151,6 +151,12 @@ run_at,start,mode,target_weight_lb,target_date,horizon_days,kcal,protein_g,carb_
 
 A replan on the same day overwrites that day's archived plan but adds a log row, so every prescription ever issued is kept. `plan.csv` holds only the latest; the log can reproduce a past decision. `wdm log` reads today's prescription from it.
 
+### How closely you followed it
+
+`wdm plots` draws the log against what you ate in `adherence`. The four small panels give energy, protein, carbohydrate and fat: the prescription as a line with the range within 10% of it shaded, and a dot for what you ate each finished day. The latest prescribed and eaten amounts are labeled at the right; earlier ones read off the axis. Each panel's title counts the days inside that range. Today is left out until it is over, since a half-logged day would read as undereating. Energy is compared as logged, before the model's fiber correction, the same total `wdm log` shows.
+
+The bottom panel is the running total of energy eaten above or below plan. It is the one to watch: a few hundred kcal a day over the plan adds up to the deficit the plan was counting on, and a line climbing steadily means the weight will come off more slowly than the plan predicts. Macronutrients off by a lot on a day when energy is on plan matter less: protein below plan risks lean mass over weeks, and carbohydrate moves water from one day to the next (see [Water compartments](theory/model.md#water)), but neither changes how much you lose.
+
 ## What to expect, and when
 
 | Elapsed | What becomes available |
