@@ -47,8 +47,9 @@ The [API reference](reference/index.qmd) documents every module from its docstri
 
 ```bash
 cd weight-dynamics/code
-uv run python -m pytest              # 203 tests, a few minutes on a CPU
+uv run python -m pytest              # 208 tests, about 20 s on every core
 uv run python -m pytest tests/test_daily.py -q
+uv run python -m pytest -n0 --pdb    # one process, to debug a failure
 ```
 
 | File | Tests | Focus |
@@ -56,10 +57,10 @@ uv run python -m pytest tests/test_daily.py -q
 | `test_models.py` | 22 | Closed-form checks, energy conservation, integrator agreement, the waist prior |
 | `test_filters.py` | 16 | Comparison with exact batch posteriors, sigma-point properties, the gate, Student-t |
 | `test_estimation.py` | 21 | Parameter recovery and calibration, the tape, weight-only episodes, timing, the habitual reference, the backtest |
-| `test_control.py` | 40 | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, infeasibility, objective behavior, maintain mode |
+| `test_control.py` | 43 | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, infeasibility, objective behavior, maintain mode |
 | `test_io.py` | 31 | Schema validation, gaps, units, waist columns, habitual intake, estimated days, the `[maintain]` section |
-| `test_cli.py` | 6 | Staleness arithmetic, the plan's start, the default mode (maintain, deadline, sustainable) |
-| `test_daily.py` | 13 | Recording readings, food, meals and steps; `--estimate`, `--set` and `--clear`; the plans log; prompting; `log` and its `eat` alias; the planned-versus-eaten figure |
+| `test_cli.py` | 7 | Staleness arithmetic, the plan's start, the default mode (maintain, deadline, sustainable) |
+| `test_daily.py` | 14 | Recording readings, food, meals and steps; `--estimate`, `--set` and `--clear`; the plans log; prompting; `log` and its `eat` alias; the planned-versus-eaten and adherence figures |
 | `test_exercise.py` | 25 | MET arithmetic, tempo and hold parsing, classification |
 | `test_tracker_write.py` | 17 | Spreadsheet mutation, merged ranges, duplicate guards |
 | `test_routine.py` | 12 | The routine CSV, cross-checked against the set-level estimator |
