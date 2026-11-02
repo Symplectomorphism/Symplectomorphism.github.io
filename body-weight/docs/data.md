@@ -88,11 +88,11 @@ Optional, and the only reading that responds to fat mass directly; weekly is ple
 
 ### Health readings {#health-readings}
 
-Fasting glucose, ketones, resting heart rate, and blood pressure are logged and plotted (`wdm plots` draws a `health` figure once any is logged) but never used by the model, so a blank one costs nothing. A file gets each column the first time it has a value. Take them the same way every morning, since the trend is what is worth reading:
+Fasting glucose, ketones, resting heart rate, and blood pressure are logged and plotted (`wdm plots` draws a `health` figure once any is logged) but never used by the model, so a blank one costs nothing. A file gets each column the first time it has a value. Take them the same way every morning, before exercise, since the trend is what is worth reading; a workout raises or lowers glucose, raises ketones, and leaves blood pressure low for hours. On a morning that has already had a workout, leave them blank:
 
-- **Glucose and ketones:** finger-stick, on waking, before food or coffee.
+- **Glucose and ketones:** finger-stick, on waking, before food, coffee, or exercise.
 - **Resting heart rate:** the watch's own daily figure, read in the morning; it is measured asleep or at rest, steadier than a spot reading.
-- **Blood pressure:** seated after five quiet minutes, arm supported at heart level, the same arm each time; the average of two readings a minute apart.
+- **Blood pressure:** before exercise, seated after five quiet minutes, arm supported at heart level, the same arm each time; the average of two readings a minute apart.
 
 ## When you don't know exactly {#estimating}
 
