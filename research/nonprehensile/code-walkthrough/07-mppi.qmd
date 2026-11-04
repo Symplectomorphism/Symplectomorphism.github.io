@@ -1,0 +1,212 @@
+---
+title: "7. One solver call"
+---
+
+The local solver Λ receives a state, the current formation σ and a
+destination σ′, and returns a trajectory and a success flag. The default
+realizer is MPPI (`solver/mppi.py`). For each physics step it samples
+perturbed control sequences, simulates each one with MJX, weights them by
+exp(−cost / temperature), averages them, and applies the first control.
+The cost rewards closing the gaps of templates being made, keeping the gaps of
+kept templates in band, opening the gaps of templates being broken, and it
+penalizes penetration and effort. This step realizes one make from the start
+pose: the disk onto the box's back face, the paper's m_x.
+
+```bash
+python walkthrough/07_mppi.py
+```
+
+<details><summary>The script, <code>07_mppi.py</code> (<a href="scripts/07_mppi.py">download</a>)</summary>
+
+```python
+"""Step 7: one local-solver call (Lambda) with MPPI.
+
+Realize a single make from the start pose: bring the disk into contact
+with the box's back face (M:boundary-B:xn, the paper's m_x). The solver is
+built from assets/configs/solver/step-base.yaml, exactly as the search
+builds it.
+"""
+import time
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+
+from cmg.config.solver_config import SolverConfig
+from cmg.physics.world import State
+from cmg.solver import create_local_solver
+
+from _common import CMG, template_names
+
+config = SolverConfig.from_yaml(str(CMG / "assets/configs/solver/step-base.yaml"))
+solver = create_local_solver(config)
+catalog, world = solver.catalog, solver.exec_world
+names = template_names(config.scene_spec, catalog)
+print("Solver:", type(solver).__name__, config.solver_overrides)
+
+qpos = jnp.asarray(config.scene_spec.start_qpos)
+state = State(qpos, jnp.zeros_like(qpos), world._state_data(State(qpos, jnp.zeros_like(qpos))))
+old = catalog.band(world.pose(state))
+m_x = names.index("M:boundary-B:xn")
+new = old.at[m_x].set(True)
+
+solve = jax.jit(solver)
+for attempt in ("first call (compiles)", "second call (cached)"):
+    start = time.perf_counter()
+    result = solve(state, old, new, jnp.asarray(0))
+    jax.block_until_ready(result.success)
+    print(f"{attempt}: {time.perf_counter() - start:.1f} s")
+
+np.set_printoptions(precision=4, suppress=True)
+traj = result.traj.configuration
+gaps = jax.vmap(lambda c: catalog.gap(pose=world.pose(State(c, jnp.zeros_like(c)))))(traj)
+print(f"\nTrajectory: {traj.shape[0]} physics steps of {world.model.opt.timestep} s")
+print("Start qpos:   ", np.asarray(qpos))
+print("Terminal qpos:", np.asarray(traj[-1]))
+print("Gap of m_x every 5 steps:", np.asarray(gaps[::5, m_x]))
+print("Controls (first 9 steps):\n", np.asarray(result.ctrl[:9]))
+print("\nsolver success flag:", bool(result.success))
+worst = np.unravel_index(int(jnp.argmin(gaps)), gaps.shape)
+print(f"  deepest gap {float(gaps[worst]):.4f} (limit -{catalog.epsilon_pen})"
+      f" on {names[worst[1]]} at step {worst[0]}")
+drift = jnp.abs(traj[solver.horizon:] - traj[solver.horizon - 1]).max()
+print(f"  largest drift during dwell {float(drift):.4f} (limit {solver.dwell_tolerance})")
+terminal_band = catalog.band(world.pose(State(traj[-1], jnp.zeros_like(traj[-1]))))
+print("search would accept (destination bits in band at the end):",
+      bool(jnp.all(~new | terminal_band)))
+```
+
+</details>
+
+## Output
+
+```text
+Solver: MPPISolver {'horizon': 20, 'dwell_steps': 10, 'n_samples': 256, 'maxiters': 5, 'temperature': 0.001, 'noise_scale': 0.1, 'band_alpha': 0.1, 'band_weight': 1000.0, 'control_hold': 3}
+first call (compiles): 75.1 s
+second call (cached): 36.9 s
+
+Trajectory: 30 physics steps of 0.009999999776482582 s
+Start qpos:    [-0.1     0.0625  0.     -0.2     0.0625]
+Terminal qpos: [-0.0624  0.0625  0.0008 -0.1389  0.0145]
+Gap of m_x every 5 steps: [ 0.0183 -0.0077 -0.002  -0.0122 -0.0052 -0.0028]
+Controls (first 9 steps):
+ [[ 0.7114 -0.3379]
+ [ 0.7114 -0.3379]
+ [ 0.7114 -0.3379]
+ [ 0.6595  0.0581]
+ [ 0.6595  0.0581]
+ [ 0.6595  0.0581]
+ [ 0.513   0.2073]
+ [ 0.513   0.2073]
+ [ 0.513   0.2073]]
+
+solver success flag: False
+  deepest gap -0.0134 (limit -0.01) on M:boundary-B:xn at step 3
+  largest drift during dwell 0.0151 (limit 0.001)
+search would accept (destination bits in band at the end): True
+```
+
+The run is deterministic (the default key is `PRNGKey(0)`), so your numbers
+should match.
+
+## What to notice
+
+- **0.3 s of motion.** 20 task steps and 10 dwell steps of 10 ms each. The
+  controls are forces on the disk's two slide joints, clipped to ±1 N, and
+  held for 3 steps (`control_hold`).
+- **The make became a push.** The disk reaches the box within 5 steps but keeps
+  pushing: the box slides 3.8 cm, from x = −0.1 to −0.0624, into the riser.
+  The disk overlaps the box by up to 1.34 cm (penetration limit 1 cm) and is
+  still moving during the dwell.
+- **The disk ends on the floor.** Its height drops from 0.0625 to 0.0145, just
+  below its radius (MuJoCo's soft contact). Nothing compensates gravity on the
+  disk: that feed-forward is a stub (`physics/mjx_backend.py`), and the
+  disk–floor pair is not in the catalog.
+- **Two verdicts disagree.** The solver says failure (penetration, a floor bit out of band at the
+  deadline, and drift; exercise 7.1).
+  The search accepts the edit anyway, because `Search.run_single` checks only
+  that every destination bit is in band at the final state and ignores the
+  success flag. This is on the list of code issues for Angelo.
+- **Cost.** 75 s to compile, then 37 s per call on the CPU; exercise 7.3 shows
+  where the time goes.
+
+## Code to read
+
+`src/cmg/solver/mppi.py`: `MPPISolver.__call__` (the receding-horizon loop
+and the success test at the end), `_update` (sample, weight, average),
+`_sample_cost` (the rollout under `lax.scan`), `_gap_cost` and `_band_cost`.
+The weights in `_gap_cost`, 1e4 on arrival and 100 on departure, are fixed in
+the code, not configurable. `src/cmg/solver/gradient.py` is the alternative
+realizer: the same interface, optimized with Adam through MJX. The solver
+settings come from `assets/configs/solver/step-base.yaml`.
+
+## Exercises
+
+**7.1** Which clauses of the success test fail here, and which pass?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+The test at the end of `__call__` requires finite states and controls, no gap
+below −ε_pen at any step, every destination bit below ε_on from step 19 (the
+deadline) onward, broken bits at least R apart from step 19 onward, and dwell
+drift at most `dwell_tolerance`. To see the destination clause, append to
+`07_mppi.py`:
+
+```python
+deadline = gaps[solver.horizon - 1:]
+for i in np.flatnonzero(np.asarray(new)):
+    print(names[i], np.asarray(deadline[:, i]).round(4))
+```
+
+The two informative rows are
+
+```text
+M:boundary-B:xn [-0.0061 -0.0052 -0.0045 -0.0039 -0.0035 -0.0031 -0.0028 -0.0025 -0.0022
+ -0.0019 -0.0017]
+B:xn-L:boundary [0.0021 0.0021 0.0018 0.0015 0.0012 0.0009 0.0006 0.0004 0.0003 0.0002
+ 0.0001]
+```
+
+- Finite: passes.
+- Penetration: **fails**, −0.0134 < −0.01 at step 3.
+- Destination in band from the deadline: **fails**. m_x is in band, but the push
+  tipped the box by 0.016 rad, which lifts its back bottom edge 2.1 mm off the
+  floor, above ε_on = 1 mm. That is exactly the 2ε_on/a threshold of
+  exercise 2.3. The edge settles back to 0.1 mm by the last step, which is why
+  the search's end-state check passes.
+- Broken bits: none to check.
+- Dwell drift: **fails**, 0.0151 > 0.001.
+:::
+
+**7.2** Run the same make with the lighter settings used in step 8
+(`n_samples: 64`, `maxiters: 2`). Is it accepted?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+No. Step 8's first batch tries exactly this edit from the same root with
+those settings, and the search rejects it: at the final state, not every
+destination bit is in band. Fewer samples and iterations make the controller weaker; the
+first call is also cheaper to compile. To try it here, copy step 8's
+`SolverConfig(...)` construction into `07_mppi.py` in place of
+`SolverConfig.from_yaml`.
+:::
+
+**7.3** How many MJX steps does one call simulate? Relate the count to the
+37 s.
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+The loop runs 30 executed steps. With `control_hold: 3`, it replans at steps
+0, 3, …, 27: 10 times. Each replan runs `maxiters` = 5 updates, each update
+simulates `n_samples` = 256 rollouts, and each rollout is
+`planning_horizon` = 20 + 10 = 30 steps long. That is
+10 × 5 × 256 × 30 = 384,000 rollout steps, plus the 30 executed steps, or about
+0.1 ms per MJX step on the CPU. The search runs `batch_size` such calls at once
+through `vmap` (step 8), so solver cost dominates everything else. Counting
+solver calls is the cost measure the paper uses.
+:::
+
+[← 6. Candidate edits](06-candidates.qmd) · [Next: 8. The search loop →](08-search.qmd)

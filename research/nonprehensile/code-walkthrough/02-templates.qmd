@@ -1,0 +1,200 @@
+---
+title: "2. Templates and gaps"
+---
+
+A template is one named feature pair, such as the disk's boundary against the
+box's −x face. Its gap is a function of the pose alone, so it is defined
+whether or not the pair touches: positive is separation, zero is contact,
+negative is overlap. The catalog is the fixed, ordered list of all 24
+templates. `Catalog.gap(pose)` returns all 24 gaps, and `Catalog.band(pose)`
+returns the Boolean formation used everywhere downstream.
+
+```bash
+python walkthrough/02_templates.py
+```
+
+<details><summary>The script, <code>02_templates.py</code> (<a href="scripts/02_templates.py">download</a>)</summary>
+
+```python
+"""Step 2: templates and their gaps.
+
+Build the catalog, list its templates, and evaluate every template's signed
+gap at the 'flat' fixture: box resting on the floor 3.75 cm short of the
+riser, disk 4.375 cm behind the box.
+"""
+import jax.numpy as jnp
+import numpy as np
+
+from cmg.catalog.templates import Catalog
+from cmg.physics.world import ExecutionWorld, State
+
+from _common import fixtures, load_spec, template_names
+
+spec = load_spec()
+catalog = Catalog.from_spec(spec)
+world = ExecutionWorld(spec.execution)
+names = template_names(spec, catalog)
+
+qpos = jnp.array(fixtures()["flat"])
+state = State(qpos, jnp.zeros_like(qpos))
+pose = world.pose(state)  # (5 bodies, 7) = x, y, z, qw, qx, qy, qz
+
+np.set_printoptions(precision=4, suppress=True)
+print("qpos [box x, box z, box angle, disk x, disk z] =", np.asarray(qpos))
+print("Body poses in scene-ID order (x, y, z, qw, qx, qy, qz):")
+for body, row in zip(spec.bodies, np.asarray(pose)):
+    print(f"  {body.name}: {row}")
+
+gaps = np.asarray(catalog.gap(pose))
+band = np.asarray(catalog.band(pose))
+print(f"\n{'id':>2}  {'template':22s} {'class':22s} {'gap':>9}  band")
+for i, (name, t, g, b) in enumerate(zip(names, catalog, gaps, band)):
+    print(f"{i:>2}  {name:22s} {type(t).__name__:22s} {g:9.5f}  {'*' if b else ''}")
+
+print(f"\nband = gap >= -{catalog.epsilon_pen} and gap < {catalog.epsilon_on}")
+print("template_id stored on each template:", {t.template_id for t in catalog})
+```
+
+</details>
+
+## Output
+
+```text
+qpos [box x, box z, box angle, disk x, disk z] = [-0.1     0.0625  0.     -0.2     0.0625]
+Body poses in scene-ID order (x, y, z, qw, qx, qy, qz):
+  M: [-0.2     0.      0.0625  1.      0.      0.      0.    ]
+  B: [-0.1     0.      0.0625  1.      0.      0.      0.    ]
+  L: [-1.  0.  0.  1.  0.  0.  0.]
+  S: [ 0.      0.      0.0156  0.7071  0.     -0.7071  0.    ]
+  P: [1.     0.     0.0312 1.     0.     0.     0.    ]
+
+id  template               class                        gap  band
+ 0  M:boundary-B:xp        SpherePlaneTemplate      0.14687
+ 1  M:boundary-B:xn        SpherePlaneTemplate      0.02188
+ 2  M:boundary-B:yp        SpherePlaneTemplate      0.05726
+ 3  M:boundary-B:yn        SpherePlaneTemplate      0.05726
+ 4  M:boundary-B:zp        SpherePlaneTemplate      0.05726
+ 5  M:boundary-B:zn        SpherePlaneTemplate      0.05726
+ 6  B:xp-L:boundary        PolyhedralTemplate       0.00000  *
+ 7  B:xn-L:boundary        PolyhedralTemplate       0.00000  *
+ 8  B:yp-L:boundary        PolyhedralTemplate       0.00000  *
+ 9  B:yn-L:boundary        PolyhedralTemplate       0.00000  *
+10  B:zp-L:boundary        PolyhedralTemplate       0.12500
+11  B:zn-L:boundary        PolyhedralTemplate       0.00000  *
+12  B:xp-S:boundary        PolyhedralTemplate       0.03750
+13  B:xn-S:boundary        PolyhedralTemplate       0.16250
+14  B:yp-S:boundary        PolyhedralTemplate       0.03750
+15  B:yn-S:boundary        PolyhedralTemplate       0.03750
+16  B:zp-S:boundary        PolyhedralTemplate       0.10097
+17  B:zn-S:boundary        PolyhedralTemplate       0.03750
+18  B:xp-P:boundary        PolyhedralTemplate       0.03750
+19  B:xn-P:boundary        PolyhedralTemplate       0.16250
+20  B:yp-P:boundary        PolyhedralTemplate       0.03750
+21  B:yn-P:boundary        PolyhedralTemplate       0.03750
+22  B:zp-P:boundary        PolyhedralTemplate       0.10097
+23  B:zn-P:boundary        PolyhedralTemplate       0.04881
+
+band = gap >= -0.01 and gap < 0.001
+template_id stored on each template: {None}
+```
+
+## What to notice
+
+- **Poses are 7-vectors**, position then a unit quaternion (w, x, y, z), one
+  row per scene body. `S` carries the quaternion (0.7071, 0, −0.7071, 0), a
+  −90° turn about y that stands the riser rectangle up.
+- **Two kinds of template.** Disk–face pairs are `SpherePlaneTemplate`: the
+  distance from the disk's center to a finite rectangle, minus the radius.
+  Box–plane pairs are `PolyhedralTemplate`: the exact distance between two
+  rectangles, replaced by a separating-axis penetration depth when the bodies
+  overlap.
+- **The disk is 2.19 cm behind the box**: 0.1 − 0.0625 − 0.015625 = 0.021875.
+- **Five floor bits for one resting box.** The bottom face `zn` touches the
+  floor, but so do the four side faces, because each face is a *closed*
+  rectangle that includes its bottom edge, and that edge lies on the floor.
+  This is the ±face patch problem diagnosed in Decision 3, and it is why the
+  next pages see several bits per body pair.
+- **`template_id` is never set.** `Catalog.from_spec` builds templates without
+  an index. Step 4 shows what that breaks.
+
+## Code to read
+
+- `src/cmg/catalog/templates.py`: `Template.create` dispatches on the two
+  geometry types through `_TEMPLATE_CLASSES`. `Template._pose` turns the
+  quaternion into a rotation matrix. `Catalog.from_spec` takes the product of
+  the two inventories for each relative pair. `Catalog.gap` stacks the gaps
+  with a Python list comprehension over templates: this is one of the loops to
+  be replaced by grouped `vmap` calls. `Catalog.band` is the threshold test.
+- `src/cmg/geometry/primitives.py`: `sphere_rectangle`, `rectangle_rectangle`
+  and `polyhedral_gap`. Every kernel is pure JAX and works under `jit` and `vmap`.
+- `src/cmg/geometry/features.py`: `_BOX_FACE_TRANSFORMS` places each face in
+  the box frame.
+
+## Exercises
+
+**2.1** Verify the gap of `M:boundary-B:yp`, 0.05726, by hand. Why do `yn`,
+`zp` and `zn` have the same value?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+The +y face is the rectangle y = 0.0625, x ∈ [−0.1625, −0.0375],
+z ∈ [0, 0.125]. The disk's center is (−0.2, 0, 0.0625). The closest point of
+the rectangle is (−0.1625, 0.0625, 0.0625), at distance
+√(0.0375² + 0.0625²) = 0.07289. Subtracting r = 0.015625 gives 0.05726.
+
+The disk's center is level with the box's center (z = 0.0625, y = 0), so the
+closest points of the −y, top and bottom faces sit at the same offsets: 0.0375
+along x and 0.0625 across.
+:::
+
+**2.2** Predict the gaps of `B:zn-P:boundary` (0.04881) and
+`B:zp-S:boundary` (0.10097) before reading them off.
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+`B:zn-P`: the bottom face ends at x = −0.0375, z = 0; the platform starts at
+x = 0, z = h = 0.03125. The distance is √(0.0375² + 0.03125²) = 0.04881.
+
+`B:zp-S`: the top face ends at (−0.0375, 0.125); the riser is the segment
+x = 0, z ∈ [0, 0.03125], whose top end is nearest. The distance is
+√(0.0375² + 0.09375²) = 0.10097.
+:::
+
+**2.3** Tilt the box slightly: set the box angle (`qpos[2]`) to 0.01 rad in the
+`flat` pose and print the band again. At what angle does `B:xn-L` leave the
+band, and why does that angle depend on the box's size?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```python
+import jax.numpy as jnp
+from cmg.catalog.templates import Catalog
+from cmg.physics.world import ExecutionWorld, State
+from _common import fixtures, load_spec, on, template_names
+
+spec = load_spec(); catalog = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)
+names = template_names(spec, catalog)
+for angle in (0.01, 0.02):
+    q = jnp.array(fixtures()["flat"]).at[2].set(angle)
+    print(angle, on(catalog.band(world.pose(State(q, jnp.zeros_like(q)))), names))
+```
+
+Save it as `walkthrough/tilt.py` and run `python walkthrough/tilt.py`:
+
+```text
+0.01 {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}
+0.02 {B:xp-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}
+```
+
+With the box's center held at z = a/2, a tilt θ lifts the back bottom edge by
+about (a/2)θ and pushes the front one down by the same amount. At
+θ = 0.01 the back edge is 0.63 mm up, still under ε_on = 1 mm. It leaves the
+band once (a/2)θ ≥ ε_on, that is θ ≥ 2ε_on/a = 0.016 rad. So whether a
+slightly tilted box counts as "flat on the floor" depends on its size. Step 1
+replaces this with a contact set and a minimum contact length.
+:::
+
+[← 1. The scene](01-scene.qmd) · [Next: 3. Formations →](03-formations.qmd)

@@ -1,0 +1,37 @@
+---
+title: "9. Where step 1 starts"
+---
+
+Step 1 of the critical path (Decision 5) is a planar contact layer for the
+step scene. It adds a new scene file, a planar geometry module, a planar
+catalog and tests, and gives `scene/spec.py` one backward-compatible field. It
+keeps the two calls the solver and the search make, `Catalog.gap(pose)` and
+`Catalog.band(pose)`, with the same signatures, so `MPPISolver`, `Cand` and
+`Search` run unchanged on top of it.
+
+The table maps what the previous pages exposed to the part of step 1 that
+addresses it.
+
+| Seen in | What happens today | Step 1 |
+|---|---|---|
+| [2](02-templates.qmd), [3](03-formations.qmd) | Closed faces share edges, so 3 to 5 bits per body pair are on at once, on every frame of the demo | A principal-contact on-set: at most one bit per body pair |
+| [2](02-templates.qmd) (ex. 2.3) | Whether a tilted box is "flat" depends on its size (θ\* = 2ε_on/a) | A contact counts as edge–edge only when its contact set is longer than a minimum length |
+| [5](05-hold.qmd), [6](06-candidates.qmd) | A face contact is one representative corner; the hold test passes with zero margin, and only thanks to the extra bits | `contact_set(pose)`: the endpoints of each contact, handed to the hold LP |
+| [3](03-formations.qmd) | The step corner (0, h) belongs to both riser and platform; the floor–riser junction lights up a bit | The riser owns its corner; the platform is open at x = 0; concave junctions are not features |
+| [1](01-scene.qmd) | No vertex features, so the paper's g_v and s_v cannot be written | `step2d.yaml` with box edges and vertices, the disk, and the three environment segments |
+| [1](01-scene.qmd), [6](06-candidates.qmd), [8](08-search.qmd) | A 3D catalog on a planar model: ±y faces, edits the disk cannot reach | A planar catalog in the x–z plane, with `dimension: 2` in the spec |
+| [1](01-scene.qmd), [4](04-graph.qmd) | Exclusions by integer index, and then dropped; template IDs unset | Named templates (g, g_v, s, s_v, t, m_x, m_z); exclusions {g, t}, {g_v, s}, {g, s_v} by name |
+| [2](02-templates.qmd) | `Catalog.gap` loops over templates in Python | Templates grouped by kernel type, one `vmap` per group |
+
+Two issues stay outside step 1 and go to Angelo: the search ignores the
+solver's success flag ([7](07-mppi.qmd)), and the graph's IDs and exclusions
+([4](04-graph.qmd)). A node storing its requested formation rather than the
+one reached ([8](08-search.qmd)) belongs to step 3, where Λ and H are wired
+into the search.
+
+The tests for step 1 check the formations along the paper's chain against
+Decision 4's table, check the named poses of `tests/configs/step.txt`, and
+check that the 1,721-frame demo never has more than one bit per body pair. That
+last test fails on every frame today (exercise 3.2).
+
+[← 8. The search loop](08-search.qmd) · [Back to the walkthrough index](index.qmd)

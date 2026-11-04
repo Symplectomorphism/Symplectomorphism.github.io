@@ -1,0 +1,215 @@
+---
+title: "1. The scene"
+---
+
+The running example is data, not code. `src/cmg/scene/families/step.yaml` says
+what the planner knows: bodies, which set each belongs to, their geometry, the
+features that may touch, and the tolerances. `step.xml` (the file it references)
+is what MuJoCo simulates. `SceneSpec.from_yaml` validates the YAML and derives
+everything it leaves out. Nothing in `geometry/` or `catalog/` may name this scene.
+
+```bash
+python walkthrough/01_scene.py
+```
+
+<details><summary>The script, <code>01_scene.py</code> (<a href="scripts/01_scene.py">download</a>)</summary>
+
+```python
+"""Step 1: the scene as data.
+
+Load step.yaml into a SceneSpec, print what the loader derived from it, and
+compare it with the MuJoCo model that the execution world will simulate.
+"""
+import mujoco
+
+from _common import load_spec
+
+spec = load_spec()
+
+print("Bodies (scene ID, name, body set, geometry):")
+for body in spec.bodies:
+    kind, params = spec.local_geometry[body.id]
+    print(f"  {body.id}  {body.name}  {body.body_set.value:5s}  {kind.value:6s} {params}")
+
+print("\nFeature inventories:")
+for body_id, features in spec.feature_inventories.items():
+    print(f"  {spec.bodies[body_id].name}: {[f.value for _, f in features]}")
+
+print("\nRelative pairs (derived: every pair that contains an object body):")
+for pair in spec.relative_pairs:
+    print("  ", sorted(spec.bodies[i].name for i in pair))
+
+count = sum(
+    len(spec.feature_inventories[a]) * len(spec.feature_inventories[b])
+    for a, b in map(sorted, spec.relative_pairs)
+)
+print(f"\nTemplates = sum over pairs of |F(A)| x |F(A')| = {count}")
+print("Exclusion table:", spec.exclusion_table)
+
+e = spec.execution
+print("\nExecution spec:")
+print(f"  epsilon_pen={e.epsilon_pen}  epsilon_on={e.epsilon_on}  phi_gate={e.phi_gate}")
+print(f"  eta={e.eta}  eta_theta={e.eta_theta}  timestep={e.timestep}")
+print(f"  mjx_body_ids={e.mjx_body_ids}")
+
+model = mujoco.MjModel.from_xml_path(e.reference)
+print(f"\nMuJoCo model: nq={model.nq} nv={model.nv} nu={model.nu} nbody={model.nbody}")
+print("  joints:", [model.joint(i).name for i in range(model.njnt)])
+print("  bodies:", [model.body(i).name for i in range(model.nbody)])
+print("  scene body -> MuJoCo body:",
+      {b.name: model.body(i).name for b, i in zip(spec.bodies, e.mjx_body_ids)})
+
+a = 2 * spec.local_geometry[1][1][0]
+print(f"\nBox side a = {a}, disk radius r = {spec.local_geometry[0][1][0]} = a/8,"
+      f" step height h = {model.body('P').pos[2]} = a/4")
+print("start_qpos:", spec.start_qpos)
+```
+
+</details>
+
+## Output
+
+```text
+Bodies (scene ID, name, body set, geometry):
+  0  M  manip  sphere [0.015625]
+  1  B  obj    box    [0.0625, 0.0625, 0.0625]
+  2  L  env    plane  [1.0, 0.25]
+  3  S  env    plane  [0.015625, 0.25]
+  4  P  env    plane  [1.0, 0.25]
+
+Feature inventories:
+  M: ['boundary']
+  B: ['xp', 'xn', 'yp', 'yn', 'zp', 'zn']
+  L: ['boundary']
+  S: ['boundary']
+  P: ['boundary']
+
+Relative pairs (derived: every pair that contains an object body):
+   ['B', 'M']
+   ['B', 'L']
+   ['B', 'S']
+   ['B', 'P']
+
+Templates = sum over pairs of |F(A)| x |F(A')| = 24
+Exclusion table: []
+
+Execution spec:
+  epsilon_pen=0.01  epsilon_on=0.001  phi_gate=0.125
+  eta=0.001  eta_theta=0.01  timestep=0.01
+  mjx_body_ids=[2, 1, 6, 3, 4]
+
+MuJoCo model: nq=5 nv=5 nu=2 nbody=7
+  joints: ['box_slide_joint_x', 'box_slide_joint_z', 'box_hinge_joint_y', 'manip_slide_joint_x', 'manip_slide_joint_z']
+  bodies: ['world', 'box', 'manip', 'S', 'P', 'target', 'L']
+  scene body -> MuJoCo body: {'M': 'manip', 'B': 'box', 'L': 'L', 'S': 'S', 'P': 'P'}
+
+Box side a = 0.125, disk radius r = 0.015625 = a/8, step height h = 0.03125 = a/4
+start_qpos: [-0.1, 0.0625, 0.0, -0.2, 0.0625]
+```
+
+## What to notice
+
+- **Five bodies, three sets.** The disk `M` is the manipulator, the box `B` is
+  the object, and the floor `L`, riser `S` and platform `P` are the
+  environment. Sizes are MuJoCo half-extents, so the box side is
+  a = 2 × 0.0625 = 0.125 m.
+- **Only pairs that contain the object get templates.** The loader enumerates
+  the four pairs containing `B`, and each pair contributes every feature
+  combination: 1·6 + 3·(6·1) = 24 templates. There is no disk–floor template,
+  so the disk can rest on the floor in simulation with nothing in the catalog
+  recording it. Steps 7 and 8 show this happening.
+- **Faces only.** The box offers six faces and no edges or vertices. The
+  vertex contacts that Decision 4 needs (the box standing on an edge, g_v and
+  s_v) cannot be written in this file. `step-rich.yaml` adds the eight box
+  vertices.
+- **No exclusions.** `exclusion_table` is absent, so it is empty. Exclusions
+  are written as integer template indices, which silently go wrong if the
+  feature order changes.
+- **Planes are finite rectangles.** `L` is 2 m long and ends at x = 0. `S` is
+  the riser: a rectangle 2 × 0.015625 = 0.03125 m tall, turned vertical at
+  x = 0. `P` is the platform at height h = 0.03125 m starting at x = 0. In
+  `step.xml` each is a thin box whose top face is the plane.
+- **A planar model with a 3D catalog.** `qpos` has five entries: box x, box z,
+  box angle about y, disk x, disk z. Nothing moves in y, yet the catalog
+  contains the y-faces (`yp`, `yn`) of the box.
+- **Two tolerances, ten times apart.** A template is *in band* when its gap g
+  satisfies −ε_pen ≤ g < ε_on, that is, from 1 cm of overlap to 1 mm of
+  separation. `phi_gate` = 0.125 m = a is the Near threshold used in step 6.
+- **h = a/4**, the canonical step height of Decision 7. The comment at the top
+  of `step.yaml` still says h = 3a/8; it is stale.
+
+## Code to read
+
+- `src/cmg/scene/spec.py`, `SceneSpec.from_yaml`: body sets, then bodies,
+  geometry (sphere: 1 size, box: 3, plane: 2), feature inventories (a box takes
+  faces or vertices, every other body only `boundary`), relative pairs,
+  exclusions, execution. Every error names the YAML key that caused it.
+- `src/cmg/scene/families/step.yaml` and `step.xml`, side by side.
+
+## Watch it (optional, needs a display)
+
+```bash
+python walkthrough/replay.py
+```
+
+This loops the hand-moved demo trajectory used in step 3 in MuJoCo's viewer.
+The repository's own `viewer.py` instead runs the physics for 30 s from a
+fixed pose with zero control:
+
+```bash
+cd src/cmg/scene/families && python viewer.py && rm trajectory.npz; cd -
+```
+
+Double-click a body to select it and Ctrl + right-drag to push it. `viewer.py`
+writes `trajectory.npz` into that folder on exit, which the command above deletes.
+
+## Exercises
+
+**1.1** Predict the number of templates for `step-rich.yaml` (the same scene
+with the eight box vertices added), then check it.
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+The box has 6 + 8 = 14 features and every other body 1, so
+1·14 + 3·(14·1) = 56.
+
+```bash
+python -c "from cmg.catalog.templates import Catalog; print(len(Catalog.from_yaml('src/cmg/scene/families/step-rich.yaml')))"
+```
+
+prints `56` (after the warnings).
+:::
+
+**1.2** Why is `mjx_body_ids` equal to `[2, 1, 6, 3, 4]`, and what would happen
+if two entries were swapped?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+MuJoCo numbers bodies in XML order with `world` = 0: box 1, manip 2, S 3,
+P 4, target 5, L 6. The scene order is M, B, L, S, P, so the map is
+[2, 1, 6, 3, 4]. `target` (the translucent goal box) is not a scene body.
+`ExecutionWorld.pose` uses this list to pick pose rows, so swapping two
+entries would silently assign one body's pose to another and every gap would
+be wrong. The loader only checks that each index is in range.
+:::
+
+**1.3** Which numbers in `step.xml` and `step.yaml` set the step height, and
+what would you change for the paper's earlier value h = 3a/8?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+The platform body `P` sits at `pos="1.0 0 0.03125"` (z = h). The riser geom
+`S` has half-height `size="0.015625 ..."` (h/2) and its body sits at
+z = 0.015625 (h/2). The goal box `target` sits at z = 0.09375 = h + a/2. In
+`step.yaml`, `S` has `params: [0.015625, 0.25]`.
+
+For h = 3a/8 = 0.046875: `P` z → 0.046875; `S` half-height and body z →
+0.0234375; `target` z → 0.109375; and `S` `params` in the YAML →
+[0.0234375, 0.25]. The YAML and the XML must agree, and nothing checks that
+they do.
+:::
+
+[Next: 2. Templates and gaps →](02-templates.qmd)

@@ -1,0 +1,264 @@
+---
+title: "8. The search loop"
+resources:
+  - media/path_make_M_B_zp.mp4
+---
+
+`Search` ties the layers together. `Search.from_specs` builds `Cand`, the
+solver and the `Discretizer`, and adds one root node at `start_qpos` with its
+band formation. A node is keyed by (discretized `qpos`, formation).
+`run_single()` performs one round:
+
+1. For every node, list its legal edits (step 6), skipping (node, destination)
+   pairs already tried.
+2. Rank them with the default ranker: the node's breadth-first depth + 1,
+   with ties broken by node insertion order and then by catalog order.
+3. Send the best `batch_size` edits to the solver in one `vmap`ped call.
+4. Accept an edit when every destination bit is in band at the final state;
+   add (or update) a node there, and record the realized path as its incoming edge.
+
+There is no goal test and no budget yet; you call `run_single()` yourself. To
+fit in a few minutes on a CPU this script uses a lighter solver (64 samples,
+2 iterations) and batches of 4.
+
+```bash
+python walkthrough/08_search.py
+```
+
+<details><summary>The script, <code>08_search.py</code> (<a href="scripts/08_search.py">download</a>)</summary>
+
+```python
+"""Step 8: the search loop, two batches.
+
+Search.from_specs builds Cand, the solver and the discretizer, and seeds
+the graph with one node at start_qpos. run_single() ranks every untried
+(node, legal edit) pair by BFS depth, sends the best batch_size of them to
+the solver in one vmapped call, and adds a node for each accepted result.
+The solver is lightened (64 samples, 2 iterations, batch of 4) so the run
+fits in a few minutes on a CPU.
+"""
+import tempfile
+import time
+
+import numpy as np
+
+from cmg.config.search_config import SearchConfig
+from cmg.config.solver_config import SolverConfig
+from cmg.search import Search
+
+from _common import CMG, on, template_names
+
+base = SolverConfig.from_yaml(str(CMG / "assets/configs/solver/step-base.yaml"))
+solver_config = SolverConfig(
+    solver_type=base.solver_type,
+    solver_args=[],
+    solver_overrides={**base.solver_overrides, "n_samples": 64, "maxiters": 2},
+    scene_spec=base.scene_spec,
+)
+search = Search.from_specs(SearchConfig(batch_size=4), solver_config, base.scene_spec)
+names = template_names(base.scene_spec, search.candidate_formations.catalog)
+
+
+def show_nodes():
+    for key, node in search.search_state.nodes.items():
+        depth = node.stats.get("depth", 0)
+        print(f"  depth {depth}  qpos {np.round(np.asarray(node.scene_state.configuration), 4)}")
+        print(f"           {on(np.array(node.formation), names)}")
+
+
+print("Root:")
+show_nodes()
+root = next(iter(search.search_state.nodes.values()))
+tried = []
+for batch in (1, 2):
+    start = time.perf_counter()
+    paths = search.run_single()
+    print(f"\nBatch {batch}: {len(paths)} accepted in {time.perf_counter() - start:.0f} s;"
+          f" {len(search.search_state.attempted)} (node, formation) pairs tried so far")
+    new = [f for node, f in search.search_state.attempted if node is root and f not in tried]
+    tried.extend(new)
+    added = [np.array(f) & ~np.array(root.formation) for f in new]
+    for bits in sorted(added, key=lambda bits: int(np.argmax(bits))):
+        print(f"  tried from root: make {on(bits, names)}")
+    for path in paths:
+        added = np.array(path.cur_node.formation) & ~np.array(path.prev_node.formation)
+        dropped = np.array(path.prev_node.formation) & ~np.array(path.cur_node.formation)
+        print(f"  + {on(added, names)}  - {on(dropped, names)}  ({len(path.path)} steps)")
+
+print(f"\nGraph after two batches: {len(search.search_state.nodes)} nodes")
+show_nodes()
+
+with tempfile.TemporaryDirectory() as directory:
+    search.save(directory)
+    print("\nSaved:", sorted(p.name for p in __import__("pathlib").Path(directory).iterdir()))
+    search.load(directory)
+    print("Reloaded nodes:", len(search.search_state.nodes))
+```
+
+</details>
+
+## Output
+
+```text
+Root:
+  depth 0  qpos [-0.1     0.0625  0.     -0.2     0.0625]
+           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}
+
+Batch 1: 1 accepted in 78 s; 4 (node, formation) pairs tried so far
+  tried from root: make {M:boundary-B:xn}
+  tried from root: make {M:boundary-B:yp}
+  tried from root: make {M:boundary-B:yn}
+  tried from root: make {M:boundary-B:zp}
+  + {M:boundary-B:zp}  - {}  (30 steps)
+
+Batch 2: 2 accepted in 28 s; 8 (node, formation) pairs tried so far
+  tried from root: make {M:boundary-B:zn}
+  tried from root: make {B:zp-L:boundary}
+  tried from root: make {B:xp-S:boundary}
+  tried from root: make {B:yp-S:boundary}
+  + {B:xp-S:boundary}  - {}  (30 steps)
+  + {B:yp-S:boundary}  - {}  (30 steps)
+
+Graph after two batches: 4 nodes
+  depth 0  qpos [-0.1     0.0625  0.     -0.2     0.0625]
+           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}
+  depth 1  qpos [-6.390e-02  6.260e-02  1.000e-04 -1.324e-01  1.385e-01]
+           {M:boundary-B:zp, B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}
+  depth 1  qpos [-0.0625  0.0625  0.0002 -0.167   0.015 ]
+           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary}
+  depth 1  qpos [-0.0625  0.0625  0.0002 -0.167   0.015 ]
+           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:yp-S:boundary}
+
+Saved: ['attempted-7d2d343268d5b0be8b9e3b5fe7b668da5d828585.parquet', 'edges-7d2d343268d5b0be8b9e3b5fe7b668da5d828585.parquet', 'nodes-7d2d343268d5b0be8b9e3b5fe7b668da5d828585.parquet']
+Reloaded nodes: 4
+```
+
+The saved file names end in the git hash of your checkout, so they match only
+if you are on `7d2d343`.
+
+## What to notice
+
+- **Catalog order drives the search.** Every edit from the root has rank 1, so
+  the first batch is simply the first four legal makes in catalog order: the
+  disk on the box's −x, +y, −y and +z faces. Two of those (±y) are
+  unreachable for a disk that never moves in y. Each still costs a solver call.
+- **The accepted "make" of the disk on the box's top** is the disk pushing the
+  box 3.6 cm forward and ending at the box's back top edge (exercise 8.3 renders it).
+- **Making a riser contact means pushing the box to the riser.** Both
+  `B:xp-S` and `B:yp-S` are "made" by the same motion and end at the same
+  `qpos`, yet they become two different nodes, because the formation is part
+  of the key.
+- **A node stores the requested formation, not the one it reached.** At those
+  two nodes the box touches the riser and platform, with six more bits in
+  band than the node records (exercise 8.1).
+- **Save and load** write three Parquet tables (nodes, realized edges, tried
+  pairs). Simulator data is stripped; states keep `qpos` and `qvel` only.
+
+## Code to read
+
+`src/cmg/search/__init__.py`: `Search.run_single` (the round above),
+`Search.from_specs` (the root), `DefaultRanker` (depth), `Discretizer` (1 mm
+and 0.01 rad bins), and `SearchState.save` and `load`. `search/engine.py`,
+`keys.py`, `node.py` and the four policies in `search/policies/` are docstrings
+describing the intended teacher, ranking, path and gap-greedy searches.
+
+## Exercises
+
+**8.1** What is the band formation at the `qpos` of the two batch-2 nodes,
+and how does it compare with what those nodes store?
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+```python
+import jax.numpy as jnp
+from cmg.catalog.templates import Catalog
+from cmg.physics.world import ExecutionWorld, State
+from _common import load_spec, on, template_names
+
+spec = load_spec(); catalog = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)
+q = jnp.array([-0.0625, 0.0625, 0.0002, -0.167, 0.015])
+print(on(catalog.band(world.pose(State(q, jnp.zeros_like(q)))), template_names(spec, catalog)))
+```
+
+```text
+{B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}
+```
+
+Twelve bits, the same as `flat_stable_far` in step 3. Each node records six:
+the five floor bits plus the one it asked for. The next round computes that
+node's edits from the six-bit formation, so it will offer "makes" of contacts
+that are already touching, and hold tests that ignore contacts that exist.
+:::
+
+**8.2** Predict the four edits of a third batch, and which are accepted.
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+The root's remaining edits still rank 1, ahead of everything at the depth-1
+nodes (rank 2). After `B:yp-S`, the next legal makes in catalog order are
+`B:yn-S`, `B:zp-S`, `B:zn-S` and `B:xp-P`. Change `for batch in (1, 2):` to
+`(1, 2, 3)` and rerun (about 15 s more):
+
+```text
+Batch 3: 3 accepted in 12 s; 12 (node, formation) pairs tried so far
+  tried from root: make {B:yn-S:boundary}
+  tried from root: make {B:zp-S:boundary}
+  tried from root: make {B:zn-S:boundary}
+  tried from root: make {B:xp-P:boundary}
+  + {B:yn-S:boundary}  - {}  (30 steps)
+  + {B:zn-S:boundary}  - {}  (30 steps)
+  + {B:xp-P:boundary}  - {}  (30 steps)
+```
+
+Pushing the box to the riser puts all three of those bits in band (see 8.1).
+`B:zp-S` (the box's top face against the riser) is not reachable that way, so
+it is rejected. Six of the first twelve solver calls push the box against the
+riser, and each records just one of the bits that this push turns on.
+:::
+
+**8.3** Render an accepted path to a video and watch it.
+
+::: {.callout-tip collapse="true"}
+## Solution
+
+Append to `08_search.py`:
+
+```python
+import imageio.v2 as imageio
+import mujoco
+
+model = mujoco.MjModel.from_xml_path(base.scene_spec.execution.reference)
+data = mujoco.MjData(model)
+renderer = mujoco.Renderer(model, height=480, width=640)
+for k, node in enumerate(search.search_state.nodes.values()):
+    for path in node.paths:
+        added = np.array(path.cur_node.formation) & ~np.array(path.prev_node.formation)
+        label = names[int(np.argmax(added))].replace(":", "_")
+        frames = []
+        for state in path.path:
+            data.qpos[:] = np.asarray(state.configuration)
+            mujoco.mj_forward(model, data)
+            renderer.update_scene(data, camera=0)
+            frames.append(renderer.render())
+        imageio.mimsave(f"walkthrough/path_{k}_{label}.mp4", frames, fps=10)
+        print("wrote", f"walkthrough/path_{k}_{label}.mp4")
+renderer.close()
+```
+
+It writes one 30-frame video per accepted edge. The disk-on-top make
+(`path_1_M_boundary-B_zp.mp4`, slowed to 10 frames per second):
+
+<video src="media/path_make_M_B_zp.mp4" controls muted width="100%"></video>
+
+The disk rises along the box's back face while pushing it forward and ends at
+the back top edge. With a display, you can instead save a path's `qpos` with
+`np.savez("walkthrough/zp.npz", qpos=...)` and loop it in the viewer:
+
+```bash
+python walkthrough/replay.py walkthrough/zp.npz
+```
+:::
+
+[← 7. One solver call](07-mppi.qmd) · [Next: 9. Where step 1 starts →](09-step1.qmd)
