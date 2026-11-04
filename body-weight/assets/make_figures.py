@@ -354,6 +354,7 @@ SYMBOLS = {
     "gly_gain": r"$k_G$  glycogen-water gain", "gly_tau": r"$\tau_G$  glycogen-water lag",
     "na_gain": r"$k_{Na}$  sodium-water gain", "na_tau": r"$\tau_{Na}$  sodium-water lag",
     "partition_kappa": r"$\kappa_P$  protein sparing",
+    "waist_offset_cm": r"$a_w$  waist offset", "waist_slope_cm_per_kg": r"$b_w$  waist per kg fat",
 }
 
 
@@ -369,9 +370,13 @@ def to_eta(p, v):
 
 
 def parameters():
-    """Posterior 90% intervals in prior-sigma units: synthetic beside real."""
+    """Posterior 90% intervals in prior-sigma units: synthetic beside real.
+
+    The metabolic nine, then the tape measure's offset and slope. A record with
+    no waist reading (the synthetic demo) has no row for them, and says so.
+    """
     syn, real = load("synthetic"), load("real")
-    fig, axes = plt.subplots(1, 2, figsize=(12.6, 4.9), sharey=True, gridspec_kw={"wspace": 0.08})
+    fig, axes = plt.subplots(1, 2, figsize=(12.6, 5.6), sharey=True, gridspec_kw={"wspace": 0.08})
     names = list(SYMBOLS)
     ypos = np.arange(len(names))[::-1]
     # Same x-range on both panels, wide enough for the farthest interval end.
@@ -385,6 +390,8 @@ def parameters():
         ax.axvline(0, color=FAINT, linewidth=1.0, linestyle=(0, (3, 2)), zorder=1)
         rows = {p["name"]: p for p in src["params"]}
         for y, n in zip(ypos, names, strict=True):
+            if n not in rows:
+                continue
             p = rows[n]
             lo, med, hi = (to_eta(p, p[k]) for k in ("q05", "median", "q95"))
             ax.plot([lo, hi], [y, y], color=GREEN, linewidth=3.0, solid_capstyle="round", zorder=3)
@@ -399,11 +406,15 @@ def parameters():
         ax.grid(axis="y", visible=False)
         ax.text(0, len(names) - 0.35, "prior 90%", ha="center", va="bottom", fontsize=10,
                 color=MUTED)
+        missing = [y for y, n in zip(ypos, names, strict=True) if n not in rows]
+        if missing:
+            ax.text(xmax - 0.2, np.mean(missing), "no tape measure in this run", ha="right",
+                    va="center", fontsize=10.5, color=MUTED, style="italic")
     axes[0].set_yticks(ypos, [SYMBOLS[n] for n in names], fontsize=11.5, color=INK)
     axes[0].set_ylim(-0.7, len(names) + 0.2)
     axes[0].plot([], [], "-o", color=GREEN, linewidth=3, markersize=8, label="median, 90% interval")
     axes[0].plot([], [], "D", color=RED, markersize=7.5, label="truth")
-    axes[0].legend(loc="lower right", fontsize=10.5)
+    axes[0].legend(loc="upper right", fontsize=10.5)
     save(fig, "parameters.svg")
 
 

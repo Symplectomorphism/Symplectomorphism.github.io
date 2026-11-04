@@ -196,6 +196,7 @@ Fits the model once and writes every figure for the latest episode into one fold
 - `composition`: fat and lean mass with bands
 - `plan`: the plan as `wdm plan` would make it, after the trend so far
 - `adherence`: each finished day's energy and macronutrients eaten (dots) against the prescription from the plans log (line), with a 10% band and the latest values labeled, and the running total of energy eaten above or below plan
+- `parameters`: each parameter's posterior today, metabolic and waist, over its prior interval
 - `parameter_evolution`: what the filter believed about each parameter, day by day
 - `maintenance`: the maintenance estimate over time, against logged intake
 - `innovations`: the standardized one-step-ahead surprises

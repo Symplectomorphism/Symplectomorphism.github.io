@@ -19,6 +19,7 @@ Four computations:
     ../numbers.yml  every figure the slides quote in text, formatted, read by the
                     deck and landing page through `{{< meta bw.* >}}`, so a
                     refresh can never leave a stale number in a sentence
+    ../deck.yml     the deck's date, the day of the latest record
 """
 
 from __future__ import annotations
@@ -45,6 +46,9 @@ from wdm.models.partition import forbes_fat_fraction
 from wdm.models.types import DailyInput, Params, State
 from wdm.synthetic import demo_subject
 
+#: The tape measure's two parameters, as wdm names them.
+WAIST_NAMES = ("waist_offset_cm", "waist_slope_cm_per_kg")
+
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "data"
 DEFAULT_DATA = Path.home() / "repos/glorious-beard/weight-dynamics/data/raw"
@@ -61,20 +65,27 @@ def _list(a, nd=4) -> list:
 
 
 def _summaries(fit, truth: Params | None = None) -> list[dict]:
+    """The nine metabolic parameters, then the waist offset and slope if a tape was used."""
+    transforms = dict(fit.transform.transforms)
+    rows = list(fit.summaries)
+    if fit.waist_transforms is not None:
+        transforms.update(zip(WAIST_NAMES, fit.waist_transforms, strict=True))
+        rows += fit.waist_summaries()
     out = []
-    for s in fit.summaries:
+    for s in rows:
+        tr = transforms[s.name]
         row = {
             "name": s.name,
             "median": s.median,
             "q05": s.q05,
             "q95": s.q95,
             "prior": s.prior_center,
-            "shift_sd": fit.transform.transforms[s.name].inverse(s.median),
+            "shift_sd": tr.inverse(s.median),
             # The prior's coordinate, so make_figures needs no copy of reparam.py.
-            "kind": fit.transform.transforms[s.name].kind,
-            "scale": float(fit.transform.transforms[s.name].scale),
+            "kind": tr.kind,
+            "scale": float(tr.scale),
         }
-        if truth is not None:
+        if truth is not None and hasattr(truth, s.name):
             row["truth"] = float(getattr(truth, s.name))
         out.append(row)
     return out
@@ -174,6 +185,10 @@ def real(data_dir: Path) -> dict:
         for sc in bt.scores
     }
     logged = [e for e in episodes if e.has_intake]
+    # The prior's maintenance interval at today's trend weight, for comparison.
+    eta = jax.random.normal(jax.random.key(2), (20_000, fit.eta_mean.shape[0]))
+    prior = jax.vmap(fit.transform.constrain)(eta)
+    prior_maint = np.asarray(prior.rmr_intercept + prior.rmr_slope * trend_lb / LB_PER_KG)
     waist = [
         {"name": w.name, "median": w.median, "q05": w.q05, "q95": w.q95}
         for w in (fit.waist_summaries() if fit.n_waist else [])
@@ -182,6 +197,12 @@ def real(data_dir: Path) -> dict:
         "generated": dt.date.today().isoformat(),
         "habitual": cfg.subject.habitual_intake(),
         "n_logged_days": int(sum(e.intake_known.sum() for e in logged)),
+        "n_unlogged_attempts": sum(not e.has_intake for e in episodes),
+        "prior_maintenance": [float(np.quantile(prior_maint, q)) for q in (0.05, 0.5, 0.95)],
+        "safety": {
+            "min_kcal": cfg.safety.min_kcal,
+            "max_loss_frac_per_week": cfg.safety.max_loss_frac_per_week,
+        },
         "n_waist": fit.n_waist,
         "waist": waist,
         "backtest": scores,
@@ -303,6 +324,14 @@ SYMBOLS = {
     "na_gain": "$k_{Na}$", "na_tau": "$\\tau_{Na}$", "partition_kappa": "$\\kappa_P$",
 }
 WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+_TENS = ["", "", "Twenty", "Thirty", "Forty"]
+_UNITS = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+#: Capitalized month counts for a slide title: "Twenty-one".
+MONTH_WORDS = [
+    "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+    "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen",
+    "Nineteen",
+] + [f"{t}-{u}" if u else t for t in _TENS[2:] for u in _UNITS]
 
 
 def _n(x: float, nd: int = 0) -> str:
@@ -363,6 +392,12 @@ def numbers(data_dir: Path) -> dict[str, str]:
 
     # The record
     v["attempts"] = str(len(r["trends"]))
+    first = dt.date.fromisoformat(r["trends"][0]["dates"][0])
+    latest = dt.date.fromisoformat(r["trends"][-1]["dates"][-1])
+    months = (latest.year - first.year) * 12 + latest.month - first.month
+    months -= latest.day < first.day  # whole months only
+    v["months"] = MONTH_WORDS[months] if months < len(MONTH_WORDS) else str(months)
+    v["n_unlogged"] = WORDS[r["n_unlogged_attempts"]]
     v["weighins"] = str(noise["n_obs"])
     v["obs_sd"] = f"{noise['obs_sd_kg']:.2f} kg ({noise['obs_sd_kg'] * lb:.1f} lb)"
     v["scatter_lb"] = f"±{noise['obs_sd_kg'] * lb:.1f} lb"
@@ -405,6 +440,8 @@ def numbers(data_dir: Path) -> dict[str, str]:
     v["maint"] = f"{_n(med)} kcal"
     v["maint_interval"] = f"{_n(lo)} to {_n(hi)}"
     v["maint_width"] = _n(round(hi - lo, -2))
+    plo, _pmed, phi = r["prior_maintenance"]
+    v["maint_prior"] = f"{_n(round(plo, -2))} to {_n(round(phi, -2))}"
     v["fat"] = f"{cur['fat_kg'][-1]:.0f} ± {1.645 * cur['fat_sd_kg'][-1]:.0f} kg"
     v["fat_kg"] = f"{cur['fat_kg'][-1]:.0f} kg"
     v["fat_share"] = f"{float(forbes_fat_fraction(jnp.asarray(cur['fat_kg'][-1]))):.0%}"
@@ -413,8 +450,14 @@ def numbers(data_dir: Path) -> dict[str, str]:
     v["habitual"] = f"{r['habitual'][0]:.0f} g of carbohydrate and {_n(r['habitual'][1])} mg of sodium"
     v["n_waist"] = str(r["n_waist"])
 
-    # What the real data has said
-    params = r["params"]
+    # What the real data has said: the metabolic nine, then the tape's two
+    params = [q for q in r["params"] if q["name"] in SYMBOLS]
+    tape = {q["name"]: q for q in r["params"] if q["name"] in WAIST_NAMES}
+    v["waist_shift"] = (
+        f"{abs(tape['waist_offset_cm']['shift_sd']):.1f} and "
+        f"{abs(tape['waist_slope_cm_per_kg']['shift_sd']):.1f}"
+        if tape else "n/a"
+    )
     moved = max(params, key=lambda q: abs(q["shift_sd"]))
     v["n_on_prior"] = WORDS[sum(abs(q["shift_sd"]) < 0.5 for q in params)]
     v["moved_symbol"] = SYMBOLS[moved["name"]]
@@ -428,11 +471,16 @@ def numbers(data_dir: Path) -> dict[str, str]:
     v["bt_rmse"] = f"{one['rmse_lb']:.1f} lb" if one else "n/a"
     v["bt_persist"] = f"{one['persist_lb']:.1f} lb" if one else "n/a"
 
+    # Safety limits, as the subject set them
+    floor_kcal = r["safety"]["min_kcal"]
+    v["kcal_floor"] = _n(floor_kcal)
+    v["gamma"] = f"{r['safety']['max_loss_frac_per_week'] * 100:.3g}%"
+
     # The plan being followed
     if plan:
         kcal = plan["kcal"]
-        floor = min(kcal) <= 1200.5
-        first_floor = next((i for i, k in enumerate(kcal) if k <= 1200.5), None)
+        floor = min(kcal) <= floor_kcal + 0.5
+        first_floor = next((i for i, k in enumerate(kcal) if k <= floor_kcal + 0.5), None)
         end = dt.date.fromisoformat(plan["date"][-1]) + dt.timedelta(days=1)
         v["plan_start"] = _date(plan["date"][0])
         v["plan_kcal"] = f"{_n(kcal[0])} kcal"
@@ -446,7 +494,7 @@ def numbers(data_dir: Path) -> dict[str, str]:
         v["plan_low"] = f"{_n(min(kcal))} kcal"
         v["plan_low_note"] = (
             f"the floor, reached in week {first_floor // 7 + 1}"
-            if floor else "the lowest day; the 1,200 kcal floor never binds"
+            if floor else f"the lowest day; the {_n(floor_kcal)} kcal floor never binds"
         )
         v["plan_end"] = _date(end.isoformat())
         v["plan_target"] = f"{plan['predicted_weight_lb'][-1]:.0f} lb"
@@ -487,6 +535,12 @@ def _write_numbers(v: dict[str, str]) -> None:
     lines = ["# Generated by assets/compute.py -- do not edit by hand.", "bw:"]
     lines += [f"  {k}: '{s.replace(chr(39), chr(39) * 2)}'" for k, s in v.items()]
     (HERE.parent / "numbers.yml").write_text("\n".join(lines) + "\n")
+    # The deck's title-slide date: front matter cannot read `bw.*`, so it gets
+    # its own file, read by the deck alone.
+    (HERE.parent / "deck.yml").write_text(
+        "# Generated by assets/compute.py -- do not edit by hand.\n"
+        f"date: '{v['as_of']}'\n"
+    )
 
 
 def main() -> None:

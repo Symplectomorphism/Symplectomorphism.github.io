@@ -2,8 +2,8 @@
 title: "Body-Weight Dynamics"
 subtitle: "An energy-balance state-space model, a joint unscented Kalman filter, and a receding-horizon diet controller"
 author: "Aykut C. Satici"
-date: "October 28, 2026"
-metadata-files: [numbers.yml]
+metadata-files: [numbers.yml, deck.yml]  # deck.yml: the date, from compute.py
+date-format: long
 format:
   # The website project declares `format: html`, which Quarto merges into every
   # document.  There is no supported way to unset it per-document, so the
@@ -31,9 +31,9 @@ format:
     footer: "[&#8592; Body-Weight Dynamics](index.qmd) &middot; Estimation and Control of One Diet"
 ---
 
-## Twenty-one months on one bathroom scale {.smaller}
+## {{< meta bw.months >}} months on one bathroom scale {#timeline .smaller}
 
-![](assets/timeline.svg){.fig-wide fig-alt="Five panels, one per diet attempt from January 2025 to October 2026, each showing raw weigh-ins and a smoothed trend with a 95 percent band."}
+![](assets/timeline.svg){.fig-wide fig-alt="One panel per diet attempt from January 2025 to the present, each showing raw weigh-ins and a smoothed trend with a 95 percent band."}
 
 ::: stats
 ::: stat
@@ -42,7 +42,7 @@ format:
 :::
 ::: stat
 [{{< meta bw.weighins >}} weigh-ins]{.num}
-[the only measurement; no food log before Aug 2026]{.lab}
+[the main measurement; no food log before Aug 2026, no tape before Oct 2026]{.lab}
 :::
 ::: {.stat .gold}
 [{{< meta bw.scatter_lb >}}]{.num}
@@ -58,7 +58,7 @@ format:
 Every weigh-in on record, one panel per attempt, on a shared weight axis. The gaps between
 panels are months long and contain no data, so they are not drawn. Each attempt worked
 while it lasted. What this record cannot say is why: there is no food log for the first
-four attempts, so all it can identify is how noisy a single reading is and how fast the
+{{< meta bw.n_unlogged >}} attempts, so all it can identify is how noisy a single reading is and how fast the
 trend moves. That turns out to be exactly what the filter needs first.
 :::
 
@@ -134,7 +134,8 @@ around them.
 
 ## The model {.divider}
 
-Five states, nine parameters, one equation that matters most.
+Five states, nine metabolic parameters (two more with a tape measure), one equation that
+matters most.
 
 ## The loop {.smaller}
 
@@ -297,7 +298,7 @@ A weight-only history identifies noise. Weight and food together identify metabo
 
 ::: cols2w
 ::: {}
-The first four attempts have no food log, so they cannot say anything about metabolism.
+The first {{< meta bw.n_unlogged >}} attempts have no food log, so they cannot say anything about metabolism.
 They can say how noisy a reading is and how fast the trend moves. A **local linear trend**
 model does exactly that:
 
@@ -427,24 +428,26 @@ adaptation pair, which needs deliberate variation in intake. Not at all: kappa_P
 
 ## What the real data has said so far {.smaller}
 
-![](assets/parameters.svg){.fig-wide fig-alt="Posterior intervals in prior standard deviations. Synthetic: intervals move and contain the truth. Real data: most intervals still sit on the prior."}
+![](assets/parameters.svg){.fig-wide fig-alt="Posterior intervals in prior standard deviations, the nine metabolic parameters and the two waist parameters. Synthetic: intervals move and contain the truth. Real data: most intervals still sit on the prior."}
 
 ::: cols2
 ::: claim
-With {{< meta bw.n_logged >}} logged days, {{< meta bw.n_on_prior >}} of nine parameters sit within half a prior standard
-deviation of their priors. **That is the correct answer:** the weigh-in history pins down noise, and nothing about metabolism, so the filter
-reports its ignorance instead of inventing precision.
+With {{< meta bw.n_logged >}} logged days, {{< meta bw.n_on_prior >}} of the nine metabolic parameters sit within half a prior
+standard deviation of their priors. **That is the correct answer:** the weigh-in history pins down noise, and nothing about
+metabolism, so the filter reports its ignorance instead of inventing precision.
 :::
 ::: warn
 The one that has moved most is {{< meta bw.moved_symbol >}}: {{< meta bw.moved_value >}} against a prior of
-{{< meta bw.moved_prior >}}, {{< meta bw.moved_sd >}} prior standard deviations. From a few days of data that is a lead, not a
-finding; if it is real, it will keep landing there as data accrues.
+{{< meta bw.moved_prior >}}, {{< meta bw.moved_sd >}} prior standard deviations. From {{< meta bw.n_logged >}} logged days that is a lead,
+not a finding; if it is real, it will keep landing there as data accrues.
 :::
 :::
 
 ::: notes
-Same axes as the synthetic case, deliberately, so the contrast is the message. Check back in a
-few weeks.
+Same axes as the synthetic case, deliberately, so the contrast is the message. The bottom two
+rows are the tape measure's offset and slope: after {{< meta bw.n_waist >}} readings they sit
+{{< meta bw.waist_shift >}} prior standard deviations from their priors. The synthetic demo
+has no tape, so its rows are empty. Check back in a few weeks.
 :::
 
 ## Backtest: does it forecast the scale?
@@ -464,8 +467,8 @@ explain a deficit nobody logged.
 ::: card
 [What it says so far]{.cardh}
 {{< meta bw.bt_n >}} one-day forecasts on logged days: an error of {{< meta bw.bt_rmse >}} against {{< meta bw.bt_persist >}} for
-persistence. All are first mornings of a diet, the hardest days, and so few forecasts are not
-an evaluation. The point is that the score is recomputed at every refresh.
+persistence. All come from the first days of a diet, when water moves most, and so few
+forecasts are not an evaluation. The point is that the score is recomputed at every refresh.
 :::
 :::
 
@@ -490,7 +493,7 @@ Decisions are held constant over **weekly blocks**:
 
 | Per block | Bounds |
 |---|---|
-| energy $I$ | $[I_{\min}, I_{\max}]$; the subject's floor is 1,200 kcal (default 1,500) |
+| energy $I$ | $[I_{\min}, I_{\max}]$; the subject's floor is {{< meta bw.kcal_floor >}} kcal (default 1,500) |
 | protein per kg | $[P_{\min}, 3.0]$ g/kg |
 | fat share of energy | $[0.15, 0.75]$ |
 
@@ -518,7 +521,7 @@ not follow plans exactly.
 
 ::: eqbox
 $$
-J_{\text{sustainable}} = w_p\,T_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w_c\,C^2
+J_{\text{sustainable}} = w_p\,T^{\text{s}}_H + w_s\,\textstyle\sum\Delta I^2 + w_e\,D^2 + w_c\,C^2
 + w_\phi(\phi - \phi^\star)^2
 \quad \text{s.t.}\quad g(z) \ge 0
 $$
@@ -527,7 +530,7 @@ $$
 ::: kv
 | Term | In plain English |
 |---|---|
-| $w_p\,T_H$ | end the horizon with less **tissue**. Linear, so it trades against the quadratic terms at an interior optimum instead of running to the floor |
+| $w_p\,T^{\text{s}}_H$ | end the horizon with less **settled tissue**. Linear, so it trades against the quadratic terms at an interior optimum instead of running to the floor |
 | $w_s\,\Delta I^2$ | do not change the target every day |
 | $w_e\,D^2$ | large deficits cost adherence, training and sleep, beyond any hard limit |
 | $w_c\,C^2$ | an optional preference for less carbohydrate, at any level |
@@ -537,8 +540,11 @@ $$
 : {tbl-colwidths="[22,78]"}
 :::
 
-Deadline mode replaces the progress term with tracking: tissue against a straight path from
-today's weight to the goal, scored at the end of the horizon, **not** at the goal itself.
+Settled tissue $T^{\text{s}} = T + (\rho_G/\rho_{\text{eff}})\,G_c$ is tissue once glycogen
+returns to its habitual level, so neither a carbohydrate load nor a crash late in the horizon
+can game the score. Deadline mode replaces the progress term with tracking: settled tissue
+against a straight path from today's weight to the goal, scored at the end of the horizon,
+**not** at the goal itself.
 
 ::: notes
 Scoring the gap to the final goal at the end of a shorter horizon would demand arriving within
@@ -550,12 +556,12 @@ makes the horizon a window onto a longer plan.
 
 ::: eqbox
 $$
--\Delta T_k \;\le\; \frac{\gamma\, T_k}{7} \qquad \text{for every day } k
+-\Delta T^{\text{s}}_k \;\le\; \frac{\gamma\, T^{\text{s}}_k}{7} \qquad \text{for every day } k
 $$
 :::
 
-[$\gamma$ is the permitted weekly tissue-loss fraction: 1.75% in the subject's settings, 1% by
-default.]{.small}
+[$\gamma$ is the permitted weekly tissue-loss fraction: {{< meta bw.gamma >}} in the subject's settings, 1% by
+default. $T^{\text{s}}$ is settled tissue, so draining glycogen cannot loosen the limit.]{.small}
 
 ::: cols2
 ::: card
@@ -563,7 +569,7 @@ default.]{.small}
 Cutting carbohydrate sheds a kilogram of glycogen water in days. On the scale that reads as
 4 lb/week and trips any limit written on scale weight, though no tissue moved. A controller
 limited on the scale would refuse a sound plan, or **raise** calories in response to water.
-The objective scores $T$ for the same reason: scored on $W$, cutting carbohydrate alone
+The objective scores settled tissue for the same reason: scored on $W$, cutting carbohydrate alone
 would look like progress.
 :::
 ::: card
@@ -587,7 +593,7 @@ The CLI checks the final plan independently, and says so when a goal is out of r
 :::
 ::: {.stat .gold}
 [{{< meta bw.plan_rate >}}]{.num}
-[predicted scale loss; tissue at {{< meta bw.plan_tissue >}} of what remains a week, against the 1.75% limit]{.lab}
+[predicted scale loss; tissue at {{< meta bw.plan_tissue >}} of what remains a week, against the {{< meta bw.gamma >}} limit]{.lab}
 :::
 ::: {.stat .hot}
 [{{< meta bw.plan_low >}}]{.num}
@@ -601,7 +607,7 @@ Deadline mode: {{< meta bw.plan_target >}} by {{< meta bw.plan_end >}}, starting
 allowance, so the rate limit, if it binds at all, binds late.
 :::
 
-## Where things stand on day {{< meta bw.day >}}
+## Where things stand on day {{< meta bw.day >}} {#standing}
 
 ::: stats
 ::: stat
@@ -610,7 +616,7 @@ allowance, so the rate limit, if it binds at all, binds late.
 :::
 ::: stat
 [{{< meta bw.maint >}}]{.num}
-[maintenance $c_0 + c_1W$; 90% interval {{< meta bw.maint_interval >}}, still the prior's width]{.lab}
+[maintenance $c_0 + c_1W$; 90% interval {{< meta bw.maint_interval >}}, against the prior's {{< meta bw.maint_prior >}}]{.lab}
 :::
 ::: {.stat .gold}
 [{{< meta bw.fat >}}]{.num}
@@ -691,21 +697,22 @@ The daily loop, each morning before eating:
 wdm daily observations.csv \
     --config subject.toml
 # asks for yesterday's food if missing,
-# this morning's weight, and the waist
-# when a week has passed; then
-# validates, plans, logs the plan
+# this morning's weight, the waist
+# when a week has passed, and optional
+# health readings; then validates,
+# plans, logs the plan
 # eat the "Today:" line
 ```
 
 [Each row is a morning weigh-in plus the food eaten later that day, so this morning's weight
 goes in at once and today's food tomorrow. Every plan is archived with the command and
-package version that made it.]{.tiny}
+the commit of the code that made it.]{.tiny}
 :::
 :::
 
 ::: notes
 Everything in this deck was generated by running the package against the real observation
-file. Rerunning two scripts brings every figure, and every number in the text, up to date.
+file. One script, `refresh.sh`, brings every figure, and every number in the text, up to date.
 :::
 
 ## {.closing}
@@ -744,9 +751,10 @@ W_c^{(0)} = \frac{\lambda}{n+\lambda} + 1 - \alpha^2 + \beta,\qquad
 W_m^{(i)} = W_c^{(i)} = \frac{1}{2(n+\lambda)}
 $$
 
-The $2n + 1 = 29$ points reproduce the mean and covariance exactly. Each is pushed through the
+The $2n + 1$ points (29 for $n = 14$, 33 with the tape's two parameters) reproduce the mean
+and covariance exactly. Each is pushed through the
 one-day map, and the prediction is their weighted mean and covariance plus $Q_k$. With
-$\alpha = 10^{-3}$ and $n = 14$, $W_c^{(0)}$ is large and negative and the recombined covariance
+$\alpha = 10^{-3}$ and $n \ge 14$, $W_c^{(0)}$ is large and negative and the recombined covariance
 can lose positive definiteness; the package uses $\alpha = 0.3$.
 
 ## B2. The steady-state gain {#b2 .bk}
