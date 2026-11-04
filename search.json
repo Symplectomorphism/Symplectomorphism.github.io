@@ -13016,7 +13016,7 @@
     "href": "research/nonprehensile/index.html#planning-through-contact",
     "title": "Nonprehensile Manipulation",
     "section": "Planning through contact",
-    "text": "Planning through contact\n\nPresentation\nPlanning Through Contact → — an illustrated walkthrough of the construction: the contact catalog, the bit-vector state, the three actions, the local solver, the two feasibility gates, and where a learned ranker enters. Roughly twenty slides, figure-first, with speaker notes.\n\nThe construction has five pieces and nothing more:\n\nFeatures. Every body carries a finite, named inventory of contactable patches, fixed by geometry before planning starts.\nTemplates. A candidate contact is one named feature pair together with a signed gap. The gap is a function of configuration alone, so it is defined whether or not the pair currently touches.\nState. The discrete state is a bit vector over the catalog of candidate contacts — which contacts the controller is committed to holding — carried alongside the continuous pose.\nActions. Start holding a contact, stop holding one, or hold the set and drive toward the goal. Each action flips at most one bit.\nRealization. A short-horizon optimizer is handed one action compiled into a cost, and either returns a trajectory segment or rejects the action.\n\nTwo cheap tests run before that optimizer is ever called: a contact too far away cannot be closed in one horizon, and the contacts that survive an action must already hold the object against gravity. The second of these is what forbids a manipulator from letting go mid-topple, and admits the same release once the object has landed.",
+    "text": "Planning through contact\n\nPresentation\nPlanning Through Contact → — an illustrated walkthrough of the construction: the contact catalog, the bit-vector state, the three actions, the local solver, the two feasibility gates, and where a learned ranker enters. Roughly twenty slides, figure-first, with speaker notes.\nCode walkthrough\nCode Walkthrough → — the reference implementation run one layer at a time, from the scene file to the search loop: commands, recorded outputs, and exercises with solutions.\n\nThe construction has five pieces and nothing more:\n\nFeatures. Every body carries a finite, named inventory of contactable patches, fixed by geometry before planning starts.\nTemplates. A candidate contact is one named feature pair together with a signed gap. The gap is a function of configuration alone, so it is defined whether or not the pair currently touches.\nState. The discrete state is a bit vector over the catalog of candidate contacts — which contacts the controller is committed to holding — carried alongside the continuous pose.\nActions. Start holding a contact, stop holding one, or hold the set and drive toward the goal. Each action flips at most one bit.\nRealization. A short-horizon optimizer is handed one action compiled into a cost, and either returns a trajectory segment or rejects the action.\n\nTwo cheap tests run before that optimizer is ever called: a contact too far away cannot be closed in one horizon, and the contacts that survive an action must already hold the object against gravity. The second of these is what forbids a manipulator from letting go mid-topple, and admits the same release once the object has landed.",
     "crumbs": [
       "Research",
       "Nonprehensile Manipulation"
@@ -13042,6 +13042,305 @@
     "crumbs": [
       "Research",
       "Nonprehensile Manipulation"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/09-step1.html",
+    "href": "research/nonprehensile/code-walkthrough/09-step1.html",
+    "title": "9. Where step 1 starts",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\n\n\n\n\n\nStep 1 of the critical path (Decision 5) is a planar contact layer for the step scene. It adds a new scene file, a planar geometry module, a planar catalog and tests, and gives scene/spec.py one backward-compatible field. It keeps the two calls the solver and the search make, Catalog.gap(pose) and Catalog.band(pose), with the same signatures, so MPPISolver, Cand and Search run unchanged on top of it.\nThe table maps what the previous pages exposed to the part of step 1 that addresses it.\n\n\n\nSeen in\nWhat happens today\nStep 1\n\n\n\n\n2, 3\nClosed faces share edges, so 3 to 5 bits per body pair are on at once, on every frame of the demo\nA principal-contact on-set: at most one bit per body pair\n\n\n2 (ex. 2.3)\nWhether a tilted box is “flat” depends on its size (θ* = 2ε_on/a)\nA contact counts as edge–edge only when its contact set is longer than a minimum length\n\n\n5, 6\nA face contact is one representative corner; the hold test passes with zero margin, and only thanks to the extra bits\ncontact_set(pose): the endpoints of each contact, handed to the hold LP\n\n\n3\nThe step corner (0, h) belongs to both riser and platform; the floor–riser junction lights up a bit\nThe riser owns its corner; the platform is open at x = 0; concave junctions are not features\n\n\n1\nNo vertex features, so the paper’s g_v and s_v cannot be written\nstep2d.yaml with box edges and vertices, the disk, and the three environment segments\n\n\n1, 6, 8\nA 3D catalog on a planar model: ±y faces, edits the disk cannot reach\nA planar catalog in the x–z plane, with dimension: 2 in the spec\n\n\n1, 4\nExclusions by integer index, and then dropped; template IDs unset\nNamed templates (g, g_v, s, s_v, t, m_x, m_z); exclusions {g, t}, {g_v, s}, {g, s_v} by name\n\n\n2\nCatalog.gap loops over templates in Python\nTemplates grouped by kernel type, one vmap per group\n\n\n\nTwo issues stay outside step 1 and go to Angelo: the search ignores the solver’s success flag (7), and the graph’s IDs and exclusions (4). A node storing its requested formation rather than the one reached (8) belongs to step 3, where Λ and H are wired into the search.\nThe tests for step 1 check the formations along the paper’s chain against Decision 4’s table, check the named poses of tests/configs/step.txt, and check that the 1,721-frame demo never has more than one bit per body pair. That last test fails on every frame today (exercise 3.2).\n← 8. The search loop · Back to the walkthrough index",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "9. Where step 1 starts"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/07-mppi.html",
+    "href": "research/nonprehensile/code-walkthrough/07-mppi.html",
+    "title": "7. One solver call",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nThe local solver Λ receives a state, the current formation σ and a destination σ′, and returns a trajectory and a success flag. The default realizer is MPPI (solver/mppi.py). For each physics step it samples perturbed control sequences, simulates each one with MJX, weights them by exp(−cost / temperature), averages them, and applies the first control. The cost rewards closing the gaps of templates being made, keeping the gaps of kept templates in band, opening the gaps of templates being broken, and it penalizes penetration and effort. This step realizes one make from the start pose: the disk onto the box’s back face, the paper’s m_x.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "7. One solver call"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/07-mppi.html#output",
+    "href": "research/nonprehensile/code-walkthrough/07-mppi.html#output",
+    "title": "7. One solver call",
+    "section": "Output",
+    "text": "Output\nSolver: MPPISolver {'horizon': 20, 'dwell_steps': 10, 'n_samples': 256, 'maxiters': 5, 'temperature': 0.001, 'noise_scale': 0.1, 'band_alpha': 0.1, 'band_weight': 1000.0, 'control_hold': 3}\nfirst call (compiles): 75.1 s\nsecond call (cached): 36.9 s\n\nTrajectory: 30 physics steps of 0.009999999776482582 s\nStart qpos:    [-0.1     0.0625  0.     -0.2     0.0625]\nTerminal qpos: [-0.0624  0.0625  0.0008 -0.1389  0.0145]\nGap of m_x every 5 steps: [ 0.0183 -0.0077 -0.002  -0.0122 -0.0052 -0.0028]\nControls (first 9 steps):\n [[ 0.7114 -0.3379]\n [ 0.7114 -0.3379]\n [ 0.7114 -0.3379]\n [ 0.6595  0.0581]\n [ 0.6595  0.0581]\n [ 0.6595  0.0581]\n [ 0.513   0.2073]\n [ 0.513   0.2073]\n [ 0.513   0.2073]]\n\nsolver success flag: False\n  deepest gap -0.0134 (limit -0.01) on M:boundary-B:xn at step 3\n  largest drift during dwell 0.0151 (limit 0.001)\nsearch would accept (destination bits in band at the end): True\nThe run is deterministic (the default key is PRNGKey(0)), so your numbers should match.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "7. One solver call"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/07-mppi.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/07-mppi.html#what-to-notice",
+    "title": "7. One solver call",
+    "section": "What to notice",
+    "text": "What to notice\n\n0.3 s of motion. 20 task steps and 10 dwell steps of 10 ms each. The controls are forces on the disk’s two slide joints, clipped to ±1 N, and held for 3 steps (control_hold).\nThe make became a push. The disk reaches the box within 5 steps but keeps pushing: the box slides 3.8 cm, from x = −0.1 to −0.0624, into the riser. The disk overlaps the box by up to 1.34 cm (penetration limit 1 cm) and is still moving during the dwell.\nThe disk ends on the floor. Its height drops from 0.0625 to 0.0145, just below its radius (MuJoCo’s soft contact). Nothing compensates gravity on the disk: that feed-forward is a stub (physics/mjx_backend.py), and the disk–floor pair is not in the catalog.\nTwo verdicts disagree. The solver says failure (penetration, a floor bit out of band at the deadline, and drift; exercise 7.1). The search accepts the edit anyway, because Search.run_single checks only that every destination bit is in band at the final state and ignores the success flag. This is on the list of code issues for Angelo.\nCost. 75 s to compile, then 37 s per call on the CPU; exercise 7.3 shows where the time goes.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "7. One solver call"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/07-mppi.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/07-mppi.html#code-to-read",
+    "title": "7. One solver call",
+    "section": "Code to read",
+    "text": "Code to read\nsrc/cmg/solver/mppi.py: MPPISolver.__call__ (the receding-horizon loop and the success test at the end), _update (sample, weight, average), _sample_cost (the rollout under lax.scan), _gap_cost and _band_cost. The weights in _gap_cost, 1e4 on arrival and 100 on departure, are fixed in the code, not configurable. src/cmg/solver/gradient.py is the alternative realizer: the same interface, optimized with Adam through MJX. The solver settings come from assets/configs/solver/step-base.yaml.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "7. One solver call"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/07-mppi.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/07-mppi.html#exercises",
+    "title": "7. One solver call",
+    "section": "Exercises",
+    "text": "Exercises\n7.1 Which clauses of the success test fail here, and which pass?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe test at the end of __call__ requires finite states and controls, no gap below −ε_pen at any step, every destination bit below ε_on from step 19 (the deadline) onward, broken bits at least R apart from step 19 onward, and dwell drift at most dwell_tolerance. To see the destination clause, append to 07_mppi.py:\ndeadline = gaps[solver.horizon - 1:]\nfor i in np.flatnonzero(np.asarray(new)):\n    print(names[i], np.asarray(deadline[:, i]).round(4))\nThe two informative rows are\nM:boundary-B:xn [-0.0061 -0.0052 -0.0045 -0.0039 -0.0035 -0.0031 -0.0028 -0.0025 -0.0022\n -0.0019 -0.0017]\nB:xn-L:boundary [0.0021 0.0021 0.0018 0.0015 0.0012 0.0009 0.0006 0.0004 0.0003 0.0002\n 0.0001]\n\nFinite: passes.\nPenetration: fails, −0.0134 &lt; −0.01 at step 3.\nDestination in band from the deadline: fails. m_x is in band, but the push tipped the box by 0.016 rad, which lifts its back bottom edge 2.1 mm off the floor, above ε_on = 1 mm. That is exactly the 2ε_on/a threshold of exercise 2.3. The edge settles back to 0.1 mm by the last step, which is why the search’s end-state check passes.\nBroken bits: none to check.\nDwell drift: fails, 0.0151 &gt; 0.001.\n\n\n\n\n7.2 Run the same make with the lighter settings used in step 8 (n_samples: 64, maxiters: 2). Is it accepted?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nNo. Step 8’s first batch tries exactly this edit from the same root with those settings, and the search rejects it: at the final state, not every destination bit is in band. Fewer samples and iterations make the controller weaker; the first call is also cheaper to compile. To try it here, copy step 8’s SolverConfig(...) construction into 07_mppi.py in place of SolverConfig.from_yaml.\n\n\n\n7.3 How many MJX steps does one call simulate? Relate the count to the 37 s.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe loop runs 30 executed steps. With control_hold: 3, it replans at steps 0, 3, …, 27: 10 times. Each replan runs maxiters = 5 updates, each update simulates n_samples = 256 rollouts, and each rollout is planning_horizon = 20 + 10 = 30 steps long. That is 10 × 5 × 256 × 30 = 384,000 rollout steps, plus the 30 executed steps, or about 0.1 ms per MJX step on the CPU. The search runs batch_size such calls at once through vmap (step 8), so solver cost dominates everything else. Counting solver calls is the cost measure the paper uses.\n\n\n\n← 6. Candidate edits · Next: 8. The search loop →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "7. One solver call"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/05-hold.html",
+    "href": "research/nonprehensile/code-walkthrough/05-hold.html",
+    "title": "5. The hold LP",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nThe hold test H asks whether some set of contact forces, each inside its friction cone, can hold the box still against gravity. physics/hold.py answers it with a linear program solved by MPAX. Each asserted template contributes one contact point (its gap midpoint), a normal (its gap normal), and three force components: two signed tangential components and one nonnegative normal component. The friction cone is replaced by an 8-sided pyramid. Force and torque on the box must balance in all six components. create_predicates returns two jitted predicates of (state, formation):",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "5. The hold LP"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/05-hold.html#output",
+    "href": "research/nonprehensile/code-walkthrough/05-hold.html#output",
+    "title": "5. The hold LP",
+    "section": "Output",
+    "text": "Output\nFriction per body pair (MuJoCo's priority rule):\n  M-B: mu = 0.9900000095367432\n  B-L: mu = 0.20000000298023224\n  B-S: mu = 0.20000000298023224\n  B-P: mu = 0.20000000298023224\nBox mass: 0.10000000149011612 kg\n\nFirst call (compiles the LP): 6.2 s\n\nBand formation at each fixture:\n  fixture          Supported EnvStable\n  flat_stable_far  True      True\n  flat_stable_close True      True\n  flat             True      True\n  hanging          True      True\n  toppled30_far    False     False\n  toppled30_close  True      False\n  toppled60_far    True      True\n\nHand-picked formations at 'flat':\n  {}                                       Supported=False\n  {B:zn-L:boundary}                        Supported=False\n  {B:xn-L:boundary}                        Supported=False\n  {B:xp-L:boundary, B:xn-L:boundary}       Supported=False\n\nCompiled call: 1.4 ms each\nThe test suite runs both predicates along the demo trajectory and saves tests/result/step_hold_lp_trajectory.png:\n\n\n\nSupported and EnvStable along the demo trajectory (1 = holds).",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "5. The hold LP"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/05-hold.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/05-hold.html#what-to-notice",
+    "title": "5. The hold LP",
+    "section": "What to notice",
+    "text": "What to notice\n\nFriction comes from MuJoCo. When two geoms have different priority, the higher one’s friction wins: the disk (priority 2, μ = 0.99) against the box (priority 0), and the environment (priority 1, μ = 0.2) against the box.\nThe box resting flat is “not supported” by its bottom face alone. One bit, B:zn-L, fails; the five-bit band formation passes. Exercise 5.1 explains why. Today the hold test passes only because of the extra bits from step 3.\ntoppled30_close is the interesting row. With the disk pushing it is held (Supported); without the disk it is not (EnvStable). The search uses this to refuse letting go mid-topple (step 6).\nCost. Compiling takes about 6 s; a call then costs about 1.4 ms on the CPU.\nThe LP’s objective minimizes the total normal force of manipulator contacts; only feasibility is used.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "5. The hold LP"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/05-hold.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/05-hold.html#code-to-read",
+    "title": "5. The hold LP",
+    "section": "Code to read",
+    "text": "Code to read\nsrc/cmg/physics/hold.py, from the bottom up:\n\ncreate_predicates builds the incidence (which body each force acts on, with sign), the per-template friction, and the manipulator mask, and returns the two jitted predicates. EnvStable is the same predicate with manipulator templates removed from allowed.\n_predicate computes midpoints and normals, averaged over five tiny perturbations of qpos (1e−5 along each coordinate) to smooth ties.\n_solve_contact_lp assembles the wrench matrix and the cone constraints, calls MPAX’s raPDHG, and re-checks balance and cones within tolerance.\n_friction_constraints builds the 8-sided pyramid.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "5. The hold LP"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/05-hold.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/05-hold.html#exercises",
+    "title": "5. The hold LP",
+    "section": "Exercises",
+    "text": "Exercises\n5.1 Why does {B:zn-L} alone fail at flat while the five-bit band formation passes? Print the midpoints of the in-band templates.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nimport jax.numpy as jnp, numpy as np\nfrom cmg.catalog.templates import Catalog\nfrom cmg.physics.world import ExecutionWorld, State\nfrom _common import fixtures, load_spec, template_names\n\nspec = load_spec(); catalog = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)\nnames = template_names(spec, catalog)\nq = jnp.array(fixtures()[\"flat\"]); pose = world.pose(State(q, jnp.zeros_like(q)))\nmid, nrm, band = map(np.asarray, (catalog.gap_midpoint(pose), catalog.gap_normal(pose), catalog.band(pose)))\nfor i in np.flatnonzero(band):\n    print(names[i], mid[i].round(4), nrm[i].round(3))\nB:xp-L:boundary [-0.0375 -0.0625  0.    ] [-0. -0. -1.]\nB:xn-L:boundary [-0.1625 -0.0625  0.    ] [-0. -0. -1.]\nB:yp-L:boundary [-0.1625  0.0625  0.    ] [-0. -0. -1.]\nB:yn-L:boundary [-0.1625 -0.0625  0.    ] [-0. -0. -1.]\nB:zn-L:boundary [-0.1625 -0.0625  0.    ] [-0. -0. -1.]\nThe midpoint of a face-on-plane contact is one representative closest pair, here a corner of the bottom face, not the face. One corner under the box cannot balance gravity’s torque about it, so {B:zn-L} fails. The five bits together give three distinct corners: (−0.0375, −0.0625), (−0.1625, −0.0625) and (−0.1625, 0.0625), all at z = 0.\nThe center of mass projects to (−0.1, 0), which lies exactly on the hypotenuse x + y = −0.1 of that triangle. The LP is feasible, with all the weight on two corners, but the margin is zero: the support passes on the boundary. It still passes with tolerance=1e-5. Under Decision 6’s robust margin this formation would score zero. Step 1 gives each contact its full contact set (the face’s endpoints), so the LP sees the true support polygon.\n\n\n\n5.2 In the table, toppled30_close is Supported but not EnvStable. What does that imply for an edit that breaks the disk contact at that pose?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nBreaking M:boundary-B:xn leaves only environment contacts, and those cannot hold the box (EnvStable is false). The hold test of step 6 checks the contacts that persist through an edit, so that break is illegal there, and step 6’s output confirms it. This is the persistent-contact rule (Decision 7): you may not let go mid-topple, but the same break becomes legal once the box has landed.\n\n\n\n5.3 Is toppled30_far unstable because the environment’s friction (μ = 0.2) is too low? Test it with μ = 1.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nWrite a copy of the scene with a higher environment friction and evaluate EnvStable there:\nimport pathlib, tempfile\nimport jax.numpy as jnp\nfrom cmg.catalog.templates import Catalog\nfrom cmg.physics.hold import create_predicates\nfrom cmg.physics.world import ExecutionWorld, State\nfrom _common import CMG, STEP_YAML, fixtures, load_spec\n\nfolder = pathlib.Path(tempfile.mkdtemp())\nxml = (CMG / \"src/cmg/scene/families/step.xml\").read_text()\n(folder / \"step.xml\").write_text(xml.replace('friction=\"0.2 1.0 0.1\"', 'friction=\"1.0 1.0 0.1\"'))\n(folder / \"step.yaml\").write_text(\n    STEP_YAML.read_text().replace('\"src/cmg/scene/families/step.xml\"', str(folder / \"step.xml\")))\nspec = load_spec(folder / \"step.yaml\"); catalog = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)\n_, env_stable = create_predicates(spec, catalog, world, tolerance=1e-3)\nfor name in (\"toppled30_far\", \"toppled60_far\"):\n    q = jnp.array(fixtures()[name]); state = State(q, jnp.zeros_like(q))\n    print(name, world.pair_friction(1, 2), bool(env_stable(state, catalog.band(world.pose(state)))))\ntoppled30_far 1.0 False\ntoppled60_far 1.0 True\nStill unstable, at μ = 0.2, 0.3, 0.4, 0.5 and 1.0 alike, so friction is not the issue. The box’s center of mass is at x = −0.0409, behind its floor contact at x = −0.018 (exercise 3.3), so gravity tips it backward, away from the step. The only other support is the step corner, which can push but not pull. No friction coefficient fixes that; only the disk pushing from behind does (toppled30_close). At 60° the center of mass has passed over the floor contact and the corner holds it.\n\n\n\n← 4. The contact graph · Next: 6. Candidate edits →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "5. The hold LP"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/03-formations.html",
+    "href": "research/nonprehensile/code-walkthrough/03-formations.html",
+    "title": "3. Formations",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nThe search’s discrete state is the formation, one bit per template. Today the formation at a pose is simply Catalog.band(pose). This step prints it at the seven named poses the tests use (tests/configs/step.txt) and along a 1,721-frame trajectory recorded by moving the disk by hand, and counts how many bits each body pair has on at once.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "3. Formations"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/03-formations.html#output",
+    "href": "research/nonprehensile/code-walkthrough/03-formations.html#output",
+    "title": "3. Formations",
+    "section": "Output",
+    "text": "Output\nflat_stable_far  {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\nflat_stable_close {M:boundary-B:xn, B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\nflat             {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\nhanging          {B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary, B:zp-P:boundary}\ntoppled30_far    {B:xp-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\ntoppled30_close  {M:boundary-B:xn, B:xp-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\ntoppled60_far    {B:xp-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\n\nDemo trajectory: 1721 frames\n  M-B: frames with 0..5 bits on = [1148, 573, 0, 0, 0, 0]\n  B-L: frames with 0..5 bits on = [1030, 0, 0, 0, 41, 650]\n  B-S: frames with 0..5 bits on = [1408, 0, 0, 262, 51, 0]\n  B-P: frames with 0..5 bits on = [608, 0, 0, 103, 209, 801]\nDistinct formations visited: 14",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "3. Formations"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/03-formations.html#the-demo-trajectory-and-its-gaps",
+    "href": "research/nonprehensile/code-walkthrough/03-formations.html#the-demo-trajectory-and-its-gaps",
+    "title": "3. Formations",
+    "section": "The demo trajectory and its gaps",
+    "text": "The demo trajectory and its gaps\nThe test suite renders the demo into tests/result/step_mujoco_trajectory.mp4:\n\n\nand plots all 24 gaps along it in tests/result/step_gap_trajectory.png:\n\n\n\nGaps along the demo trajectory, one panel per body pair.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "3. Formations"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/03-formations.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/03-formations.html#what-to-notice",
+    "title": "3. Formations",
+    "section": "What to notice",
+    "text": "What to notice\n\nThe disk–box pair behaves: it has at most one bit on, because a sphere touches only one face of a box at a time (except exactly at an edge).\nEvery environment pair has 3 to 5 bits on whenever it has any. The box–floor pair is never in contact through one bit only. Xiao and Ji’s principal contacts allow exactly one per pair; step 1 enforces that.\nThe step corner belongs to two bodies. At flat_stable_far the box’s front face sits at x = 0, so it touches both the riser S (along its whole height) and the platform P (at its left edge, the point (0, h)). Decision 4 gives that corner to the riser and makes the platform open at x = 0.\nFeature names are in the box’s own frame. hanging is the box after the topple: turned 90°, lying on its local +x face (xp) on the platform, and overhanging the step by 5.25 cm. Its local +z face (zp) now faces forward, and that face’s bottom edge lies on the platform, so B:zp-P is on: the same closed-face effect as on the floor.\n14 distinct formations over the demo. A search over formations sees many more nodes than the seven steps of the paper’s chain.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "3. Formations"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/03-formations.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/03-formations.html#code-to-read",
+    "title": "3. Formations",
+    "section": "Code to read",
+    "text": "Code to read\n\ntests/configs/step.txt: the named poses, with a one-line comment each.\ntests/test_gap_test.py, test_gap_trajectory: how the plot and the video are made (offscreen mujoco.Renderer, imageio).",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "3. Formations"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/03-formations.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/03-formations.html#exercises",
+    "title": "3. Formations",
+    "section": "Exercises",
+    "text": "Exercises\n3.1 At flat_stable_far, why is B:zn-S:boundary (bottom face against the riser) on?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe bottom face spans x ∈ [−0.125, 0] at z = 0, and the riser is the segment x = 0, z ∈ [0, h]. They share the point (0, 0), the concave junction where the floor meets the riser. Both closed sets contain it, so the gap is zero. Decision 4 rules that concave junctions are not features; this bit should not exist.\n\n\n\n3.2 On how many of the 1,721 demo frames does at least one body pair have more than one bit on?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nAdd one line at the end of 03_formations.py:\nprint(\"Frames with some pair above one bit:\", int((per_pair &gt; 1).any(axis=1).sum()))\nIt prints 1721: every frame. The box always touches some part of the environment, and the per-pair counts show that whenever it touches the floor, riser or platform, that pair has at least three bits on.\n\n\n\n3.3 At toppled30_far, B:zn-L and B:xp-L are on but B:xn-L is off. Which edge of the box is on the floor, and where?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe box is turned by θ = 30° about y with its center at (−0.0409, 0.0854). MuJoCo’s rotation about y maps a body-frame point (x, z) to (x cos θ + z sin θ, −x sin θ + z cos θ). The corner (+a/2, −a/2) lands at (−0.0409 + 0.0229, 0.0854 − 0.0854) = (−0.018, 0): on the floor. That corner is the edge shared by the +x and bottom faces, so xp and zn touch the floor (and yp, yn, whose closed rectangles contain that edge’s endpoints), while the −x face is in the air. The front face rises from (−0.018, 0) in the direction (sin θ, cos θ) and passes through (0, h): the box leans on the step corner, which is why the riser and platform bits are on too.\n\n\n\n← 2. Templates and gaps · Next: 4. The contact graph →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "3. Formations"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/01-scene.html",
+    "href": "research/nonprehensile/code-walkthrough/01-scene.html",
+    "title": "1. The scene",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nThe running example is data, not code. src/cmg/scene/families/step.yaml says what the planner knows: bodies, which set each belongs to, their geometry, the features that may touch, and the tolerances. step.xml (the file it references) is what MuJoCo simulates. SceneSpec.from_yaml validates the YAML and derives everything it leaves out. Nothing in geometry/ or catalog/ may name this scene.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "1. The scene"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/01-scene.html#output",
+    "href": "research/nonprehensile/code-walkthrough/01-scene.html#output",
+    "title": "1. The scene",
+    "section": "Output",
+    "text": "Output\nBodies (scene ID, name, body set, geometry):\n  0  M  manip  sphere [0.015625]\n  1  B  obj    box    [0.0625, 0.0625, 0.0625]\n  2  L  env    plane  [1.0, 0.25]\n  3  S  env    plane  [0.015625, 0.25]\n  4  P  env    plane  [1.0, 0.25]\n\nFeature inventories:\n  M: ['boundary']\n  B: ['xp', 'xn', 'yp', 'yn', 'zp', 'zn']\n  L: ['boundary']\n  S: ['boundary']\n  P: ['boundary']\n\nRelative pairs (derived: every pair that contains an object body):\n   ['B', 'M']\n   ['B', 'L']\n   ['B', 'S']\n   ['B', 'P']\n\nTemplates = sum over pairs of |F(A)| x |F(A')| = 24\nExclusion table: []\n\nExecution spec:\n  epsilon_pen=0.01  epsilon_on=0.001  phi_gate=0.125\n  eta=0.001  eta_theta=0.01  timestep=0.01\n  mjx_body_ids=[2, 1, 6, 3, 4]\n\nMuJoCo model: nq=5 nv=5 nu=2 nbody=7\n  joints: ['box_slide_joint_x', 'box_slide_joint_z', 'box_hinge_joint_y', 'manip_slide_joint_x', 'manip_slide_joint_z']\n  bodies: ['world', 'box', 'manip', 'S', 'P', 'target', 'L']\n  scene body -&gt; MuJoCo body: {'M': 'manip', 'B': 'box', 'L': 'L', 'S': 'S', 'P': 'P'}\n\nBox side a = 0.125, disk radius r = 0.015625 = a/8, step height h = 0.03125 = a/4\nstart_qpos: [-0.1, 0.0625, 0.0, -0.2, 0.0625]",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "1. The scene"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/01-scene.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/01-scene.html#what-to-notice",
+    "title": "1. The scene",
+    "section": "What to notice",
+    "text": "What to notice\n\nFive bodies, three sets. The disk M is the manipulator, the box B is the object, and the floor L, riser S and platform P are the environment. Sizes are MuJoCo half-extents, so the box side is a = 2 × 0.0625 = 0.125 m.\nOnly pairs that contain the object get templates. The loader enumerates the four pairs containing B, and each pair contributes every feature combination: 1·6 + 3·(6·1) = 24 templates. There is no disk–floor template, so the disk can rest on the floor in simulation with nothing in the catalog recording it. Steps 7 and 8 show this happening.\nFaces only. The box offers six faces and no edges or vertices. The vertex contacts that Decision 4 needs (the box standing on an edge, g_v and s_v) cannot be written in this file. step-rich.yaml adds the eight box vertices.\nNo exclusions. exclusion_table is absent, so it is empty. Exclusions are written as integer template indices, which silently go wrong if the feature order changes.\nPlanes are finite rectangles. L is 2 m long and ends at x = 0. S is the riser: a rectangle 2 × 0.015625 = 0.03125 m tall, turned vertical at x = 0. P is the platform at height h = 0.03125 m starting at x = 0. In step.xml each is a thin box whose top face is the plane.\nA planar model with a 3D catalog. qpos has five entries: box x, box z, box angle about y, disk x, disk z. Nothing moves in y, yet the catalog contains the y-faces (yp, yn) of the box.\nTwo tolerances, ten times apart. A template is in band when its gap g satisfies −ε_pen ≤ g &lt; ε_on, that is, from 1 cm of overlap to 1 mm of separation. phi_gate = 0.125 m = a is the Near threshold used in step 6.\nh = a/4, the canonical step height of Decision 7. The comment at the top of step.yaml still says h = 3a/8; it is stale.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "1. The scene"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/01-scene.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/01-scene.html#code-to-read",
+    "title": "1. The scene",
+    "section": "Code to read",
+    "text": "Code to read\n\nsrc/cmg/scene/spec.py, SceneSpec.from_yaml: body sets, then bodies, geometry (sphere: 1 size, box: 3, plane: 2), feature inventories (a box takes faces or vertices, every other body only boundary), relative pairs, exclusions, execution. Every error names the YAML key that caused it.\nsrc/cmg/scene/families/step.yaml and step.xml, side by side.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "1. The scene"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/01-scene.html#watch-it-optional-needs-a-display",
+    "href": "research/nonprehensile/code-walkthrough/01-scene.html#watch-it-optional-needs-a-display",
+    "title": "1. The scene",
+    "section": "Watch it (optional, needs a display)",
+    "text": "Watch it (optional, needs a display)\npython walkthrough/replay.py\nThis loops the hand-moved demo trajectory used in step 3 in MuJoCo’s viewer. The repository’s own viewer.py instead runs the physics for 30 s from a fixed pose with zero control:\ncd src/cmg/scene/families && python viewer.py && rm trajectory.npz; cd -\nDouble-click a body to select it and Ctrl + right-drag to push it. viewer.py writes trajectory.npz into that folder on exit, which the command above deletes.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "1. The scene"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/01-scene.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/01-scene.html#exercises",
+    "title": "1. The scene",
+    "section": "Exercises",
+    "text": "Exercises\n1.1 Predict the number of templates for step-rich.yaml (the same scene with the eight box vertices added), then check it.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe box has 6 + 8 = 14 features and every other body 1, so 1·14 + 3·(14·1) = 56.\npython -c \"from cmg.catalog.templates import Catalog; print(len(Catalog.from_yaml('src/cmg/scene/families/step-rich.yaml')))\"\nprints 56 (after the warnings).\n\n\n\n1.2 Why is mjx_body_ids equal to [2, 1, 6, 3, 4], and what would happen if two entries were swapped?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nMuJoCo numbers bodies in XML order with world = 0: box 1, manip 2, S 3, P 4, target 5, L 6. The scene order is M, B, L, S, P, so the map is [2, 1, 6, 3, 4]. target (the translucent goal box) is not a scene body. ExecutionWorld.pose uses this list to pick pose rows, so swapping two entries would silently assign one body’s pose to another and every gap would be wrong. The loader only checks that each index is in range.\n\n\n\n1.3 Which numbers in step.xml and step.yaml set the step height, and what would you change for the paper’s earlier value h = 3a/8?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe platform body P sits at pos=\"1.0 0 0.03125\" (z = h). The riser geom S has half-height size=\"0.015625 ...\" (h/2) and its body sits at z = 0.015625 (h/2). The goal box target sits at z = 0.09375 = h + a/2. In step.yaml, S has params: [0.015625, 0.25].\nFor h = 3a/8 = 0.046875: P z → 0.046875; S half-height and body z → 0.0234375; target z → 0.109375; and S params in the YAML → [0.0234375, 0.25]. The YAML and the XML must agree, and nothing checks that they do.\n\n\n\nNext: 2. Templates and gaps →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "1. The scene"
     ]
   },
   {
@@ -15292,6 +15591,314 @@
     "text": "Starting points in our work\n\nControl through energy shaping. Neural approximations help address the equations that arise in passivity-based controller design. Read the study.\nDynamic manipulation. A coordinate-free framework studies robotic pizza tossing and catching. Publication and Scholar search.\nLearning with uncertainty. A Bayesian control study examines parameter and state uncertainty in a simple stochastic system. Read the preprint.\n\n\nAll publications → · Meet Robot Control Lab →",
     "crumbs": [
       "Research"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/02-templates.html",
+    "href": "research/nonprehensile/code-walkthrough/02-templates.html",
+    "title": "2. Templates and gaps",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nA template is one named feature pair, such as the disk’s boundary against the box’s −x face. Its gap is a function of the pose alone, so it is defined whether or not the pair touches: positive is separation, zero is contact, negative is overlap. The catalog is the fixed, ordered list of all 24 templates. Catalog.gap(pose) returns all 24 gaps, and Catalog.band(pose) returns the Boolean formation used everywhere downstream.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "2. Templates and gaps"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/02-templates.html#output",
+    "href": "research/nonprehensile/code-walkthrough/02-templates.html#output",
+    "title": "2. Templates and gaps",
+    "section": "Output",
+    "text": "Output\nqpos [box x, box z, box angle, disk x, disk z] = [-0.1     0.0625  0.     -0.2     0.0625]\nBody poses in scene-ID order (x, y, z, qw, qx, qy, qz):\n  M: [-0.2     0.      0.0625  1.      0.      0.      0.    ]\n  B: [-0.1     0.      0.0625  1.      0.      0.      0.    ]\n  L: [-1.  0.  0.  1.  0.  0.  0.]\n  S: [ 0.      0.      0.0156  0.7071  0.     -0.7071  0.    ]\n  P: [1.     0.     0.0312 1.     0.     0.     0.    ]\n\nid  template               class                        gap  band\n 0  M:boundary-B:xp        SpherePlaneTemplate      0.14687\n 1  M:boundary-B:xn        SpherePlaneTemplate      0.02188\n 2  M:boundary-B:yp        SpherePlaneTemplate      0.05726\n 3  M:boundary-B:yn        SpherePlaneTemplate      0.05726\n 4  M:boundary-B:zp        SpherePlaneTemplate      0.05726\n 5  M:boundary-B:zn        SpherePlaneTemplate      0.05726\n 6  B:xp-L:boundary        PolyhedralTemplate       0.00000  *\n 7  B:xn-L:boundary        PolyhedralTemplate       0.00000  *\n 8  B:yp-L:boundary        PolyhedralTemplate       0.00000  *\n 9  B:yn-L:boundary        PolyhedralTemplate       0.00000  *\n10  B:zp-L:boundary        PolyhedralTemplate       0.12500\n11  B:zn-L:boundary        PolyhedralTemplate       0.00000  *\n12  B:xp-S:boundary        PolyhedralTemplate       0.03750\n13  B:xn-S:boundary        PolyhedralTemplate       0.16250\n14  B:yp-S:boundary        PolyhedralTemplate       0.03750\n15  B:yn-S:boundary        PolyhedralTemplate       0.03750\n16  B:zp-S:boundary        PolyhedralTemplate       0.10097\n17  B:zn-S:boundary        PolyhedralTemplate       0.03750\n18  B:xp-P:boundary        PolyhedralTemplate       0.03750\n19  B:xn-P:boundary        PolyhedralTemplate       0.16250\n20  B:yp-P:boundary        PolyhedralTemplate       0.03750\n21  B:yn-P:boundary        PolyhedralTemplate       0.03750\n22  B:zp-P:boundary        PolyhedralTemplate       0.10097\n23  B:zn-P:boundary        PolyhedralTemplate       0.04881\n\nband = gap &gt;= -0.01 and gap &lt; 0.001\ntemplate_id stored on each template: {None}",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "2. Templates and gaps"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/02-templates.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/02-templates.html#what-to-notice",
+    "title": "2. Templates and gaps",
+    "section": "What to notice",
+    "text": "What to notice\n\nPoses are 7-vectors, position then a unit quaternion (w, x, y, z), one row per scene body. S carries the quaternion (0.7071, 0, −0.7071, 0), a −90° turn about y that stands the riser rectangle up.\nTwo kinds of template. Disk–face pairs are SpherePlaneTemplate: the distance from the disk’s center to a finite rectangle, minus the radius. Box–plane pairs are PolyhedralTemplate: the exact distance between two rectangles, replaced by a separating-axis penetration depth when the bodies overlap.\nThe disk is 2.19 cm behind the box: 0.1 − 0.0625 − 0.015625 = 0.021875.\nFive floor bits for one resting box. The bottom face zn touches the floor, but so do the four side faces, because each face is a closed rectangle that includes its bottom edge, and that edge lies on the floor. This is the ±face patch problem diagnosed in Decision 3, and it is why the next pages see several bits per body pair.\ntemplate_id is never set. Catalog.from_spec builds templates without an index. Step 4 shows what that breaks.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "2. Templates and gaps"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/02-templates.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/02-templates.html#code-to-read",
+    "title": "2. Templates and gaps",
+    "section": "Code to read",
+    "text": "Code to read\n\nsrc/cmg/catalog/templates.py: Template.create dispatches on the two geometry types through _TEMPLATE_CLASSES. Template._pose turns the quaternion into a rotation matrix. Catalog.from_spec takes the product of the two inventories for each relative pair. Catalog.gap stacks the gaps with a Python list comprehension over templates: this is one of the loops to be replaced by grouped vmap calls. Catalog.band is the threshold test.\nsrc/cmg/geometry/primitives.py: sphere_rectangle, rectangle_rectangle and polyhedral_gap. Every kernel is pure JAX and works under jit and vmap.\nsrc/cmg/geometry/features.py: _BOX_FACE_TRANSFORMS places each face in the box frame.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "2. Templates and gaps"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/02-templates.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/02-templates.html#exercises",
+    "title": "2. Templates and gaps",
+    "section": "Exercises",
+    "text": "Exercises\n2.1 Verify the gap of M:boundary-B:yp, 0.05726, by hand. Why do yn, zp and zn have the same value?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe +y face is the rectangle y = 0.0625, x ∈ [−0.1625, −0.0375], z ∈ [0, 0.125]. The disk’s center is (−0.2, 0, 0.0625). The closest point of the rectangle is (−0.1625, 0.0625, 0.0625), at distance √(0.0375² + 0.0625²) = 0.07289. Subtracting r = 0.015625 gives 0.05726.\nThe disk’s center is level with the box’s center (z = 0.0625, y = 0), so the closest points of the −y, top and bottom faces sit at the same offsets: 0.0375 along x and 0.0625 across.\n\n\n\n2.2 Predict the gaps of B:zn-P:boundary (0.04881) and B:zp-S:boundary (0.10097) before reading them off.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nB:zn-P: the bottom face ends at x = −0.0375, z = 0; the platform starts at x = 0, z = h = 0.03125. The distance is √(0.0375² + 0.03125²) = 0.04881.\nB:zp-S: the top face ends at (−0.0375, 0.125); the riser is the segment x = 0, z ∈ [0, 0.03125], whose top end is nearest. The distance is √(0.0375² + 0.09375²) = 0.10097.\n\n\n\n2.3 Tilt the box slightly: set the box angle (qpos[2]) to 0.01 rad in the flat pose and print the band again. At what angle does B:xn-L leave the band, and why does that angle depend on the box’s size?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nimport jax.numpy as jnp\nfrom cmg.catalog.templates import Catalog\nfrom cmg.physics.world import ExecutionWorld, State\nfrom _common import fixtures, load_spec, on, template_names\n\nspec = load_spec(); catalog = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)\nnames = template_names(spec, catalog)\nfor angle in (0.01, 0.02):\n    q = jnp.array(fixtures()[\"flat\"]).at[2].set(angle)\n    print(angle, on(catalog.band(world.pose(State(q, jnp.zeros_like(q)))), names))\nSave it as walkthrough/tilt.py and run python walkthrough/tilt.py:\n0.01 {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\n0.02 {B:xp-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\nWith the box’s center held at z = a/2, a tilt θ lifts the back bottom edge by about (a/2)θ and pushes the front one down by the same amount. At θ = 0.01 the back edge is 0.63 mm up, still under ε_on = 1 mm. It leaves the band once (a/2)θ ≥ ε_on, that is θ ≥ 2ε_on/a = 0.016 rad. So whether a slightly tilted box counts as “flat on the floor” depends on its size. Step 1 replaces this with a contact set and a minimum contact length.\n\n\n\n← 1. The scene · Next: 3. Formations →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "2. Templates and gaps"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/04-graph.html",
+    "href": "research/nonprehensile/code-walkthrough/04-graph.html",
+    "title": "4. The contact graph",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\ncatalog/graph.py builds edges between templates: transfer-adjacent (same body pair, and the features are adjacent on both bodies, so one contact can slide into the other) and shared-feature (the two templates use a common feature). It should also carry the exclusion table. This step counts the edges and looks at what is actually stored.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "4. The contact graph"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/04-graph.html#output",
+    "href": "research/nonprehensile/code-walkthrough/04-graph.html#output",
+    "title": "4. The contact graph",
+    "section": "Output",
+    "text": "Output\nEdges not provided for ContactGraph. Building edges using the default rules\nEdges by type: {'SHARED_FEATURE': 192, 'TRANSFER_ADJACENT': 96}\nFirst three stored edges: [(None, None, &lt;EdgeTypes.SHARED_FEATURE: 1&gt;), (None, None, &lt;EdgeTypes.TRANSFER_ADJACENT: 0&gt;), (None, None, &lt;EdgeTypes.SHARED_FEATURE: 1&gt;)]\nHas an excluded-edge list: False\n\nNeighbours of B:zn-L:boundary (template 11):\n  M:boundary-B:zn    shared-feature\n  B:xp-L:boundary    transfer-adjacent, shared-feature\n  B:xn-L:boundary    transfer-adjacent, shared-feature\n  B:yp-L:boundary    transfer-adjacent, shared-feature\n  B:yn-L:boundary    transfer-adjacent, shared-feature\n  B:zp-L:boundary    shared-feature\n  B:zn-S:boundary    shared-feature\n  B:zn-P:boundary    shared-feature",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "4. The contact graph"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/04-graph.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/04-graph.html#what-to-notice",
+    "title": "4. The contact graph",
+    "section": "What to notice",
+    "text": "What to notice\n\nEvery stored edge is (None, None, type). Edges are recorded by template_id, which Catalog.from_spec never sets (step 2). The edge list cannot be mapped back to templates. The script works around this by recomputing the edges with catalog positions.\nThe exclusion table is dropped. ContactGraph.from_spec passes edges_excluded, but __init__ never stores it.\nNothing downstream uses the graph. Cand (step 6) and Search (step 8) work from the catalog alone, so no exclusion is enforced anywhere today.\nAdjacency follows the box’s faces. B:zn-L is transfer-adjacent to the four side faces on the floor, not to B:zp-L: opposite faces share no edge.\nShared-feature edges here include shared environment features. B:zn-L and B:xp-L share only the floor’s boundary, yet they are linked.\nEach edge appears twice, once in each direction.\n\nBoth defects (unset IDs, dropped exclusions) are on the list of code issues for Angelo in the discussion compendium.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "4. The contact graph"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/04-graph.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/04-graph.html#code-to-read",
+    "title": "4. The contact graph",
+    "section": "Code to read",
+    "text": "Code to read\n\nsrc/cmg/catalog/graph.py: ContactGraph.__init__ and __create_default_edges.\nsrc/cmg/catalog/templates.py, Catalog.transfer_adjacent, and src/cmg/geometry/features.py, the adjacent method of BoxFaceFeature and BoxVertexFeature.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "4. The contact graph"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/04-graph.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/04-graph.html#exercises",
+    "title": "4. The contact graph",
+    "section": "Exercises",
+    "text": "Exercises\n4.1 Account for the 96 transfer-adjacent edges.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nWithin one body pair, the other body’s feature is a single boundary, which is adjacent to itself, so two templates are transfer-adjacent exactly when their box faces are adjacent. Each face is adjacent to the four faces on other axes, giving 6 × 4 = 24 ordered pairs per body pair. With four body pairs that makes 4 × 24 = 96.\n\n\n\n4.2 Account for the 192 shared-feature edges. How many would there be if only shared object features counted, as the docstring’s name (shared-object-feature) suggests?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nTake a template (box face f, other feature b). It shares f with the three other templates that use f (one per other body pair), and b with the five other templates of its own pair. That gives 8 neighbors per template and 24 × 8 = 192 ordered edges. Counting only the shared box face leaves 3 per template, 24 × 3 = 72.\n\n\n\n4.3 Fix the missing template IDs so that the stored edges name templates, and check that the test suite still passes.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nIn src/cmg/catalog/templates.py, Catalog.from_spec, re-create the templates with their positions just before the ExecutionWorld line:\n        templates = [\n            Template.create(t.feature1, t.feature2, template_id=i)\n            for i, t in enumerate(templates)\n        ]\n        exec_world = ExecutionWorld(spec.execution)\nThen python walkthrough/04_graph.py prints\nFirst three stored edges: [(0, 1, &lt;EdgeTypes.SHARED_FEATURE: 1&gt;), (0, 2, &lt;EdgeTypes.TRANSFER_ADJACENT: 0&gt;), (0, 2, &lt;EdgeTypes.SHARED_FEATURE: 1&gt;)]\nand PYTHONPATH=tests python -m pytest -q tests still reports 6 passed. Templates 0 and 1 (the disk on xp and on xn) share the disk’s boundary but are not transfer-adjacent, because opposite faces share no edge. Undo the change with git checkout src/cmg/catalog/templates.py when you are done.\n\n\n\n← 3. Formations · Next: 5. The hold LP →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "4. The contact graph"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/06-candidates.html",
+    "href": "research/nonprehensile/code-walkthrough/06-candidates.html",
+    "title": "6. Candidate edits",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nFrom a node with formation σ at pose χ, Cand.legal_ops lists the edits the search may hand to the solver. There are 24 makes (set one bit), 24 breaks (clear one bit), and one transport (keep σ and move). An edit to σ′ is legal when\nTransport is always legal. All 48 make/break checks run in one vmap.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "6. Candidate edits"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/06-candidates.html#output",
+    "href": "research/nonprehensile/code-walkthrough/06-candidates.html#output",
+    "title": "6. Candidate edits",
+    "section": "Output",
+    "text": "Output\n== flat  (22.6 s)\n  formation: {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\n  make:  {M:boundary-B:xn, M:boundary-B:yp, M:boundary-B:yn, M:boundary-B:zp, M:boundary-B:zn, B:zp-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zp-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary, B:zp-P:boundary, B:zn-P:boundary}\n  break: {B:xn-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\n  transport: True\n== flat_stable_close  (0.0 s)\n  formation: {M:boundary-B:xn, B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\n  make:  {M:boundary-B:yp, M:boundary-B:yn, M:boundary-B:zp, M:boundary-B:zn, B:zp-L:boundary, B:xn-S:boundary, B:zp-S:boundary, B:xn-P:boundary, B:zp-P:boundary, B:zn-P:boundary}\n  break: {M:boundary-B:xn, B:xn-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\n  transport: True\n== toppled30_close  (0.0 s)\n  formation: {M:boundary-B:xn, B:xp-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\n  make:  {M:boundary-B:yp, M:boundary-B:yn, M:boundary-B:zp, M:boundary-B:zn, B:xn-L:boundary, B:zp-L:boundary, B:xn-S:boundary, B:zp-S:boundary, B:zn-S:boundary, B:xn-P:boundary, B:zp-P:boundary, B:zn-P:boundary}\n  break: {B:xp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\n  transport: True\nThe first call compiles (about 22 s); later calls are fast.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "6. Candidate edits"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/06-candidates.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/06-candidates.html#what-to-notice",
+    "title": "6. Candidate edits",
+    "section": "What to notice",
+    "text": "What to notice\n\nMakes are cheap to admit. A make keeps every current contact, so its hold test is just “is the current formation supported”, and Near is a distance threshold. At flat 16 of the 19 unset bits pass.\nNear admits geometric nonsense. B:zp-L (the box’s top face onto the floor) is legal at flat: its gap, 0.125, is just under phi_gate (the kernels subtract about 1e−6). So are the disk on the box’s ±y faces, which the disk cannot reach because it never moves in y. The solver must reject each of them, one expensive call at a time (steps 7 and 8).\nBreaks are where Hold bites. At flat only 3 of the 5 floor bits may be cleared; see exercise 6.2.\nNo exclusion is checked, because Cand never consults the contact graph (step 4).\nThe formation is recomputed from the band when none is supplied, as here. Inside the search, a node’s stored formation is used instead.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "6. Candidate edits"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/06-candidates.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/06-candidates.html#code-to-read",
+    "title": "6. Candidate edits",
+    "section": "Code to read",
+    "text": "Code to read\nsrc/cmg/marking/candidate.py: Cand.legal_ops, Cand.near, Cand.hold (the keep-set is new_formation & old_formation, which is the persistent-contact rule of Decision 7, bit for bit), Cand._hold_and_new (the σ′ ≠ σ check), and Cand.apply_op (how an operation index becomes a formation).",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "6. Candidate edits"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/06-candidates.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/06-candidates.html#exercises",
+    "title": "6. Candidate edits",
+    "section": "Exercises",
+    "text": "Exercises\n6.1 Why is making M:boundary-B:xp illegal at flat?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nNear fails: its gap is 0.14687 (step 2), above phi_gate = 0.125. The disk would have to travel around the box to reach its front face.\n\n\n\n6.2 At flat, why are exactly B:xn-L, B:yn-L and B:zn-L breakable, and not B:xp-L or B:yp-L?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nUse the midpoints from exercise 5.1. B:xn-L, B:yn-L and B:zn-L all sit at the same corner (−0.1625, −0.0625), so clearing any one of them leaves the same three distinct support points, and the box stays (marginally) supported. B:xp-L is the only contact at (−0.0375, −0.0625), and B:yp-L the only one at (−0.1625, 0.0625). Clearing either leaves two support points, and the box cannot be balanced on them. Which bits may be dropped is decided by which corner the closest-point routine happens to pick, not by the physics.\n\n\n\n6.3 At toppled30_close, why is breaking M:boundary-B:xn illegal, and why is making B:xn-L legal?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe break would leave only environment contacts, and those fail EnvStable there (step 5): the box would fall back. The make keeps every current contact, which is supported, and the box’s −x face is within 0.125 of the floor because the box is tilted only 30°. Hold says nothing about whether the make can be realized; that is the solver’s job.\n\n\n\n← 5. The hold LP · Next: 7. One solver call →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "6. Candidate edits"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/08-search.html",
+    "href": "research/nonprehensile/code-walkthrough/08-search.html",
+    "title": "8. The search loop",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\nSearch ties the layers together. Search.from_specs builds Cand, the solver and the Discretizer, and adds one root node at start_qpos with its band formation. A node is keyed by (discretized qpos, formation). run_single() performs one round:\nThere is no goal test and no budget yet; you call run_single() yourself. To fit in a few minutes on a CPU this script uses a lighter solver (64 samples, 2 iterations) and batches of 4.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "8. The search loop"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/08-search.html#output",
+    "href": "research/nonprehensile/code-walkthrough/08-search.html#output",
+    "title": "8. The search loop",
+    "section": "Output",
+    "text": "Output\nRoot:\n  depth 0  qpos [-0.1     0.0625  0.     -0.2     0.0625]\n           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\n\nBatch 1: 1 accepted in 78 s; 4 (node, formation) pairs tried so far\n  tried from root: make {M:boundary-B:xn}\n  tried from root: make {M:boundary-B:yp}\n  tried from root: make {M:boundary-B:yn}\n  tried from root: make {M:boundary-B:zp}\n  + {M:boundary-B:zp}  - {}  (30 steps)\n\nBatch 2: 2 accepted in 28 s; 8 (node, formation) pairs tried so far\n  tried from root: make {M:boundary-B:zn}\n  tried from root: make {B:zp-L:boundary}\n  tried from root: make {B:xp-S:boundary}\n  tried from root: make {B:yp-S:boundary}\n  + {B:xp-S:boundary}  - {}  (30 steps)\n  + {B:yp-S:boundary}  - {}  (30 steps)\n\nGraph after two batches: 4 nodes\n  depth 0  qpos [-0.1     0.0625  0.     -0.2     0.0625]\n           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\n  depth 1  qpos [-6.390e-02  6.260e-02  1.000e-04 -1.324e-01  1.385e-01]\n           {M:boundary-B:zp, B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary}\n  depth 1  qpos [-0.0625  0.0625  0.0002 -0.167   0.015 ]\n           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary}\n  depth 1  qpos [-0.0625  0.0625  0.0002 -0.167   0.015 ]\n           {B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:yp-S:boundary}\n\nSaved: ['attempted-7d2d343268d5b0be8b9e3b5fe7b668da5d828585.parquet', 'edges-7d2d343268d5b0be8b9e3b5fe7b668da5d828585.parquet', 'nodes-7d2d343268d5b0be8b9e3b5fe7b668da5d828585.parquet']\nReloaded nodes: 4\nThe saved file names end in the git hash of your checkout, so they match only if you are on 7d2d343.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "8. The search loop"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/08-search.html#what-to-notice",
+    "href": "research/nonprehensile/code-walkthrough/08-search.html#what-to-notice",
+    "title": "8. The search loop",
+    "section": "What to notice",
+    "text": "What to notice\n\nCatalog order drives the search. Every edit from the root has rank 1, so the first batch is simply the first four legal makes in catalog order: the disk on the box’s −x, +y, −y and +z faces. Two of those (±y) are unreachable for a disk that never moves in y. Each still costs a solver call.\nThe accepted “make” of the disk on the box’s top is the disk pushing the box 3.6 cm forward and ending at the box’s back top edge (exercise 8.3 renders it).\nMaking a riser contact means pushing the box to the riser. Both B:xp-S and B:yp-S are “made” by the same motion and end at the same qpos, yet they become two different nodes, because the formation is part of the key.\nA node stores the requested formation, not the one it reached. At those two nodes the box touches the riser and platform, with six more bits in band than the node records (exercise 8.1).\nSave and load write three Parquet tables (nodes, realized edges, tried pairs). Simulator data is stripped; states keep qpos and qvel only.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "8. The search loop"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/08-search.html#code-to-read",
+    "href": "research/nonprehensile/code-walkthrough/08-search.html#code-to-read",
+    "title": "8. The search loop",
+    "section": "Code to read",
+    "text": "Code to read\nsrc/cmg/search/__init__.py: Search.run_single (the round above), Search.from_specs (the root), DefaultRanker (depth), Discretizer (1 mm and 0.01 rad bins), and SearchState.save and load. search/engine.py, keys.py, node.py and the four policies in search/policies/ are docstrings describing the intended teacher, ranking, path and gap-greedy searches.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "8. The search loop"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/08-search.html#exercises",
+    "href": "research/nonprehensile/code-walkthrough/08-search.html#exercises",
+    "title": "8. The search loop",
+    "section": "Exercises",
+    "text": "Exercises\n8.1 What is the band formation at the qpos of the two batch-2 nodes, and how does it compare with what those nodes store?\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nimport jax.numpy as jnp\nfrom cmg.catalog.templates import Catalog\nfrom cmg.physics.world import ExecutionWorld, State\nfrom _common import load_spec, on, template_names\n\nspec = load_spec(); catalog = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)\nq = jnp.array([-0.0625, 0.0625, 0.0002, -0.167, 0.015])\nprint(on(catalog.band(world.pose(State(q, jnp.zeros_like(q)))), template_names(spec, catalog)))\n{B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}\nTwelve bits, the same as flat_stable_far in step 3. Each node records six: the five floor bits plus the one it asked for. The next round computes that node’s edits from the six-bit formation, so it will offer “makes” of contacts that are already touching, and hold tests that ignore contacts that exist.\n\n\n\n8.2 Predict the four edits of a third batch, and which are accepted.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nThe root’s remaining edits still rank 1, ahead of everything at the depth-1 nodes (rank 2). After B:yp-S, the next legal makes in catalog order are B:yn-S, B:zp-S, B:zn-S and B:xp-P. Change for batch in (1, 2): to (1, 2, 3) and rerun (about 15 s more):\nBatch 3: 3 accepted in 12 s; 12 (node, formation) pairs tried so far\n  tried from root: make {B:yn-S:boundary}\n  tried from root: make {B:zp-S:boundary}\n  tried from root: make {B:zn-S:boundary}\n  tried from root: make {B:xp-P:boundary}\n  + {B:yn-S:boundary}  - {}  (30 steps)\n  + {B:zn-S:boundary}  - {}  (30 steps)\n  + {B:xp-P:boundary}  - {}  (30 steps)\nPushing the box to the riser puts all three of those bits in band (see 8.1). B:zp-S (the box’s top face against the riser) is not reachable that way, so it is rejected. Six of the first twelve solver calls push the box against the riser, and each records just one of the bits that this push turns on.\n\n\n\n8.3 Render an accepted path to a video and watch it.\n\n\n\n\n\n\nTipSolution\n\n\n\n\n\nAppend to 08_search.py:\nimport imageio.v2 as imageio\nimport mujoco\n\nmodel = mujoco.MjModel.from_xml_path(base.scene_spec.execution.reference)\ndata = mujoco.MjData(model)\nrenderer = mujoco.Renderer(model, height=480, width=640)\nfor k, node in enumerate(search.search_state.nodes.values()):\n    for path in node.paths:\n        added = np.array(path.cur_node.formation) & ~np.array(path.prev_node.formation)\n        label = names[int(np.argmax(added))].replace(\":\", \"_\")\n        frames = []\n        for state in path.path:\n            data.qpos[:] = np.asarray(state.configuration)\n            mujoco.mj_forward(model, data)\n            renderer.update_scene(data, camera=0)\n            frames.append(renderer.render())\n        imageio.mimsave(f\"walkthrough/path_{k}_{label}.mp4\", frames, fps=10)\n        print(\"wrote\", f\"walkthrough/path_{k}_{label}.mp4\")\nrenderer.close()\nIt writes one 30-frame video per accepted edge. The disk-on-top make (path_1_M_boundary-B_zp.mp4, slowed to 10 frames per second):\n\n\nThe disk rises along the box’s back face while pushing it forward and ends at the back top edge. With a display, you can instead save a path’s qpos with np.savez(\"walkthrough/zp.npz\", qpos=...) and loop it in the viewer:\npython walkthrough/replay.py walkthrough/zp.npz\n\n\n\n← 7. One solver call · Next: 9. Where step 1 starts →",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough",
+      "8. The search loop"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/index.html",
+    "href": "research/nonprehensile/code-walkthrough/index.html",
+    "title": "Code Walkthrough",
+    "section": "",
+    "text": "$$\n% Define your custom commands here\n\\newcommand{\\bmat}[1]{\\begin{bmatrix}#1\\end{bmatrix}}\n\\newcommand{\\E}{\\mathbb{E}}\n\\newcommand{\\P}{\\mathbb{P}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\R}{\\mathbb{R}}\n\\newcommand{\\S}{\\mathbb{S}}\n\\newcommand{\\norm}[2]{\\|{#1}\\|_{{}_{#2}}}\n\\newcommand{\\pd}[2]{\\frac{\\partial #1}{\\partial #2}}\n\\newcommand{\\pdd}[2]{\\frac{\\partial^2 #1}{\\partial #2^2}}\n\\newcommand{\\vectornorm}[1]{\\left|\\left|#1\\right|\\right|}\n\\newcommand{\\abs}[1]{\\left|{#1}\\right|}\n\\newcommand{\\mbf}[1]{\\mathbf{#1}}\n\\newcommand{\\mc}[1]{\\mathcal{#1}}\n\\newcommand{\\bm}[1]{\\boldsymbol{#1}}\n\\newcommand{\\nicefrac}[2]{{}^{#1}\\!/_{\\!#2}}\n\\newcommand{\\argmin}{\\operatorname*{arg\\,min}}\n\\newcommand{\\argmax}{\\operatorname*{arg\\,max}}\n\\newcommand{\\dd}{\\operatorname{d}\\!}\n$$\ncmg is the reference implementation of Planning Through Contact: a contact-formation search for the box-over-a-step task, built on JAX, Equinox, MuJoCo-MJX and MPAX. This walkthrough runs it layer by layer, from the scene file up to the search loop. Every page gives a command, the script (folded), the output it printed, what to notice in that output, where to read the code, and a few exercises with folded solutions.\nIt studies the code as it is, including its known problems; several pages end on a defect that the next stage of the project fixes. The last page, Where step 1 starts, collects them.\nCode version. Angelo’s branch phase1/dev at commit 7d2d343 (2026-11-04). phase1/aykut matches it except for the search save/load added in the last five commits, which only step 8 uses.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/index.html#setup",
+    "href": "research/nonprehensile/code-walkthrough/index.html#setup",
+    "title": "Code Walkthrough",
+    "section": "Setup",
+    "text": "Setup\nRun everything in bash (type bash first if your shell is fish).\ncd ~/repos/research/c-gnn              # your clone of Symplectomorphism/c-gnn\ngit fetch origin\ngit switch --detach origin/phase1/dev  # 7d2d343, the commit used here\ncd cmg\nuv venv --python 3.12 .venv\nsource .venv/bin/activate\nuv pip install -e \".[dev]\" matplotlib\nThe install takes a minute or two. Then fetch the walkthrough scripts into cmg/walkthrough/ and keep that folder out of git:\nmkdir -p walkthrough && cd walkthrough\nbase=https://symplectomorphism.github.io/research/nonprehensile/code-walkthrough/scripts\nfor f in _common.py 01_scene.py 02_templates.py 03_formations.py 04_graph.py \\\n         05_hold.py 06_candidates.py 07_mppi.py 08_search.py replay.py; do\n  curl -fsSLO \"$base/$f\"\ndone\ncd ..\necho \"walkthrough/\" &gt;&gt; ../.git/info/exclude\nEvery command on the following pages runs from cmg/ with the virtual environment active. The scripts are also linked on each page.\nBaseline: the test suite.\nPYTHONPATH=tests python -m pytest -q tests\n......                                                                   [100%]\n6 passed, 2 warnings in 97.70s (0:01:37)\nPYTHONPATH=tests is needed because two tests import a helper module from tests/. Only four of the nine test files contain tests that pytest collects. test_relocate, test_markgraph_structure, test_gap_greedy_misses and test_horiz_support are placeholders. test_local_solver is a hand-run script (everything is under if __name__ == \"__main__\"), and it reads a gradient_warm_start attribute that MPPISolver no longer has. The suite writes plots and a video into tests/result/ (ignored by git); steps 3 and 5 show them.\nLines you can ignore. Every script first prints An NVIDIA GPU may be present on this machine, but a CUDA-enabled jaxlib is not installed. Falling back to cpu. and two Failed to import warp lines. JAX runs on the CPU here, which is what the timings below assume. MuJoCo may also create an untracked MUJOCO_LOG.TXT in cmg/. The outputs on these pages omit those lines.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/index.html#the-steps",
+    "href": "research/nonprehensile/code-walkthrough/index.html#the-steps",
+    "title": "Code Walkthrough",
+    "section": "The steps",
+    "text": "The steps\n\n\n\nStep\nWhat it shows\nScript\nTime\n\n\n\n\n1. The scene\nstep.yaml and step.xml: bodies, features, the 24 templates, tolerances\n01_scene.py\n2 s\n\n\n2. Templates and gaps\nEvery template’s signed gap at one pose, and the band test\n02_templates.py\n3 s\n\n\n3. Formations\nThe band formation at seven named poses and along a 1,721-frame demo\n03_formations.py\n7 s\n\n\n4. The contact graph\nTransfer-adjacent and shared-feature edges, and what is lost\n04_graph.py\n1 s\n\n\n5. The hold LP\nSupported and EnvStable: the friction-cone LP behind the hold test\n05_hold.py\n23 s\n\n\n6. Candidate edits\nWhich makes and breaks are legal at a node, and why\n06_candidates.py\n26 s\n\n\n7. One solver call\nMPPI realizing one make, and how its result is judged\n07_mppi.py\n2 min\n\n\n8. The search loop\nTwo batches of breadth-first search, saving and loading the graph\n08_search.py\n2 min\n\n\n9. Where step 1 starts\nWhat the walkthrough exposed, mapped to the planar rewrite\nnone\nnone\n\n\n\nTimes are wall-clock times on a 24-core CPU, including JAX compilation. _common.py holds shared helpers: the scene path, the named poses, and readable template names such as M:boundary-B:xn (body:feature on each side). replay.py loops a trajectory in MuJoCo’s viewer if you have a display.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough"
+    ]
+  },
+  {
+    "objectID": "research/nonprehensile/code-walkthrough/index.html#what-exists-in-the-code",
+    "href": "research/nonprehensile/code-walkthrough/index.html#what-exists-in-the-code",
+    "title": "Code Walkthrough",
+    "section": "What exists in the code",
+    "text": "What exists in the code\nAbout 2,900 lines are implemented; the other 45 modules are stubs that hold only a docstring describing their intended role.\n\n\n\n\n\n\n\n\nLayer\nImplemented\nStub only\n\n\n\n\nScene\nscene/spec.py (schema and YAML loader)\nscene/loader.py\n\n\nGeometry\ngeometry/primitives.py (3D gap kernels), geometry/features.py (faces, vertices, adjacency)\nnone\n\n\nCatalog\ncatalog/templates.py (templates, Catalog.gap, band), catalog/graph.py (partial)\ngraph versioning\n\n\nMarking\nmarking/candidate.py (Cand: legal edits)\nbitset.py, near.py, operators.py, statics.py\n\n\nPhysics\nphysics/world.py (MJX world), physics/hold.py (support LP)\nmjx_backend.py\n\n\nSolver\nsolver/mppi.py, solver/gradient.py\ncem.py, success.py, cost/compiler.py\n\n\nSearch\nsearch/__init__.py (Search, SearchState, Discretizer, BFS ranker)\nengine.py, keys.py, node.py, all four policies\n\n\nLearning\nnone\nfeatures/, model/, diffusion/, training/, calibration/\n\n\nOrchestration\nnone\norchestration/\n\n\n\nThe roles of the stubbed marking modules are covered in practice by Cand (step 6) and physics/hold.py (step 5). The learning and orchestration layers are frozen by Decision 5, so this walkthrough does not visit them.",
+    "crumbs": [
+      "Research",
+      "Nonprehensile Manipulation",
+      "Code Walkthrough"
     ]
   },
   {
