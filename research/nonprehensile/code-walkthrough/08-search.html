@@ -123,10 +123,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link rel="stylesheet" href="../../research.css">
 <meta property="og:title" content="8. The search loop – Aykut C. Satici">
 <meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
-<meta property="og:image" content="https://Symplectomorphism.github.io/images/robot-control-lab-social.png">
+<meta property="og:image" content="https://Symplectomorphism.github.io/research/nonprehensile/code-walkthrough/media/search_rounds.png">
 <meta property="og:site_name" content="Aykut C. Satici">
-<meta property="og:image:height" content="400">
-<meta property="og:image:width" content="400">
+<meta property="og:image:alt" content="Eight panels in two rows, one per solver call. In every panel the disk drops toward the floor while pushing the box toward the step. Round 1: the disk on the box's back face is rejected (1.5 mm short at the end), the two side-face makes are rejected (48.7 mm away), and the disk on the box's top is accepted. Round 2: the disk on the box's bottom and the box's top on the floor are rejected; the two riser contacts are accepted.">
+<meta property="og:image:height" content="968">
+<meta property="og:image:width" content="1760">
 </head>
 
 <body class="nav-sidebar docked nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
@@ -537,6 +538,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#output" id="toc-output" class="nav-link active" data-scroll-target="#output">Output</a></li>
   <li><a href="#what-to-notice" id="toc-what-to-notice" class="nav-link" data-scroll-target="#what-to-notice">What to notice</a></li>
+  <li><a href="#seeing-each-round" id="toc-seeing-each-round" class="nav-link" data-scroll-target="#seeing-each-round">Seeing each round</a></li>
   <li><a href="#code-to-read" id="toc-code-to-read" class="nav-link" data-scroll-target="#code-to-read">Code to read</a></li>
   <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a></li>
   </ul>
@@ -709,7 +711,218 @@ Reloaded nodes: 4</code></pre>
 <li><strong>The accepted “make” of the disk on the box’s top</strong> is the disk pushing the box 3.6 cm forward and ending at the box’s back top edge (exercise 8.3 renders it).</li>
 <li><strong>Making a riser contact means pushing the box to the riser.</strong> Both <code>B:xp-S</code> and <code>B:yp-S</code> are “made” by the same motion and end at the same <code>qpos</code>, yet they become two different nodes, because the formation is part of the key.</li>
 <li><strong>A node stores the requested formation, not the one it reached.</strong> At those two nodes the box touches the riser and platform, with six more bits in band than the node records (exercise 8.1).</li>
+<li><strong>There is no goal.</strong> Nothing in <code>Search</code> or <code>DefaultRanker</code> refers to a goal pose or a target formation, and nothing stops the loop when one is reached. Breadth-first search expands every legal edit of depth 1, then of depth 2, and so on; it would reach a goal only by exhausting everything shallower. Direction is meant to come from the null edit (which pulls toward the goal) and from a learned ranker in place of breadth-first order.</li>
 <li><strong>Save and load</strong> write three Parquet tables (nodes, realized edges, tried pairs). Simulator data is stripped; states keep <code>qpos</code> and <code>qvel</code> only.</li>
+</ul>
+</section>
+<section id="seeing-each-round" class="level2">
+<h2 class="anchored" data-anchor-id="seeing-each-round">Seeing each round</h2>
+<p>The search keeps only the attempts it accepts. <code>08b_search_rounds.py</code> runs the same two batches but records every solver call, rejected ones included, and draws one panel per attempt with two verdicts: the search’s (every requested bit in band at the final step) and the solver’s own success checks, recomputed from the trajectory. It writes <code>walkthrough/08b_search_rounds.png</code>. It needs no display, so it works over SSH.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> walkthrough/08b_search_rounds.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<details>
+<summary>
+The script, <code>08b_search_rounds.py</code> (<a href="scripts/08b_search_rounds.py">download</a>)
+</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Step 8b: what each search round tried, rejected and accepted.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">Runs the same two batches as 08_search.py, but records every solver call the</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">search makes, rejected ones included (the search itself keeps only accepted</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">results). For each attempt it recomputes</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">  * the search's verdict: every requested bit in band at the final step, and</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">  * the solver's own verdict (MPPISolver's success checks): no penetration</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">    beyond epsilon_pen at any step, requested bits within epsilon_on from the</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">    deadline on, dropped bits at least R away, and dwell drift within tolerance,</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">and draws one panel per attempt in the x-z plane: start pose (dashed), final</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co">pose (solid), the disk's path, and both verdicts. Writes</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">walkthrough/08b_search_rounds.png and prints the same information.</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> textwrap</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>matplotlib.use(<span class="st">"Agg"</span>)  <span class="co"># no display needed (works over SSH)</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.patches <span class="im">import</span> Circle, Polygon</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.config.search_config <span class="im">import</span> SearchConfig</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.config.solver_config <span class="im">import</span> SolverConfig</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.physics.world <span class="im">import</span> State</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.search <span class="im">import</span> Search</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> _common <span class="im">import</span> CMG, template_names</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>base <span class="op">=</span> SolverConfig.from_yaml(<span class="bu">str</span>(CMG <span class="op">/</span> <span class="st">"assets/configs/solver/step-base.yaml"</span>))</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>solver_config <span class="op">=</span> SolverConfig(</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    solver_type<span class="op">=</span>base.solver_type,</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    solver_args<span class="op">=</span>[],</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    solver_overrides<span class="op">=</span>{<span class="op">**</span>base.solver_overrides, <span class="st">"n_samples"</span>: <span class="dv">64</span>, <span class="st">"maxiters"</span>: <span class="dv">2</span>},</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    scene_spec<span class="op">=</span>base.scene_spec,</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>search <span class="op">=</span> Search.from_specs(SearchConfig(batch_size<span class="op">=</span><span class="dv">4</span>), solver_config, base.scene_spec)</span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>catalog <span class="op">=</span> search.candidate_formations.catalog</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>world <span class="op">=</span> search.candidate_formations.exec_world</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>solver <span class="op">=</span> search.local_solver</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>names <span class="op">=</span> [n.replace(<span class="st">":boundary"</span>, <span class="st">""</span>) <span class="cf">for</span> n <span class="kw">in</span> template_names(base.scene_spec, catalog)]</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>EPS_PEN, EPS_ON <span class="op">=</span> <span class="bu">float</span>(catalog.epsilon_pen), <span class="bu">float</span>(catalog.epsilon_on)</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>gaps_along <span class="op">=</span> jax.jit(jax.vmap(<span class="kw">lambda</span> q: catalog.gap(pose<span class="op">=</span>world.pose(State(q, jnp.zeros_like(q))))))</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Record every batch the search sends to the solver, accepted or not.</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>calls <span class="op">=</span> []</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>solve_batch <span class="op">=</span> search._solve_batch</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> recording(states, old, new, op_types):</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>    out <span class="op">=</span> solve_batch(states, old, new, op_types)</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>    calls.append((np.asarray(old), np.asarray(new), out))</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> out</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>search._solve_batch <span class="op">=</span> recording</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> verdicts(q, old, new):</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Both verdicts for one attempt, from its qpos trajectory (T, 5)."""</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> np.asarray(gaps_along(jnp.asarray(q)))  <span class="co"># (T, 24)</span></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>    final <span class="op">=</span> g[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>    in_band <span class="op">=</span> (final <span class="op">&gt;=</span> <span class="op">-</span>EPS_PEN) <span class="op">&amp;</span> (final <span class="op">&lt;</span> EPS_ON)</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>    missing <span class="op">=</span> [(names[i], final[i]) <span class="cf">for</span> i <span class="kw">in</span> np.flatnonzero(new <span class="op">&amp;</span> <span class="op">~</span>in_band)]</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>    reasons <span class="op">=</span> []</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>    t, c <span class="op">=</span> np.unravel_index(np.argmin(g), g.shape)</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> g[t, c] <span class="op">&lt;</span> <span class="op">-</span>EPS_PEN:</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>        reasons.append(<span class="ss">f"penetration </span><span class="sc">{</span><span class="op">-</span>g[t, c] <span class="op">*</span> <span class="fl">1e3</span><span class="sc">:.1f}</span><span class="ss"> mm on </span><span class="sc">{</span>names[c]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>    deadline <span class="op">=</span> g[solver.horizon <span class="op">-</span> <span class="dv">1</span>:]</span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>    late <span class="op">=</span> [names[i] <span class="cf">for</span> i <span class="kw">in</span> np.flatnonzero(new <span class="op">&amp;</span> np.<span class="bu">any</span>(deadline <span class="op">&gt;=</span> EPS_ON, axis<span class="op">=</span><span class="dv">0</span>))]</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> late:</span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>        reasons.append(<span class="st">"out of band after deadline: "</span> <span class="op">+</span> <span class="st">", "</span>.join(late))</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>    leaving <span class="op">=</span> old <span class="op">&amp;</span> <span class="op">~</span>new</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> np.<span class="bu">any</span>(leaving <span class="op">&amp;</span> np.<span class="bu">any</span>(deadline <span class="op">&lt;</span> solver.R, axis<span class="op">=</span><span class="dv">0</span>)):</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>        reasons.append(<span class="st">"dropped contact not cleared"</span>)</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>    drift <span class="op">=</span> np.<span class="bu">abs</span>(q[solver.horizon:] <span class="op">-</span> q[solver.horizon <span class="op">-</span> <span class="dv">1</span>]).<span class="bu">max</span>()</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> drift <span class="op">&gt;</span> solver.dwell_tolerance:</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>        reasons.append(<span class="ss">f"dwell drift </span><span class="sc">{</span>drift <span class="op">*</span> <span class="fl">1e3</span><span class="sc">:.1f}</span><span class="ss"> mm"</span>)</span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> missing, reasons, <span class="bu">int</span>(in_band.<span class="bu">sum</span>())</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> edit_label(old, new):</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    made <span class="op">=</span> [names[i] <span class="cf">for</span> i <span class="kw">in</span> np.flatnonzero(new <span class="op">&amp;</span> <span class="op">~</span>old)]</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>    broken <span class="op">=</span> [names[i] <span class="cf">for</span> i <span class="kw">in</span> np.flatnonzero(old <span class="op">&amp;</span> <span class="op">~</span>new)]</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">" "</span>.join([<span class="ss">f"make </span><span class="sc">{</span>m<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> m <span class="kw">in</span> made] <span class="op">+</span> [<span class="ss">f"break </span><span class="sc">{</span>b<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> b <span class="kw">in</span> broken]) <span class="kw">or</span> <span class="st">"transport"</span></span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> draw_scene(ax, q_start, q):</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>    h, a, r <span class="op">=</span> <span class="fl">0.03125</span>, <span class="fl">0.125</span>, <span class="fl">0.015625</span></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>    ax.fill([<span class="op">-</span><span class="fl">0.3</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="fl">0.12</span>, <span class="fl">0.12</span>, <span class="op">-</span><span class="fl">0.3</span>], [<span class="dv">0</span>, <span class="dv">0</span>, h, h, <span class="op">-</span><span class="fl">0.02</span>, <span class="op">-</span><span class="fl">0.02</span>], color<span class="op">=</span><span class="st">"0.85"</span>, lw<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>    ax.plot([<span class="op">-</span><span class="fl">0.3</span>, <span class="dv">0</span>, <span class="dv">0</span>, <span class="fl">0.12</span>], [<span class="dv">0</span>, <span class="dv">0</span>, h, h], color<span class="op">=</span><span class="st">"0.3"</span>, lw<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> box(qq):</span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>        c, s <span class="op">=</span> np.cos(qq[<span class="dv">2</span>]), np.sin(qq[<span class="dv">2</span>])</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>        local <span class="op">=</span> np.array([[<span class="op">-</span><span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>], [<span class="dv">1</span>, <span class="op">-</span><span class="dv">1</span>], [<span class="dv">1</span>, <span class="dv">1</span>], [<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>]]) <span class="op">*</span> a <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.c_[qq[<span class="dv">0</span>] <span class="op">+</span> local[:, <span class="dv">0</span>] <span class="op">*</span> c <span class="op">+</span> local[:, <span class="dv">1</span>] <span class="op">*</span> s,</span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>                     qq[<span class="dv">1</span>] <span class="op">-</span> local[:, <span class="dv">0</span>] <span class="op">*</span> s <span class="op">+</span> local[:, <span class="dv">1</span>] <span class="op">*</span> c]</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>    ax.add_patch(Polygon(box(q_start), fill<span class="op">=</span><span class="va">False</span>, ls<span class="op">=</span><span class="st">"--"</span>, ec<span class="op">=</span><span class="st">"0.5"</span>, lw<span class="op">=</span><span class="fl">0.8</span>))</span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>    ax.add_patch(Circle(q_start[<span class="dv">3</span>:<span class="dv">5</span>], r, fill<span class="op">=</span><span class="va">False</span>, ls<span class="op">=</span><span class="st">"--"</span>, ec<span class="op">=</span><span class="st">"0.5"</span>, lw<span class="op">=</span><span class="fl">0.8</span>))</span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>    ax.add_patch(Polygon(box(q[<span class="op">-</span><span class="dv">1</span>]), fc<span class="op">=</span><span class="st">"#e8a33d"</span>, ec<span class="op">=</span><span class="st">"#7a4f0e"</span>, alpha<span class="op">=</span><span class="fl">0.85</span>, lw<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>    ax.add_patch(Circle(q[<span class="op">-</span><span class="dv">1</span>, <span class="dv">3</span>:<span class="dv">5</span>], r, fc<span class="op">=</span><span class="st">"#3d6fe8"</span>, ec<span class="op">=</span><span class="st">"#14307a"</span>, lw<span class="op">=</span><span class="dv">1</span>))</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>    ax.plot(q[:, <span class="dv">3</span>], q[:, <span class="dv">4</span>], color<span class="op">=</span><span class="st">"#3d6fe8"</span>, lw<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>    ax.plot(q[:, <span class="dv">0</span>], q[:, <span class="dv">1</span>], color<span class="op">=</span><span class="st">"#7a4f0e"</span>, lw<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span><span class="fl">0.25</span>, <span class="fl">0.08</span>)</span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span><span class="fl">0.015</span>, <span class="fl">0.165</span>)</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>    ax.set_aspect(<span class="st">"equal"</span>)</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>    ax.set_xticks([])</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>    ax.set_yticks([])</span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>rounds <span class="op">=</span> []</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> batch <span class="kw">in</span> (<span class="dv">1</span>, <span class="dv">2</span>):</span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>    first <span class="op">=</span> <span class="bu">len</span>(calls)</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>    search.run_single()</span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>    attempts <span class="op">=</span> []</span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> old, new, (trajectories, _, accepted) <span class="kw">in</span> calls[first:]:</span>
+<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a>        q <span class="op">=</span> np.asarray(trajectories.configuration)</span>
+<span id="cb5-124"><a href="#cb5-124" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(new)):</span>
+<span id="cb5-125"><a href="#cb5-125" aria-hidden="true" tabindex="-1"></a>            missing, reasons, nband <span class="op">=</span> verdicts(q[i], old[i], new[i])</span>
+<span id="cb5-126"><a href="#cb5-126" aria-hidden="true" tabindex="-1"></a>            attempts.append(<span class="bu">dict</span>(label<span class="op">=</span>edit_label(old[i], new[i]), q<span class="op">=</span>q[i], accepted<span class="op">=</span><span class="bu">bool</span>(accepted[i]),</span>
+<span id="cb5-127"><a href="#cb5-127" aria-hidden="true" tabindex="-1"></a>                                 missing<span class="op">=</span>missing, reasons<span class="op">=</span>reasons, stored<span class="op">=</span><span class="bu">int</span>(new[i].<span class="bu">sum</span>()), nband<span class="op">=</span>nband))</span>
+<span id="cb5-128"><a href="#cb5-128" aria-hidden="true" tabindex="-1"></a>    rounds.append(attempts)</span>
+<span id="cb5-129"><a href="#cb5-129" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-130"><a href="#cb5-130" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="bu">len</span>(rounds), <span class="dv">4</span>, figsize<span class="op">=</span>(<span class="dv">16</span>, <span class="fl">4.4</span> <span class="op">*</span> <span class="bu">len</span>(rounds)), squeeze<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb5-131"><a href="#cb5-131" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r, attempts <span class="kw">in</span> <span class="bu">enumerate</span>(rounds):</span>
+<span id="cb5-132"><a href="#cb5-132" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Round </span><span class="sc">{</span>r <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">: </span><span class="sc">{</span><span class="bu">len</span>(attempts)<span class="sc">}</span><span class="ss"> tried, </span><span class="sc">{</span><span class="bu">sum</span>(a[<span class="st">'accepted'</span>] <span class="cf">for</span> a <span class="kw">in</span> attempts)<span class="sc">}</span><span class="ss"> accepted"</span>)</span>
+<span id="cb5-133"><a href="#cb5-133" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> k, (ax, att) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(axes[r], attempts)):</span>
+<span id="cb5-134"><a href="#cb5-134" aria-hidden="true" tabindex="-1"></a>        draw_scene(ax, att[<span class="st">"q"</span>][<span class="dv">0</span>], att[<span class="st">"q"</span>])</span>
+<span id="cb5-135"><a href="#cb5-135" aria-hidden="true" tabindex="-1"></a>        search_line <span class="op">=</span> (<span class="st">"search: ACCEPT"</span> <span class="cf">if</span> att[<span class="st">"accepted"</span>] <span class="cf">else</span></span>
+<span id="cb5-136"><a href="#cb5-136" aria-hidden="true" tabindex="-1"></a>                       <span class="st">"search: REJECT, not in band at the end: "</span></span>
+<span id="cb5-137"><a href="#cb5-137" aria-hidden="true" tabindex="-1"></a>                       <span class="op">+</span> <span class="st">", "</span>.join(<span class="ss">f"</span><span class="sc">{</span>n<span class="sc">}</span><span class="ss"> (</span><span class="sc">{</span>g <span class="op">*</span> <span class="fl">1e3</span><span class="sc">:+.1f}</span><span class="ss"> mm)"</span> <span class="cf">for</span> n, g <span class="kw">in</span> att[<span class="st">"missing"</span>]))</span>
+<span id="cb5-138"><a href="#cb5-138" aria-hidden="true" tabindex="-1"></a>        solver_line <span class="op">=</span> <span class="st">"solver: success"</span> <span class="cf">if</span> <span class="kw">not</span> att[<span class="st">"reasons"</span>] <span class="cf">else</span> <span class="st">"solver: fail, "</span> <span class="op">+</span> <span class="st">"; "</span>.join(att[<span class="st">"reasons"</span>])</span>
+<span id="cb5-139"><a href="#cb5-139" aria-hidden="true" tabindex="-1"></a>        node_line <span class="op">=</span> (<span class="ss">f"node stores </span><span class="sc">{</span>att[<span class="st">'stored'</span>]<span class="sc">}</span><span class="ss"> bits; </span><span class="sc">{</span>att[<span class="st">'nband'</span>]<span class="sc">}</span><span class="ss"> in band at its pose"</span></span>
+<span id="cb5-140"><a href="#cb5-140" aria-hidden="true" tabindex="-1"></a>                     <span class="cf">if</span> att[<span class="st">"accepted"</span>] <span class="cf">else</span> <span class="st">""</span>)</span>
+<span id="cb5-141"><a href="#cb5-141" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>att[<span class="st">'label'</span>]<span class="sc">}</span><span class="ch">\n</span><span class="ss">    </span><span class="sc">{</span>search_line<span class="sc">}</span><span class="ch">\n</span><span class="ss">    </span><span class="sc">{</span>solver_line<span class="sc">}</span><span class="ss">"</span> <span class="op">+</span> (<span class="ss">f"</span><span class="ch">\n</span><span class="ss">    </span><span class="sc">{</span>node_line<span class="sc">}</span><span class="ss">"</span> <span class="cf">if</span> node_line <span class="cf">else</span> <span class="st">""</span>))</span>
+<span id="cb5-142"><a href="#cb5-142" aria-hidden="true" tabindex="-1"></a>        ax.set_title(<span class="ss">f"Round </span><span class="sc">{</span>r <span class="op">+</span> <span class="dv">1</span><span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>att[<span class="st">'label'</span>]<span class="sc">}</span><span class="ss">"</span>, color<span class="op">=</span><span class="st">"#1a7f37"</span> <span class="cf">if</span> att[<span class="st">"accepted"</span>] <span class="cf">else</span> <span class="st">"#b42318"</span>,</span>
+<span id="cb5-143"><a href="#cb5-143" aria-hidden="true" tabindex="-1"></a>                     fontsize<span class="op">=</span><span class="dv">10</span>, fontweight<span class="op">=</span><span class="st">"bold"</span>)</span>
+<span id="cb5-144"><a href="#cb5-144" aria-hidden="true" tabindex="-1"></a>        text <span class="op">=</span> <span class="st">"</span><span class="ch">\n</span><span class="st">"</span>.join(textwrap.fill(t, <span class="dv">62</span>) <span class="cf">for</span> t <span class="kw">in</span> (search_line, solver_line, node_line) <span class="cf">if</span> t)</span>
+<span id="cb5-145"><a href="#cb5-145" aria-hidden="true" tabindex="-1"></a>        ax.text(<span class="fl">0.0</span>, <span class="op">-</span><span class="fl">0.04</span>, text, transform<span class="op">=</span>ax.transAxes, va<span class="op">=</span><span class="st">"top"</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb5-146"><a href="#cb5-146" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> side <span class="kw">in</span> ax.spines.values():</span>
+<span id="cb5-147"><a href="#cb5-147" aria-hidden="true" tabindex="-1"></a>            side.set_edgecolor(<span class="st">"#1a7f37"</span> <span class="cf">if</span> att[<span class="st">"accepted"</span>] <span class="cf">else</span> <span class="st">"#b42318"</span>)</span>
+<span id="cb5-148"><a href="#cb5-148" aria-hidden="true" tabindex="-1"></a>            side.set_linewidth(<span class="dv">2</span>)</span>
+<span id="cb5-149"><a href="#cb5-149" aria-hidden="true" tabindex="-1"></a>fig.suptitle(<span class="st">"Search rounds: dashed = start pose, solid = final pose, lines = paths of disk (blue) "</span></span>
+<span id="cb5-150"><a href="#cb5-150" aria-hidden="true" tabindex="-1"></a>             <span class="st">"and box center (brown); green = accepted, red = rejected"</span>, fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb5-151"><a href="#cb5-151" aria-hidden="true" tabindex="-1"></a>fig.subplots_adjust(left<span class="op">=</span><span class="fl">0.02</span>, right<span class="op">=</span><span class="fl">0.98</span>, top<span class="op">=</span><span class="fl">0.9</span>, bottom<span class="op">=</span><span class="fl">0.12</span>, wspace<span class="op">=</span><span class="fl">0.08</span>, hspace<span class="op">=</span><span class="fl">0.75</span>)</span>
+<span id="cb5-152"><a href="#cb5-152" aria-hidden="true" tabindex="-1"></a>out <span class="op">=</span> Path(<span class="va">__file__</span>).with_name(<span class="st">"08b_search_rounds.png"</span>)</span>
+<span id="cb5-153"><a href="#cb5-153" aria-hidden="true" tabindex="-1"></a>fig.savefig(out, dpi<span class="op">=</span><span class="dv">110</span>)</span>
+<span id="cb5-154"><a href="#cb5-154" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Wrote </span><span class="sc">{</span>out<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<pre class="text"><code>Round 1: 4 tried, 1 accepted
+  make M-B:xn
+    search: REJECT, not in band at the end: M-B:xn (+1.5 mm)
+    solver: fail, out of band after deadline: M-B:xn; dwell drift 10.6 mm
+  make M-B:yp
+    search: REJECT, not in band at the end: M-B:yp (+48.7 mm)
+    solver: fail, out of band after deadline: M-B:yp; dwell drift 3.3 mm
+  make M-B:yn
+    search: REJECT, not in band at the end: M-B:yn (+48.7 mm)
+    solver: fail, out of band after deadline: M-B:yn; dwell drift 3.3 mm
+  make M-B:zp
+    search: ACCEPT
+    solver: fail, dwell drift 25.3 mm
+    node stores 6 bits; 7 in band at its pose
+
+Round 2: 4 tried, 2 accepted
+  make M-B:zn
+    search: REJECT, not in band at the end: M-B:zn (+6.0 mm)
+    solver: fail, out of band after deadline: M-B:zn; dwell drift 3.0 mm
+  make B:zp-L
+    search: REJECT, not in band at the end: B:zp-L (+124.6 mm)
+    solver: fail, out of band after deadline: B:zp-L; dwell drift 18.4 mm
+  make B:xp-S
+    search: ACCEPT
+    solver: fail, penetration 10.3 mm on M-B:xn; dwell drift 10.9 mm
+    node stores 6 bits; 12 in band at its pose
+  make B:yp-S
+    search: ACCEPT
+    solver: fail, penetration 10.3 mm on M-B:xn; dwell drift 10.9 mm
+    node stores 6 bits; 12 in band at its pose
+
+Wrote .../cmg/walkthrough/08b_search_rounds.png</code></pre>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="media/search_rounds.png" class="img-fluid figure-img" alt="Eight panels in two rows, one per solver call. In every panel the disk drops toward the floor while pushing the box toward the step. Round 1: the disk on the box's back face is rejected (1.5 mm short at the end), the two side-face makes are rejected (48.7 mm away), and the disk on the box's top is accepted. Round 2: the disk on the box's bottom and the box's top on the floor are rejected; the two riser contacts are accepted."></p>
+<figcaption>Each attempt of the two rounds. Dashed: start pose; solid: final pose; blue and brown lines: paths of the disk and the box center. Green frames were accepted by the search, red ones rejected.</figcaption>
+</figure>
+</div>
+<p>What the figure shows:</p>
+<ul>
+<li><strong>m_x, the paper’s first edit, misses by half a millimeter.</strong> The disk touches the back face, then drops to the floor and ends 1.5 mm away, just outside ε_on = 1 mm. With the full solver of step 7 (256 samples, 5 iterations) the same make is accepted; the lightened solver here is not good enough.</li>
+<li><strong>The ±y makes never get closer than 48.7 mm</strong>, the floor of 0.0625 − 0.0156 ≈ 0.047 that a disk confined to y = 0 can reach.</li>
+<li><strong>The solver fails all eight attempts, the search accepts three.</strong> Every accepted one is still moving during the dwell (drift up to 25 mm), and the riser makes also penetrate the box’s back by 10.3 mm.</li>
+<li><strong>The riser contacts are made by shoving the box</strong>, and their nodes store 6 bits while 12 are in band at their pose.</li>
+<li><strong>Every attempt pushes the box toward the step</strong>, even the ones that ask for nothing of the kind: the cost has no reason not to.</li>
 </ul>
 </section>
 <section id="code-to-read" class="level2">
@@ -731,14 +944,14 @@ Reloaded nodes: 4</code></pre>
 </div>
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.catalog.templates <span class="im">import</span> Catalog</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.physics.world <span class="im">import</span> ExecutionWorld, State</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> _common <span class="im">import</span> load_spec, on, template_names</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> load_spec()<span class="op">;</span> catalog <span class="op">=</span> Catalog.from_spec(spec)<span class="op">;</span> world <span class="op">=</span> ExecutionWorld(spec.execution)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> jnp.array([<span class="op">-</span><span class="fl">0.0625</span>, <span class="fl">0.0625</span>, <span class="fl">0.0002</span>, <span class="op">-</span><span class="fl">0.167</span>, <span class="fl">0.015</span>])</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(on(catalog.band(world.pose(State(q, jnp.zeros_like(q)))), template_names(spec, catalog)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> jax.numpy <span class="im">as</span> jnp</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.catalog.templates <span class="im">import</span> Catalog</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cmg.physics.world <span class="im">import</span> ExecutionWorld, State</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> _common <span class="im">import</span> load_spec, on, template_names</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>spec <span class="op">=</span> load_spec()<span class="op">;</span> catalog <span class="op">=</span> Catalog.from_spec(spec)<span class="op">;</span> world <span class="op">=</span> ExecutionWorld(spec.execution)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>q <span class="op">=</span> jnp.array([<span class="op">-</span><span class="fl">0.0625</span>, <span class="fl">0.0625</span>, <span class="fl">0.0002</span>, <span class="op">-</span><span class="fl">0.167</span>, <span class="fl">0.015</span>])</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(on(catalog.band(world.pose(State(q, jnp.zeros_like(q)))), template_names(spec, catalog)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <pre class="text"><code>{B:xp-L:boundary, B:xn-L:boundary, B:yp-L:boundary, B:yn-L:boundary, B:zn-L:boundary, B:xp-S:boundary, B:yp-S:boundary, B:yn-S:boundary, B:zn-S:boundary, B:xp-P:boundary, B:yp-P:boundary, B:yn-P:boundary}</code></pre>
 <p>Twelve bits, the same as <code>flat_stable_far</code> in step 3. Each node records six: the five floor bits plus the one it asked for. The next round computes that node’s edits from the six-bit formation, so it will offer “makes” of contacts that are already touching, and hold tests that ignore contacts that exist.</p>
 </div>
@@ -784,30 +997,30 @@ Reloaded nodes: 4</code></pre>
 <div id="callout-3" class="callout-3-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Append to <code>08_search.py</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> imageio.v2 <span class="im">as</span> imageio</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mujoco</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> mujoco.MjModel.from_xml_path(base.scene_spec.execution.reference)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> mujoco.MjData(model)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>renderer <span class="op">=</span> mujoco.Renderer(model, height<span class="op">=</span><span class="dv">480</span>, width<span class="op">=</span><span class="dv">640</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, node <span class="kw">in</span> <span class="bu">enumerate</span>(search.search_state.nodes.values()):</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> path <span class="kw">in</span> node.paths:</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        added <span class="op">=</span> np.array(path.cur_node.formation) <span class="op">&amp;</span> <span class="op">~</span>np.array(path.prev_node.formation)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> names[<span class="bu">int</span>(np.argmax(added))].replace(<span class="st">":"</span>, <span class="st">"_"</span>)</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        frames <span class="op">=</span> []</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> state <span class="kw">in</span> path.path:</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>            data.qpos[:] <span class="op">=</span> np.asarray(state.configuration)</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>            mujoco.mj_forward(model, data)</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>            renderer.update_scene(data, camera<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>            frames.append(renderer.render())</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        imageio.mimsave(<span class="ss">f"walkthrough/path_</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">.mp4"</span>, frames, fps<span class="op">=</span><span class="dv">10</span>)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"wrote"</span>, <span class="ss">f"walkthrough/path_</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">.mp4"</span>)</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>renderer.close()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> imageio.v2 <span class="im">as</span> imageio</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mujoco</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> mujoco.MjModel.from_xml_path(base.scene_spec.execution.reference)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>data <span class="op">=</span> mujoco.MjData(model)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>renderer <span class="op">=</span> mujoco.Renderer(model, height<span class="op">=</span><span class="dv">480</span>, width<span class="op">=</span><span class="dv">640</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k, node <span class="kw">in</span> <span class="bu">enumerate</span>(search.search_state.nodes.values()):</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> path <span class="kw">in</span> node.paths:</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        added <span class="op">=</span> np.array(path.cur_node.formation) <span class="op">&amp;</span> <span class="op">~</span>np.array(path.prev_node.formation)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        label <span class="op">=</span> names[<span class="bu">int</span>(np.argmax(added))].replace(<span class="st">":"</span>, <span class="st">"_"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        frames <span class="op">=</span> []</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> state <span class="kw">in</span> path.path:</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>            data.qpos[:] <span class="op">=</span> np.asarray(state.configuration)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            mujoco.mj_forward(model, data)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            renderer.update_scene(data, camera<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>            frames.append(renderer.render())</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        imageio.mimsave(<span class="ss">f"walkthrough/path_</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">.mp4"</span>, frames, fps<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"wrote"</span>, <span class="ss">f"walkthrough/path_</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">.mp4"</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>renderer.close()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>It writes one 30-frame video per accepted edge. The disk-on-top make (<code>path_1_M_boundary-B_zp.mp4</code>, slowed to 10 frames per second):</p>
 <video src="media/path_make_M_B_zp.mp4" controls="" muted="" width="100%">
 </video>
 <p>The disk rises along the box’s back face while pushing it forward and ends at the back top edge. With a display, you can instead save a path’s <code>qpos</code> with <code>np.savez("walkthrough/zp.npz", qpos=...)</code> and loop it in the viewer:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> walkthrough/replay.py walkthrough/zp.npz</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> walkthrough/replay.py walkthrough/zp.npz</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 </div>
 </div>
