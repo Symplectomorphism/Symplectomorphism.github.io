@@ -1,0 +1,74 @@
+---
+title: "Known issues"
+subtitle: "Every open defect in the code and the paper that we know of: what it does, where it is documented, and which step fixes it."
+---
+
+**Last checked:** 2026-11-05, against `phase1/planar` at `583810b`. This page
+is updated whenever an issue is found or closed. The full records are in the
+discussion compendium (`reports/discussion-compendium/` in `c-gnn`: sections
+"Step 1", "Plans" and "Code issues"). Walkthrough pages show many of these
+issues as they happen.
+
+## Open: contact layer
+
+| Issue | Effect | Documented | Fix in |
+|---|---|---|---|
+| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 357 of 4,000 demo poses jittered by about 3 mm are ambiguous; the solver accepts results with up to 10 mm of overlap. The demo's own contacts reach only 1.9 mm. | [Step 1](01-contact-layer.qmd#other-refinements), README, `step2d.yaml`, `PlanarCatalog` | Step 2: set ε<sub>pen</sub> from rollouts, reject tied poses as nodes and successes |
+| **Labels can flicker near θ<sub>e</sub>** along a trajectory. | A 3-frame flicker on the demo (frames 623–625) where the tilt hovers at 1.83°. | [Step 1](01-contact-layer.qmd#edge-contacts) | Execution monitor: hysteresis with thresholds from a noise model |
+| **The 3D catalog (`step.yaml`) keeps the old defects:** closed faces over-count bits, ±y faces, unset template IDs, a Python loop over templates, closest-pair ties broken by "first candidate". | Wrong formations and slow compiles for 3D scenes only. | Walkthrough [2](../code-walkthrough/02-templates.qmd), [3](../code-walkthrough/03-formations.qmd), [9](../code-walkthrough/09-step1.qmd) | Frozen with 3D (Decision 3); the planar catalog replaces it |
+
+## Open: candidates and search
+
+| Issue | Effect | Documented | Fix in |
+|---|---|---|---|
+| **`Cand` has no Valid check**, and transport is always legal. | It proposes a second contact for a pair that already has one, and edits that create excluded formations. | Walkthrough [6](../code-walkthrough/06-candidates.qmd), README | Step 2 |
+| **The search ignores the solver's success flag.** It accepts when the requested bits are in band. | Edits the solver reports as failed can become nodes. | Walkthrough [7](../code-walkthrough/07-mppi.qmd), [8](../code-walkthrough/08-search.qmd) | Step 3 (with Λ and H wired in) |
+| **A node stores the requested formation, not the one reached.** | In a 12-round run, 28 of 30 nodes record a formation they do not have. | Walkthrough [8](../code-walkthrough/08-search.qmd) | Step 3 |
+| **A break is accepted without checking that the contact left.** | 6 of 7 accepted breaks in that run left the contact in band. | Walkthrough [8](../code-walkthrough/08-search.qmd) | Step 3 |
+| **No goal test, goal input or budget**; expansion is breadth-first in catalog order. | The search cannot aim at a goal or stop at one. | Walkthrough [8](../code-walkthrough/08-search.qmd) | Step 4 (ranker, LTS/PHS) |
+| **`ContactGraph` drops edges:** `self.edges` is never set when edges are passed, and `edges_excluded` is discarded. | Nothing downstream uses the graph yet, so no visible effect today. | Walkthrough [4](../code-walkthrough/04-graph.qmd) | Superseded by Decision 8 (attention; exclusions from geometry) |
+
+## Open: solver and execution
+
+| Issue | Effect | Documented | Fix in |
+|---|---|---|---|
+| **MPPI's arrival term is signed and linear** (10<sup>4</sup> φ). | It rewards penetration: the shove seen on walkthrough page 7. | Walkthrough [7](../code-walkthrough/07-mppi.qmd) | Step 3 (cost experiment) |
+| **MPPI's dwell term penalizes velocity**, not drift from the task-end pose (`hold_target` is computed but unused). | Its docstring describes a different term than the code runs. | Compendium, code issues | Step 3 |
+| **GPU runs are not repeatable between processes** by default. | The same MPPI call ended once flush and once tipped 1.4°. | [Step 1](01-contact-layer.qmd#tests), README | Workaround: `XLA_FLAGS=--xla_gpu_deterministic_ops=true` (about 13% slower) |
+| **The hold test's "not supported" is uncertified.** MPAX's infeasibility detection is disabled, and there is no Farkas certificate. | "Not supported" can mean "ran out of iterations": a false rejection. | Compendium, Plans | Step 2 (certified gate, solver benchmark) |
+
+## Open: tests and configuration
+
+| Issue | Effect | Documented | Fix in |
+|---|---|---|---|
+| `tests/test_local_solver.py` reads `gradient_warm_start`, which `MPPISolver` no longer has. | The script fails if run; pytest collects no test from it. | Compendium, code issues | Fix-up PR for Angelo |
+| Step height h = a/4 in the code, 3a/8 in the paper's numbers. | The paper's worked numbers are stale (h = a/4 was signed off in Decision 7). | Compendium, status board | Paper backlog |
+
+## Open: paper backlog
+
+The paper still follows the old chain or older decisions in these places:
+
+- The chain of Decisions 2 and 7: the example formations and edits, the
+  labels and caption of Figure 1, and the figures of the legal chain and the
+  marking graph.
+- Lemma `markgraph-struct` and the cube remark, with the transfer edits.
+- Proposition `gap-miss`(i), and the root and live subgraphs.
+- Decision 8: attention instead of typed edges, and exclusions derived from geometry.
+- `sec:novel`, to be rewritten around the survey's claim-status table.
+- The worked numbers for h = a/4.
+
+## Closed recently
+
+| Issue | Closed by |
+|---|---|
+| One physical contact lit 3 to 6 template bits (closed faces share edges) | Principal-contact on-set, `ca4123b` |
+| The hold test used one tie-broken point per contact, blended by smoothing; ±y faces on a planar body | Contact-set endpoints as support points, planar catalog, `ca4123b` |
+| The step corner belonged to riser and platform; the floor–riser junction lit a bit | Corner ownership (Decision 4), `ca4123b` |
+| Exclusions by integer index, then dropped; no vertex features for g<sub>v</sub>, s<sub>v</sub> | `step2d.yaml` with named templates and vertices, `ca4123b` |
+| Half-plane penetrations charged to the wrong surface (−31 mm into the platform) | Penetration attribution (approved Nov 5), `ca4123b` |
+| Python loop over templates in `Catalog.gap` | Planar catalog groups templates by kernel, one `vmap` each, `ca4123b` (the 3D catalog still loops) |
+| NaN gradients in the planar kernels | Safe norms and roots, `b2665cb` |
+| The length rule produced {g<sub>v</sub>, s} at the pivot, and called a box tipped 7° flat | θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h) ≈ 1.83°, `5f5a2e8` |
+| `pyproject.toml` was invalid TOML | Fixed upstream in Angelo's `phase1/dev`; verified Nov 5 |
+
+[Back to the planar build](index.qmd)
