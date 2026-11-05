@@ -559,7 +559,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#when-a-contact-is-on" id="toc-when-a-contact-is-on" class="nav-link" data-scroll-target="#when-a-contact-is-on">When a contact is on</a></li>
   <li><a href="#the-demo-frame-by-frame" id="toc-the-demo-frame-by-frame" class="nav-link" data-scroll-target="#the-demo-frame-by-frame">The demo, frame by frame</a></li>
   <li><a href="#edge-contacts-and-the-tilt-θe" id="toc-edge-contacts-and-the-tilt-θe" class="nav-link" data-scroll-target="#edge-contacts-and-the-tilt-θe">Edge contacts and the tilt θ<sub>e</sub></a></li>
-  <li><a href="#the-other-two-refinements-under-review" id="toc-the-other-two-refinements-under-review" class="nav-link" data-scroll-target="#the-other-two-refinements-under-review">The other two refinements (under review)</a></li>
+  <li><a href="#the-other-two-refinements" id="toc-the-other-two-refinements" class="nav-link" data-scroll-target="#the-other-two-refinements">The other two refinements</a></li>
   <li><a href="#the-hold-test-on-contact-sets" id="toc-the-hold-test-on-contact-sets" class="nav-link" data-scroll-target="#the-hold-test-on-contact-sets">The hold test on contact sets</a></li>
   <li><a href="#tests-speed-and-reproducibility" id="toc-tests-speed-and-reproducibility" class="nav-link" data-scroll-target="#tests-speed-and-reproducibility">Tests, speed and reproducibility</a></li>
   <li><a href="#still-open" id="toc-still-open" class="nav-link" data-scroll-target="#still-open">Still open</a></li>
@@ -614,7 +614,7 @@ $$
 </header>
 
 
-<p><strong>Code.</strong> Branch <code>phase1/planar</code> of <code>Symplectomorphism/c-gnn</code>: commits <code>ca4123b</code> (contact layer), <code>2114cf5</code> (compendium), <code>21727bb</code> (paper), <code>b2665cb</code> (finite gradients, robustness tests) and <code>62782b8</code> (θ<sub>e</sub> as its own parameter, 2°). Python 3.14 (<code>cmg/.venv314</code>); Angelo’s <code>MPPISolver</code>, <code>Cand</code> and <code>Search</code> run on it unchanged.</p>
+<p><strong>Code.</strong> Branch <code>phase1/planar</code> of <code>Symplectomorphism/c-gnn</code>: commits <code>ca4123b</code> (contact layer), <code>2114cf5</code> (compendium), <code>21727bb</code> (paper), <code>b2665cb</code> (finite gradients, robustness tests), <code>62782b8</code> and <code>5f5a2e8</code> (θ<sub>e</sub> derived). Python 3.14 (<code>cmg/.venv314</code>); Angelo’s <code>MPPISolver</code>, <code>Cand</code> and <code>Search</code> run on it unchanged.</p>
 <section id="what-step-1-replaces" class="level2">
 <h2 class="anchored" data-anchor-id="what-step-1-replaces">What step 1 replaces</h2>
 <p>The walkthrough ended on a list of defects in the contact layer (<a href="../../../research/nonprehensile/code-walkthrough/09-step1.html">page 9</a>). The main one: faces are closed sets that share their edges, so one physical contact lit 3 to 6 template bits at once, on every frame of the demo. The search, the hold test and the graph all inherited that over-count. Step 1 rebuilds the layer in the x–z plane with the paper’s contact names. Exactly one contact per body pair is on, and each contact carries its contact set, the part of the box that actually touches.</p>
@@ -635,7 +635,7 @@ $$
 <ol type="1">
 <li><strong>In band.</strong> Its gap is between −ε<sub>pen</sub> and ε<sub>on</sub> = 1 mm.</li>
 <li><strong>It touches inside both features.</strong> The touching part may not sit only at an endpoint the feature does not own. A box edge touching the floor only at its end is the corner’s contact, not the edge’s. The step corner counts for the riser, not the platform.</li>
-<li><strong>Edge on edge needs alignment.</strong> The two edges must be within θ<sub>e</sub> = 2° of parallel and overlap by at least ℓ<sub>min</sub> = a/16 (7.8 mm). Otherwise the contact is a corner contact.</li>
+<li><strong>Edge on edge needs alignment.</strong> The two edges must be within θ<sub>e</sub> ≈ 1.83° of parallel (derived below) and overlap by at least ℓ<sub>min</sub> = a/16 (7.8 mm). Otherwise the contact is a corner contact.</li>
 <li><strong>The higher-dimensional contact wins.</strong> A corner contact inside a flush edge contact is not counted separately. Any tie the tolerances leave goes to the higher-dimensional contact.</li>
 </ol>
 <p>This is the principal-contact rule of Xiao and Ji (2001) with tolerances, written in the paper as <code>def:near-map</code>.</p>
@@ -663,17 +663,65 @@ $$
 </section>
 <section id="edge-contacts-and-the-tilt-θe" class="level2">
 <h2 class="anchored" data-anchor-id="edge-contacts-and-the-tilt-θe">Edge contacts and the tilt θ<sub>e</sub></h2>
-<p>This was the first of step 1’s refinements to review. It is now settled at θ<sub>e</sub> = 2°.</p>
+<p>This was the first of step 1’s refinements to review. It is settled: θ<sub>e</sub> is derived from the 1 mm contact tolerance and the scene’s shortest edge, θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h) ≈ 1.83°. Nothing is tuned to the demo.</p>
 <p><strong>What we had agreed.</strong> An edge counted as flat on a surface when the part of it within ε<sub>on</sub> = 1 mm of the surface was at least ℓ<sub>min</sub> = 7.8 mm long. A box tipped by θ with its corner down keeps a 1 mm sliver of length ε<sub>on</sub>/sin θ. So the length rule already called the box flat up to arcsin(ε<sub>on</sub>/ℓ<sub>min</sub>) = 7.35°, when its far end is 16 mm off the floor.</p>
 <p><strong>Why the length rule failed.</strong> As the box tips over the step corner, the floor’s contact set ends at the box corner, but the riser’s runs about ε<sub>on</sub> past the step corner. The floor contact turned into a corner contact at 7.35° and the riser contact only at 8.44°. In between, the label was {g<sub>v</sub>, s}: on a corner yet flush on the riser, which is impossible for a rigid box in a right-angled corner. Testing the angle instead makes both contacts switch at the same tilt, because they share the box’s angle.</p>
-<p><strong>Why 2°.</strong> The angle no longer has to be 7.35°. The spec now takes <code>max_edge_contact_tilt_deg</code>, anywhere in (0, 7.35°]; ℓ<sub>min</sub> only sets the overlap. A box at rest in the demo tilts at most 0.58°, and 2° is three times that.</p>
+<p><strong>What the literature does.</strong> No tradition uses an angle for “flat”:</p>
+<ul>
+<li>Exact contact-state theory has no tolerance at all (Xiao and Ji 2001).</li>
+<li>Recognizing contact states under sensing error either grows each feature by the pose uncertainty and reports every formation that fits (<a href="https://dblp1.uni-trier.de/rec/conf/icra/Xiao93.html">Xiao 1993</a>), or filters over the graph of formations with a sensor-noise model (<a href="https://dblp1.uni-trier.de/rec/journals/trob/MeeussenRGBS07.html">Meeussen et al.&nbsp;2007</a>).</li>
+<li>Physics engines test contact <em>points</em> by distance only, so a face contact is several point contacts, and they use separate distances to make and to break a contact (<a href="https://www.staff.city.ac.uk/~andrey/INM377/bullet-2.82-html/html/btPersistentManifold_8h.html">Bullet</a>, <a href="https://mujoco.readthedocs.io/en/3.9.0/_sources/changelog.rst.txt">MuJoCo</a>).</li>
+</ul>
+<p><strong>Two principled options.</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>A. Point rule: both ends of the overlap within ε<sub>on</sub></th>
+<th>B. One derived angle: θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Source of the number</td>
+<td>ε<sub>on</sub> only</td>
+<td>ε<sub>on</sub> and the shortest edge in an edge contact (the riser, h = a/4)</td>
+</tr>
+<tr class="even">
+<td>Floor and riser switch together</td>
+<td>no: floor at 0.46°, riser at 1.83°</td>
+<td>yes, both at 1.83°</td>
+</tr>
+<tr class="odd">
+<td>Demo</td>
+<td>20 runs; the excluded {g<sub>v</sub>, s} on 13 frames</td>
+<td>17 runs; no excluded formation</td>
+</tr>
+<tr class="even">
+<td>Exclusions and Decision 7</td>
+<td>{g<sub>v</sub>, s} becomes a real formation, but only over a 1.4° band of tilt; Imp shrinks and the pass-through edges are no longer forced</td>
+<td>unchanged</td>
+</tr>
+<tr class="odd">
+<td>Accuracy</td>
+<td>exact to 1 mm everywhere</td>
+<td>exact on the riser; on the floor the far end may be up to 4 mm high</td>
+</tr>
+</tbody>
+</table>
+<p><strong>B is adopted.</strong> Its only extra formation would be a 1.4°-wide sliver that no controller could hold, so a robust planner (Decision 6) would never use it. B merges that sliver into its neighbors, which have real margins, and keeps the exclusions and the paper’s chain. On the riser B is exactly the engines’ point rule. ℓ<sub>min</sub> now only sets the minimum overlap.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="media/step1_tilt.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Box tilt through the push into the riser, the pivot and the landing (frames 604–719). The shading marks runs of one formation. The demo’s rock at the riser (2.6°) and the seesaw after landing (2.9°) cross 2° but stay under 7.35°."><img src="media/step1_tilt.svg" class="img-fluid figure-img" alt="Box tilt through the push into the riser, the pivot and the landing (frames 604–719). The shading marks runs of one formation. The demo’s rock at the riser (2.6°) and the seesaw after landing (2.9°) cross 2° but stay under 7.35°."></a></p>
-<figcaption>Box tilt through the push into the riser, the pivot and the landing (frames 604–719). The shading marks runs of one formation. The demo’s rock at the riser (2.6°) and the seesaw after landing (2.9°) cross 2° but stay under 7.35°.</figcaption>
+<p><a href="media/step1_tilt.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Box tilt through the push into the riser, the pivot and the landing (frames 604–719). The shading marks runs of one formation. At rest the tilt is 0°; while the disk pushes the box along the floor it reaches 0.58° (the box sinks unevenly into the soft floor; both ends stay in band). The rock at the riser (2.6°) and the seesaw after landing (2.9°) cross θe ≈ 1.83° but stay under 7.35°."><img src="media/step1_tilt.svg" class="img-fluid figure-img" alt="Box tilt through the push into the riser, the pivot and the landing (frames 604–719). The shading marks runs of one formation. At rest the tilt is 0°; while the disk pushes the box along the floor it reaches 0.58° (the box sinks unevenly into the soft floor; both ends stay in band). The rock at the riser (2.6°) and the seesaw after landing (2.9°) cross θe ≈ 1.83° but stay under 7.35°."></a></p>
+<figcaption>Box tilt through the push into the riser, the pivot and the landing (frames 604–719). The shading marks runs of one formation. At rest the tilt is 0°; while the disk pushes the box along the floor it reaches 0.58° (the box sinks unevenly into the soft floor; both ends stay in band). The rock at the riser (2.6°) and the seesaw after landing (2.9°) cross θ<sub>e</sub> ≈ 1.83° but stay under 7.35°.</figcaption>
 </figure>
 </div>
-<p>The sweep below labels the same demo at several thresholds:</p>
+<p>The sweep below labels the same demo at several single thresholds:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 16%">
@@ -711,14 +759,22 @@ $$
 <td>0</td>
 </tr>
 <tr class="odd">
-<td><strong>2° (adopted)</strong></td>
+<td><strong>1.83° (adopted, derived)</strong></td>
 <td>17</td>
 <td>yes</td>
 <td>yes</td>
-<td>one, 3 frames (tilt hovers at 2°, frames 622–625)</td>
+<td>one (tilt hovers at θ<sub>e</sub>, frames 623–625)</td>
 <td>0</td>
 </tr>
 <tr class="even">
+<td>2°</td>
+<td>17</td>
+<td>yes</td>
+<td>yes</td>
+<td>one (frames 622–625)</td>
+<td>0</td>
+</tr>
+<tr class="odd">
 <td>2.5°</td>
 <td>15</td>
 <td>4 frames</td>
@@ -726,7 +782,7 @@ $$
 <td>none</td>
 <td>0</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>3° to 7.35°</td>
 <td>11</td>
 <td>no</td>
@@ -736,14 +792,14 @@ $$
 </tr>
 </tbody>
 </table>
-<p>The solver’s own rollouts show the same rock: pushing the box into the riser tips it 2.5° on impact. That gives 5 label changes along the rollout at 2°, against 1 at 7.35°, with the same final on-set. The solver itself only reads gaps, and gaps do not depend on θ<sub>e</sub>.</p>
-<p><strong>Proposed, not adopted: hysteresis for trajectory labels.</strong> When a trajectory is labeled frame by frame (an execution monitor, the replay, data for the ranker), use two thresholds. Switch from edge to corner at 2.5° and back at 1.5°. On the demo this keeps both rocks and removes the flicker (15 runs instead of 17). The on-set N(χ) itself stays a function of the pose alone, because the search and the solver query single poses. A minimum dwell of 3 frames was tried instead and rejected: it also swallows real one- and two-frame formations, such as the vertex–vertex frame 920.</p>
+<p>The flicker shows up under every single threshold that sees the rocks, including the point rule, so it can’t be what picks θ<sub>e</sub>. The solver’s own rollouts show the same rock: pushing the box into the riser tips it 2.5° on impact. The solver itself only reads gaps, and gaps do not depend on θ<sub>e</sub>.</p>
+<p><strong>Deferred: hysteresis for trajectory labels.</strong> When a trajectory is labeled frame by frame (an execution monitor, the replay, data for the ranker), two thresholds, one to make a contact and one to break it, remove the flicker. Hysteresis, not a minimum dwell, is the standard cure for chattering (<a href="https://www.ccdc.ucsb.edu/publications/11863">Hespanha, Liberzon and Morse 2003</a>). A 3-frame dwell was tried and rejected because it also swallows real one- and two-frame formations, such as the vertex–vertex frame 920. The two thresholds should come from a noise model, as in the filtering literature, and the simulator has none. So this waits for the execution monitor and the robot’s perception noise. The on-set N(χ) itself stays a function of the pose alone, because the search and the solver query single poses.</p>
 </section>
-<section id="the-other-two-refinements-under-review" class="level2">
-<h2 class="anchored" data-anchor-id="the-other-two-refinements-under-review">The other two refinements (under review)</h2>
+<section id="the-other-two-refinements" class="level2">
+<h2 class="anchored" data-anchor-id="the-other-two-refinements">The other two refinements</h2>
 <ul>
-<li><strong>Penetration is charged to the nearest surface.</strong> A penetration counts against the nearest environment segment or segment endpoint. Without this, a box face 2 mm into the riser read +1.6 mm (s off, s<sub>v</sub> on), and a box corner 1.6 mm past the riser read −31 mm into the platform. The computation is exact: along a box edge every condition is linear, or a convex quadratic near an endpoint.</li>
-<li><strong>A counted tie-break.</strong> When tolerances leave two templates of one pair, the higher-dimensional one wins, then the smaller gap. It fires on 2 of 1,721 demo frames, both pressed deeper than ε<sub>on</sub>.</li>
+<li><strong>Penetration is charged to the nearest surface (approved).</strong> A penetration counts against the nearest environment segment or segment endpoint. Without this, a box face 2 mm into the riser read +1.6 mm (s off, s<sub>v</sub> on), and a box corner 1.6 mm past the riser read −31 mm into the platform. The computation is exact: along a box edge every condition is linear, or a convex quadratic near an endpoint.</li>
+<li><strong>A counted tie-break (under review).</strong> When tolerances leave two templates of one pair, the higher-dimensional one wins, then the smaller gap. It fires on 2 of 1,721 demo frames, both pressed deeper than ε<sub>on</sub>.</li>
 </ul>
 </section>
 <section id="the-hold-test-on-contact-sets" class="level2">
@@ -796,7 +852,7 @@ $$
 <section id="tests-speed-and-reproducibility" class="level2">
 <h2 class="anchored" data-anchor-id="tests-speed-and-reproducibility">Tests, speed and reproducibility</h2>
 <ul>
-<li><strong>Tests.</strong> <code>tests/test_planar_contact.py</code> has 21 tests, 27 items with the parametrized cases. They cover the schema and its rejections, the kernels against sampling references, finite gradients, the chain, the named poses, Decision 4’s table, the 2° switch, corner ownership, the disk rounding a corner, the demo sequence above, hold acceptance and the oracle. The full full suite (33 items) passes on Python 3.14 (CPU and GPU) and on Python 3.12.</li>
+<li><strong>Tests.</strong> <code>tests/test_planar_contact.py</code> has 21 tests, 25 items with the parametrized cases. They cover the schema and its rejections, the kernels against sampling references, finite gradients, the chain, the named poses, Decision 4’s table, the switch at θ<sub>e</sub>, corner ownership, the disk rounding a corner, the demo sequence above, hold acceptance and the oracle. The full suite (31 items) passes on Python 3.14 (CPU and GPU) and on Python 3.12.</li>
 <li><strong>Speed.</strong> The planar gap takes 22 ms per 7,680 configurations, against 57 ms for the 3D catalog. One full MPPI call takes 10 s on the RTX 5080 against 36 s on the CPU.</li>
 <li><strong>Reproducibility.</strong> CPU runs repeat exactly. By default GPU runs repeat inside one process but not between processes, because XLA picks its kernels at compile time: the same MPPI call ended once with the box flush and once tipped 1.4°. With <code>XLA_FLAGS=--xla_gpu_deterministic_ops=true</code>, three separate processes gave identical results, at about 13% more time per call. CPU and GPU never agree bit for bit, so compare success rates across them.</li>
 </ul>
@@ -804,7 +860,8 @@ $$
 <section id="still-open" class="level2">
 <h2 class="anchored" data-anchor-id="still-open">Still open</h2>
 <ul>
-<li>Review of the two remaining refinements, and whether to adopt the hysteresis for trajectory labels.</li>
+<li>Review of the tie-break.</li>
+<li>Hysteresis for trajectory labels, once the execution monitor and a noise model exist.</li>
 <li><code>Cand</code> still proposes a second contact for a pair that already has one; the Valid check of step 2 removes it.</li>
 <li>Paper backlog: the chain’s renumbering, the labels of Figure 1 and the theory items still follow the old chain (status board of the compendium).</li>
 </ul>
