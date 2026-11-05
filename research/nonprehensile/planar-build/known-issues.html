@@ -37,7 +37,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../../">
 <link href="../../../research/wind-esc/index.html" rel="next">
-<link href="../../../research/nonprehensile/planar-build/01-contact-layer.html" rel="prev">
+<link href="../../../research/nonprehensile/planar-build/02-hold-gate.html" rel="prev">
 <link href="../../../images/robot-arm-favicon.png" rel="icon" type="image/png">
 <script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
@@ -476,6 +476,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2. Valid, transfers and a certified hold gate</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../../research/nonprehensile/planar-build/known-issues.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Known issues</span></a>
   </div>
@@ -579,7 +585,7 @@ $$
 </header>
 
 
-<p><strong>Last checked:</strong> 2026-11-05, against <code>phase1/planar</code> at <code>583810b</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
+<p><strong>Last checked:</strong> 2026-11-05, against <code>phase1/planar</code> at <code>d810e32</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
 <section id="open-contact-layer" class="level2">
 <h2 class="anchored" data-anchor-id="open-contact-layer">Open: contact layer</h2>
 <table class="caption-top table">
@@ -594,9 +600,9 @@ $$
 <tbody>
 <tr class="odd">
 <td><strong>Ties under deep penetration.</strong> ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching.</td>
-<td>357 of 4,000 demo poses jittered by about 3 mm are ambiguous; the solver accepts results with up to 10 mm of overlap. The demo’s own contacts reach only 1.9 mm.</td>
-<td><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html#other-refinements">Step 1</a>, README, <code>step2d.yaml</code>, <code>PlanarCatalog</code></td>
-<td>Step 2: set ε<sub>pen</sub> from rollouts, reject tied poses as nodes and successes</td>
+<td>357 of 4,000 demo poses jittered by about 3 mm are ambiguous (tracked by a test). Since step 2 a tied pose cannot be a solver success or a search node.</td>
+<td><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html#other-refinements">Step 1</a>, <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#eps-pen">Step 2</a>, README</td>
+<td>Step 3: tighten ε<sub>pen</sub> once the cost stops rewarding penetration (rollouts reach 9.9 mm today)</td>
 </tr>
 <tr class="even">
 <td><strong>Labels can flicker near θ<sub>e</sub></strong> along a trajectory.</td>
@@ -626,36 +632,30 @@ $$
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong><code>Cand</code> has no Valid check</strong>, and transport is always legal.</td>
-<td>It proposes a second contact for a pair that already has one, and edits that create excluded formations.</td>
-<td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/06-candidates.html">6</a>, README</td>
-<td>Step 2</td>
-</tr>
-<tr class="even">
 <td><strong>The search ignores the solver’s success flag.</strong> It accepts when the requested bits are in band.</td>
 <td>Edits the solver reports as failed can become nodes.</td>
 <td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/07-mppi.html">7</a>, <a href="../../../research/nonprehensile/code-walkthrough/08-search.html">8</a></td>
 <td>Step 3 (with Λ and H wired in)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>A node stores the requested formation, not the one reached.</strong></td>
 <td>In a 12-round run, 28 of 30 nodes record a formation they do not have.</td>
 <td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/08-search.html">8</a></td>
 <td>Step 3</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>A break is accepted without checking that the contact left.</strong></td>
 <td>6 of 7 accepted breaks in that run left the contact in band.</td>
 <td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/08-search.html">8</a></td>
 <td>Step 3</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>No goal test, goal input or budget</strong>; expansion is breadth-first in catalog order.</td>
 <td>The search cannot aim at a goal or stop at one.</td>
 <td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/08-search.html">8</a></td>
 <td>Step 4 (ranker, LTS/PHS)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong><code>ContactGraph</code> drops edges:</strong> <code>self.edges</code> is never set when edges are passed, and <code>edges_excluded</code> is discarded.</td>
 <td>Nothing downstream uses the graph yet, so no visible effect today.</td>
 <td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/04-graph.html">4</a></td>
@@ -695,10 +695,22 @@ $$
 <td>Workaround: <code>XLA_FLAGS=--xla_gpu_deterministic_ops=true</code> (about 13% slower)</td>
 </tr>
 <tr class="even">
-<td><strong>The hold test’s “not supported” is uncertified.</strong> MPAX’s infeasibility detection is disabled, and there is no Farkas certificate.</td>
-<td>“Not supported” can mean “ran out of iterations”: a false rejection.</td>
-<td>Compendium, Plans</td>
-<td>Step 2 (certified gate, solver benchmark)</td>
+<td><strong>MPPI fails the chain’s edits.</strong> In 24 full rollouts of the chain’s edits, none passes the solver’s success check, the passive breaks included (not because of ties).</td>
+<td>Edits that <code>Cand</code> offers are not realized, so the search cannot follow the chain.</td>
+<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#eps-pen">Step 2</a>, compendium</td>
+<td>Step 3 (cost and success criteria)</td>
+</tr>
+<tr class="odd">
+<td><strong>Margins are unbounded with the disk in the formation.</strong> The disk’s force has no limit, so its support cone often fills all of 3D.</td>
+<td>The margin cannot rank formations that use the disk.</td>
+<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#h-exact">Step 2</a></td>
+<td>Decision 6: manipulator force limits</td>
+</tr>
+<tr class="even">
+<td><strong>The exact hold test is float32.</strong></td>
+<td>Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases.</td>
+<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#which-solver">Step 2</a></td>
+<td>Acceptable for now; float64 or a margin threshold if it matters</td>
 </tr>
 </tbody>
 </table>
@@ -741,7 +753,7 @@ $$
 <p>The paper still follows the old chain or older decisions in these places:</p>
 <ul>
 <li>The chain of Decisions 2 and 7: the example formations and edits, the labels and caption of Figure 1, and the figures of the legal chain and the marking graph.</li>
-<li>Lemma <code>markgraph-struct</code> and the cube remark, with the transfer edits.</li>
+<li>The marking-graph figure’s caption still says graph distance equals Hamming distance (the lemma now gives bounds within a factor of four).</li>
 <li>Proposition <code>gap-miss</code>(i), and the root and live subgraphs.</li>
 <li>Decision 8: attention instead of typed edges, and exclusions derived from geometry.</li>
 <li><code>sec:novel</code>, to be rewritten around the survey’s claim-status table.</li>
@@ -762,6 +774,22 @@ $$
 </tr>
 </thead>
 <tbody>
+<tr class="odd">
+<td><code>Cand</code> had no Valid check: a second contact per pair, excluded formations, transport always legal</td>
+<td>Edit set with Valid, transfer and pass-through; transport only when supported (step 2)</td>
+</tr>
+<tr class="even">
+<td>The hold test’s “not supported” was uncertified: the MPAX LPs rejected 192–194 of 416 supported near-boundary cases</td>
+<td>Exact planar test with a witness or a Farkas certificate (step 2)</td>
+</tr>
+<tr class="odd">
+<td>No transfer generator: g → g<sub>v</sub> needed a break and a make through a marking where the box does not touch the floor</td>
+<td><code>transfer(c → d)</code> and the pivot pass-through (step 2)</td>
+</tr>
+<tr class="even">
+<td>The paper’s Lemma <code>markgraph-struct</code> and Remark <code>cube</code> assumed make and break only</td>
+<td>Restated with transfer and pass-through, and checked exhaustively (step 2)</td>
+</tr>
 <tr class="odd">
 <td>One physical contact lit 3 to 6 template bits (closed faces share edges)</td>
 <td>Principal-contact on-set, <code>ca4123b</code></td>
@@ -1332,8 +1360,8 @@ $$
   </script>
 <nav class="page-navigation" aria-label="Page">
   <div class="nav-page nav-page-previous">
-      <a href="../../../research/nonprehensile/planar-build/01-contact-layer.html" class="pagination-link" aria-label="1. The planar contact layer">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">1. The planar contact layer</span>
+      <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html" class="pagination-link" aria-label="2. Valid, transfers and a certified hold gate">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">2. Valid, transfers and a certified hold gate</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
