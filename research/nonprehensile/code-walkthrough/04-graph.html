@@ -589,6 +589,12 @@ $$
 
 
 <p><code>catalog/graph.py</code> builds edges between templates: <strong>transfer-adjacent</strong> (same body pair, and the features are adjacent on both bodies, so one contact can slide into the other) and <strong>shared-feature</strong> (the two templates use a common feature). It should also carry the exclusion table. This step counts the edges and looks at what is actually stored.</p>
+<p><strong>Two graphs, not one.</strong> The paper uses two graphs, and it helps to keep them apart from here on.</p>
+<ul>
+<li>The <strong>contact graph G</strong>, built on this page: its vertices are <em>templates</em>, with typed edges between them. It is fixed by the scene.</li>
+<li>The <strong>marking graph W</strong>: its vertices are <em>markings</em> (formations, the bit vectors of step 3), and its edges are <em>edits</em> (make, break, and the transfer of Decision 1). The planner searches W. In the code, <code>Cand</code> (step 6) generates W’s edges out of a node and <code>Search</code> (step 8) walks them; W is never stored, only expanded as the search goes.</li>
+</ul>
+<p>G feeds W: exclusion edges decide which markings are valid (W’s vertices), and transfer-adjacent edges decide which transfers exist (W’s transfer edges, Decision 1: transfer(c → d) requires c and d to be transfer-adjacent). Shared-feature edges do not shape W; the paper uses them, with the transfer edges, as the network’s message-passing structure.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> walkthrough/04_graph.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
 <summary>
@@ -652,7 +658,7 @@ Neighbours of B:zn-L:boundary (template 11):
 <ul>
 <li><strong>Every stored edge is <code>(None, None, type)</code>.</strong> Edges are recorded by <code>template_id</code>, which <code>Catalog.from_spec</code> never sets (step 2). The edge list cannot be mapped back to templates. The script works around this by recomputing the edges with catalog positions.</li>
 <li><strong>The exclusion table is dropped.</strong> <code>ContactGraph.from_spec</code> passes <code>edges_excluded</code>, but <code>__init__</code> never stores it.</li>
-<li><strong>Nothing downstream uses the graph.</strong> <code>Cand</code> (step 6) and <code>Search</code> (step 8) work from the catalog alone, so no exclusion is enforced anywhere today.</li>
+<li><strong>Nothing downstream reads this <code>ContactGraph</code> object.</strong> The search does walk a graph, the marking graph W, but <code>Cand</code> (step 6) builds W’s edges from the catalog and the bit vectors alone, with make and break only. So no exclusion is enforced anywhere today, and transfer edits do not exist yet (they arrive in step 2 of the critical path).</li>
 <li><strong>Adjacency follows the box’s faces.</strong> <code>B:zn-L</code> is transfer-adjacent to the four side faces on the floor, not to <code>B:zp-L</code>: opposite faces share no edge.</li>
 <li><strong>Shared-feature edges here include shared environment features.</strong> <code>B:zn-L</code> and <code>B:xp-L</code> share only the floor’s <code>boundary</code>, yet they are linked.</li>
 <li><strong>Each edge appears twice</strong>, once in each direction.</li>
@@ -723,7 +729,7 @@ Neighbours of B:zn-L:boundary (template 11):
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        exec_world <span class="op">=</span> ExecutionWorld(spec.execution)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Then <code>python walkthrough/04_graph.py</code> prints</p>
 <pre class="text"><code>First three stored edges: [(0, 1, &lt;EdgeTypes.SHARED_FEATURE: 1&gt;), (0, 2, &lt;EdgeTypes.TRANSFER_ADJACENT: 0&gt;), (0, 2, &lt;EdgeTypes.SHARED_FEATURE: 1&gt;)]</code></pre>
-<p>and <code>PYTHONPATH=tests python -m pytest -q tests</code> still reports <code>6 passed</code>. Templates 0 and 1 (the disk on <code>xp</code> and on <code>xn</code>) share the disk’s boundary but are not transfer-adjacent, because opposite faces share no edge. Undo the change with <code>git checkout src/cmg/catalog/templates.py</code> when you are done.</p>
+<p>and <code>PYTHONPATH=tests python -m pytest -q tests</code> still reports <code>6 passed</code> (prefix it with <code>MUJOCO_GL=egl</code> over SSH, as on the start page). Templates 0 and 1 (the disk on <code>xp</code> and on <code>xn</code>) share the disk’s boundary but are not transfer-adjacent, because opposite faces share no edge. Undo the change with <code>git checkout src/cmg/catalog/templates.py</code> when you are done.</p>
 </div>
 </div>
 </div>
