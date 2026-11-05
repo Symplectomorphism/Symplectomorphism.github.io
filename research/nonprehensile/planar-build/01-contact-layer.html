@@ -71,7 +71,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../../">
-<link href="../../../research/wind-esc/index.html" rel="next">
+<link href="../../../research/nonprehensile/planar-build/known-issues.html" rel="next">
 <link href="../../../research/nonprehensile/planar-build/index.html" rel="prev">
 <link href="../../../images/robot-arm-favicon.png" rel="icon" type="image/png">
 <script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
@@ -511,6 +511,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">1. The planar contact layer</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/known-issues.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Known issues</span></a>
+  </div>
+</li>
       </ul>
   </li>
       </ul>
@@ -558,10 +564,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#the-scene" id="toc-the-scene" class="nav-link" data-scroll-target="#the-scene">The scene</a></li>
   <li><a href="#when-a-contact-is-on" id="toc-when-a-contact-is-on" class="nav-link" data-scroll-target="#when-a-contact-is-on">When a contact is on</a></li>
   <li><a href="#the-demo-frame-by-frame" id="toc-the-demo-frame-by-frame" class="nav-link" data-scroll-target="#the-demo-frame-by-frame">The demo, frame by frame</a></li>
-  <li><a href="#edge-contacts-and-the-tilt-θe" id="toc-edge-contacts-and-the-tilt-θe" class="nav-link" data-scroll-target="#edge-contacts-and-the-tilt-θe">Edge contacts and the tilt θ<sub>e</sub></a></li>
-  <li><a href="#the-other-two-refinements" id="toc-the-other-two-refinements" class="nav-link" data-scroll-target="#the-other-two-refinements">The other two refinements</a></li>
+  <li><a href="#edge-contacts" id="toc-edge-contacts" class="nav-link" data-scroll-target="#edge-contacts">Edge contacts and the tilt θ<sub>e</sub></a></li>
+  <li><a href="#other-refinements" id="toc-other-refinements" class="nav-link" data-scroll-target="#other-refinements">The other two refinements</a></li>
   <li><a href="#the-hold-test-on-contact-sets" id="toc-the-hold-test-on-contact-sets" class="nav-link" data-scroll-target="#the-hold-test-on-contact-sets">The hold test on contact sets</a></li>
-  <li><a href="#tests-speed-and-reproducibility" id="toc-tests-speed-and-reproducibility" class="nav-link" data-scroll-target="#tests-speed-and-reproducibility">Tests, speed and reproducibility</a></li>
+  <li><a href="#tests" id="toc-tests" class="nav-link" data-scroll-target="#tests">Tests, speed and reproducibility</a></li>
   <li><a href="#still-open" id="toc-still-open" class="nav-link" data-scroll-target="#still-open">Still open</a></li>
   <li><a href="#reproduce" id="toc-reproduce" class="nav-link" data-scroll-target="#reproduce">Reproduce</a></li>
   </ul>
@@ -661,8 +667,8 @@ $$
 <li><strong>Tie-breaks</strong> fire on 2 frames, both with the box pressed more than 1 mm into the riser.</li>
 </ul>
 </section>
-<section id="edge-contacts-and-the-tilt-θe" class="level2">
-<h2 class="anchored" data-anchor-id="edge-contacts-and-the-tilt-θe">Edge contacts and the tilt θ<sub>e</sub></h2>
+<section id="edge-contacts" class="level2">
+<h2 class="anchored" data-anchor-id="edge-contacts">Edge contacts and the tilt θ<sub>e</sub></h2>
 <p>This was the first of step 1’s refinements to review. It is settled: θ<sub>e</sub> is derived from the 1 mm contact tolerance and the scene’s shortest edge, θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h) ≈ 1.83°. Nothing is tuned to the demo.</p>
 <p><strong>What we had agreed.</strong> An edge counted as flat on a surface when the part of it within ε<sub>on</sub> = 1 mm of the surface was at least ℓ<sub>min</sub> = 7.8 mm long. A box tipped by θ with its corner down keeps a 1 mm sliver of length ε<sub>on</sub>/sin θ. So the length rule already called the box flat up to arcsin(ε<sub>on</sub>/ℓ<sub>min</sub>) = 7.35°, when its far end is 16 mm off the floor.</p>
 <p><strong>Why the length rule failed.</strong> As the box tips over the step corner, the floor’s contact set ends at the box corner, but the riser’s runs about ε<sub>on</sub> past the step corner. The floor contact turned into a corner contact at 7.35° and the riser contact only at 8.44°. In between, the label was {g<sub>v</sub>, s}: on a corner yet flush on the riser, which is impossible for a rigid box in a right-angled corner. Testing the angle instead makes both contacts switch at the same tilt, because they share the box’s angle.</p>
@@ -795,8 +801,8 @@ $$
 <p>The flicker shows up under every single threshold that sees the rocks, including the point rule, so it can’t be what picks θ<sub>e</sub>. The solver’s own rollouts show the same rock: pushing the box into the riser tips it 2.5° on impact. The solver itself only reads gaps, and gaps do not depend on θ<sub>e</sub>.</p>
 <p><strong>Deferred: hysteresis for trajectory labels.</strong> When a trajectory is labeled frame by frame (an execution monitor, the replay, data for the ranker), two thresholds, one to make a contact and one to break it, remove the flicker. Hysteresis, not a minimum dwell, is the standard cure for chattering (<a href="https://www.ccdc.ucsb.edu/publications/11863">Hespanha, Liberzon and Morse 2003</a>). A 3-frame dwell was tried and rejected because it also swallows real one- and two-frame formations, such as the vertex–vertex frame 920. The two thresholds should come from a noise model, as in the filtering literature, and the simulator has none. So this waits for the execution monitor and the robot’s perception noise. The on-set N(χ) itself stays a function of the pose alone, because the search and the solver query single poses.</p>
 </section>
-<section id="the-other-two-refinements" class="level2">
-<h2 class="anchored" data-anchor-id="the-other-two-refinements">The other two refinements</h2>
+<section id="other-refinements" class="level2">
+<h2 class="anchored" data-anchor-id="other-refinements">The other two refinements</h2>
 <ul>
 <li><strong>Penetration is charged to the nearest surface (approved).</strong> A penetration counts against the nearest environment segment or segment endpoint. Without this, a box face 2 mm into the riser read +1.6 mm (s off, s<sub>v</sub> on), and a box corner 1.6 mm past the riser read −31 mm into the platform. The computation is exact: along a box edge every condition is linear, or a convex quadratic near an endpoint.</li>
 <li><strong>A counted tie-break (kept as a fallback, with a known issue).</strong> When tolerances leave two templates of one pair, the higher-dimensional one wins, then the smaller gap, and every use is counted (<code>tie_breaks</code>). On the demo it fires on 2 of 1,721 frames (608–609): s and s<sub>v</sub> both survive with the box 1.1–1.8 mm into the riser, and s is chosen.</li>
@@ -863,8 +869,8 @@ $$
 </table>
 <p>A support-interval oracle (the exact range of support a contact set can give) agrees with the LP.</p>
 </section>
-<section id="tests-speed-and-reproducibility" class="level2">
-<h2 class="anchored" data-anchor-id="tests-speed-and-reproducibility">Tests, speed and reproducibility</h2>
+<section id="tests" class="level2">
+<h2 class="anchored" data-anchor-id="tests">Tests, speed and reproducibility</h2>
 <ul>
 <li><strong>Tests.</strong> <code>tests/test_planar_contact.py</code> has 21 tests, 25 items with the parametrized cases. They cover the schema and its rejections, the kernels against sampling references, finite gradients, the chain, the named poses, Decision 4’s table, the switch at θ<sub>e</sub>, corner ownership, the disk rounding a corner, the demo sequence above, hold acceptance and the oracle. The full suite (31 items) passes on Python 3.14 (CPU and GPU) and on Python 3.12.</li>
 <li><strong>Speed.</strong> The planar gap takes 22 ms per 7,680 configurations, against 57 ms for the 3D catalog. One full MPPI call takes 10 s on the RTX 5080 against 36 s on the CPU.</li>
@@ -873,6 +879,7 @@ $$
 </section>
 <section id="still-open" class="level2">
 <h2 class="anchored" data-anchor-id="still-open">Still open</h2>
+<p>The full list, across the code and the paper, is on <a href="../../../research/nonprehensile/planar-build/known-issues.html">Known issues</a>.</p>
 <ul>
 <li>Ties under deep penetration (the known issue above): step 2.</li>
 <li>Hysteresis for trajectory labels, once the execution monitor and a noise model exist.</li>
@@ -1425,8 +1432,8 @@ $$
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../../research/wind-esc/index.html" class="pagination-link" aria-label="Wind Turbine Control">
-        <span class="nav-page-text">Wind Turbine Control</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../../research/nonprehensile/planar-build/known-issues.html" class="pagination-link" aria-label="Known issues">
+        <span class="nav-page-text">Known issues</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>
