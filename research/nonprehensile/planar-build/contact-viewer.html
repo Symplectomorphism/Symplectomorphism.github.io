@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Contact Layer Viewer</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --line: #d0d7de; --panel: #f6f8fa;
+  --box: #f3e2c4; --boxline: #7a4f0e; --disk: #c9d8fb; --diskline: #14307a; --ground: #d9dde1;
+  --env: #1f2328; --cursor: #1f2328; --bandA: #eef1f4; --bandB: #f8f9fa; --tilt: #2a78d6; --warn: #b35900;
+  --p0: #2a78d6; --p1: #eb6834; --p2: #1baf7a; --p3: #6250d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #30363d; --panel: #161b22;
+    --box: #4a3a22; --boxline: #f0c27a; --disk: #24345e; --diskline: #b8ccff; --ground: #2b3138;
+    --env: #e6edf3; --cursor: #e6edf3; --bandA: #1c222a; --bandB: #141920; --tilt: #3987e5; --warn: #f0a050;
+    --p0: #3987e5; --p1: #d95926; --p2: #199e70; --p3: #9085e9;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #30363d; --panel: #161b22;
+  --box: #4a3a22; --boxline: #f0c27a; --disk: #24345e; --diskline: #b8ccff; --ground: #2b3138;
+  --env: #e6edf3; --cursor: #e6edf3; --bandA: #1c222a; --bandB: #141920; --tilt: #3987e5; --warn: #f0a050;
+  --p0: #3987e5; --p1: #d95926; --p2: #199e70; --p3: #9085e9;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { padding: 12px 16px 20px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+button, select { font: inherit; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--panel); color: var(--fg); cursor: pointer; }
+button:hover, select:hover { border-color: var(--muted); }
+input[type=range] { flex: 1 1 260px; min-width: 160px; }
+.status { font-weight: 600; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+.jumps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.jumps button { font-size: 12.5px; padding: 2px 8px; }
+.howto { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 6px 12px;
+  margin-bottom: 10px; font-size: 13.5px; }
+.howto summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.howto ul { margin: 6px 0 4px; padding-left: 20px; }
+.howto li { margin: 3px 0; }
+.main { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
+.card { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 8px; min-width: 0; }
+.card h3 { margin: 2px 4px 6px; font-size: 13px; color: var(--muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; }
+.zoombar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 4px 6px; }
+.zoombar button { padding: 2px 9px; font-size: 13px; }
+.zoombar label { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; }
+#scene { width: 100%; height: 420px; display: block; touch-action: none; cursor: grab; border-radius: 6px; }
+#scene.dragging { cursor: grabbing; }
+body.fs #scene { height: calc(100vh - 330px); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.small { color: var(--muted); font-size: 12px; }
+.strip { width: 100%; display: block; cursor: pointer; touch-action: none; }
+.striplabel { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin: 8px 4px 2px; }
+#tip { position: fixed; pointer-events: none; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; font-size: 12.5px; max-width: 360px; display: none; z-index: 5; }
+svg text { fill: var(--fg); }
+.warn { color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="controls">
+    <button id="first" title="First frame">« Start</button>
+    <button id="prev" title="Previous frame (←)">‹</button>
+    <button id="play" title="Play / pause (space)">▶ Play</button>
+    <button id="next" title="Next frame (→)">›</button>
+    <button id="last" title="Last frame">End »</button>
+    <select id="speed" title="Playback speed" aria-label="Playback speed">
+      <option value="1">1 frame/tick</option>
+      <option value="3" selected>3 frames/tick</option>
+      <option value="10">10 frames/tick</option>
+    </select>
+    <input id="slider" type="range" min="0" value="0" step="1" aria-label="Frame">
+  </div>
+  <div class="status" id="status">Loading…</div>
+  <div class="jumps" id="jumps"></div>
+  <details class="howto" open>
+    <summary>How to read this</summary>
+    <ul>
+      <li><b>The demo</b> is the 1,721-frame trajectory shipped with cmg
+        (<code>step_example_trajectory.npz</code>): the disk pushes the box into the step corner, tips it
+        over the corner onto the platform, then pushes it along the platform. Each frame is labeled by the
+        step-1 contact layer (<code>PlanarCatalog.band</code>) at θ<sub>e</sub> = 2°.</li>
+      <li><b>The scene</b> is drawn in the x–z plane with +x to the left, as in the paper. Thick colored
+        segments are the <b>contact sets K<sub>c</sub></b> of the contacts that are on, one color per body
+        pair; a dot is a one-point contact set. Labels are the paper's names where there is one
+        (g, g<sub>v</sub>, s, s<sub>v</sub>, t, m<sub>x</sub>, m<sub>z</sub>), else the catalog name.</li>
+      <li><b>The table</b> compares, per body pair, the one contact the principal-contact rule turns on with
+        the number of closed-feature templates in band (the old test, which lit 3 to 6 bits for one physical
+        contact).</li>
+      <li><b>The two strips</b> under the scene span the whole demo: the formation (one shade per run of
+        frames with the same on-set; hover for it) and the box tilt with the 2° threshold. Click or drag on
+        either to jump. The buttons above jump to the key moments.</li>
+      <li><b>Navigate the scene</b>: drag to pan, scroll or pinch to zoom, or use the buttons; "Follow the
+        box" keeps it centered. Keys: ← → step one frame, space plays.</li>
+    </ul>
+  </details>
+  <div class="main">
+    <div class="card"><h3>Scene (+x to the left)</h3>
+      <div class="zoombar">
+        <button id="zin" title="Zoom in">+</button>
+        <button id="zout" title="Zoom out">−</button>
+        <button id="zfit" title="Show the whole scene">Fit</button>
+        <label><input type="checkbox" id="follow"> Follow the box</label>
+        <button id="fs" title="Full screen">Full screen</button>
+      </div>
+      <svg id="scene" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="striplabel"><span>Formation over the demo</span><span id="seglabel"></span></div>
+      <svg id="fstrip" class="strip" height="28"></svg>
+      <div class="striplabel"><span>Box tilt (0–12°, clipped; dashed: θ<sub>e</sub> = 2°)</span><span id="tiltlabel"></span></div>
+      <svg id="tstrip" class="strip" height="64"></svg>
+    </div>
+    <div class="card">
+      <h3>Contacts at this frame</h3>
+      <table id="pairs"><thead><tr><th>Body pair</th><th>On (principal)</th><th>In band (closed features)</th></tr></thead><tbody></tbody></table>
+      <div class="small" id="note" style="margin-top:8px"></div>
+      <h3 style="margin-top:14px">Formation runs</h3>
+      <div class="small">Each row is a run of frames with one on-set; click to jump.</div>
+      <table id="runs"><thead><tr><th>Frames</th><th>On-set</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+<div id="tip"></div>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const PAIRVAR = ["var(--p0)", "var(--p1)", "var(--p2)", "var(--p3)"];
+const PRETTY = { g_v: "gᵥ", s_v: "sᵥ", m_x: "mₓ", m_z: "m_z" };
+const pretty = (n) => PRETTY[n] || n;
+const JUMPS = [
+  ["Rest {g}", 0], ["Disk reaches the box", 520], ["Hits the riser", 609], ["Rocks onto its corner", 613],
+  ["Flush {mₓ, g, s}", 640], ["Pivot", 682], ["Lifted", 692], ["Lands", 703], ["Seesaws on v_S", 709],
+  ["Disk behind {m_z, sᵥ, t}", 860], ["Vertex–vertex frame", 920], ["Pushed clear", 1000], ["End {t}", 1720],
+];
+let D = null, k = 0, playing = null;
+const view = { cx: -0.04, cz: 0.085, w: 0.56 };   // world window (center, width)
+const FIT = { cx: -0.04, cz: 0.085, w: 0.56 };
+
+function boxCorners(q) {
+  const a = D.a / 2, c = Math.cos(q[2]), s = Math.sin(q[2]);
+  return [[a, a], [a, -a], [-a, -a], [-a, a]].map(([u, w]) => [q[0] + u * c + w * s, q[1] - u * s + w * c]);
+}
+// display coordinates: X = -x (so +x points left), Y = -z
+const P = (x, z) => [-x, -z];
+
+function sceneSize() {
+  const r = $("scene").getBoundingClientRect();
+  return [Math.max(r.width, 100), Math.max(r.height, 100)];
+}
+function setViewBox() {
+  const [W, Hh] = sceneSize();
+  const w = view.w, h = w * Hh / W;
+  const [X, Y] = P(view.cx, view.cz);
+  $("scene").setAttribute("viewBox", `${X - w / 2} ${Y - h / 2} ${w} ${h}`);
+  return w / W;   // world units per pixel
+}
+
+function drawScene() {
+  const f = D.frames[k], q = f.q, svg = $("scene");
+  if ($("follow").checked) { view.cx = q[0]; view.cz = q[1]; }
+  const upp = setViewBox();
+  svg.innerHTML = "";
+  const px = (n) => n * upp;
+  const H = D.h;
+  // ground and environment
+  const g = el("g", {}, svg);
+  const ground = [[-3, 0], [0, 0], [0, H], [3, H], [3, -0.5], [-3, -0.5]].map(([x, z]) => P(x, z).join(","));
+  el("polygon", { points: ground.join(" "), fill: "var(--ground)" }, g);
+  const envPath = [[-3, 0], [0, 0], [0, H], [3, H]].map(([x, z]) => P(x, z).join(","));
+  el("polyline", { points: envPath.join(" "), fill: "none", stroke: "var(--env)", "stroke-width": px(2) }, g);
+  const [vx, vy] = P(0, H);
+  el("circle", { cx: vx, cy: vy, r: px(3), fill: "var(--env)" }, g);
+  // bodies
+  el("polygon", { points: boxCorners(q).map(([x, z]) => P(x, z).join(",")).join(" "),
+    fill: "var(--box)", stroke: "var(--boxline)", "stroke-width": px(1.5) }, g);
+  const [dx, dy] = P(q[3], q[4]);
+  el("circle", { cx: dx, cy: dy, r: D.r, fill: "var(--disk)", stroke: "var(--diskline)", "stroke-width": px(1.5) }, g);
+  // contact sets
+  const labels = [];
+  f.on.forEach((ti, j) => {
+    const t = D.templates[ti], kk = f.k[j], col = PAIRVAR[t.pair];
+    const [x0, y0] = P(kk[0], kk[1]), [x1, y1] = P(kk[2], kk[3]);
+    if (Math.hypot(x1 - x0, y1 - y0) < px(2)) {
+      el("circle", { cx: x0, cy: y0, r: px(5), fill: col, stroke: "var(--bg)", "stroke-width": px(1.5) }, g);
+    } else {
+      el("line", { x1: x0, y1: y0, x2: x1, y2: y1, stroke: col, "stroke-width": px(6),
+        "stroke-linecap": "round" }, g);
+    }
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+    let ax, ay;
+    if (t.pair === 0) { ax = dx - px(10); ay = dy - D.r - px(10); }        // disk contact: above the disk
+    else {                                                                 // outward from the box center
+      const [bx, by] = P(q[0], q[1]);
+      const ux = mx - bx, uy = my - by, n = Math.hypot(ux, uy) || 1;
+      ax = mx + ux / n * px(22) - px(8); ay = my + uy / n * px(22) + px(5);
+    }
+    labels.push([ax, ay, pretty(t.name), col]);
+  });
+  // labels with a small anti-collision nudge
+  const placed = [];
+  for (const [x, y, text, col] of labels) {
+    let lx = x, ly = y;
+    for (const [ox, oy] of placed) if (Math.abs(ox - lx) < px(60) && Math.abs(oy - ly) < px(14)) ly -= px(16);
+    placed.push([lx, ly]);
+    const t = el("text", { x: lx, y: ly, "font-size": px(13), "font-weight": 600 }, g);
+    t.textContent = text;
+    const bb = t.getBBox();
+    const bg = el("rect", { x: bb.x - px(3), y: bb.y - px(1), width: bb.width + px(6), height: bb.height + px(2),
+      rx: px(3), fill: "var(--bg)", stroke: col, "stroke-width": px(1.2), opacity: 0.92 }, g);
+    g.insertBefore(bg, t);
+  }
+}
+
+function drawTables() {
+  const f = D.frames[k];
+  const tb = $("pairs").querySelector("tbody");
+  tb.innerHTML = "";
+  D.pairs.forEach((p, i) => {
+    const onIdx = f.on.filter((ti) => D.templates[ti].pair === i);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><span class="sw" style="background:${PAIRVAR[i]}"></span>${p}</td>` +
+      `<td>${onIdx.length ? onIdx.map((ti) => pretty(D.templates[ti].name)).join(", ") : "<span class='small'>none</span>"}</td>` +
+      `<td>${f.ib[i]}</td>`;
+    tb.appendChild(tr);
+  });
+  $("note").innerHTML = f.tie ? `<span class="warn">Tie-break used at this frame (a contact pressed deeper than ε_on).</span>` : "";
+  const runs = $("runs").querySelectorAll("tbody tr");
+  runs.forEach((r) => (r.style.background = ""));
+  const si = segIndex(k);
+  if (runs[si]) runs[si].style.background = "var(--panel)";
+}
+
+function segIndex(frame) {
+  let lo = 0, hi = D.segments.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (D.segments[m].start <= frame) lo = m; else hi = m - 1; }
+  return lo;
+}
+const fmt = (on) => "{" + on.map(pretty).join(", ") + "}";
+
+function buildStrips() {
+  const N = D.frames.length;
+  const fs = $("fstrip"); fs.setAttribute("viewBox", `0 0 ${N} 28`); fs.setAttribute("preserveAspectRatio", "none");
+  fs.innerHTML = "";
+  D.segments.forEach((s, i) => {
+    el("rect", { x: s.start, y: 0, width: Math.max(s.n, 1), height: 28,
+      fill: i % 2 ? "var(--bandA)" : "var(--line)", "data-i": i }, fs);
+  });
+  el("rect", { id: "fcur", x: 0, y: 0, width: 3, height: 28, fill: "var(--cursor)" }, fs);
+  const ts = $("tstrip"); ts.setAttribute("viewBox", `0 0 ${N} 64`); ts.setAttribute("preserveAspectRatio", "none");
+  ts.innerHTML = "";
+  const y = (t) => 62 - Math.min(t, 12) / 12 * 60;
+  el("rect", { x: 0, y: 0, width: N, height: 64, fill: "var(--bandB)" }, ts);
+  el("line", { x1: 0, x2: N, y1: y(D.theta_e), y2: y(D.theta_e), stroke: "var(--muted)",
+    "stroke-dasharray": "6 4", "vector-effect": "non-scaling-stroke" }, ts);
+  const pts = D.frames.map((f, i) => `${i},${y(f.tilt).toFixed(2)}`).join(" ");
+  el("polyline", { points: pts, fill: "none", stroke: "var(--tilt)", "stroke-width": 1.5,
+    "vector-effect": "non-scaling-stroke" }, ts);
+  el("rect", { id: "tcur", x: 0, y: 0, width: 3, height: 64, fill: "var(--cursor)" }, ts);
+  for (const s of [fs, ts]) {
+    const seek = (ev) => {
+      const r = s.getBoundingClientRect();
+      setFrame(Math.round((ev.clientX - r.left) / r.width * (N - 1)));
+    };
+    s.addEventListener("pointerdown", (ev) => { s.setPointerCapture(ev.pointerId); seek(ev); });
+    s.addEventListener("pointermove", (ev) => {
+      const r = s.getBoundingClientRect();
+      const fr = Math.max(0, Math.min(N - 1, Math.round((ev.clientX - r.left) / r.width * (N - 1))));
+      if (ev.buttons) seek(ev);
+      const seg = D.segments[segIndex(fr)];
+      tip(ev, `frame ${fr}: ${fmt(seg.on)}<br>run ${seg.start}–${seg.start + seg.n - 1} · tilt ${D.frames[fr].tilt.toFixed(2)}°`);
+    });
+    s.addEventListener("pointerleave", () => ($("tip").style.display = "none"));
+  }
+  const tb = $("runs").querySelector("tbody");
+  D.segments.forEach((s) => {
+    const tr = document.createElement("tr");
+    tr.style.cursor = "pointer";
+    tr.innerHTML = `<td>${s.start}–${s.start + s.n - 1}</td><td>${fmt(s.on)}</td>`;
+    tr.addEventListener("click", () => setFrame(s.start));
+    tb.appendChild(tr);
+  });
+}
+
+function tip(ev, html) {
+  const t = $("tip"); t.innerHTML = html; t.style.display = "block";
+  t.style.left = Math.min(ev.clientX + 12, window.innerWidth - 300) + "px"; t.style.top = (ev.clientY + 14) + "px";
+}
+
+function setFrame(n) {
+  const N = D.frames.length;
+  k = Math.max(0, Math.min(N - 1, n | 0));
+  $("slider").value = k;
+  const f = D.frames[k], seg = D.segments[segIndex(k)];
+  $("status").textContent = `Frame ${k} / ${N - 1} · on-set ${fmt(f.on.map((i) => D.templates[i].name))} · tilt ${f.tilt.toFixed(2)}°`;
+  $("seglabel").textContent = `run ${seg.start}–${seg.start + seg.n - 1}`;
+  $("tiltlabel").textContent = `${f.tilt.toFixed(2)}°`;
+  $("fcur").setAttribute("x", k - 1); $("tcur").setAttribute("x", k - 1);
+  drawScene(); drawTables();
+}
+
+function play() {
+  if (playing) { clearInterval(playing); playing = null; $("play").textContent = "▶ Play"; return; }
+  if (k >= D.frames.length - 1) setFrame(0);
+  $("play").textContent = "❚❚ Pause";
+  playing = setInterval(() => {
+    const step = +$("speed").value;
+    if (k + step >= D.frames.length) { setFrame(D.frames.length - 1); play(); return; }
+    setFrame(k + step);
+  }, 40);
+}
+
+function zoom(factor, cx, cz) {
+  const nw = Math.min(3, Math.max(0.02, view.w * factor));
+  if (cx !== undefined) { const r = nw / view.w; view.cx = cx + (view.cx - cx) * r; view.cz = cz + (view.cz - cz) * r; }
+  view.w = nw; drawScene();
+}
+function clientToWorld(ev) {
+  const svg = $("scene"), r = svg.getBoundingClientRect();
+  const [W, Hh] = sceneSize(), w = view.w, h = w * Hh / W;
+  const X = -view.cx - w / 2 + (ev.clientX - r.left) / r.width * w;
+  const Y = -view.cz - h / 2 + (ev.clientY - r.top) / r.height * h;
+  return [-X, -Y];
+}
+
+function wire() {
+  const N = D.frames.length;
+  $("slider").max = N - 1;
+  $("slider").addEventListener("input", (e) => setFrame(+e.target.value));
+  $("first").onclick = () => setFrame(0);
+  $("last").onclick = () => setFrame(N - 1);
+  $("prev").onclick = () => setFrame(k - 1);
+  $("next").onclick = () => setFrame(k + 1);
+  $("play").onclick = play;
+  $("zin").onclick = () => zoom(1 / 1.4);
+  $("zout").onclick = () => zoom(1.4);
+  $("zfit").onclick = () => { Object.assign(view, FIT); $("follow").checked = false; drawScene(); };
+  $("follow").onchange = () => { if ($("follow").checked && view.w > 0.3) view.w = 0.25; drawScene(); };
+  $("fs").onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen?.();
+  };
+  document.addEventListener("fullscreenchange", () => {
+    document.body.classList.toggle("fs", !!document.fullscreenElement);
+    $("fs").textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
+    drawScene();
+  });
+  const jb = $("jumps");
+  for (const [label, fr] of JUMPS) {
+    const b = document.createElement("button"); b.textContent = label; b.onclick = () => setFrame(fr); jb.appendChild(b);
+  }
+  const svg = $("scene");
+  svg.addEventListener("wheel", (ev) => {
+    ev.preventDefault();
+    const [x, z] = clientToWorld(ev);
+    zoom(Math.exp(ev.deltaY * 0.0015), x, z);
+  }, { passive: false });
+  const ptrs = new Map(); let pinch0 = null;
+  svg.addEventListener("pointerdown", (ev) => {
+    svg.setPointerCapture(ev.pointerId); ptrs.set(ev.pointerId, [ev.clientX, ev.clientY]); svg.classList.add("dragging");
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch0 = [Math.hypot(a[0] - b[0], a[1] - b[1]), view.w]; }
+  });
+  svg.addEventListener("pointermove", (ev) => {
+    if (!ptrs.has(ev.pointerId)) return;
+    const prev = ptrs.get(ev.pointerId); ptrs.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    if (ptrs.size === 2 && pinch0) {
+      const [a, b] = [...ptrs.values()]; const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      view.w = Math.min(3, Math.max(0.02, pinch0[1] * pinch0[0] / Math.max(d, 1))); drawScene(); return;
+    }
+    $("follow").checked = false;
+    const r = svg.getBoundingClientRect(), upp = view.w / r.width;
+    view.cx += (ev.clientX - prev[0]) * upp;      // display X = -x: dragging right moves the view to -x
+    view.cz += (ev.clientY - prev[1]) * upp;
+    drawScene();
+  });
+  const up = (ev) => { ptrs.delete(ev.pointerId); if (ptrs.size < 2) pinch0 = null; if (!ptrs.size) svg.classList.remove("dragging"); };
+  svg.addEventListener("pointerup", up); svg.addEventListener("pointercancel", up);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.target.tagName === "INPUT" && ev.target.type !== "range") return;
+    if (ev.key === "ArrowLeft") { setFrame(k - 1); ev.preventDefault(); }
+    else if (ev.key === "ArrowRight") { setFrame(k + 1); ev.preventDefault(); }
+    else if (ev.key === " ") { play(); ev.preventDefault(); }
+  });
+  window.addEventListener("resize", drawScene);
+}
+
+function start(data) {
+  D = data;
+  buildStrips(); wire();
+  const h = Number(new URLSearchParams(location.search).get("frame"));
+  setFrame(Number.isFinite(h) ? h : 0);
+}
+if (window.STEP1_DATA) start(window.STEP1_DATA);
+else fetch("media/step1_demo.json").then((r) => r.json()).then(start)
+  .catch((e) => ($("status").textContent = "Could not load media/step1_demo.json: " + e));
+</script>
+</body>
+</html>
