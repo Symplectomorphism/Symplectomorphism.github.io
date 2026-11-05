@@ -37,8 +37,18 @@ input[type=range] { flex: 1 1 220px; min-width: 160px; }
 @media (max-width: 860px) { .main { grid-template-columns: 1fr; } }
 .card { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 8px; min-width: 0; }
 .card h3 { margin: 2px 4px 6px; font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-#graphwrap { overflow: auto; max-height: 640px; }
-svg text { fill: var(--fg); }
+#graph { width: 100%; height: 600px; display: block; touch-action: none; cursor: grab;
+  border-radius: 6px; background: var(--bg); }
+#graph.dragging { cursor: grabbing; }
+body.fs #graph { height: calc(100vh - 230px); }
+.zoombar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 4px 6px; }
+.zoombar button { padding: 2px 9px; font-size: 13px; }
+.howto { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 6px 12px;
+  margin-bottom: 10px; font-size: 13.5px; }
+.howto summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
+.howto ul { margin: 6px 0 4px; padding-left: 20px; }
+.howto li { margin: 3px 0; }
+svg text:not([fill]) { fill: var(--fg); }
 .batch { list-style: none; margin: 0; padding: 0; }
 .batch li { padding: 4px 6px; border-radius: 6px; cursor: pointer; display: flex; gap: 8px; align-items: baseline; }
 .batch li:hover, .batch li.sel { background: var(--panel); }
@@ -61,6 +71,28 @@ svg text { fill: var(--fg); }
     <input id="slider" type="range" min="0" value="0" step="1" aria-label="Round">
   </div>
   <div class="status" id="status">Loading…</div>
+  <details class="howto" open>
+    <summary>How to read this</summary>
+    <ul>
+      <li><b>A round</b> is one batch of the search (<code>Search.run_single</code>): collect every
+        untried legal edit at every node, rank them (shallower node first, then catalog order),
+        hand the top 4 to the solver in one parallel call, and add a node for each accepted result.</li>
+      <li><b>A circle is a search node</b>, not a marking: the pair (σ, χ) of the formation it records
+        and the pose where the solver ended. Its label reads "<i>k</i> stored · <i>m</i> in band", the
+        bits it records against the bits actually on at its pose; red when they differ. Two nodes can
+        share a pose (nodes 2 and 3) or a formation.</li>
+      <li><b>The dots around a node</b> are the edges of the marking graph W out of its σ that are legal
+        at its pose χ (pass Near and Hold): one per single-bit make or break, plus transport. Grey: not
+        tried yet. Red: tried, rejected (no node is created). Green: tried, accepted; the line leads to
+        the node it created. An outlined dot belongs to the current round.</li>
+      <li><b>Columns are depth</b> (number of accepted edits from the start). The marking graph W itself
+        is not drawn; map each node to its σ and the tree becomes a set of walks in W.</li>
+      <li><b>The scene</b> replays the selected attempt: dashed is the start pose, solid the motion;
+        steps 1 to 20 are the task, 21 to 30 the dwell, when the result must hold still.</li>
+      <li><b>Navigate the tree</b>: drag to pan, scroll to move up and down, Ctrl+scroll or pinch to
+        zoom, or use the buttons above it. "Full screen" enlarges the whole viewer.</li>
+    </ul>
+  </details>
   <div class="legend">
     <span><i class="dot" style="background:var(--idle)"></i>legal edit, not tried yet</span>
     <span><i class="dot" style="background:var(--bad)"></i>tried, rejected</span>
@@ -69,7 +101,15 @@ svg text { fill: var(--fg); }
     <span>Hover a dot for the edit; click a dot or node for details.</span>
   </div>
   <div class="main">
-    <div class="card"><h3>Search tree (columns = depth)</h3><div id="graphwrap"><svg id="graph"></svg></div></div>
+    <div class="card"><h3>Search tree (columns = depth)</h3>
+      <div class="zoombar">
+        <button id="zin" title="Zoom in">+</button>
+        <button id="zout" title="Zoom out">−</button>
+        <button id="zwidth" title="Fit the width">Fit width</button>
+        <button id="zall" title="Show the whole tree">Whole tree</button>
+        <button id="fs" title="Full screen">Full screen</button>
+      </div>
+      <svg id="graph" preserveAspectRatio="xMinYMin meet"></svg></div>
     <div class="card">
       <h3>This round's batch</h3>
       <ul class="batch" id="batch"></ul>
@@ -147,11 +187,63 @@ function layout() {
   });
   const W = X0 + (Math.max(...cols.keys()) + 1) * COLW, H = Y0 + maxRows * SLOT;
   const g = $("graph");
-  g.setAttribute("viewBox", `0 0 ${W} ${H}`);
-  g.setAttribute("style", `width:100%;min-width:${Math.min(W, 640)}px;height:auto`);
+  TREE = { W, H };
+  setupZoom(g);
+  fitWidth();
   for (const d of cols.keys())
     el("text", { x: X0 + d * COLW - 16, y: 30, "font-size": 13, "font-weight": 600, fill: "var(--muted)" }, g)
       .textContent = d === 0 ? "root" : "depth " + d;
+}
+
+// ---------- zoom and pan (on the viewBox) ----------
+let TREE, VB = { x: 0, y: 0, w: 1, h: 1 }, dragged = false;
+function applyVB() { $("graph").setAttribute("viewBox", `${VB.x} ${VB.y} ${VB.w} ${VB.h}`); }
+function box() { const r = $("graph").getBoundingClientRect(); return { w: r.width || 800, h: r.height || 600, r }; }
+function fitWidth() {
+  const b = box(), w = TREE.W;
+  VB = { x: 0, y: 0, w, h: w * b.h / b.w }; applyVB();
+}
+function fitAll() {
+  const b = box(), s = Math.max(TREE.W / b.w, TREE.H / b.h);
+  VB = { x: 0, y: 0, w: b.w * s, h: b.h * s }; applyVB();
+}
+function zoomAt(f, cx, cy) {            // f > 1 zooms in, around svg point (cx, cy)
+  const w = Math.min(Math.max(VB.w / f, TREE.W / 10), TREE.W * 3), k = w / VB.w;
+  VB = { x: cx - (cx - VB.x) * k, y: cy - (cy - VB.y) * k, w, h: VB.h * k }; applyVB();
+}
+function setupZoom(g) {
+  const toSvg = (ev) => { const b = box(); return {
+    x: VB.x + (ev.clientX - b.r.left) / b.w * VB.w, y: VB.y + (ev.clientY - b.r.top) / b.h * VB.h }; };
+  g.addEventListener("wheel", ev => {
+    ev.preventDefault();
+    if (ev.ctrlKey || ev.metaKey) { const p = toSvg(ev); zoomAt(Math.exp(-ev.deltaY * 0.0025), p.x, p.y); }
+    else { const b = box(); VB.x += ev.deltaX / b.w * VB.w; VB.y += ev.deltaY / b.h * VB.h; applyVB(); }
+  }, { passive: false });
+  let start = null;
+  g.addEventListener("pointerdown", ev => { start = { x: ev.clientX, y: ev.clientY, vx: VB.x, vy: VB.y }; dragged = false; });
+  window.addEventListener("pointermove", ev => {
+    if (!start) return;
+    const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+    if (!dragged && Math.hypot(dx, dy) < 4) return;
+    if (!dragged) { dragged = true; g.classList.add("dragging"); tip(null); }
+    const b = box(); VB.x = start.vx - dx / b.w * VB.w; VB.y = start.vy - dy / b.h * VB.h; applyVB();
+  });
+  window.addEventListener("pointerup", () => { start = null; g.classList.remove("dragging"); setTimeout(() => { dragged = false; }, 0); });
+  const centre = () => ({ x: VB.x + VB.w / 2, y: VB.y + VB.h / 2 });
+  $("zin").onclick = () => { const c = centre(); zoomAt(1.3, c.x, c.y); };
+  $("zout").onclick = () => { const c = centre(); zoomAt(1 / 1.3, c.x, c.y); };
+  $("zwidth").onclick = fitWidth;
+  $("zall").onclick = fitAll;
+  $("fs").onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+  };
+  document.addEventListener("fullscreenchange", () => {
+    document.body.classList.toggle("fs", !!document.fullscreenElement);
+    $("fs").textContent = document.fullscreenElement ? "Exit full screen" : "Full screen";
+    fitWidth();
+  });
+  window.addEventListener("resize", () => { const b = box(); VB.h = VB.w * b.h / b.w; applyVB(); });
 }
 
 function drawGraph() {
@@ -179,6 +271,7 @@ function drawGraph() {
       d.addEventListener("mousemove", ev => tip(ev, edgeTip(e, a, done)));
       d.addEventListener("mouseleave", () => tip(null));
       d.addEventListener("click", () => {
+        if (dragged) return;
         if (done) select({ type: "attempt", a }); else select({ type: "untried", n, e });
       });
     }
@@ -198,7 +291,7 @@ function drawGraph() {
     c.addEventListener("mousemove", ev => tip(ev, `<b>node ${n.id}</b> (depth ${n.depth}, created in round ${n.born})<br>` +
       `stores ${n.stored.length} bits, ${n.actual.length} are in band at its pose` + (extra > 0 ? ` (<span class="bad">${extra} unrecorded</span>)` : "")));
     c.addEventListener("mouseleave", () => tip(null));
-    c.addEventListener("click", () => select({ type: "node", n }));
+    c.addEventListener("click", () => { if (!dragged) select({ type: "node", n }); });
   }
 }
 
