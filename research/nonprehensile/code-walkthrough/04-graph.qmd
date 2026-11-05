@@ -8,6 +8,23 @@ can slide into the other) and **shared-feature** (the two templates use a
 common feature). It should also carry the exclusion table. This step counts the
 edges and looks at what is actually stored.
 
+**Two graphs, not one.** The paper uses two graphs, and it helps to keep them
+apart from here on.
+
+- The **contact graph G**, built on this page: its vertices are *templates*,
+  with typed edges between them. It is fixed by the scene.
+- The **marking graph W**: its vertices are *markings* (formations, the
+  bit vectors of step 3), and its edges are *edits* (make, break, and the
+  transfer of Decision 1). The planner searches W. In the code, `Cand`
+  (step 6) generates W's edges out of a node and `Search` (step 8) walks
+  them; W is never stored, only expanded as the search goes.
+
+G feeds W: exclusion edges decide which markings are valid (W's vertices), and
+transfer-adjacent edges decide which transfers exist (W's transfer edges,
+Decision 1: transfer(c → d) requires c and d to be transfer-adjacent).
+Shared-feature edges do not shape W; the paper uses them, with the transfer
+edges, as the network's message-passing structure.
+
 ```bash
 python walkthrough/04_graph.py
 ```
@@ -81,8 +98,11 @@ Neighbours of B:zn-L:boundary (template 11):
   recomputing the edges with catalog positions.
 - **The exclusion table is dropped.** `ContactGraph.from_spec` passes
   `edges_excluded`, but `__init__` never stores it.
-- **Nothing downstream uses the graph.** `Cand` (step 6) and `Search` (step 8)
-  work from the catalog alone, so no exclusion is enforced anywhere today.
+- **Nothing downstream reads this `ContactGraph` object.** The search does walk
+  a graph, the marking graph W, but `Cand` (step 6) builds W's edges from the
+  catalog and the bit vectors alone, with make and break only. So no exclusion
+  is enforced anywhere today, and transfer edits do not exist yet (they arrive
+  in step 2 of the critical path).
 - **Adjacency follows the box's faces.** `B:zn-L` is transfer-adjacent to the
   four side faces on the floor, not to `B:zp-L`: opposite faces share no edge.
 - **Shared-feature edges here include shared environment features.** `B:zn-L`
@@ -151,7 +171,8 @@ Then `python walkthrough/04_graph.py` prints
 First three stored edges: [(0, 1, <EdgeTypes.SHARED_FEATURE: 1>), (0, 2, <EdgeTypes.TRANSFER_ADJACENT: 0>), (0, 2, <EdgeTypes.SHARED_FEATURE: 1>)]
 ```
 
-and `PYTHONPATH=tests python -m pytest -q tests` still reports `6 passed`.
+and `PYTHONPATH=tests python -m pytest -q tests` still reports `6 passed`
+(prefix it with `MUJOCO_GL=egl` over SSH, as on the start page).
 Templates 0 and 1 (the disk on `xp` and on `xn`) share the disk's boundary but
 are not transfer-adjacent, because opposite faces share no edge. Undo the
 change with `git checkout src/cmg/catalog/templates.py` when you are done.
