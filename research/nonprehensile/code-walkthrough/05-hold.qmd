@@ -188,17 +188,48 @@ B:zn-L:boundary [-0.1625 -0.0625  0.    ] [-0. -0. -1.]
 ```
 
 The midpoint of a face-on-plane contact is *one* representative closest pair,
-here a corner of the bottom face, not the face. One corner under the box cannot
-balance gravity's torque about it, so `{B:zn-L}` fails. The five bits together
-give three distinct corners: (−0.0375, −0.0625), (−0.1625, −0.0625) and
-(−0.1625, 0.0625), all at z = 0.
+not the face. When the box rests exactly flat, every corner of a face touches
+the floor, all candidates tie at distance 0, and `_rectangle_closest_points`
+returns the first one: corner 0 of the box face in its parameter order
+(`local_point` maps (0, 0) to it). Corner 0 of `xn`, `yn` and `zn` is
+(−0.1625, −0.0625), of `xp` is (−0.0375, −0.0625), of `yp` is
+(−0.1625, 0.0625). The fourth floor corner, (−0.0375, 0.0625), is no face's
+corner 0, so no template reports it.
 
-The center of mass projects to (−0.1, 0), which lies exactly on the
-hypotenuse x + y = −0.1 of that triangle. The LP is feasible, with all the
-weight on two corners, but the margin is zero: the support passes on the
-boundary. It still passes with `tolerance=1e-5`. Under Decision 6's robust
-margin this formation would score zero. Step 1 gives each contact its full
-contact set (the face's endpoints), so the LP sees the true support polygon.
+These raw midpoints are not what the LP receives. `_predicate` averages each
+midpoint over five copies of the state, each with one `qpos` coordinate nudged
+by 1e−5. Print what that hands the LP:
+
+```python
+nudged = [np.asarray(catalog.gap_midpoint(world.pose(State(q + o, jnp.zeros_like(q)))))
+          for o in 1e-5 * jnp.eye(5)]
+for i in np.flatnonzero(band):
+    print(f"{names[i]:16s} raw {nudged[0][i].round(4)}  nudge box angle {nudged[2][i].round(4)}"
+          f"  LP sees {np.mean(nudged, axis=0)[i].round(4)}")
+```
+
+```text
+B:xp-L:boundary  raw [-0.0375 -0.0625  0.    ]  nudge box angle [-0.0375  0.0625  0.    ]  LP sees [-0.0375 -0.0375  0.    ]
+B:xn-L:boundary  raw [-0.1625 -0.0625  0.    ]  nudge box angle [-0.1625 -0.0625  0.    ]  LP sees [-0.1625 -0.0625  0.    ]
+B:yp-L:boundary  raw [-0.1625  0.0625  0.    ]  nudge box angle [-0.1     0.0625  0.    ]  LP sees [-0.15    0.0625  0.    ]
+B:yn-L:boundary  raw [-0.1625 -0.0625  0.    ]  nudge box angle [-0.1    -0.0625  0.    ]  LP sees [-0.15   -0.0625  0.    ]
+B:zn-L:boundary  raw [-0.1625 -0.0625  0.    ]  nudge box angle [-0.1    -0.0625  0.    ]  LP sees [-0.15   -0.0625  0.    ]
+```
+
+Nudging the box angle tilts the bottom face through the floor plane, and the
+closest-point routine then returns the point where an edge crosses the floor,
+at the box's center x = −0.1. Four nudges keep the corner, one moves the point,
+so the LP sees 80/20 blends that are no physical contact point.
+
+`{B:zn-L}` alone is one point, (−0.15, −0.0625). One point under the box
+cannot balance gravity's torque about it, so it fails. The five bits give four
+distinct points, and the center of mass (−0.1, 0) lies inside their hull, 1.35 cm
+from the nearest edge (the one from (−0.0375, −0.0375) to (−0.15, 0.0625)).
+So the band formation passes, with a positive margin, but both the pass and the
+1.35 cm are artifacts of tie-breaking and averaging. A robust margin in the
+sense of Decision 6 computed from these points would be a meaningless number.
+Step 1 gives each contact its full contact set (the face's endpoints), so the LP
+sees the true support polygon.
 :::
 
 **5.2** In the table, `toppled30_close` is Supported but not EnvStable. What
