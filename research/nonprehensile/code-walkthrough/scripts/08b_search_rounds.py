@@ -108,7 +108,7 @@ def draw_scene(ax, q_start, q):
     ax.add_patch(Circle(q[-1, 3:5], r, fc="#3d6fe8", ec="#14307a", lw=1))
     ax.plot(q[:, 3], q[:, 4], color="#3d6fe8", lw=0.8)
     ax.plot(q[:, 0], q[:, 1], color="#7a4f0e", lw=0.8)
-    ax.set_xlim(-0.25, 0.08)
+    ax.set_xlim(0.08, -0.25)  # +x points left, as in the paper's figures
     ax.set_ylim(-0.015, 0.165)
     ax.set_aspect("equal")
     ax.set_xticks([])
@@ -147,7 +147,7 @@ for r, attempts in enumerate(rounds):
         for side in ax.spines.values():
             side.set_edgecolor("#1a7f37" if att["accepted"] else "#b42318")
             side.set_linewidth(2)
-fig.suptitle("Search rounds: dashed = start pose, solid = final pose, lines = paths of disk (blue) "
+fig.suptitle("Search rounds (+x to the left, as in the paper): dashed = start pose, solid = final pose, lines = paths of disk (blue) "
              "and box center (brown); green = accepted, red = rejected", fontsize=11)
 fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.12, wspace=0.08, hspace=0.75)
 out = Path(__file__).with_name("08b_search_rounds.png")
