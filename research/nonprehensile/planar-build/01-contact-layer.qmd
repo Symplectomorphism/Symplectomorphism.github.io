@@ -9,8 +9,8 @@ resources:
 
 **Code.** Branch `phase1/planar` of `Symplectomorphism/c-gnn`: commits `ca4123b`
 (contact layer), `2114cf5` (compendium), `21727bb` (paper), `b2665cb` (finite
-gradients, robustness tests), `62782b8` and `5f5a2e8` (θ<sub>e</sub>
-derived). Python 3.14 (`cmg/.venv314`); Angelo's `MPPISolver`, `Cand` and
+gradients, robustness tests), `62782b8`, `5f5a2e8` (θ<sub>e</sub>
+derived) and `583810b` (known issue recorded). Python 3.14 (`cmg/.venv314`); Angelo's `MPPISolver`, `Cand` and
 `Search` run on it unchanged.
 
 ## What step 1 replaces
@@ -179,10 +179,31 @@ pose alone, because the search and the solver query single poses.
   s<sub>v</sub> on), and a box corner 1.6 mm past the riser read −31 mm into
   the platform. The computation is exact: along a box edge every condition
   is linear, or a convex quadratic near an endpoint.
-- **A counted tie-break (under review).** When tolerances leave two
-  templates of one pair, the higher-dimensional one wins, then the smaller
-  gap. It fires on 2 of 1,721 demo frames, both pressed deeper than
-  ε<sub>on</sub>.
+- **A counted tie-break (kept as a fallback, with a known issue).** When
+  tolerances leave two templates of one pair, the higher-dimensional one
+  wins, then the smaller gap, and every use is counted (`tie_breaks`). On
+  the demo it fires on 2 of 1,721 frames (608–609): s and s<sub>v</sub> both
+  survive with the box 1.1–1.8 mm into the riser, and s is chosen.
+
+::: {.callout-warning}
+## Known issue: ties under deep penetration (fixed in step 2)
+
+On 4,000 demo poses jittered by about 3 mm and 1.7°, 357 have a tie (median
+penetration 5.3 mm). Mostly, both corners of one box edge count as touching
+while the edge is tilted past θ<sub>e</sub> (the box has sunk into the
+platform or the floor), or the disk presses deep near a box corner. The cause
+is the lopsided contact band: a contact counts as touching from 10 mm inside
+(ε<sub>pen</sub>) to 1 mm outside (ε<sub>on</sub>), so both ends of a tilted
+edge can be "touching", which exact geometry never allows. The demo's own
+contacts penetrate at most 1.9 mm (95% under 0.7 mm).
+
+Step 2 will (i) set ε<sub>pen</sub> from penetration measured in the
+solver's rollouts (the demo suggests 2–3 mm), (ii) treat a tie as ambiguity,
+as Xiao (1993) reports it: a tied pose cannot become a search node or count
+as a solver success, and (iii) add the jittered-pose stress test to the
+suite. Widening the containment test by the penetration depth was tried and
+rejected: it removes the 2 demo ties but only 13% of the stress-test ties.
+:::
 
 ## The hold test on contact sets
 
@@ -222,7 +243,7 @@ agrees with the LP.
 
 ## Still open
 
-- Review of the tie-break.
+- Ties under deep penetration (the known issue above): step 2.
 - Hysteresis for trajectory labels, once the execution monitor and a noise
   model exist.
 - `Cand` still proposes a second contact for a pair that already has one;
