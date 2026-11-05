@@ -11,7 +11,8 @@ results). For each attempt it recomputes
 
 and draws one panel per attempt in the x-z plane: start pose (dashed), final
 pose (solid), the disk's path, and both verdicts. Writes
-walkthrough/08b_search_rounds.png and prints the same information.
+walkthrough/08b_search_rounds.png (and a zoomable .svg) and prints the same
+information.
 """
 import textwrap
 from pathlib import Path
@@ -150,5 +151,6 @@ fig.suptitle("Search rounds: dashed = start pose, solid = final pose, lines = pa
              "and box center (brown); green = accepted, red = rejected", fontsize=11)
 fig.subplots_adjust(left=0.02, right=0.98, top=0.9, bottom=0.12, wspace=0.08, hspace=0.75)
 out = Path(__file__).with_name("08b_search_rounds.png")
-fig.savefig(out, dpi=110)
-print(f"\nWrote {out}")
+fig.savefig(out, dpi=200)
+fig.savefig(out.with_suffix(".svg"))  # vector copy: zoom without blur
+print(f"\nWrote {out} and {out.with_suffix('.svg').name}")
