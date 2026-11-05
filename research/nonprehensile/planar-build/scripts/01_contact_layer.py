@@ -9,7 +9,7 @@ Writes into the media directory
   * step1_chain.svg   the paper's chain sigma_0 ... sigma_8 at constructed poses,
                       each with its principal-contact on-set and contact sets,
   * step1_tilt.svg    the box's tilt through the pivot of the demo, with the
-                      edge-edge tilt threshold theta_e,
+                      edge-edge tilt threshold theta_e = asin(eps_on / h),
   * step1_demo.json   per-frame data for the interactive demo viewer,
 and prints the numbers the page quotes.
 """
@@ -228,8 +228,10 @@ for k in range(len(on)):
 for s in seq:
     print(f"  {s['start']:5d} +{s['n']:4d}  {{{', '.join(s['on'])}}}")
 
-rest = tilt[:600][on[:600, cat.named["g"]]]
-print(f"resting tilt (frames 0-599, g on): max {rest.max():.2f} deg")
+rest = tilt[:518]
+pushed = tilt[518:608]
+print(f"tilt at rest (frames 0-517): max {rest.max():.2f} deg; while pushed along the floor "
+      f"(frames 518-607): max {pushed.max():.2f} deg")
 sw = np.flatnonzero(on[:-1, cat.named["g"]] & on[1:, cat.named["g_v"]])
 print(f"g -> g_v at frame {sw.tolist()}, tilt {[round(float(tilt[i]), 2) for i in sw]} -> "
       f"{[round(float(tilt[i + 1]), 2) for i in sw]}; theta_e = {THETA_E:.2f} deg")
@@ -278,15 +280,13 @@ for j, s in enumerate(seq):
         ax.text((lo + hi) / 2, 11.4, text, fontsize=6.8, color=MUTED, ha="center", va="top", rotation=90)
 ax.plot(ks_, tilt[k0:k1], color="#2a78d6", lw=2, marker="o", ms=3.5, zorder=3)
 BOUND = math.degrees(math.asin(EPS_ON / L_MIN))
-ax.axhspan(1.5, 2.5, color=MUTED, alpha=0.10, lw=0, zorder=1)
 ax.axhline(THETA_E, color=INK, lw=1, ls="--", zorder=2)
-ax.text(k0 + 20, THETA_E + 0.65, f"θ_e = {THETA_E:.0f}° (adopted); grey band 1.5–2.5° = proposed hysteresis",
-        fontsize=7.5, color=INK)
+ax.text(k0 + 20, THETA_E + 0.65, f"θ_e = arcsin(ε_on / h) = {THETA_E:.2f}°", fontsize=7.5, color=INK)
 ax.axhline(BOUND, color=MUTED, lw=1, ls=":", zorder=2)
-ax.text(k0 + 0.3, BOUND + 0.8, f"{BOUND:.2f}° (old default, the bound)", fontsize=8, color=MUTED)
-ax.axhspan(0, rest.max(), color="#2a78d6", alpha=0.12, lw=0, zorder=1)
-ax.text(k0 + 0.3, -1.25, f"resting jitter, frames 0–599: ≤ {rest.max():.2f}°", fontsize=7.5,
-        color=MUTED)
+ax.text(k0 + 0.3, BOUND + 0.8, f"{BOUND:.2f}° (implied by the first length rule)", fontsize=8, color=MUTED)
+ax.axhspan(0, pushed.max(), color="#2a78d6", alpha=0.12, lw=0, zorder=1)
+ax.text(k0 + 0.3, -1.25, f"tilt while pushed along the floor (frames 518–607): ≤ {pushed.max():.2f}°; at rest: 0°",
+        fontsize=7.5, color=MUTED)
 ax.set_xlim(k0 - 0.5, k1 - 0.5)
 ax.set_ylim(-1.6, 11.6)
 peak = int(np.argmax(tilt[k0:k1])) + k0
