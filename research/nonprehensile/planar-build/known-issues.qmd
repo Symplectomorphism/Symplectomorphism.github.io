@@ -3,7 +3,7 @@ title: "Known issues"
 subtitle: "Every open defect in the code and the paper that we know of: what it does, where it is documented, and which step fixes it."
 ---
 
-**Last checked:** 2026-11-05, against `phase1/planar` at `583810b`. This page
+**Last checked:** 2026-11-05, against `phase1/planar` at `d810e32`. This page
 is updated whenever an issue is found or closed. The full records are in the
 discussion compendium (`reports/discussion-compendium/` in `c-gnn`: sections
 "Step 1", "Plans" and "Code issues"). Walkthrough pages show many of these
@@ -13,7 +13,7 @@ issues as they happen.
 
 | Issue | Effect | Documented | Fix in |
 |---|---|---|---|
-| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 357 of 4,000 demo poses jittered by about 3 mm are ambiguous; the solver accepts results with up to 10 mm of overlap. The demo's own contacts reach only 1.9 mm. | [Step 1](01-contact-layer.qmd#other-refinements), README, `step2d.yaml`, `PlanarCatalog` | Step 2: set ε<sub>pen</sub> from rollouts, reject tied poses as nodes and successes |
+| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 357 of 4,000 demo poses jittered by about 3 mm are ambiguous (tracked by a test). Since step 2 a tied pose cannot be a solver success or a search node. | [Step 1](01-contact-layer.qmd#other-refinements), [Step 2](02-hold-gate.qmd#eps-pen), README | Step 3: tighten ε<sub>pen</sub> once the cost stops rewarding penetration (rollouts reach 9.9 mm today) |
 | **Labels can flicker near θ<sub>e</sub>** along a trajectory. | A 3-frame flicker on the demo (frames 623–625) where the tilt hovers at 1.83°. | [Step 1](01-contact-layer.qmd#edge-contacts) | Execution monitor: hysteresis with thresholds from a noise model |
 | **The 3D catalog (`step.yaml`) keeps the old defects:** closed faces over-count bits, ±y faces, unset template IDs, a Python loop over templates, closest-pair ties broken by "first candidate". | Wrong formations and slow compiles for 3D scenes only. | Walkthrough [2](../code-walkthrough/02-templates.qmd), [3](../code-walkthrough/03-formations.qmd), [9](../code-walkthrough/09-step1.qmd) | Frozen with 3D (Decision 3); the planar catalog replaces it |
 
@@ -21,7 +21,6 @@ issues as they happen.
 
 | Issue | Effect | Documented | Fix in |
 |---|---|---|---|
-| **`Cand` has no Valid check**, and transport is always legal. | It proposes a second contact for a pair that already has one, and edits that create excluded formations. | Walkthrough [6](../code-walkthrough/06-candidates.qmd), README | Step 2 |
 | **The search ignores the solver's success flag.** It accepts when the requested bits are in band. | Edits the solver reports as failed can become nodes. | Walkthrough [7](../code-walkthrough/07-mppi.qmd), [8](../code-walkthrough/08-search.qmd) | Step 3 (with Λ and H wired in) |
 | **A node stores the requested formation, not the one reached.** | In a 12-round run, 28 of 30 nodes record a formation they do not have. | Walkthrough [8](../code-walkthrough/08-search.qmd) | Step 3 |
 | **A break is accepted without checking that the contact left.** | 6 of 7 accepted breaks in that run left the contact in band. | Walkthrough [8](../code-walkthrough/08-search.qmd) | Step 3 |
@@ -35,7 +34,9 @@ issues as they happen.
 | **MPPI's arrival term is signed and linear** (10<sup>4</sup> φ). | It rewards penetration: the shove seen on walkthrough page 7. | Walkthrough [7](../code-walkthrough/07-mppi.qmd) | Step 3 (cost experiment) |
 | **MPPI's dwell term penalizes velocity**, not drift from the task-end pose (`hold_target` is computed but unused). | Its docstring describes a different term than the code runs. | Compendium, code issues | Step 3 |
 | **GPU runs are not repeatable between processes** by default. | The same MPPI call ended once flush and once tipped 1.4°. | [Step 1](01-contact-layer.qmd#tests), README | Workaround: `XLA_FLAGS=--xla_gpu_deterministic_ops=true` (about 13% slower) |
-| **The hold test's "not supported" is uncertified.** MPAX's infeasibility detection is disabled, and there is no Farkas certificate. | "Not supported" can mean "ran out of iterations": a false rejection. | Compendium, Plans | Step 2 (certified gate, solver benchmark) |
+| **MPPI fails the chain's edits.** In 24 full rollouts of the chain's edits, none passes the solver's success check, the passive breaks included (not because of ties). | Edits that `Cand` offers are not realized, so the search cannot follow the chain. | [Step 2](02-hold-gate.qmd#eps-pen), compendium | Step 3 (cost and success criteria) |
+| **Margins are unbounded with the disk in the formation.** The disk's force has no limit, so its support cone often fills all of 3D. | The margin cannot rank formations that use the disk. | [Step 2](02-hold-gate.qmd#h-exact) | Decision 6: manipulator force limits |
+| **The exact hold test is float32.** | Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases. | [Step 2](02-hold-gate.qmd#which-solver) | Acceptable for now; float64 or a margin threshold if it matters |
 
 ## Open: tests and configuration
 
@@ -51,7 +52,8 @@ The paper still follows the old chain or older decisions in these places:
 - The chain of Decisions 2 and 7: the example formations and edits, the
   labels and caption of Figure 1, and the figures of the legal chain and the
   marking graph.
-- Lemma `markgraph-struct` and the cube remark, with the transfer edits.
+- The marking-graph figure's caption still says graph distance equals Hamming
+  distance (the lemma now gives bounds within a factor of four).
 - Proposition `gap-miss`(i), and the root and live subgraphs.
 - Decision 8: attention instead of typed edges, and exclusions derived from geometry.
 - `sec:novel`, to be rewritten around the survey's claim-status table.
@@ -61,6 +63,10 @@ The paper still follows the old chain or older decisions in these places:
 
 | Issue | Closed by |
 |---|---|
+| `Cand` had no Valid check: a second contact per pair, excluded formations, transport always legal | Edit set with Valid, transfer and pass-through; transport only when supported (step 2) |
+| The hold test's "not supported" was uncertified: the MPAX LPs rejected 192–194 of 416 supported near-boundary cases | Exact planar test with a witness or a Farkas certificate (step 2) |
+| No transfer generator: g → g<sub>v</sub> needed a break and a make through a marking where the box does not touch the floor | `transfer(c → d)` and the pivot pass-through (step 2) |
+| The paper's Lemma `markgraph-struct` and Remark `cube` assumed make and break only | Restated with transfer and pass-through, and checked exhaustively (step 2) |
 | One physical contact lit 3 to 6 template bits (closed faces share edges) | Principal-contact on-set, `ca4123b` |
 | The hold test used one tie-broken point per contact, blended by smoothing; ±y faces on a planar body | Contact-set endpoints as support points, planar catalog, `ca4123b` |
 | The step corner belonged to riser and platform; the floor–riser junction lit a bit | Corner ownership (Decision 4), `ca4123b` |
