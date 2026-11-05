@@ -614,7 +614,7 @@ $$
 </header>
 
 
-<p><strong>Code.</strong> Branch <code>phase1/planar</code> of <code>Symplectomorphism/c-gnn</code>: commits <code>ca4123b</code> (contact layer), <code>2114cf5</code> (compendium), <code>21727bb</code> (paper), <code>b2665cb</code> (finite gradients, robustness tests), <code>62782b8</code> and <code>5f5a2e8</code> (θ<sub>e</sub> derived). Python 3.14 (<code>cmg/.venv314</code>); Angelo’s <code>MPPISolver</code>, <code>Cand</code> and <code>Search</code> run on it unchanged.</p>
+<p><strong>Code.</strong> Branch <code>phase1/planar</code> of <code>Symplectomorphism/c-gnn</code>: commits <code>ca4123b</code> (contact layer), <code>2114cf5</code> (compendium), <code>21727bb</code> (paper), <code>b2665cb</code> (finite gradients, robustness tests), <code>62782b8</code>, <code>5f5a2e8</code> (θ<sub>e</sub> derived) and <code>583810b</code> (known issue recorded). Python 3.14 (<code>cmg/.venv314</code>); Angelo’s <code>MPPISolver</code>, <code>Cand</code> and <code>Search</code> run on it unchanged.</p>
 <section id="what-step-1-replaces" class="level2">
 <h2 class="anchored" data-anchor-id="what-step-1-replaces">What step 1 replaces</h2>
 <p>The walkthrough ended on a list of defects in the contact layer (<a href="../../../research/nonprehensile/code-walkthrough/09-step1.html">page 9</a>). The main one: faces are closed sets that share their edges, so one physical contact lit 3 to 6 template bits at once, on every frame of the demo. The search, the hold test and the graph all inherited that over-count. Step 1 rebuilds the layer in the x–z plane with the paper’s contact names. Exactly one contact per body pair is on, and each contact carries its contact set, the part of the box that actually touches.</p>
@@ -799,8 +799,22 @@ $$
 <h2 class="anchored" data-anchor-id="the-other-two-refinements">The other two refinements</h2>
 <ul>
 <li><strong>Penetration is charged to the nearest surface (approved).</strong> A penetration counts against the nearest environment segment or segment endpoint. Without this, a box face 2 mm into the riser read +1.6 mm (s off, s<sub>v</sub> on), and a box corner 1.6 mm past the riser read −31 mm into the platform. The computation is exact: along a box edge every condition is linear, or a convex quadratic near an endpoint.</li>
-<li><strong>A counted tie-break (under review).</strong> When tolerances leave two templates of one pair, the higher-dimensional one wins, then the smaller gap. It fires on 2 of 1,721 demo frames, both pressed deeper than ε<sub>on</sub>.</li>
+<li><strong>A counted tie-break (kept as a fallback, with a known issue).</strong> When tolerances leave two templates of one pair, the higher-dimensional one wins, then the smaller gap, and every use is counted (<code>tie_breaks</code>). On the demo it fires on 2 of 1,721 frames (608–609): s and s<sub>v</sub> both survive with the box 1.1–1.8 mm into the riser, and s is chosen.</li>
 </ul>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Known issue: ties under deep penetration (fixed in step 2)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>On 4,000 demo poses jittered by about 3 mm and 1.7°, 357 have a tie (median penetration 5.3 mm). Mostly, both corners of one box edge count as touching while the edge is tilted past θ<sub>e</sub> (the box has sunk into the platform or the floor), or the disk presses deep near a box corner. The cause is the lopsided contact band: a contact counts as touching from 10 mm inside (ε<sub>pen</sub>) to 1 mm outside (ε<sub>on</sub>), so both ends of a tilted edge can be “touching”, which exact geometry never allows. The demo’s own contacts penetrate at most 1.9 mm (95% under 0.7 mm).</p>
+<p>Step 2 will (i) set ε<sub>pen</sub> from penetration measured in the solver’s rollouts (the demo suggests 2–3 mm), (ii) treat a tie as ambiguity, as Xiao (1993) reports it: a tied pose cannot become a search node or count as a solver success, and (iii) add the jittered-pose stress test to the suite. Widening the containment test by the penetration depth was tried and rejected: it removes the 2 demo ties but only 13% of the stress-test ties.</p>
+</div>
+</div>
 </section>
 <section id="the-hold-test-on-contact-sets" class="level2">
 <h2 class="anchored" data-anchor-id="the-hold-test-on-contact-sets">The hold test on contact sets</h2>
@@ -860,7 +874,7 @@ $$
 <section id="still-open" class="level2">
 <h2 class="anchored" data-anchor-id="still-open">Still open</h2>
 <ul>
-<li>Review of the tie-break.</li>
+<li>Ties under deep penetration (the known issue above): step 2.</li>
 <li>Hysteresis for trajectory labels, once the execution monitor and a noise model exist.</li>
 <li><code>Cand</code> still proposes a second contact for a pair that already has one; the Valid check of step 2 removes it.</li>
 <li>Paper backlog: the chain’s renumbering, the labels of Figure 1 and the theory items still follow the old chain (status board of the compendium).</li>
