@@ -185,7 +185,7 @@ outside JAX as the float64 reference that checks every answer in the tests.
 
 - **linrax has no license file** (neither its repository nor its PyPI
   package). cmg depends on it as published, pinned to 0.3.0, without copying
-  its code.
+  its code. This is accepted; linrax stays.
 - **linrax returns no dual.** The dual is recovered at the end from its final
   basis $B$, by solving $B^\top y = c_B$; LP-1's certificate is then $-y$.
 - **Set inclusion stays an option** for the margin, beside the ℓ₁ margin and
@@ -193,19 +193,35 @@ outside JAX as the float64 reference that checks every answer in the tests.
   as LP-2 directions (§3).
 :::
 
+**linrax's pivot loop, replaced.** linrax takes no iteration cap. Its
+whole pivot loop, though, is one small function that `linprog` looks up when
+it is traced, so `hold_lp` swaps in its own version at import (checked
+against the pinned 0.3.0). The tableau and the entering rule stay the same,
+with three changes:
+
+- **An iteration cap**, 300 pivots per phase. Under `vmap` the loop runs
+  until the slowest LP of the batch finishes, so a single LP that never
+  finishes hangs them all. That happened on 3D cones (below).
+- **Bland's leaving rule.** Ties in the ratio test go to the basic variable
+  with the lowest index. linrax took the lowest row instead, which does
+  not rule out cycling, and one 3D LP cycled.
+- **Artificial rows marked with ≥.** After phase 1 the artificial columns
+  are deleted, and the first artificial index equals the index of the
+  right-hand-side column. linrax's test used >, so it missed that row, and
+  on the flat box it returned a slack of −1 and called it optimal.
+
 **Making it work in float32.** All computations stay in float32. Each of
-these four measures fixed a failure the tests found:
+these measures fixed, or measurably helped with, a failure the tests found:
 
 1. **Spread the right-hand side.** A planar need from gravity alone is
-   $(0, 1, 0)$, with two zero rows. Phase 1 then ends with an artificial
-   variable left in the basis at zero, and linrax's phase 2 mishandles it
-   (its test for artificial rows misses the first artificial column). On the
-   flat box it returned a slack of $-1$ and called it optimal. The fix is
-   to rotate the equality rows by the Householder reflection $H$ that maps
-   need to $\lvert\text{need}\rvert(1,\dots,1)/\sqrt{d}$. $H$ is
-   orthogonal, so the LP is the same ($Ax = b \iff HAx = Hb$), perfectly
-   conditioned, and every right-hand side is positive. The dual maps back
-   by $y = Hy'$.
+   $(0, 1, 0)$, with two zero rows. The equality rows are rotated by the
+   Householder reflection $H$ that maps need to
+   $\lvert\text{need}\rvert(1,\dots,1)/\sqrt{d}$. $H$ is orthogonal, so
+   the LP is the same ($Ax = b \iff HAx = Hb$), perfectly conditioned, and
+   every right-hand side is positive. The dual maps back by $y = Hy'$. It
+   first worked around the artificial-row bug above. It stays because it
+   still tests slightly better: 5 uncertain answers in 768 3D cases against
+   10 without it.
 2. **Recompute the primal from the final basis**, by one solve with $B$,
    rather than reading it off the tableau, which carries the rounding of
    every pivot.
@@ -243,6 +259,27 @@ needs weights of 60–190 times the weight, beyond what float32 can check to
 $10^{-5}$. An earlier run that trusted linrax's own feasibility flag scored
 404, but nothing checked that flag, and it accepted a pose that HiGHS
 rejects.
+
+**In 3D.** The same code was run on a cube touched by up to four contacts
+(face patches, edges and points; 8-edge pyramids; $d = 6$, up to 128
+generators; 1,024 cases batched with `vmap`; float32 on CPU). The results:
+
+- Nothing hangs. linrax's own loop had cycled and stalled the whole batch.
+- Nothing is certified wrongly.
+- 763 of 768 random cases and 255 of 256 near-boundary cases come out right.
+- The other 5 random cases are supported but end "uncertain", which is
+  safe.
+- The one near-boundary miss is a false acceptance 0.1% outside the
+  boundary.
+- LP-1 takes 40 ms per 256 cases, and the full test with 12 exits about
+  300 ms.
+
+The uncertain cases come from float32 rounding that builds up in linrax's
+dense tableau over the longer pivot sequences of 3D cones. They are not
+caused by the cap: the same cases stay uncertain at 5,000 pivots. The
+standard cure is *reinversion*: rebuild the tableau from the final basis
+($B^{-1}A$ and $B^{-1}b$, computed fresh) and continue. It is planned for
+when the 3D build arrives.
 
 The exact test remains the default gate until the margin is chosen. The
 planar and spatial builders never see the solver: it sits behind
