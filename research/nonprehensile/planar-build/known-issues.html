@@ -597,7 +597,7 @@ $$
 </header>
 
 
-<p><strong>Last checked:</strong> 2026-11-06, against <code>phase1/planar</code> at <code>e29d96f</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
+<p><strong>Last checked:</strong> 2026-11-06, against <code>phase1/planar</code> at <code>b354251</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
 <section id="open-contact-layer" class="level2">
 <h2 class="anchored" data-anchor-id="open-contact-layer">Open: contact layer</h2>
 <table class="caption-top table">
@@ -725,10 +725,10 @@ $$
 <td>Acceptable for now; a margin threshold if it matters. The LP gate behaves alike (float32: 383–386 of 416, every miss an “uncertain” rejection or one of the same 12 upstream disagreements; <a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>)</td>
 </tr>
 <tr class="odd">
-<td><strong>linrax, the LP solver, has no license file</strong> (neither its repository nor its PyPI package).</td>
-<td>cmg depends on a package with no stated terms of use; pinned to 0.3.0, its code not copied.</td>
-<td><a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>, compendium (hold-test LPs), <code>pyproject.toml</code></td>
-<td>Ask its authors to add a license</td>
+<td><strong>The LP gate in 3D is float32-limited.</strong> Rounding builds up in linrax’s dense tableau over the long pivot sequences of 3D cones (50–130 generators).</td>
+<td>About 1% of supported 3D cases end “uncertain” (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly.</td>
+<td><a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>, compendium (hold-test LPs)</td>
+<td>Reinversion (rebuild the tableau from the final basis and continue), with the 3D build</td>
 </tr>
 </tbody>
 </table>
@@ -792,6 +792,14 @@ $$
 </tr>
 </thead>
 <tbody>
+<tr class="odd">
+<td>linrax could loop forever (no iteration cap; cycling on degenerate 3D LPs), which hangs a whole <code>vmap</code> batch</td>
+<td>Its pivot loop is replaced: a cap of 300 pivots per phase, Bland’s leaving rule, artificial rows marked correctly (Nov 6)</td>
+</tr>
+<tr class="even">
+<td>linrax, the LP solver, has no license file</td>
+<td>Accepted (Aykut, Nov 6): linrax stays, pinned to 0.3.0</td>
+</tr>
 <tr class="odd">
 <td>linrax returned infeasible points as “optimal” in float32: a basic slack at −1 when need has zero rows (the planar case), pivots on noise at its default tolerance, negative weights with a large exit cap</td>
 <td>Householder-spread rows, primal and dual from the final basis, pivot tolerance 10<sup>−4</sup>, cap 10, every answer checked, <code>e29d96f</code></td>
