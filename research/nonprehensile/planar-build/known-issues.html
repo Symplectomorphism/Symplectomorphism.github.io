@@ -597,7 +597,7 @@ $$
 </header>
 
 
-<p><strong>Last checked:</strong> 2026-11-05, against <code>phase1/planar</code> at <code>1986c73</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
+<p><strong>Last checked:</strong> 2026-11-06, against <code>phase1/planar</code> at <code>e29d96f</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
 <section id="open-contact-layer" class="level2">
 <h2 class="anchored" data-anchor-id="open-contact-layer">Open: contact layer</h2>
 <table class="caption-top table">
@@ -716,13 +716,19 @@ $$
 <td><strong>Margins are unbounded with the disk in the formation.</strong> The disk’s force has no limit, so its support cone often fills all of 3D.</td>
 <td>The margin cannot rank formations that use the disk.</td>
 <td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#h-exact">Step 2</a></td>
-<td>Decision 6: manipulator force limits</td>
+<td>Decision 6: manipulator force limits. The LP gate takes them already (<code>force_limit</code>, <a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#lp-3-force-limits">LP-3</a>); the disk’s limit is still unknown</td>
 </tr>
 <tr class="even">
 <td><strong>The exact hold test is float32.</strong></td>
 <td>Its answers within tolerance of the boundary depend on compilation (jitted and eager runs differ on 3 of 136 near-boundary cases). Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases.</td>
 <td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#which-solver">Step 2</a></td>
-<td>Acceptable for now; float64 or a margin threshold if it matters. In float64 the exact test and linrax agree exactly (<a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>)</td>
+<td>Acceptable for now; a margin threshold if it matters. The LP gate behaves alike (float32: 383–386 of 416, every miss an “uncertain” rejection or one of the same 12 upstream disagreements; <a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>)</td>
+</tr>
+<tr class="odd">
+<td><strong>linrax, the LP solver, has no license file</strong> (neither its repository nor its PyPI package).</td>
+<td>cmg depends on a package with no stated terms of use; pinned to 0.3.0, its code not copied.</td>
+<td><a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>, compendium (hold-test LPs), <code>pyproject.toml</code></td>
+<td>Ask its authors to add a license</td>
 </tr>
 </tbody>
 </table>
@@ -787,58 +793,62 @@ $$
 </thead>
 <tbody>
 <tr class="odd">
+<td>linrax returned infeasible points as “optimal” in float32: a basic slack at −1 when need has zero rows (the planar case), pivots on noise at its default tolerance, negative weights with a large exit cap</td>
+<td>Householder-spread rows, primal and dual from the final basis, pivot tolerance 10<sup>−4</sup>, cap 10, every answer checked, <code>e29d96f</code></td>
+</tr>
+<tr class="even">
 <td>The hold test’s margin was positive on a cone that is a single ray, and the test failed for fewer than three generators (neither occurred in the planner, which passes 16)</td>
 <td>Candidate planes through one generator; margin proved and tested to be the signed distance, <code>1986c73</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>Cand</code> had no Valid check: a second contact per pair, excluded formations, transport always legal</td>
 <td>Edit set with Valid, transfer and pass-through; transport only when supported (step 2)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>The hold test’s “not supported” was uncertified: the MPAX LPs rejected 192–194 of 416 supported near-boundary cases</td>
 <td>Exact planar test with a witness or a Farkas certificate (step 2)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>No transfer generator: g → g<sub>v</sub> needed a break and a make through a marking where the box does not touch the floor</td>
 <td><code>transfer(c → d)</code> and the pivot pass-through (step 2)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>The paper’s Lemma <code>markgraph-struct</code> and Remark <code>cube</code> assumed make and break only</td>
 <td>Restated with transfer and pass-through, and checked exhaustively (step 2)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>One physical contact lit 3 to 6 template bits (closed faces share edges)</td>
 <td>Principal-contact on-set, <code>ca4123b</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>The hold test used one tie-broken point per contact, blended by smoothing; ±y faces on a planar body</td>
 <td>Contact-set endpoints as support points, planar catalog, <code>ca4123b</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>The step corner belonged to riser and platform; the floor–riser junction lit a bit</td>
 <td>Corner ownership (Decision 4), <code>ca4123b</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Exclusions by integer index, then dropped; no vertex features for g<sub>v</sub>, s<sub>v</sub></td>
 <td><code>step2d.yaml</code> with named templates and vertices, <code>ca4123b</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Half-plane penetrations charged to the wrong surface (−31 mm into the platform)</td>
 <td>Penetration attribution (approved Nov 5), <code>ca4123b</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Python loop over templates in <code>Catalog.gap</code></td>
 <td>Planar catalog groups templates by kernel, one <code>vmap</code> each, <code>ca4123b</code> (the 3D catalog still loops)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>NaN gradients in the planar kernels</td>
 <td>Safe norms and roots, <code>b2665cb</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>The length rule produced {g<sub>v</sub>, s} at the pivot, and called a box tipped 7° flat</td>
 <td>θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h) ≈ 1.83°, <code>5f5a2e8</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>pyproject.toml</code> was invalid TOML</td>
 <td>Fixed upstream in Angelo’s <code>phase1/dev</code>; verified Nov 5</td>
 </tr>
