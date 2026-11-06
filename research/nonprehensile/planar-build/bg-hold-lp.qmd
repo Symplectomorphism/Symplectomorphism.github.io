@@ -1,0 +1,242 @@
+---
+title: "Background: the hold test as a linear program"
+subtitle: "The same support question posed as linear programs that work unchanged in 2D and 3D, with a witness, a certificate, a margin and force limits."
+lightbox: true
+---
+
+**What this explains.** [Deciding support exactly](bg-exact-hold-test.qmd)
+answers "can these contacts hold the box?" by enumeration, which only works
+in the plane. This page poses the same question as **linear programs (LPs)**.
+The LPs don't care whether wrenches have 3 components (planar) or 6
+(spatial). The 3D version therefore only adds a builder for its generators,
+and the LPs and the solver stay the same. The LPs also do two things the
+enumeration cannot: they handle **limits on the manipulator's force** and
+**margins against a set of disturbances**. Read the exact-test page first;
+this one reuses its notation and its running example (a square box on the
+floor, μ = 0.2, forces in mg, moments in mg·ℓ). Every number here comes from
+`scripts/bg_hold_lp.py`, which solves the LPs with HiGHS (dual simplex,
+float64).
+
+## 1. One backbone, two dimensions
+
+The LPs take four pieces of data:
+
+| Data | Meaning |
+|---|---|
+| $W \in \R^{d\times k}$ | generators: one column per friction-cone edge at each support point, as a wrench |
+| $\text{need} \in \R^d$ | the wrench the contacts must supply (minus gravity, minus any known external wrench) |
+| $B\,\lambda \le f_{\max}$ (optional) | force limits, one row per limited contact |
+| $u_1, \dots, u_J$ (optional) | disturbance directions for the margin |
+
+The unknowns are the edge weights $\lambda \in \R^k$, $\lambda \ge 0$. Only the
+builder of $W$ and need knows the dimension:
+
+| | Planar (now) | Spatial (3D, later) |
+|---|---|---|
+| Wrench, $d$ | $(f_x, f_z, \tau_y/\ell)$, $d = 3$ | $(f, \tau/\ell)$, $d = 6$ |
+| Friction cone at a point | exactly 2 edges, $n \pm \mu t$ | circular cone; inner pyramid with $m$ edges $n + \mu(\cos\theta_j t_1 + \sin\theta_j t_2)$ |
+| Support points of a contact | the 2 endpoints of the contact segment | the vertices of the contact polygon |
+| Each edge's normal component | 1 (so a contact's normal force is the sum of its weights) | 1 (same) |
+| LPs, solver, checks | shared | shared |
+
+The pyramid's edges lie *on* the circular cone, so the pyramid sits inside
+it. A box the pyramid holds is really held. The approximation can only
+reject, never accept wrongly, and 8 edges keep at least
+$\cos(\pi/8) = 92\%$ of the friction in every direction. The reduction to a
+polygon's vertices is the same linearity argument as for a segment's
+endpoints: a force's moment is linear in its point of application.
+
+## 2. LP-1: feasibility, with a witness and a certificate
+
+The direct LP, "find $\lambda \ge 0$ with $W\lambda = \text{need}$", has no
+solution exactly when the answer is no. A solver then reports "infeasible",
+and some solvers report nothing more. The fix is to make the LP always
+solvable by adding slack $s^\pm \ge 0$ that pays for any mismatch:
+$$
+\text{LP-1:}\qquad \delta \;=\; \min_{\lambda,\, s^+,\, s^- \,\ge\, 0}\; \mathbf 1^\top s^+ + \mathbf 1^\top s^-
+\quad\text{s.t.}\quad W\lambda + s^+ - s^- = \text{need}.
+$$
+
+- **It always has a solution:** $\lambda = 0$, $s^+ = \max(\text{need}, 0)$, $s^- = \max(-\text{need}, 0)$ satisfies it, and $\delta \ge 0$.
+- **Its optimum is a distance:** $\delta = \min_{\lambda \ge 0}\|W\lambda - \text{need}\|_1$, the ℓ₁ distance from need to the cone $C$. So $\delta = 0$ means supported.
+- **Yes comes with a witness.** The simplex method returns a *basic*
+  optimal solution, with at most $d$ nonzero variables. When $\delta = 0$,
+  those are at most $d$ generators that hold the box. This is
+  Carathéodory's theorem again, now produced by the solver.
+
+**No comes with a certificate.** The LP dual is
+
+::: {.callout-note appearance="simple"}
+**Dual of LP-1.** $\displaystyle \delta = \max_{y}\ \text{need}^\top y \quad\text{s.t.}\quad W^\top y \le 0,\ \ -\mathbf 1 \le y \le \mathbf 1.$
+:::
+
+If $\delta > 0$, the optimal $y$ has $W^\top y \le 0$ and
+$\text{need}^\top y = \delta > 0$. So $z = -y$ has $z\cdot w_i \ge 0$ for every
+generator and $z\cdot\text{need} < 0$: the Farkas certificate of the exact-test
+page. A simplex solver has $y$ in hand at the end, at no extra cost.
+
+*Example.* Flat box on both corners: $\delta = 0$, and the witness is
+$\lambda_{A_+} = \lambda_{B_-} = \tfrac12$, the same as the exact test's.
+Corner A alone: $\delta = 1.0$, with dual $y = (-1, 1, -1)$. Then
+$z = (1, -1, 1)$ gives $z\cdot w_{A_\pm} = 0$ and $z\cdot\text{need} = -1 < 0$.
+That is the exact test's certificate $(1,-1,1)/\sqrt3$, unscaled. A grid
+search over $\lambda$ confirms the ℓ₁ distance 1.0.
+
+## 3. LP-2: the margin, as exit distances
+
+The exact test's margin is a Euclidean distance, and a Euclidean ball is
+not a polytope, so it needs a second-order cone program, not an LP. A
+polytope of disturbances is an LP. The natural one is the ℓ₁ ball, whose
+$2d$ corners are the pure disturbances $\pm e_i$: a pure sideways push, a
+pure lift, a pure twist.
+
+For a direction $u$, the **exit distance** is how far need can move along
+$u$ before leaving the cone:
+$$
+\text{LP-2:}\qquad t(u) \;=\; \max_{\lambda \ge 0,\ 0 \le t \le T}\; t
+\quad\text{s.t.}\quad W\lambda = \text{need} + t\,u .
+$$
+The cap $T$ keeps the LP bounded when the cone never ends in that direction.
+Here $u$ is the extra wrench the contacts must supply; a disturbance of
+$-t\,u$ acts on the box.
+
+::: {.callout-note appearance="simple"}
+**Claim.** If need $\in C$, the largest ℓ₁ ball around need that fits in $C$ has radius $\min_i\, t(\pm e_i)$.
+:::
+
+*Why.* The ℓ₁ ball of radius $r$ is the convex hull of its $2d$ corners
+$\text{need} \pm r\,e_i$. A convex set contains it exactly when it contains
+the corners. Along each direction, the points of $C$ form an interval
+$[0, t(u)]$, because $C$ is convex and contains need. So the corners fit iff
+$r \le t(\pm e_i)$ for every $i$. Any polytope $D$ of disturbances works the
+same way, with one LP per corner of $D$.
+
+Together with LP-1, this gives a **signed ℓ₁ margin**: $\min_i t(\pm e_i)$
+inside the cone and $-\delta$ outside. It is the same construction as the
+exact test's signed Euclidean distance, with a different norm.
+
+![Exit distances of the flat box along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+f<sub>z</sub>) never breaks support; lifting by the full weight (−f<sub>z</sub>) and twisting by mg·ℓ (±τ, the box tips) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg. The disk raises the +f<sub>x</sub> exit to 0.72, but the margin stays 0.2: the disk pushes only one way, so the −f<sub>x</sub> exit is still set by floor friction alone.](media/bg_lp_exits.svg){.lightbox}
+
+**Reading the flat box.** The ℓ₁ margin is 0.2, exactly μ: the smallest
+pure push that breaks support. The Euclidean margin was 0.196, because the
+worst Euclidean direction mixes a push with a slight lift. The ℓ₁ number is
+easier to state, and its directions are the ones an engineer would test.
+Both depend on $\ell$, since it sets how a moment trades against a force.
+
+## 4. LP-3: force limits
+
+The disk's force is unbounded in the cone model, so with the disk in the
+formation the cone can fill all of $\R^3$ and the margin becomes infinite
+(the exact test reports a cap). Every edge has unit normal component, so a
+contact's normal force is the sum of its edge weights. A limit is one more
+row:
+$$
+\sum_{j \in \text{edges of contact } c} \lambda_j \;\le\; f_{\max,c}.
+$$
+Add it to LP-1 and LP-2. The feasible wrenches then form a cone (the
+environment's contacts) plus a polytope (the manipulator's). Directions the
+disk helps now have finite exits: in panel (b), $t(+f_x) = 0.72$. That is
+0.5 from the disk plus 0.22 of floor friction, because the disk's friction
+also presses the box onto the floor ($0.2 \times 1.1$). The dual gains one
+multiplier per limit, and the certificate becomes $(z, v)$ with $v \ge 0$:
+still a few inequalities anyone can check.
+
+This settles the open item "finite margins with the disk" (Decision 6),
+once the manipulator's force limits are known.
+
+## 5. Robustness, again for free
+
+The robust versions are the same as on the exact-test page, now as more
+LPs of the same shape:
+
+- **Friction:** use the lower end of the friction interval.
+- **Mass and center of mass:** one need per corner of the uncertainty box.
+  The verdict and margin are the worst over those needs.
+
+The LPs all have the same size, so they batch with `vmap`: over poses, over
+needs and over directions.
+
+## 6. Solving it
+
+The LPs are tiny and dense: $d = 3$ or $6$ rows, tens to a hundred-odd
+columns. Many of them are solved at once, and the interesting ones sit on
+the support boundary, where they are degenerate. That rules some methods in
+and some out:
+
+| Method | Returns | Fit |
+|---|---|---|
+| **Simplex** | a vertex (witness with ≤ d generators) and the dual (certificate) | Best fit: a handful of pivots; exact up to rounding; Bland's rule avoids cycling at degenerate points |
+| Interior point | an interior point; duals | Workable: always converges in a few dozen iterations; the witness is dense, and the certificate needs care near the boundary |
+| First-order (PDHG, e.g. MPAX) | an approximate point | Poor fit: built for huge sparse LPs. On ours it converges slowly near the boundary and cannot certify "no" when it stops early. In step 2, MPAX falsely rejected about 193 of 416 supported cases near the boundary |
+
+**Solvers that run inside JAX** (so the test can be jitted and vmapped with
+the rest of the planner):
+
+- **linrax** (Georgia Tech, ACC 2026) is a two-phase tableau simplex
+  method with Bland's rule. It runs under `jit` and `vmap` with our JAX
+  (0.12). It does not return the dual (we would recover it from its final
+  basis), has no iteration cap, and its repository has no license file yet.
+  On the step-2 benchmark (1,000 random cases; 416 within 2 mm of disk
+  height of the support boundary; the float64 reference is HiGHS), the
+  plain feasibility LP compares with the exact test as follows
+  (`scripts/bg_hold_lp_bench.py`, commit `1986c73`):
+
+  | Precision, device | Exact test, near boundary | linrax, near boundary | ms per 256 (exact / linrax) |
+  |---|---|---|---|
+  | float32, CPU | 390 of 416 | 404 of 416 | 4.8 / 2.4 |
+  | float32, GPU | 389 of 416 | 402 of 416 | 1.6 / 1.8 |
+  | float64, CPU | 401 of 416 | 401 of 416 | 7.6 / 2.7 |
+  | float64, GPU | 401 of 416 | 401 of 416 | 1.9 / 2.1 |
+
+  Both get all 1,000 random cases right. In float64 the two agree exactly
+  (14 false rejections, 1 false acceptance each). That points the remaining
+  disagreements at the geometry upstream of the LP, not at the solvers.
+- **qpax** (interior point, Apache 2.0, actively maintained) solves convex
+  QPs and so LPs, in single precision, batched. It is not yet benchmarked
+  here.
+- **HiGHS** (via SciPy) is the float64 reference that checks every answer.
+  It runs outside JAX.
+
+The choice between them is still open. Whichever solver wins sits behind one interface (`solve(c, A_eq, b_eq, A_ub, b_ub)` returning
+primal, dual and status). The planar and spatial builders never see it.
+
+## 7. The exact test and the LPs, side by side
+
+| | Exact test (plane only) | LPs (any dimension) |
+|---|---|---|
+| Yes | witness, ≤ 3 generators | witness, ≤ d generators (basic solution) |
+| No | Farkas plane from a candidate list | Farkas plane from the dual |
+| Margin | signed Euclidean distance | signed ℓ₁ distance, or any polytope of disturbances |
+| Force limits | no | yes (one row each) |
+| 3D | no (about 5×10⁹ subsets) | yes (6 rows) |
+| Cost per 256 cases, float32 (CPU / GPU) | 4.8 / 1.6 ms | 2.4 / 1.8 ms (linrax, feasibility only) |
+
+In the plane, the two agree on yes and no wherever floating point allows,
+and the exact test remains a cross-check.
+
+## Check yourself
+
+::: {.callout-tip collapse="true"}
+## 1. Why can LP-1 never report "infeasible"?
+$\lambda = 0$ with $s^\pm$ equal to the positive and negative parts of need
+satisfies every constraint, and the objective is at least 0. So the LP is
+feasible and bounded, and the solver always ends with an optimal basis and
+its dual.
+:::
+
+::: {.callout-tip collapse="true"}
+## 2. In 3D with an 8-edge pyramid, can the test accept a pose that real friction cannot hold?
+No. The pyramid lies inside the true friction cone, so every force it allows
+is a real force. The error is one-sided: it may reject a pose that needs
+more than 92% of the available friction in an unlucky direction.
+:::
+
+::: {.callout-tip collapse="true"}
+## 3. In panel (b), why does adding the disk not raise the margin?
+The margin is the smallest exit. The disk can only push in +x, so it cannot
+help resist a disturbance that needs −x force from the contacts; floor
+friction alone sets $t(-f_x) = 0.2$. A second disk on the other face, or
+a gripper, would.
+:::
+
+[← Deciding support exactly](bg-exact-hold-test.qmd) · [2. Valid, transfers and a certified hold gate](02-hold-gate.qmd) · [Back to the planar build](index.qmd)
