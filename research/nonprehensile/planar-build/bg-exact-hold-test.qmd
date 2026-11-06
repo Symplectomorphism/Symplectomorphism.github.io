@@ -1,0 +1,305 @@
+---
+title: "Background: deciding support exactly"
+subtitle: "How the planar hold test answers whether contacts can hold the box, proves its answer either way, and measures by how much."
+lightbox: true
+---
+
+**What this explains.** Step 2's hold gate H asks, before every edit, whether
+the contacts that persist through it can hold the box against gravity
+([step 2](02-hold-gate.qmd#h-exact)). This page derives the test that
+answers that question. It turns the question into a membership problem for a
+cone in three dimensions, then decides it by enumeration: a *witness* if the
+answer is yes, a *certificate* if it is no, and a *margin* either way. You
+need Coulomb friction and a little linear algebra. The code is `cone_test`
+in `cmg/src/cmg/physics/planar_hold.py` (branch `phase1/planar`, commit
+`1986c73`).
+
+## 1. The question
+
+A rigid box rests in the x–z plane on some contacts. Each contact pushes on the box
+with a force that Coulomb friction confines to a cone. The box is
+**supported** if some choice of admissible contact forces cancels gravity
+exactly: the net force *and* the net moment. That is statics only: no
+dynamics and no time.
+
+## 2. From forces to one cone
+
+**Friction cones have two edges.** At a contact with inward normal $n$,
+tangent $t$ and friction coefficient $\mu$, the admissible forces are those
+with $|f\cdot t| \le \mu\, f\cdot n$. In the plane that set is spanned by its
+two edge rays:
+$$
+f = \lambda_+\,(n+\mu t) + \lambda_-\,(n-\mu t), \qquad \lambda_\pm \ge 0 .
+$$
+
+**A segment contact acts through its endpoints.** A contact set can be a
+segment $[p_0,p_1]$ (an edge lying on the floor) with the same $n$ and $\mu$
+along it. A force $f$ applied at $p = s\,p_0 + (1-s)\,p_1$ has the same
+force and moment as $s f$ at $p_0$ plus $(1-s) f$ at $p_1$, because the
+moment $(p-c)\times f$ is linear in $p$. So two points per contact suffice.
+A point contact is the case $p_0 = p_1$.
+
+**Wrenches.** Write each ray $r$ at each endpoint $p$ as a *wrench*: force
+and moment about the center of mass $c$, made dimensionless,
+$$
+w = \Big(r_x,\; r_z,\; \tfrac{(p-c)\times r}{\ell}\Big) \in \R^3,
+\qquad (p-c)\times r = (p-c)_z\, r_x - (p-c)_x\, r_z ,
+$$
+with forces in units of the weight $mg$ and moments in units of $mg\,\ell$, where
+$\ell = a/2$ is the box's half-size. Gravity applies the wrench $(0,-1,0)$
+about the center of mass, so the contacts must supply
+$$
+\text{need} = (0,\, 1,\, 0).
+$$
+
+**The question becomes geometry.** Let $w_1,\dots,w_k$ be all the ray wrenches:
+at most 4 body pairs × 2 endpoints × 2 rays = 16. Then
+$$
+\boxed{\ \text{supported} \iff \text{need} \in C = \Big\{\textstyle\sum_i \lambda_i w_i : \lambda_i \ge 0\Big\}\ }
+$$
+where $C$ is the convex cone the generators span. Everything below is about
+deciding this membership, with proof, for a cone in $\R^3$ with at most 16
+generators.
+
+**Running example.** A square box flat on the floor, $\mu = 0.2$, touching at
+its two bottom corners A (left) and B (right). In units of $\ell$, the corners
+sit at $(\mp1,-1)$ from the center of mass. The four generators are:
+
+| Ray | Force $(f_x, f_z)$ | Moment / ℓ | Wrench $w$ |
+|---|---|---|---|
+| A₊ | (+0.2, 1) | +0.8 | (0.2, 1, 0.8) |
+| A₋ | (−0.2, 1) | +1.2 | (−0.2, 1, 1.2) |
+| B₊ | (+0.2, 1) | −1.2 | (0.2, 1, −1.2) |
+| B₋ | (−0.2, 1) | −0.8 | (−0.2, 1, −0.8) |
+
+## 3. Seeing the cone: the slice f<sub>z</sub> = 1
+
+A cone in $\R^3$ is hard to draw, but when every generator pushes upward
+($f_z > 0$) it is fixed by where its rays cross the plane $f_z = 1$. Each
+generator becomes a point $(f_x/f_z,\ \tau/f_z)$, the cone becomes the convex
+polygon of those points, and need becomes the origin. *Supported* then means
+*the origin lies in the polygon*.
+
+![Top: the box on both bottom corners (a) and on corner A alone (b), with each corner's friction cone. Bottom: the same two cones sliced at f<sub>z</sub> = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the box. (d) Corner A's two rays span a flat cone, and the plane through them separates the cone from need. Produced by `scripts/bg_cone_test.py`, which runs `cone_test` on both cases.](media/bg_cone_slice.svg){.lightbox}
+
+The slice is only a picture. A disk pushing sideways can have $f_z \le 0$,
+and the margin below is measured in $\R^3$, not in the slice. The test itself
+always works in $\R^3$.
+
+## 4. "Yes", with a witness: Carathéodory
+
+::: {.callout-note appearance="simple"}
+**Carathéodory's theorem (conic form).** If $x \in \operatorname{cone}\{w_1,\dots,w_k\} \subset \R^d$, then $x$ is a nonnegative combination of at most $d$ *linearly independent* generators.
+:::
+
+*Why.* Suppose $x = \sum_i \lambda_i w_i$ with $\lambda > 0$ on generators
+that are linearly dependent, so $\sum_i \alpha_i w_i = 0$ for some
+$\alpha \ne 0$, which we may take to have a positive entry. Replace $\lambda$
+by $\lambda - s\alpha$ and increase $s$ until the first coefficient hits
+zero. The sum still equals $x$, the coefficients stay nonnegative, and one
+generator has dropped out. Repeat until the generators are independent;
+there are at most $d$ of them.
+
+*Algorithm.* Here $d = 3$, so the test solves every subset of 1, 2 and 3
+generators, $16 + 120 + 560 = 696$ tiny systems. Single generators use a
+projection, pairs a 2×2 system, triples Cramer's rule. A subset whose
+coefficients are $\ge 0$ and that reproduces need is a **witness**: actual
+contact forces that hold the box.
+
+*Example.* The flat box needs only two generators:
+$\tfrac12 w_{A_+} + \tfrac12 w_{B_-} = (0, 1, 0)$. Half the weight goes through
+each corner, both forces leaning slightly inward (panel a). In the slice,
+the origin is the midpoint of A₊ and B₋ (panel c).
+
+## 5. "No", with a certificate: Farkas
+
+::: {.callout-note appearance="simple"}
+**Farkas's lemma (cone form).** $x \notin \operatorname{cone}\{w_i\}$ if and only if some $y$ has $y\cdot w_i \ge 0$ for every $i$ and $y \cdot x < 0$.
+:::
+
+Geometrically, $y$ is the normal of a plane through the origin with every
+generator on one side and need strictly on the other. Such a $y$ is a
+**certificate**: anyone can check the $k+1$ inequalities.
+
+*Which $y$ to try.* A full-dimensional polyhedral cone is the intersection of
+the half-spaces of its facets, and each facet is a plane containing at
+least two independent generators. If need is outside the cone, it violates
+one of those half-spaces. So the normals $\pm\, w_i \times w_j$ of the planes
+through two generators contain a certificate. Cones that are flat (a wedge,
+like one corner's) or a single ray need a few more candidates:
+
+- $\pm w_i$;
+- the part of need perpendicular to $w_i$, negated;
+- normals of planes containing a single generator;
+- $-\text{need}$.
+
+The test tries all of them, 385 for 16 generators, and keeps those that have
+every generator on their side.
+
+*Example.* On corner A alone the generators are $w_{A_\pm}$, a flat cone. The
+plane through both has normal $y = (1,-1,1)/\sqrt3$. It gives $y\cdot w_{A_\pm} = 0$
+and $y\cdot \text{need} = -0.577 < 0$: certified unsupported (panel d).
+Physically, every force at A has a moment about the center of mass, unless it
+points straight at the center of mass, which is outside A's friction cone.
+Gravity has no moment to cancel it.
+
+## 6. How much: the margin is a signed distance
+
+A yes/no answer says nothing about robustness. The test also returns
+$$
+m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
+$$
+the minimum over every candidate $y$ that has all generators on its side.
+
+::: {.callout-note appearance="simple"}
+**Claim.** $m$ is the signed Euclidean distance from need to the boundary of $C$. Inside $C$ it is the distance to the boundary; outside it is minus the distance to $C$. It is $0$ when need lies on a flat cone.
+:::
+
+*Inside.* $C$ is the intersection of its facet half-spaces
+$\{x : y_f\cdot x \ge 0\}$. A ball of radius $\rho$ around need fits inside
+$C$ exactly when it fits inside every half-space, that is, when
+$\rho \le y_f\cdot\text{need}$ for every facet. So the distance to the boundary is
+$\min_f y_f\cdot\text{need}$. Any other supporting plane bounds a half-space
+that contains $C$, so it can only give a larger value. The minimum over all
+candidates is therefore the facet minimum.
+
+*Outside.* The nearest point of $C$ to need lies inside a two-dimensional
+face (a facet, or the whole of a flat cone), on a generator's ray, or at the
+apex. The unit vector from need toward it is then that face's normal, the
+negated perpendicular part of need with respect to that generator, or
+$-\text{need}$. All three are candidates, and each supports $C$.
+By duality, $\operatorname{dist}(x, C) = \max\{-y\cdot x : y \text{ supporting},\ \|y\|\le1\}$.
+So the minimum of $y\cdot\text{need}$ is minus that distance.
+
+*Checked.* On random cones, the margin agrees with minus the distance computed
+by non-negative least squares (to 3·10⁻⁶) outside the cone. Inside, it agrees
+with the shortest exit along hundreds of directions, each found by a
+float64 LP (to 4·10⁻⁷). This is a test in the suite
+(`test_cone_margin_is_signed_distance`).
+
+**Reading it.** $m$ is the largest disturbance wrench (force in $mg$, moment
+in $mg\ell$) that the contacts absorb *in every direction*. The flat box
+has four facets:
+
+| Facet | Through | Normal y | y · need | Meaning |
+|---|---|---|---|---|
+| Sliding (friction toward +x) | A₊, B₊ | (−0.981, 0.196, 0) | **0.196** | friction gives out |
+| Sliding (friction toward −x) | A₋, B₋ | (0.981, 0.196, 0) | **0.196** | friction gives out |
+| Tipping about A | A₊, A₋ | (−1, 1, −1)/√3 | 0.577 | B lifts off |
+| Tipping about B | B₊, B₋ | (1, 1, 1)/√3 | 0.577 | A lifts off |
+
+So $m = \mu/\sqrt{1+\mu^2} = 0.196$, and sliding binds first. Two points
+help when reading this number:
+
+- A purely sideways push of up to $\mu\,mg = 0.2\,mg$ is absorbed (the test
+  agrees: 0.19 holds, 0.21 does not). The *worst* direction also lifts the
+  box a little, which unloads friction, hence 0.196.
+- The tipping value does not depend on $\mu$. The plane through B's two rays
+  contains every wrench a force at B can produce, so it depends only on
+  where B is. With $\mu$ above $1/\sqrt2$, tipping binds instead:
+  $m = \min(\mu/\sqrt{1+\mu^2},\ 1/\sqrt3)$.
+
+For corner A alone, $m = -0.636$: need lies 0.636 from the cone. The
+certificate of §5 had $y\cdot\text{need} = -0.577$. Any certificate proves
+"no", but only the nearest one measures the gap.
+
+**Two caveats.**
+
+- The distance mixes forces and moments, so it depends on the choice of
+  $\ell$. Changing $\ell$ rescales the moment axis and changes $m$, not the
+  yes/no answer.
+- With the disk in the formation, the disk's force has no upper limit, so $C$
+  often fills all of $\R^3$. There is then no boundary to be near, and the
+  test reports a cap ($10^3$). A finite margin there needs the manipulator's
+  force limits (Decision 6, open).
+
+## 7. Robustness comes cheaply
+
+- **Friction.** A smaller $\mu$ narrows every friction cone, so it shrinks
+  $C$. For an interval of $\mu$, the worst case is its lower end.
+- **Mass and center of mass** enter only through need. Need is linear in
+  $(m,\ m c)$, and the set of $(m,\ m c)$ over a box of masses and centers is
+  a polytope whose corners come from the box's corners. Membership in a
+  convex cone holds over a polytope iff it holds at the corners. The margin
+  is a minimum of linear functions, so its worst case is also at a corner.
+  The robust margin is the minimum over those few needs.
+
+## 8. In the code
+
+`PlanarHold` builds the problem and `cone_test` solves it:
+
+1. **Which contacts.** For an edit from σ to σ′, a body pair contributes
+   only if it touches in both. Its contact set is the overlap of the two,
+   with the old contact's normal and $\mu$. For a make or a break, that is
+   the kept contact itself ([step 2](02-hold-gate.qmd#h-exact)).
+2. **Generators** from the overlap's endpoints (§2), padded to 16 with
+   inactive slots.
+3. **Need** for each mass and center-of-mass corner (§7).
+4. **`cone_test`** for each need: witness (§4), certificates (§5), margin (§6).
+5. **The gate.** At most one contact per pair, a witness for every need, and
+   margin $\ge$ `margin_min` (default 0).
+
+```python
+import jax.numpy as jnp
+from cmg.physics.planar_hold import cone_test
+
+mu = 0.2
+corners = jnp.array([[s * mu, 1.0, -s * mu - ax] for ax in (-1.0, 1.0) for s in (1, -1)])
+need = jnp.array([0.0, 1.0, 0.0])
+cone_test(corners, jnp.ones(4, bool), need)       # feasible, margin 0.196
+cone_test(corners[:2], jnp.ones(2, bool), need)   # certified_infeasible, margin -0.636
+```
+
+Every size is fixed (696 subsets and 385 candidate planes for 16
+generators), so the test is branch-free and runs under `jit` and `vmap`: 4.3 ms
+per 256 cases on CPU and 2.0 ms on GPU.
+
+**Numerics.** The arithmetic is float32 with a relative tolerance of
+10⁻⁵. Within tolerance of the boundary, neither a witness nor a certificate
+may pass. The gate then answers "not supported" and flags the case as
+*uncertain*. In the benchmark every error lay within 0.7 mm (of disk height)
+of the support boundary ([step 2](02-hold-gate.qmd#which-solver)). Every dot
+product is formed elementwise: on the GPU, JAX runs float32 matrix products
+in reduced precision (TF32), which broke the supporting-plane checks.
+
+## 9. Why not an LP solver, and why only in the plane
+
+The same question is a linear program: find $\lambda \ge 0$ with
+$\sum_i \lambda_i w_i = \text{need}$. An iterative first-order solver such as
+MPAX approaches the answer without a proof of infeasibility. When it stops
+early, "not optimal" must be read as "not supported". Near the boundary it
+did exactly that for about half of 416 supported cases, while the exact test
+was 14 to 900 times faster
+([benchmark](02-hold-gate.qmd#which-solver)).
+
+The enumeration is a planar luxury. A spatial wrench has 6 components, so
+Carathéodory needs subsets of up to 6 generators. With 4 contacts × 4
+points × 8 rays of a pyramidal friction cone (128 generators), that is
+$\binom{128}{6} \approx 5.4\times10^{9}$ subsets. In 3D the test needs a
+float64 LP with an infeasibility certificate instead.
+
+## Check yourself
+
+::: {.callout-tip collapse="true"}
+## 1. What is the flat box's margin with μ = 0.5, and what binds?
+$0.5/\sqrt{1.25} = 0.447 < 1/\sqrt3 = 0.577$: sliding still binds.
+`cone_test` returns 0.4472.
+:::
+
+::: {.callout-tip collapse="true"}
+## 2. Can a larger μ let corner A alone hold the flat box?
+No. Every wrench a force at A can produce lies in one plane,
+$\tau/\ell = f_z - f_x$ (arm $(-1,-1)$), whatever $\mu$ is. Need $= (0,1,0)$
+gives $1 \ne 0$, so it is off that plane. In general, a single point contact
+holds a body only if the vertical through the center of mass passes through
+that point and the vertical direction lies in its friction cone.
+:::
+
+::: {.callout-tip collapse="true"}
+## 3. Why does the test try planes through *two* generators, not three?
+A plane through the origin in $\R^3$ is fixed by two independent directions.
+Every facet of a 3D cone is such a plane, and it contains at least two
+generators. Three generators on one plane add nothing new.
+:::
+
+[← 2. Valid, transfers and a certified hold gate](02-hold-gate.qmd) · [Known issues](known-issues.qmd) · [Back to the planar build](index.qmd)
