@@ -3,7 +3,7 @@ title: "Known issues"
 subtitle: "Every open defect in the code and the paper that we know of: what it does, where it is documented, and which step fixes it."
 ---
 
-**Last checked:** 2026-11-05, against `phase1/planar` at `1986c73`. This page
+**Last checked:** 2026-11-06, against `phase1/planar` at `e29d96f`. This page
 is updated whenever an issue is found or closed. The full records are in the
 discussion compendium (`reports/discussion-compendium/` in `c-gnn`: sections
 "Step 1", "Plans" and "Code issues"). Walkthrough pages show many of these
@@ -35,8 +35,9 @@ issues as they happen.
 | **MPPI's dwell term penalizes velocity**, not drift from the task-end pose (`hold_target` is computed but unused). | Its docstring describes a different term than the code runs. | Compendium, code issues | Step 3 |
 | **GPU runs are not repeatable between processes** by default. | The same MPPI call ended once flush and once tipped 1.4°. | [Step 1](01-contact-layer.qmd#tests), README | Workaround: `XLA_FLAGS=--xla_gpu_deterministic_ops=true` (about 13% slower) |
 | **MPPI fails the chain's edits.** In 24 full rollouts of the chain's edits, none passes the solver's success check, the passive breaks included (not because of ties). | Edits that `Cand` offers are not realized, so the search cannot follow the chain. | [Step 2](02-hold-gate.qmd#eps-pen), compendium | Step 3 (cost and success criteria) |
-| **Margins are unbounded with the disk in the formation.** The disk's force has no limit, so its support cone often fills all of 3D. | The margin cannot rank formations that use the disk. | [Step 2](02-hold-gate.qmd#h-exact) | Decision 6: manipulator force limits |
-| **The exact hold test is float32.** | Its answers within tolerance of the boundary depend on compilation (jitted and eager runs differ on 3 of 136 near-boundary cases). Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases. | [Step 2](02-hold-gate.qmd#which-solver) | Acceptable for now; float64 or a margin threshold if it matters. In float64 the exact test and linrax agree exactly ([LP tutorial](bg-hold-lp.qmd#solving-it)) |
+| **Margins are unbounded with the disk in the formation.** The disk's force has no limit, so its support cone often fills all of 3D. | The margin cannot rank formations that use the disk. | [Step 2](02-hold-gate.qmd#h-exact) | Decision 6: manipulator force limits. The LP gate takes them already (`force_limit`, [LP-3](bg-hold-lp.qmd#lp-3-force-limits)); the disk's limit is still unknown |
+| **The exact hold test is float32.** | Its answers within tolerance of the boundary depend on compilation (jitted and eager runs differ on 3 of 136 near-boundary cases). Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases. | [Step 2](02-hold-gate.qmd#which-solver) | Acceptable for now; a margin threshold if it matters. The LP gate behaves alike (float32: 383–386 of 416, every miss an "uncertain" rejection or one of the same 12 upstream disagreements; [LP tutorial](bg-hold-lp.qmd#solving-it)) |
+| **linrax, the LP solver, has no license file** (neither its repository nor its PyPI package). | cmg depends on a package with no stated terms of use; pinned to 0.3.0, its code not copied. | [LP tutorial](bg-hold-lp.qmd#solving-it), compendium (hold-test LPs), `pyproject.toml` | Ask its authors to add a license |
 
 ## Open: tests and configuration
 
@@ -63,6 +64,7 @@ The paper still follows the old chain or older decisions in these places:
 
 | Issue | Closed by |
 |---|---|
+| linrax returned infeasible points as "optimal" in float32: a basic slack at −1 when need has zero rows (the planar case), pivots on noise at its default tolerance, negative weights with a large exit cap | Householder-spread rows, primal and dual from the final basis, pivot tolerance 10<sup>−4</sup>, cap 10, every answer checked, `e29d96f` |
 | The hold test's margin was positive on a cone that is a single ray, and the test failed for fewer than three generators (neither occurred in the planner, which passes 16) | Candidate planes through one generator; margin proved and tested to be the signed distance, `1986c73` |
 | `Cand` had no Valid check: a second contact per pair, excluded formations, transport always legal | Edit set with Valid, transfer and pass-through; transport only when supported (step 2) |
 | The hold test's "not supported" was uncertified: the MPAX LPs rejected 192–194 of 416 supported near-boundary cases | Exact planar test with a witness or a Farkas certificate (step 2) |
