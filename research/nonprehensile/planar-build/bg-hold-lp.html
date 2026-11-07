@@ -765,7 +765,7 @@ $$
 <p>The disk’s force is unbounded in the cone model, so with the disk in the formation the cone can fill all of <span class="math inline">\(\R^3\)</span> and the margin becomes infinite (the exact test reports a cap). Every edge has unit normal component, so a contact’s normal force is the sum of its edge weights. A limit is one more row: <span class="math display">\[
 \sum_{j \in \text{edges of contact } c} \lambda_j \;\le\; f_{\max,c}.
 \]</span> Add it to LP-1 and LP-2. The feasible wrenches then form a cone (the environment’s contacts) plus a polytope (the manipulator’s). Directions the disk helps now have finite exits: in panel (b), <span class="math inline">\(t(+f_x) = 0.72\)</span>. That is 0.5 from the disk plus 0.22 of floor friction, because the disk’s friction also presses the box onto the floor (<span class="math inline">\(0.2 \times 1.1\)</span>). The dual gains one multiplier per limit, and the certificate becomes <span class="math inline">\((z, v)\)</span> with <span class="math inline">\(v \ge 0\)</span>: still a few inequalities anyone can check.</p>
-<p>This settles the open item “finite margins with the disk” (Decision 6), once the manipulator’s force limits are known.</p>
+<p>This settles the open item “finite margins with the disk” (Decision 6). Since Nov 7 the gate uses the simulator’s actuator limits: the disk’s two motors (±1 N each) must supply its force on the box plus its own weight, which gives two rows per motor (<a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#gate">step 2</a>). OpenArm’s limits replace them when it arrives.</p>
 </section>
 <section id="robustness-again-for-free" class="level2">
 <h2 class="anchored" data-anchor-id="robustness-again-for-free">5. Robustness, again for free</h2>
@@ -821,7 +821,7 @@ $$
 <ul>
 <li><strong>linrax has no license file</strong> (neither its repository nor its PyPI package). cmg depends on it as published, pinned to 0.3.0, without copying its code. This is accepted; linrax stays.</li>
 <li><strong>linrax returns no dual.</strong> The dual is recovered at the end from its final basis <span class="math inline">\(B\)</span>, by solving <span class="math inline">\(B^\top y = c_B\)</span>; LP-1’s certificate is then <span class="math inline">\(-y\)</span>.</li>
-<li><strong>Set inclusion stays an option</strong> for the margin, beside the ℓ₁ margin and the exact test’s Euclidean one: the corners of a disturbance polytope <span class="math inline">\(D\)</span> as LP-2 directions (§3).</li>
+<li><strong>Set inclusion stays an option</strong> for the margin, beside the ℓ₁ margin and the exact test’s Euclidean one: the corners of a disturbance polytope <span class="math inline">\(D\)</span> as LP-2 directions (§3). <em>Chosen Nov 7:</em> set inclusion, with <span class="math inline">\(D\)</span> the ℓ₁ unit ball by default (<a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#gate">step 2</a>).</li>
 </ul>
 </div>
 </div>
@@ -882,7 +882,7 @@ $$
 <li>LP-1 takes 40 ms per 256 cases, and the full test with 12 exits about 300 ms.</li>
 </ul>
 <p>The uncertain cases come from float32 rounding that builds up in linrax’s dense tableau over the longer pivot sequences of 3D cones. They are not caused by the cap: the same cases stay uncertain at 5,000 pivots. The standard cure is <em>reinversion</em>: rebuild the tableau from the final basis (<span class="math inline">\(B^{-1}A\)</span> and <span class="math inline">\(B^{-1}b\)</span>, computed fresh) and continue. It is planned for when the 3D build arrives.</p>
-<p>The exact test remains the default gate until the margin is chosen. The planar and spatial builders never see the solver: it sits behind <code>solve(c, A_eq, b_eq, A_ub, b_ub)</code>, which returns the primal, the dual and the status.</p>
+<p>Since Nov 7 the LPs are the default gate, with the simulator’s actuator limits and the ℓ₁ margin (<a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#gate">step 2</a>). The planar and spatial builders never see the solver: it sits behind <code>solve(c, A_eq, b_eq, A_ub, b_ub)</code>, which returns the primal, the dual and the status.</p>
 </section>
 <section id="the-exact-test-and-the-lps-side-by-side" class="level2">
 <h2 class="anchored" data-anchor-id="the-exact-test-and-the-lps-side-by-side">7. The exact test and the LPs, side by side</h2>

@@ -597,7 +597,7 @@ $$
 </header>
 
 
-<p><strong>Last checked:</strong> 2026-11-06, against <code>phase1/planar</code> at <code>b354251</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
+<p><strong>Last checked:</strong> 2026-11-07, against <code>phase1/planar</code> at <code>228950f</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
 <section id="open-contact-layer" class="level2">
 <h2 class="anchored" data-anchor-id="open-contact-layer">Open: contact layer</h2>
 <table class="caption-top table">
@@ -713,18 +713,12 @@ $$
 <td>Step 3 (cost and success criteria)</td>
 </tr>
 <tr class="odd">
-<td><strong>Margins are unbounded with the disk in the formation.</strong> The disk’s force has no limit, so its support cone often fills all of 3D.</td>
-<td>The margin cannot rank formations that use the disk.</td>
-<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#h-exact">Step 2</a></td>
-<td>Decision 6: manipulator force limits. The LP gate takes them already (<code>force_limit</code>, <a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#lp-3-force-limits">LP-3</a>); the disk’s limit is still unknown</td>
+<td><strong>The hold tests are float32</strong> (the default LP gate and the exact cross-check).</td>
+<td>Answers within float32 of the support boundary can differ from a float64 reference. The default gate (LP with the disk’s motor limits) agrees with HiGHS on 1,000 of 1,000 random cases and on every near-boundary case 0.33 mm or more from the boundary; its only misses (9 of 208 on CPU, 6 on GPU) are acceptances with margin 0 at the boundary pose itself. No false rejections, no “uncertain”.</td>
+<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#gate">Step 2</a></td>
+<td>Acceptable; a positive <code>margin_min</code> if zero-margin poses must be refused</td>
 </tr>
 <tr class="even">
-<td><strong>The exact hold test is float32.</strong></td>
-<td>Its answers within tolerance of the boundary depend on compilation (jitted and eager runs differ on 3 of 136 near-boundary cases). Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases.</td>
-<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#which-solver">Step 2</a></td>
-<td>Acceptable for now; a margin threshold if it matters. The LP gate behaves alike (float32: 383–386 of 416, every miss an “uncertain” rejection or one of the same 12 upstream disagreements; <a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>)</td>
-</tr>
-<tr class="odd">
 <td><strong>The LP gate in 3D is float32-limited.</strong> Rounding builds up in linrax’s dense tableau over the long pivot sequences of 3D cones (50–130 generators).</td>
 <td>About 1% of supported 3D cases end “uncertain” (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly.</td>
 <td><a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>, compendium (hold-test LPs)</td>
@@ -792,6 +786,14 @@ $$
 </tr>
 </thead>
 <tbody>
+<tr class="odd">
+<td>Margins were unbounded with the disk in the formation (its force had no limit, so the support cone often filled all of 3D)</td>
+<td>The disk’s motor limits (±1 N, read from the MuJoCo model) bound its force in the default gate; margins are finite (Nov 7, <code>228950f</code>)</td>
+</tr>
+<tr class="even">
+<td>The gate’s margin and solver were open (step-2 choices 3 and 4)</td>
+<td>Set inclusion with the ℓ₁ default; the LP backbone with the motor limits is the default gate, the exact test its cross-check (Nov 7, <code>228950f</code>)</td>
+</tr>
 <tr class="odd">
 <td>linrax could loop forever (no iteration cap; cycling on degenerate 3D LPs), which hangs a whole <code>vmap</code> batch</td>
 <td>Its pivot loop is replaced: a cap of 300 pivots per phase, Bland’s leaving rule, artificial rows marked correctly (Nov 6)</td>
