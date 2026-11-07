@@ -7,7 +7,8 @@ Run from c-gnn/cmg on branch phase1/planar (Python 3.14 env):
 For the box tipped by theta onto the step corner (bottom corner on the floor,
 +x_B on v_S) and the disk on -x_B at local height `mid`, computes H for
 break(g_v) at {m_x, g_v, s_v}, i.e. whether {m_x, s_v} alone holds the box,
-with its support margin (PlanarHold, exact). Writes step2_pivot_margin.svg
+with its support margin (PlanarHold, the default gate: LP with the disk's
+actuator limits, l1 margin). Writes step2_pivot_margin.svg
 and prints the numbers the page quotes.
 """
 import math
@@ -24,7 +25,7 @@ import numpy as np
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 
 from cmg.catalog.templates import Catalog
-from cmg.physics.planar_hold import BIG, PlanarHold
+from cmg.physics.planar_hold import PlanarHold
 from cmg.physics.world import ExecutionWorld
 from cmg.scene.spec import SceneSpec
 
@@ -67,7 +68,9 @@ rep = jax.jit(jax.vmap(lambda q: hold.edit_report(q, old, new)))(Q)
 margin = np.asarray(rep["margin"]).reshape(len(degs), len(mids))
 held = np.asarray(rep["supported"]).reshape(len(degs), len(mids))
 print(f"pose grid {len(degs)} x {len(mids)}; formation {{m_x, g_v, s_v}} on at {on_ok.mean():.0%} of poses")
-print(f"break(g_v) admitted at {held[on_ok].mean():.0%} of them; unbounded margin at {(margin[on_ok] >= BIG).mean():.0%}")
+capped = np.asarray(rep["capped"]).reshape(len(degs), len(mids))
+print(f"break(g_v) admitted at {held[on_ok].mean():.0%} of them; capped margin at {capped[on_ok].mean():.0%}")
+print(f"margin range where held: {margin[on_ok & held].min():.3f} .. {margin[on_ok & held].max():.3f}")
 for d in (10, 30, 45, 60):
     i = int(np.argmin(abs(degs - d)))
     ok = mids[held[i] & on_ok[i]]
@@ -77,15 +80,18 @@ shown = np.where(on_ok, np.clip(margin, -1.0, 1.0), np.nan)
 cmap = LinearSegmentedColormap.from_list("div", ["#c0392b", "#e34948", "#f0efec", "#3987e5", "#1c5cab"])
 fig, ax = plt.subplots(figsize=(7.6, 4.2))
 im = ax.pcolormesh(1e3 * mids, degs, shown, cmap=cmap, norm=TwoSlopeNorm(0.0, -1.0, 1.0), shading="nearest")
-unbounded = on_ok & (margin >= BIG)
+unbounded = on_ok & capped
 yy, xx = np.nonzero(unbounded)
 ax.scatter(1e3 * mids[xx], degs[yy], s=5, marker=".", color="white", linewidths=0)
 ax.contour(1e3 * mids, degs, np.where(on_ok, held.astype(float), np.nan), levels=[0.5], colors=INK, linewidths=1.2)
 ax.plot([0], [30], "o", mfc="none", mec=INK, ms=9, mew=1.4)
-ax.annotate("chain pose (disk at mid-face): refused", (0, 30), xytext=(6, 77.5), fontsize=8, color=INK,
+ax.annotate("disk at mid-face, 30°: refused", (0, 30), xytext=(6, 77.5), fontsize=8, color=INK,
             arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
-ax.plot([-40], [30], "s", mfc="none", mec=INK, ms=8, mew=1.4)
-ax.annotate("disk low: admitted", (-40, 30), xytext=(-60, 77.5), fontsize=8, color=INK,
+ax.plot([-40], [30], "D", mfc="none", mec=INK, ms=7, mew=1.4)
+ax.annotate("disk low, 30°: refused\n(motors too weak)", (-40, 30), xytext=(-25, 14), fontsize=8, color=INK,
+            arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
+ax.plot([-40], [45], "s", mfc="none", mec=INK, ms=8, mew=1.4)
+ax.annotate("chain pose (disk low, 45°): admitted", (-40, 45), xytext=(-60, 77.5), fontsize=8, color=INK,
             arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
 ax.set_ylim(degs[0] - 1, 82)
 ax.set_xlabel("disk height on −x_B from the face center (mm; negative = toward the floor)", fontsize=9, color=INK)

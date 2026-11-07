@@ -3,7 +3,7 @@ title: "Known issues"
 subtitle: "Every open defect in the code and the paper that we know of: what it does, where it is documented, and which step fixes it."
 ---
 
-**Last checked:** 2026-11-06, against `phase1/planar` at `b354251`. This page
+**Last checked:** 2026-11-07, against `phase1/planar` at `228950f`. This page
 is updated whenever an issue is found or closed. The full records are in the
 discussion compendium (`reports/discussion-compendium/` in `c-gnn`: sections
 "Step 1", "Plans" and "Code issues"). Walkthrough pages show many of these
@@ -35,8 +35,7 @@ issues as they happen.
 | **MPPI's dwell term penalizes velocity**, not drift from the task-end pose (`hold_target` is computed but unused). | Its docstring describes a different term than the code runs. | Compendium, code issues | Step 3 |
 | **GPU runs are not repeatable between processes** by default. | The same MPPI call ended once flush and once tipped 1.4°. | [Step 1](01-contact-layer.qmd#tests), README | Workaround: `XLA_FLAGS=--xla_gpu_deterministic_ops=true` (about 13% slower) |
 | **MPPI fails the chain's edits.** In 24 full rollouts of the chain's edits, none passes the solver's success check, the passive breaks included (not because of ties). | Edits that `Cand` offers are not realized, so the search cannot follow the chain. | [Step 2](02-hold-gate.qmd#eps-pen), compendium | Step 3 (cost and success criteria) |
-| **Margins are unbounded with the disk in the formation.** The disk's force has no limit, so its support cone often fills all of 3D. | The margin cannot rank formations that use the disk. | [Step 2](02-hold-gate.qmd#h-exact) | Decision 6: manipulator force limits. The LP gate takes them already (`force_limit`, [LP-3](bg-hold-lp.qmd#lp-3-force-limits)); the disk's limit is still unknown |
-| **The exact hold test is float32.** | Its answers within tolerance of the boundary depend on compilation (jitted and eager runs differ on 3 of 136 near-boundary cases). Wrong only near the support boundary in the benchmark (within 0.33 mm of disk height on CPU, 0.67 mm on GPU): 21–26 false rejections and 1–2 false acceptances among 416 near-boundary cases. | [Step 2](02-hold-gate.qmd#which-solver) | Acceptable for now; a margin threshold if it matters. The LP gate behaves alike (float32: 383–386 of 416, every miss an "uncertain" rejection or one of the same 12 upstream disagreements; [LP tutorial](bg-hold-lp.qmd#solving-it)) |
+| **The hold tests are float32** (the default LP gate and the exact cross-check). | Answers within float32 of the support boundary can differ from a float64 reference. The default gate (LP with the disk's motor limits) agrees with HiGHS on 1,000 of 1,000 random cases and on every near-boundary case 0.33 mm or more from the boundary; its only misses (9 of 208 on CPU, 6 on GPU) are acceptances with margin 0 at the boundary pose itself. No false rejections, no "uncertain". | [Step 2](02-hold-gate.qmd#gate) | Acceptable; a positive `margin_min` if zero-margin poses must be refused |
 | **The LP gate in 3D is float32-limited.** Rounding builds up in linrax's dense tableau over the long pivot sequences of 3D cones (50–130 generators). | About 1% of supported 3D cases end "uncertain" (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly. | [LP tutorial](bg-hold-lp.qmd#solving-it), compendium (hold-test LPs) | Reinversion (rebuild the tableau from the final basis and continue), with the 3D build |
 
 ## Open: tests and configuration
@@ -64,6 +63,8 @@ The paper still follows the old chain or older decisions in these places:
 
 | Issue | Closed by |
 |---|---|
+| Margins were unbounded with the disk in the formation (its force had no limit, so the support cone often filled all of 3D) | The disk's motor limits (±1 N, read from the MuJoCo model) bound its force in the default gate; margins are finite (Nov 7, `228950f`) |
+| The gate's margin and solver were open (step-2 choices 3 and 4) | Set inclusion with the ℓ₁ default; the LP backbone with the motor limits is the default gate, the exact test its cross-check (Nov 7, `228950f`) |
 | linrax could loop forever (no iteration cap; cycling on degenerate 3D LPs), which hangs a whole `vmap` batch | Its pivot loop is replaced: a cap of 300 pivots per phase, Bland's leaving rule, artificial rows marked correctly (Nov 6) |
 | linrax, the LP solver, has no license file | Accepted (Aykut, Nov 6): linrax stays, pinned to 0.3.0 |
 | linrax returned infeasible points as "optimal" in float32: a basic slack at −1 when need has zero rows (the planar case), pivots on noise at its default tolerance, negative weights with a large exit cap | Householder-spread rows, primal and dual from the final basis, pivot tolerance 10<sup>−4</sup>, cap 10, every answer checked, `e29d96f` |

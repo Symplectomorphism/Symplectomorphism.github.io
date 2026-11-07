@@ -104,9 +104,9 @@ changes none of the 1,155 decisions.
 derives this test step by step, with a worked example, proofs of the witness,
 certificate and margin, and exercises.
 [The hold test as a linear program](bg-hold-lp.qmd) poses the same question
-as LPs that also serve the 3D build. That backbone is now built
-(`PlanarHold(method="lp")`, linrax in float32); the exact test stays the
-default until the margin is chosen.
+as LPs that also serve the 3D build. Since Nov 7 that backbone is the
+default gate ([below](#gate)); the exact test described next is its
+cross-check.
 :::
 
 **The test.** In the plane, every contact force is a nonnegative mix of the
@@ -127,8 +127,8 @@ either way:
   outside, minus the distance to the cone. A flat box on the
   floor: 0.196, which is μ/√(1+μ²) for μ = 0.2. With the disk in the
   formation the cone often fills all of 3D, because the disk's force is
-  unbounded. A finite margin there needs the manipulator's force limits,
-  an open item of Decision 6.
+  unbounded. A finite margin there needs the manipulator's force limits.
+  *Both points are settled since Nov 7: see [the gate](#gate).*
 
 The same function takes a lower friction coefficient and mass and
 center-of-mass vertices, and returns the worst-case margin (the robust
@@ -136,16 +136,19 @@ margin of Decision 6).
 
 ## The pivot needs the disk low
 
-![Whether the box, tipped by θ onto the step corner, holds on the corner and the disk alone ({m<sub>x</sub>, s<sub>v</sub>}): the hold test of break(g<sub>v</sub>). Blue: held, with the margin; red: not held, by how much; the black line is the boundary. White dots: the margin is unbounded (the disk's force is unlimited). Blank: the box is not in the formation at that pose.](media/step2_pivot_margin.svg){.lightbox}
+![Whether the box, tipped by θ onto the step corner, holds on the corner and the disk alone ({m<sub>x</sub>, s<sub>v</sub>}): the hold test of break(g<sub>v</sub>), by the default gate (the LP with the disk's motor limits, ±1 N; ℓ₁ margin). Blue: held, with the margin; red: not held, by how much; the black line is the boundary. Blank: the box is not in the formation at that pose. With unlimited disk force the held region was more than twice as large (815 against 382 of the 1,599 poses); everything held here is also held there.](media/step2_pivot_margin.svg){.lightbox}
 
 The chain's canonical pose for σ<sub>3</sub> puts the disk at the middle of
 −x<sub>B</sub>. There, H refuses break(g<sub>v</sub>): pushing at mid-height, the disk
-cannot keep the box on the step corner without the floor. With the disk
-pushing low (toward the floor), the same edit is admitted up to about 60°
-of tilt. A search gets there by transport: moving the disk down the face
-within the formation. A float64 LP confirms the refusal at mid-height, so
-this is a fact about the physics, not about the test. The same holds for
-make(t) at σ<sub>4</sub>.
+cannot keep the box on the step corner without the floor. It must push low
+(toward the floor), and, since its motors give at most 1 N per axis, the
+box must already be tipped about 40° or more: at 30° holding the box on the
+corner takes more force than the motors give, wherever the disk pushes.
+Between about 65° and 70° any disk height works; past about 72° the box falls onto the platform. A search gets there by
+transport, tilting the box further and moving the disk down the face
+within the formation. A float64 LP with the same motor limits confirms
+every answer, so this is a fact about the physics (and the motors), not
+about the test. The same holds for make(t) at σ<sub>4</sub>.
 
 With that, `Cand` offers every step of the paper's chain from a pose in its
 formation: make(m<sub>x</sub>), make(s), the pivot pass-through, break(g<sub>v</sub>),
@@ -175,8 +178,60 @@ forms every dot product elementwise. The step-1 contact layer is not
 affected: on 5,721 poses its gaps agree between CPU and GPU to 2.7 µm, and
 its on-sets exactly. Both LPs reject supported formations across the whole 2 mm band:
 their "not supported" often meant "ran out of iterations". The exact test
-is now the hold gate for planar scenes; the MPAX version stays in the code
-for comparison.
+became the hold gate for planar scenes; the MPAX version stays in the code
+for comparison. *Since Nov 7 the gate is the LP backbone with actuator
+limits, which the exact test cannot take ([the gate](#gate)).*
+
+## The gate since Nov 7: LP, motor limits, ℓ₁ margin {#gate}
+
+::: {.callout-note title="Settled (Nov 7, 2026): step-2 choices 3 and 4"}
+**What the margin is.** At the current pose, with the contacts that persist
+through the edit: how large a disturbance (a push or twist, in units of mg
+and mg·a/2) the contacts can absorb before they can no longer hold the box.
+Negative: how far from holding. H uses its sign; Decision 6 uses its value
+(to rank formations, as the controller's terminal sets, and checkpoint 5
+tests whether it predicts the solver's success).
+
+**Shape: set inclusion.** The margin is the largest r such that the
+gravity-cancelling wrench plus r·D is still supported, for a disturbance
+polytope D (D is absorbed iff r ≥ 1). By default D is the ℓ₁ unit ball
+(pushes and twists along the axes), which makes the margin the signed ℓ₁
+distance to the boundary: 0.2 = μ on the flat box. A scene can pass its own
+D. The exact test's Euclidean margin is always within a factor √3 of it (√6
+in 3D) and stays as a cross-check.
+
+**The disk's force: the simulator's motor limits.** The disk is held by two
+slide motors, ±1 N each (`step.xml`). Held still, the motors must supply its
+force on the box plus its own weight (0.20 N), so its force on the box is
+bounded: two rows per motor in the LP, read from the MuJoCo model. The box
+weighs 0.98 N, so **the disk alone cannot hold it up**, and margins with the
+disk are finite (no more cap). OpenArm's limits replace these when it
+arrives.
+
+**The gate: the LP backbone.** With force limits the set of supportable
+wrenches is a polytope, not a cone, and the exact test (which needs a cone)
+cannot decide it. So `PlanarHold` and `Cand` now default to `method="lp"`
+with the motor limits; `method="exact"` stays as the cone-only cross-check
+and MPAX only for comparison.
+:::
+
+Checked against a float64 LP (SciPy's HiGHS) that applies the same motor
+limits, coded independently (the limits hard-coded from `step.xml`, not
+read from the model). Near the boundary means 16 sweeps of disk height on
+the pivot, bisected to the boundary, with 13 cases within 2 mm each.
+
+| Gate (float32) | Random (1,000) | Near the boundary | ms per 256, CPU / GPU |
+|---|---|---|---|
+| **LP + motor limits (default)** | **1,000** | **199 / 202 of 208** (CPU / GPU): no false rejection, no "uncertain" | **14.7 / 3.4** |
+| LP, no limits (vs HiGHS without limits) | 1,000 | 386 / 383 of 416 | 8.5 / 2.5 |
+| Exact test, no limits (vs HiGHS without limits) | 1,000 | 390 / 389 of 416 | 5.0 / 1.6 |
+
+Every miss of the default gate (9 on CPU, 6 on GPU) is the bisected
+boundary pose itself, within 10<sup>−10</sup> m of disk height: the gate's
+margin there is 0 (at most 2·10<sup>−7</sup>), and HiGHS in float64 says
+"just not". At every offset of 0.33 mm or more, the two agree. With the
+limits, no margin reaches the cap (0 of 568 supported cases); without them,
+about 190 of 636 did.
 
 ## ε<sub>pen</sub> and ties {#eps-pen}
 
@@ -219,9 +274,11 @@ check, the passive breaks included, and not because of ties.
    (above).
 2. ~~The persistent set of a transfer's normal~~ settled Nov 7: the old
    contact's normal (above).
-3. The margin's definition (signed distance to the cone's boundary, in mg and
-   mg·a/2), and its cap when the disk's force is unbounded.
-4. The exact test replacing MPAX for planar scenes.
+3. ~~The margin's definition and its cap~~ settled Nov 7: set inclusion
+   with the ℓ₁ default, and the simulator's actuator limits
+   ([the gate](#gate)).
+4. ~~The exact test replacing MPAX~~ settled Nov 7: the LP backbone is the
+   gate, the exact test its cross-check ([the gate](#gate)).
 
 ## Reproduce {#reproduce}
 
