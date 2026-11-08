@@ -596,6 +596,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#diagnosis" id="toc-diagnosis" class="nav-link" data-scroll-target="#diagnosis">Why the remaining runs fail</a></li>
   </ul></li>
+  <li><a href="#step-3d" id="toc-step-3d" class="nav-link" data-scroll-target="#step-3d">The friction match (step 3d)</a></li>
   <li><a href="#the-compiled-cost-step-3-mppi" id="toc-the-compiled-cost-step-3-mppi" class="nav-link" data-scroll-target="#the-compiled-cost-step-3-mppi">The compiled cost (step 3, MPPI)</a></li>
   <li><a href="#the-cost-experiment-step-3-mppi" id="toc-the-cost-experiment-step-3-mppi" class="nav-link" data-scroll-target="#the-cost-experiment-step-3-mppi">The cost experiment (step 3, MPPI)</a></li>
   <li><a href="#εpen-and-ties" id="toc-εpen-and-ties" class="nav-link" data-scroll-target="#εpen-and-ties">ε<sub>pen</sub> and ties</a></li>
@@ -1194,6 +1195,71 @@ $$
 </div>
 <p><strong>Checkpoint 2: does Λ realize the edits that pass the gate?</strong> On the chain, 96% on the GPU (open loop, 23 of 24; 92% for RH20 and RH40; MPPI-E 63%), 92% on the CPU. With the hard set, all of which pass the gate, 77% (23 of 30). What the gate passes and Λ<sub>qs</sub> cannot realize is now one class: breaks that hold the box on a corner with more disk friction than the tracker uses.</p>
 </section>
+</section>
+<section id="step-3d" class="level2">
+<h2 class="anchored" data-anchor-id="step-3d">The friction match (step 3d)</h2>
+<p>Decided Nov 8 (compendium, Decision 15): give the gate and the plan the disk–box friction the tracker uses (0.35) instead of the simulator’s 0.99, so the gate rejects the breaks Λ<sub>qs</sub> cannot realize. Built as a scene parameter, <code>manipulator_friction</code>, and measured. It does not do what it was meant to, and it is <strong>left unset</strong> pending Aykut’s choice.</p>
+<p><strong>A defect found first: the gate’s sweep depended on the backend.</strong> The sweep lays a 5 × 5 grid along the free directions of the more-constrained formation. Those were the SVD’s null vectors, and when two directions are free (the pivot’s tilt and the disk along −x<sub>B</sub>) any rotation of them is an equally valid answer. The CPU and the GPU returned different rotations, so they probed different poses. At μ = 0.99 the feasible region hid this; at 0.35 it decided the verdict (the chain’s break(g<sub>v</sub>): refused on the CPU, margin 0.29 on the GPU). Fixed: a basis that depends on the subspace only. The backends now agree to 10⁻³, and checkpoint 1 at the simulator’s friction is unchanged.</p>
+<p><strong>What the gate says at μ = 0.35</strong> (sweep margin; start = tilt / disk depth below the corner):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>sweep</th>
+<th>45° / 40 mm (chain)</th>
+<th>30° / 40</th>
+<th>35° / 40</th>
+<th>40° / 40</th>
+<th>30° / 20</th>
+<th>35° / 20</th>
+<th>40° / 20</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>μ = 0.99, 5 points</td>
+<td>0.12</td>
+<td>0.28</td>
+<td></td>
+<td></td>
+<td>0.31</td>
+<td>0.45</td>
+<td>0.44</td>
+</tr>
+<tr class="even">
+<td>0.35, 5 points (decided grid)</td>
+<td><strong>refused</strong></td>
+<td>0.06</td>
+<td>0.10</td>
+<td>0.01</td>
+<td>0.06</td>
+<td>0.05</td>
+<td>0.34</td>
+</tr>
+<tr class="odd">
+<td>0.35, 9 points</td>
+<td>0.18</td>
+<td>0.06</td>
+<td>0.10</td>
+<td>0.07</td>
+<td>0.14</td>
+<td>0.21</td>
+<td>0.13</td>
+</tr>
+</tbody>
+</table>
+<p>With the decided grid, 0.35 refuses the chain’s own break, which the realizer does: a false refusal. With a 9-point grid it passes every start, including the six the realizer fails.</p>
+<p><strong>What the realizer does with friction-matched plans</strong> (GPU, open loop, 9-point sweep): the chain’s break(g<sub>v</sub>) 3 of 3 (step 3c: 2 of 3); the hard starts 0 of 6, with the same failure modes as before (slump during ramp-in with the disk 40 mm low, corner not released with it 20 mm low). The disk’s contact now stays inside its cone (ratio at most 0.37). The box’s floor and riser corners reach ratio 1.0 and slide, while the tracker’s correction adds up to twice the planned disk force. So the hard breaks fail dynamically, not for lack of a quasi-static transition, and no friction setting in the gate will reject them. Checkpoint 1 barely moves (chain 32.4% → 33.8% rejected with the sweep; demo 39.5% either way).</p>
+<p><strong>Choices</strong> (compendium, Step 3d): keep the friction cap unset; refine the sweep (9 points, or adaptive around the best pose) before the teacher search; for the hard breaks, a tracker that also keeps the environment contacts inside their cones, then a quasi-dynamic method.</p>
 </section>
 <section id="the-compiled-cost-step-3-mppi" class="level2">
 <h2 class="anchored" data-anchor-id="the-compiled-cost-step-3-mppi">The compiled cost (step 3, MPPI)</h2>
