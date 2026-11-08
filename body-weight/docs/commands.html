@@ -985,9 +985,9 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <h3 class="anchored" data-anchor-id="wdm-log"><code>wdm log</code></h3>
 <pre class="text"><code>wdm log [CSV] [--kcal KCAL] [--protein G] [--carb G] [--fat G]
         [--fiber G] [--alcohol G] [--sodium MG] [--exercise KCAL]
-        [--steps N] [--glucose MG_DL] [--ketones MMOL_L] [--hr BPM]
-        [--bp SYS DIA] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
-        [--log-dir DIR]</code></pre>
+        [--steps N] [--weight LB] [--waist IN] [--glucose MG_DL]
+        [--ketones MMOL_L] [--hr BPM] [--bp SYS DIA] [--estimate] [--set]
+        [--clear] [--date YYYY-MM-DD] [--log-dir DIR]</code></pre>
 <p>Adds to a day’s row, then prints the day’s energy and macronutrient totals against today’s prescription with what remains. With no value flags it only prints. <code>wdm eat</code> is an alias. In context: <a href="../../body-weight/docs/daily-routine.html#during-the-day-wdm-log">During the day</a>.</p>
 <table class="caption-top table">
 <thead>
@@ -1044,36 +1044,41 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td><strong>replaces</strong> (a step count is a running total)</td>
 </tr>
 <tr class="even">
+<td><code>--weight LB</code>, <code>--waist IN</code></td>
+<td><code>weight_lb</code>, <code>waist_in</code></td>
+<td>the morning readings <code>wdm daily</code> takes: fills an empty cell, refusing a different value unless <code>--set</code>; does not re-plan (run <code>wdm daily</code> for that)</td>
+</tr>
+<tr class="odd">
 <td><code>--glucose</code>, <code>--ketones</code>, <code>--hr</code>, <code>--bp SYS DIA</code></td>
 <td>the <a href="../../body-weight/docs/data.html#health-readings">health readings</a></td>
 <td>fills an empty cell, refusing a different value unless <code>--set</code>; adds the column if the file lacks it</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--estimate</code></td>
 <td><code>estimated</code></td>
 <td>sets it to 1: the day’s food is a guess (<a href="../../body-weight/docs/data.html#estimating">When you don’t know exactly</a>); adds the column if the file lacks it</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--set</code></td>
 <td></td>
 <td><strong>replace</strong> the values of the columns given instead of adding to them, to correct a day; columns not given are left alone, and each change is printed (<code>kcal 1460 → 1850</code>)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--clear</code></td>
 <td></td>
 <td>empty the day’s food, exercise and estimate cells first; the weigh-in, waist, steps and health readings stay. With value flags, the day is cleared and then they are added</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--date YYYY-MM-DD</code></td>
 <td></td>
 <td>the day to add to; default today</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir DIR</code></td>
 <td></td>
 <td>where to read today’s plan from; default <code>data/plans</code> beside the data directory</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>CSV</code></td>
 <td></td>
 <td>observations file; default <code>data/raw/observations.csv</code></td>
@@ -1086,7 +1091,8 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">--exercise</span> 310 <span class="at">--steps</span> 8400 <span class="at">--estimate</span> <span class="at">--date</span> 2026-10-28</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>To correct a day, for example with your tracker’s end-of-day totals:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--date</span> 2026-10-28 <span class="at">--set</span> <span class="at">--kcal</span> 1850 <span class="at">--protein</span> 120 <span class="at">--carb</span> 95 <span class="at">--fat</span> 80</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--date</span> 2026-10-28 <span class="at">--clear</span>     <span class="co"># the day's food was wrong: leave it unknown</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--date</span> 2026-10-28 <span class="at">--clear</span>     <span class="co"># the day's food was wrong: leave it unknown</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">wdm</span> log <span class="at">--date</span> 2026-10-28 <span class="at">--set</span> <span class="at">--weight</span> 203.4   <span class="co"># a mistyped weigh-in</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>A day without a row gets one in the latest episode, as long as it comes after the file’s last date; add earlier rows by hand. Every food flag adds, so a command run twice counts twice; correct with <code>--set</code>.</p>
 </section>
 <section id="wdm-plan" class="level3">
