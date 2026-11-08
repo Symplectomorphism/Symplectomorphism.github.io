@@ -92,11 +92,20 @@ Row 1 is a known gap between the decision and the code. The decision
 collapses the disk's position, but the code currently evaluates the gate at
 each node's own disk position, and a different disk position can change a
 verdict (for example, which contacts are near enough to make). So the merge
-test keeps the two states apart. The fix is to evaluate the gate over the
-disk's whole region and combine the verdicts (an option, `region_placements`,
-added with the realizer's approach); turning it on by default waits for the
-measurement that the approach can actually realize those verdicts from any
-disk position in the region.
+test keeps the two states apart.
+
+**Decided fix (Decision 21): ask the gate the right question.** A node's
+verdict should be "is there *some* disk position in its region from which
+the box can be held through this edit?" That's computed as a relaxation in
+the same hold LP: the disk's contact becomes a contact that may slide along
+the reachable stretch of the face it will touch (a sliding contact on a
+straight face can push like either of the stretch's two endpoints), so it's
+one LP of the same size. It never rejects an edit some disk position could
+realize, which is the gate's guarantee, and Λ decides where the disk
+actually goes. A sampled version (the gate at six disk spots) also closes the
+gap and was measured: 39% more accepted calls, admitted edits realized just
+as often, but twice the time and not guaranteed. The relaxed version is being
+built and will be compared with it.
 
 ## Merging by evaluation
 
@@ -157,14 +166,16 @@ more probable path breaks it too.
   within a formation, it reached the target in 0 of 6, 0 of 6 and 2 of 6 trials
   on the chain's three disk-contact formations. This is the evidence for
   keeping the box's pose in the key.
-- **From spread-out starts, edits fail mostly before Λ is called.** Over 380
-  start–edit pairs spread across the chain's formations, the gate, looking only
-  near each start, rejected most far-from-χ<sub>tr</sub> starts outright; with
-  the strict success test (exactly the target formation, σ held throughout) 38
-  of 250 succeeded where the disk touches the box and 10 of 130 where it
-  doesn't. The realizer's approach (moving the disk within its region to where
-  the edit starts, inside the edit's call) is the work now under way, and
-  these numbers will be re-measured with it.
+- **Moving the disk first helps where the disk is free.** Each edit's Λ
+  call now begins by moving the disk within its region to where the edit
+  starts, with the box fixed and the contacts held. Over 370 start–edit pairs
+  spread across the chain's formations, strict successes (exactly the target
+  formation, the contacts held throughout) rose from 45 to 60. With the disk
+  free, the gate admits 119 pairs instead of 51 and 24 succeed instead of 9;
+  with the disk on the box nothing changes (36 successes), because those
+  starts would need the box moved, which only pushing does. So the call
+  bound's main hypothesis, that the next edit works from every state of a
+  node, holds only in part.
 
 ## Check yourself
 
