@@ -598,6 +598,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#what-the-solver-must-do" id="toc-what-the-solver-must-do" class="nav-link active" data-scroll-target="#what-the-solver-must-do">What the solver must do</a></li>
   <li><a href="#lambda-qs" id="toc-lambda-qs" class="nav-link" data-scroll-target="#lambda-qs">The mode-scheduled realizer Λ<sub>qs</sub> (step 3b)</a></li>
+  <li><a href="#learned-skill" id="toc-learned-skill" class="nav-link" data-scroll-target="#learned-skill">A learned skill for the hard breaks (in progress)</a></li>
   <li><a href="#step-3c" id="toc-step-3c" class="nav-link" data-scroll-target="#step-3c">Re-planning and failure diagnostics (step 3c)</a>
   <ul class="collapse">
   <li><a href="#diagnosis" id="toc-diagnosis" class="nav-link" data-scroll-target="#diagnosis">Why the remaining runs fail</a></li>
@@ -690,6 +691,17 @@ $$
 <li><strong>feed-forward:</strong> a quasi-static force at each knot (nonnegative least squares over the gate’s friction-cone rays);</li>
 <li><strong>tracking:</strong> while the disk touches, a PD force along the box’s free directions, mapped through the contact and kept inside the disk’s friction cone (μ = 0.35, below the simulator’s 0.99, so the contact sticks) and the ±1 N motor box; otherwise PD on the planned disk positions.</li>
 </ul>
+</section>
+<section id="learned-skill" class="level2">
+<h2 class="anchored" data-anchor-id="learned-skill">A learned skill for the hard breaks (in progress)</h2>
+<p>The hard break(g<sub>v</sub>) starts fail for every planner so far because the box’s corners slide: the maneuver needs timing or momentum that a quasi-static plan can’t provide. So a controller for this one maneuver is being <em>learned</em>, in the same MJX simulator the rest of the system uses:</p>
+<ul>
+<li><strong>Two algorithms, two variants:</strong> proximal policy optimization (PPO) and soft actor-critic (SAC), from Brax, each trained as a <strong>residual</strong> correction on top of Λ<sub>qs</sub>’s commands and <strong>from scratch</strong>.</li>
+<li><strong>Training:</strong> randomized starts (tilt 30–45°, disk height, friction, mass) with a curriculum from easy to hard tilts; the reward is reaching the target formation under the strict success test, with penalties for slipping, falling and deep penetration. On Juno’s H200 GPUs, several seeds each.</li>
+<li><strong>Validation:</strong> the six hard starts and 50+ held-out ones, against Λ<sub>qs</sub> and MPPI (both 0 of 6 so far), with a penetration limit and a re-check with stiffer contacts, so a policy can’t win by exploiting the simulator.</li>
+<li><strong>Feasibility:</strong> if some start stays unsolved by every run, a brute-force search over open-loop force sequences within the motors’ ±1 N tells whether it is hard to learn or impossible.</li>
+</ul>
+<p>A learned skill would carry a measured success rate, not a quasi-static certificate; the call bound still holds (it counts Λ calls). Results will be reported here.</p>
 </section>
 <section id="step-3c" class="level2">
 <h2 class="anchored" data-anchor-id="step-3c">Re-planning and failure diagnostics (step 3c)</h2>
