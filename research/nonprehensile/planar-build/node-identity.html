@@ -564,10 +564,10 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#what-a-node-is" id="toc-what-a-node-is" class="nav-link active" data-scroll-target="#what-a-node-is">What a node is</a></li>
   <li><a href="#three-answers-and-why-we-use-the-third" id="toc-three-answers-and-why-we-use-the-third" class="nav-link" data-scroll-target="#three-answers-and-why-we-use-the-third">Three answers, and why we use the third</a></li>
   <li><a href="#the-four-examples-computed" id="toc-the-four-examples-computed" class="nav-link" data-scroll-target="#the-four-examples-computed">The four examples, computed</a></li>
-  <li><a href="#the-merge-radius" id="toc-the-merge-radius" class="nav-link" data-scroll-target="#the-merge-radius">The merge radius</a></li>
+  <li><a href="#merging-by-evaluation" id="toc-merging-by-evaluation" class="nav-link" data-scroll-target="#merging-by-evaluation">Merging by evaluation</a></li>
   <li><a href="#when-a-duplicate-is-dropped" id="toc-when-a-duplicate-is-dropped" class="nav-link" data-scroll-target="#when-a-duplicate-is-dropped">When a duplicate is dropped</a></li>
   <li><a href="#what-changed-in-the-search-because-of-this" id="toc-what-changed-in-the-search-because-of-this" class="nav-link" data-scroll-target="#what-changed-in-the-search-because-of-this">What changed in the search because of this</a></li>
-  <li><a href="#what-is-still-being-checked" id="toc-what-is-still-being-checked" class="nav-link" data-scroll-target="#what-is-still-being-checked">What is still being checked</a></li>
+  <li><a href="#what-the-measurements-show" id="toc-what-the-measurements-show" class="nav-link" data-scroll-target="#what-the-measurements-show">What the measurements show</a></li>
   <li><a href="#check-yourself" id="toc-check-yourself" class="nav-link" data-scroll-target="#check-yourself">Check yourself</a></li>
   </ul>
 </nav>
@@ -602,7 +602,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/index.html">Planar Build</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Node identity</h1>
-<p class="subtitle lead">When does the search treat two states as the same node? Formation, the disk’s connected region, and the box’s pose within a certified radius.</p>
+<p class="subtitle lead">When does the search treat two states as the same node? Formation, the disk’s connected region, and the box’s pose, merged only when the gate agrees.</p>
 </div>
 
 
@@ -641,13 +641,13 @@ $$
 <li>the same formation σ (the recognized contacts),</li>
 <li>the same goal bit (whether the state is in the goal region),</li>
 <li>the disk in the same connected region of its in-σ positions, given the box’s pose (Xiao and Ji’s contact state over the disk’s coordinates), and</li>
-<li>the box’s poses within a merge radius r of each other.</li>
+<li>the box’s poses within 10 mm of each other, <strong>and</strong> the hold gate giving both states the same verdict on every edit (merge by evaluation, below).</li>
 </ul>
 <p>Nothing is rounded or snapped: every node keeps its real simulated state, and Λ always starts from where the previous motion actually ended.</p>
 </section>
 <section id="the-four-examples-computed" class="level2">
 <h2 class="anchored" data-anchor-id="the-four-examples-computed">The four examples, computed</h2>
-<p>The examples below are computed with the search’s real key code (<code>NodeKey</code> and the merge rule of <code>SearchState</code> in <code>cmg/search</code>) and the old grid key, by <a href="scripts/04_node_identity.py"><code>scripts/04_node_identity.py</code></a>. In all four the formation is the same: the box’s bottom face on the floor, {B:zn–E:L}.</p>
+<p>The examples below are computed with the search’s real key code (<code>NodeKey</code> and the merge rule of <code>SearchState</code> in <code>cmg/search</code>, with the search’s own gate) and the old grid key, by <a href="scripts/04_node_identity.py"><code>scripts/04_node_identity.py</code></a>. In all four the formation is the same: the box’s bottom face on the floor, {B:zn–E:L}.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 25%">
@@ -660,7 +660,7 @@ $$
 <th>Pair of states</th>
 <th>Grid (1 mm cells)</th>
 <th>Xiao–Ji contact state</th>
-<th><strong>Our key</strong> (r = 9 mm)</th>
+<th><strong>Our key</strong> (current code)</th>
 </tr>
 </thead>
 <tbody>
@@ -668,7 +668,7 @@ $$
 <td>disk in two places, box fixed</td>
 <td>different</td>
 <td>same</td>
-<td><strong>same</strong></td>
+<td><strong>different</strong> (see below)</td>
 </tr>
 <tr class="even">
 <td>box 0.2 mm apart, across a cell boundary</td>
@@ -690,12 +690,15 @@ $$
 </tr>
 </tbody>
 </table>
-<p>The grid is wrong in the first three rows (it splits one situation into several nodes, which only costs repeated calls). The Xiao–Ji contact state is wrong in the last row (it merges situations with different futures, which can lose the solution). Our key gets all four right.</p>
+<p>The grid splits the first three rows into several nodes, which only costs repeated calls. The Xiao–Ji contact state merges the last row, situations with different futures, which can lose the solution. Our key gets rows 2–4 right.</p>
+<p>Row 1 is a known gap between the decision and the code. The decision collapses the disk’s position, but the code currently evaluates the gate at each node’s own disk position, and a different disk position can change a verdict (for example, which contacts are near enough to make). So the merge test keeps the two states apart. The fix is to evaluate the gate over the disk’s whole region and combine the verdicts (an option, <code>region_placements</code>, added with the realizer’s approach); turning it on by default waits for the measurement that the approach can actually realize those verdicts from any disk position in the region.</p>
 </section>
-<section id="the-merge-radius" class="level2">
-<h2 class="anchored" data-anchor-id="the-merge-radius">The merge radius</h2>
-<p>How close must two box poses be to count as one? Not an arbitrary cell size: close enough that the hold gate gives the same verdict on every edit from either pose. The theory note derives r for each node from the gate’s margins: how far each edit’s best margin sits above the acceptance threshold, how fast the margin can change as the box moves, and how far the pose is from the edges of the recognizer’s tolerance zones. On the step scene this gives about 9–15 mm, roughly ten times the old cell. The code uses 9 mm (the low end) until the gate is evaluated once per key, which the per-node formula needs. Where a margin sits right at the threshold, r = 0 and nothing is merged.</p>
-<p>“Within r” is not transitive: A near B and B near C does not make A near C. So a new state is compared only with nodes the search actually made, never with ones it dropped, and it joins the key of the earliest made node within that node’s radius. A dropped state can therefore never pull a later one into its key. A chain of merges can only run through nodes the search made, and a duplicate is made only when its path is more probable than every earlier node of its key (next section). The theory note shows the call bound stays a fixed number under this rule.</p>
+<section id="merging-by-evaluation" class="level2">
+<h2 class="anchored" data-anchor-id="merging-by-evaluation">Merging by evaluation</h2>
+<p>How close must two box poses be to count as one node? The first plan was a radius derived from the gate’s margins: close enough that the gate provably gives the same verdict on every edit. The theory note certified the constants that radius needs, and they came out 20–40 times larger than the measured rates of change (the disk’s motor limits alone add a lot at the 30° pivot start). The certified radius on the step scene is 0.34–0.84 mm, and usually zero: rigorously, almost nothing could merge.</p>
+<p>So the search <strong>checks instead of bounding</strong>. A new state joins an existing node’s key only if its box pose is within 10 mm of that node’s <strong>and its own gate verdicts equal the node’s for every edit</strong>. The 10 mm is only a test radius (the recognizer’s tolerance zones are 1–10 mm wide); the verdict check is what makes the merge sound, and the call bound’s proof needs nothing more. The price is one gate evaluation per would-be duplicate.</p>
+<p>“Within 10 mm” is not transitive, so a new state is compared only with nodes the search actually made, never with ones it dropped, and joins the key of the earliest made node that passes. A dropped state can never pull a later one into its key.</p>
+<p><strong>Measured</strong> on searches from the chain’s starts: about half of the accepted Λ calls (18 of 37) produced duplicate candidates, 8 of which merged; the merge checks cost about 8% of the search time. Caching the gate per key cut the gate’s share of search time from 71% to 21% (1,170 → 414 s).</p>
 </section>
 <section id="when-a-duplicate-is-dropped" class="level2">
 <h2 class="anchored" data-anchor-id="when-a-duplicate-is-dropped">When a duplicate is dropped</h2>
@@ -706,19 +709,23 @@ $$
 <ul>
 <li><strong>Children are labeled by what was reached.</strong> A Λ call counts only if it succeeds and the recognizer returns exactly the requested formation; the child gets the recognized formation (before, the search stored the formation it had asked for).</li>
 <li><strong>Moving within a node is part of an edit.</strong> Under these keys, a pure repositioning step always lands on its parent’s key and would always be dropped. So the disk’s motion to the edit’s transition pose is the first part of the edit’s own Λ call, not a separate search step.</li>
-<li><strong>The gate is evaluated per key</strong> and cached (Decision 18), with the local sweep as a refinement at the node’s actual pose.</li>
+<li><strong>The gate is evaluated per key</strong> and cached (Decision 18), with the local sweep as a refinement at the node’s actual pose: 71% → 21% of search time.</li>
 </ul>
 </section>
-<section id="what-is-still-being-checked" class="level2">
-<h2 class="anchored" data-anchor-id="what-is-still-being-checked">What is still being checked</h2>
-<p>The key assumes that from any state of a node, the next edit’s Λ call succeeds when it succeeds from one of them: in particular, that the disk can always get from wherever it is in its region to where the edit needs it. A measurement of exactly this, over many start states per node, is running on the clusters, and the merge radius is waiting on certified constants from the theory note. Both will be reported here.</p>
+<section id="what-the-measurements-show" class="level2">
+<h2 class="anchored" data-anchor-id="what-the-measurements-show">What the measurements show</h2>
+<ul>
+<li><strong>Connected regions.</strong> Of the 328 formations (after the graph changes of Decision 19), 305 are one connected region and 23 split, 3 of them stably; none of the formations without a disk–box contact splits, and each of the chain’s eight formations is one region.</li>
+<li><strong>The box is not carried across its region.</strong> When the disk pushes the box within a formation, it reached the target in 0 of 6, 0 of 6 and 2 of 6 trials on the chain’s three disk-contact formations. This is the evidence for keeping the box’s pose in the key.</li>
+<li><strong>From spread-out starts, edits fail mostly before Λ is called.</strong> Over 380 start–edit pairs spread across the chain’s formations, the gate, looking only near each start, rejected most far-from-χ<sub>tr</sub> starts outright; with the strict success test (exactly the target formation, σ held throughout) 38 of 250 succeeded where the disk touches the box and 10 of 130 where it doesn’t. The realizer’s approach (moving the disk within its region to where the edit starts, inside the edit’s call) is the work now under way, and these numbers will be re-measured with it.</li>
+</ul>
 </section>
 <section id="check-yourself" class="level2">
 <h2 class="anchored" data-anchor-id="check-yourself">Check yourself</h2>
 <ol type="1">
 <li>Why is the disk’s position collapsed but the box’s pose is not, even though both can lie anywhere in a connected region of poses that realize σ?</li>
-<li>In the formation “box flush against the riser, disk away”, what does the merge radius do, and why doesn’t it matter? (Hint: can the box move at all without changing σ?)</li>
-<li>Three box poses A, B, C on a line at 0, 6 and 12 mm, same formation and disk region, all with r = 9 mm; each later arrival has a lower π than A, so it is dropped if its key is taken. Arrivals in the order A, C, B: which keys do C and B get? And in the order A, B, C? (Hint: is a dropped state ever compared against?)</li>
+<li>In the formation “box flush against the riser, disk away”, what does the 10 mm test do, and why doesn’t it matter? (Hint: can the box move at all without changing σ?)</li>
+<li>Three box poses A, B, C on a line at 0, 6 and 12 mm, same formation and disk region, the same gate verdicts everywhere, and a 10 mm test radius; each later arrival has a lower π than A, so it is dropped if its key is taken. Arrivals in the order A, C, B: which keys do C and B get? And in the order A, B, C? (Hint: is a dropped state ever compared against?)</li>
 <li>Why does dropping a duplicate by first arrival break the call bound, while the safe rule does not?</li>
 </ol>
 <p><a href="../../../research/nonprehensile/planar-build/local-solver.html">← The local solver</a> · <a href="../../../research/nonprehensile/planar-build/search.html">Search and ranking →</a></p>
