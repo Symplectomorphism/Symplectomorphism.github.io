@@ -46,7 +46,7 @@ Health readings; blank skips.
 - **The waist** is asked for when seven days have passed since the last reading (see [the waist tape](#the-waist-tape)).
 - **The health readings** (fasting glucose, ketones, resting heart rate, blood pressure) are asked for every morning unless today's row has them; the diastolic only after a systolic. The model does not use them, so skip any you did not take ([how to take them](data.md#health-readings)).
 
-A blank answer skips the item. A value that conflicts with one already in the file is refused, not overwritten, because a silent overwrite is how a typo becomes data; fix the file by hand if the old value is the wrong one. A day's row that does not exist yet is created in the latest episode.
+A blank answer skips the item. A value that conflicts with one already in the file is refused, not overwritten, because a silent overwrite is how a typo becomes data; if the old value is the wrong one, `wdm log --set` replaces it (for example `wdm log --set --weight 203.4`). A day's row that does not exist yet is created in the latest episode.
 
 Then it validates the file, runs both estimation phases and the controller in the [mode the subject file selects](configuration.md#mode), archives the plan in the [plans log](reading-output.md#the-plans-log), and prints the plan ([how to read it](reading-output.md#the-plan)), ending with today's prescription:
 
@@ -81,7 +81,7 @@ Logging never shifts the plan: `wdm log` compares against the latest plan logged
 
 A weekly waist measurement is the only reading that responds to fat mass directly, and it narrows the fat-mass interval by roughly a tenth: not more, because how many centimeters of waist a kilogram of fat is worth differs from person to person and has to be learned. Measure at the navel, standing, tape level and snug but not compressing, at the end of a relaxed exhale, before eating. The same time and place each time matter more than the exact protocol.
 
-`wdm daily` asks for it every seven days; you can also pass `--waist IN`, or type the value into the `waist_in` column of any row. Measuring more often does no harm. The filter learns your personal offset and slope, so the tape needs no calibration ([the model](theory/model.md#waist)).
+`wdm daily` asks for it every seven days; you can also pass `--waist IN` to `wdm daily` or `wdm log` (which records it without re-planning), or type the value into the `waist_in` column of any row. Measuring more often does no harm. The filter learns your personal offset and slope, so the tape needs no calibration ([the model](theory/model.md#waist)).
 
 ## Beyond the routine
 
@@ -94,7 +94,7 @@ A weekly waist measurement is the only reading that responds to fat mass directl
 | When | What | Command |
 |---|---|---|
 | Every morning | Weigh in; get today's prescription | `wdm daily` |
-| Weekly (it asks) | Waist at the navel | answer `wdm daily`'s prompt, or `--waist IN` |
+| Weekly (it asks) | Waist at the navel | answer `wdm daily`'s prompt, or `wdm log --waist IN` |
 | Every morning (optional) | Glucose, ketones, resting heart rate, blood pressure | answer `wdm daily`'s prompts, or `--glucose`, `--ketones`, `--hr`, `--bp SYS DIA` |
 | Before each meal | Add the meal; see what is left | `wdm log --kcal ... --protein ... --carb ... --fat ...` |
 | After training | Add the session's energy | `wdm session-kcal --session "Lower A"`, then `wdm log --exercise KCAL` |

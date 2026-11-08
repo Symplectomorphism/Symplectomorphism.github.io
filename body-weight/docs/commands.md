@@ -58,9 +58,9 @@ Exit code 1 if a value conflicts with one already in the file, if validation fai
 ```text
 wdm log [CSV] [--kcal KCAL] [--protein G] [--carb G] [--fat G]
         [--fiber G] [--alcohol G] [--sodium MG] [--exercise KCAL]
-        [--steps N] [--glucose MG_DL] [--ketones MMOL_L] [--hr BPM]
-        [--bp SYS DIA] [--estimate] [--set] [--clear] [--date YYYY-MM-DD]
-        [--log-dir DIR]
+        [--steps N] [--weight LB] [--waist IN] [--glucose MG_DL]
+        [--ketones MMOL_L] [--hr BPM] [--bp SYS DIA] [--estimate] [--set]
+        [--clear] [--date YYYY-MM-DD] [--log-dir DIR]
 ```
 
 Adds to a day's row, then prints the day's energy and macronutrient totals against today's prescription with what remains. With no value flags it only prints. `wdm eat` is an alias. In context: [During the day](daily-routine.md#during-the-day-wdm-log).
@@ -76,6 +76,7 @@ Adds to a day's row, then prints the day's energy and macronutrient totals again
 | `--sodium MG` | `sodium_mg` | adds |
 | `--exercise KCAL` | `exercise_kcal` | adds |
 | `--steps N` | `steps` | **replaces** (a step count is a running total) |
+| `--weight LB`, `--waist IN` | `weight_lb`, `waist_in` | the morning readings `wdm daily` takes: fills an empty cell, refusing a different value unless `--set`; does not re-plan (run `wdm daily` for that) |
 | `--glucose`, `--ketones`, `--hr`, `--bp SYS DIA` | the [health readings](data.md#health-readings) | fills an empty cell, refusing a different value unless `--set`; adds the column if the file lacks it |
 | `--estimate` | `estimated` | sets it to 1: the day's food is a guess ([When you don't know exactly](data.md#estimating)); adds the column if the file lacks it |
 | `--set` | | **replace** the values of the columns given instead of adding to them, to correct a day; columns not given are left alone, and each change is printed (`kcal 1460 → 1850`) |
@@ -97,6 +98,7 @@ To correct a day, for example with your tracker's end-of-day totals:
 ```bash
 wdm log --date 2026-10-28 --set --kcal 1850 --protein 120 --carb 95 --fat 80
 wdm log --date 2026-10-28 --clear     # the day's food was wrong: leave it unknown
+wdm log --date 2026-10-28 --set --weight 203.4   # a mistyped weigh-in
 ```
 
 A day without a row gets one in the latest episode, as long as it comes after the file's last date; add earlier rows by hand. Every food flag adds, so a command run twice counts twice; correct with `--set`.
