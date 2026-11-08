@@ -482,6 +482,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/03-local-solver.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3. The local solver: cost, success and transitions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../../research/nonprehensile/planar-build/xiao-ji.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Decision 9: Xiao and Ji’s construction</span></a>
   </div>
@@ -603,7 +609,7 @@ $$
 </header>
 
 
-<p><strong>Last checked:</strong> 2026-11-07, against <code>phase1/planar</code> at <code>faf4320</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
+<p><strong>Last checked:</strong> 2026-11-07, against <code>phase1/planar</code> at <code>b551f5b</code>. This page is updated whenever an issue is found or closed. The full records are in the discussion compendium (<code>reports/discussion-compendium/</code> in <code>c-gnn</code>: sections “Step 1”, “Plans” and “Code issues”). Walkthrough pages show many of these issues as they happen.</p>
 <section id="open-contact-layer" class="level2">
 <h2 class="anchored" data-anchor-id="open-contact-layer">Open: contact layer</h2>
 <table class="caption-top table">
@@ -619,8 +625,8 @@ $$
 <tr class="odd">
 <td><strong>Ties under deep penetration.</strong> ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching.</td>
 <td>475 of 4,000 demo poses jittered by about 3 mm are ambiguous (357 before Decision 9; 474 of the 475 have a contact deeper than ε<sub>on</sub>; in 136, s<sub>v</sub> loses to t, which contains it). The stress test’s budget was raised from 400 to 500. Since step 2 a tied pose cannot be a solver success or a search node.</td>
-<td><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html#other-refinements">Step 1</a>, <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#eps-pen">Step 2</a>, README</td>
-<td>Step 3: tighten ε<sub>pen</sub> once the cost stops rewarding penetration (rollouts reach 9.9 mm today)</td>
+<td><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html#other-refinements">Step 1</a>, <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#eps-pen">Step 2</a>, <a href="../../../research/nonprehensile/planar-build/03-local-solver.html#ε_pen-and-ties">Step 3</a>, README</td>
+<td>Awaiting the ε<sub>pen</sub> choice (step 3): 257 ties at 5 mm (recommended; covers the best cost’s 4.7 mm penetration), 44 at 2 mm</td>
 </tr>
 <tr class="even">
 <td><strong>Labels can flicker near θ<sub>e</sub></strong> along a trajectory.</td>
@@ -695,38 +701,44 @@ $$
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>MPPI’s arrival term is signed and linear</strong> (10<sup>4</sup> φ).</td>
-<td>It rewards penetration: the shove seen on walkthrough page 7.</td>
-<td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/07-mppi.html">7</a></td>
-<td>Step 3 (cost experiment)</td>
+<td><strong>MPPI’s default cost is still the current one</strong> (variant A: signed linear arrival 10<sup>4</sup> φ, velocity dwell term).</td>
+<td>It penetrates up to 14 mm (beyond ε<sub>pen</sub>) and realizes 3 of 25 edits in the step-3 experiment. The compiled costs (B–E) exist but are not the default.</td>
+<td>Walkthrough <a href="../../../research/nonprehensile/code-walkthrough/07-mppi.html">7</a>, <a href="../../../research/nonprehensile/planar-build/03-local-solver.html">Step 3</a></td>
+<td>The cost choice (step 3; E recommended)</td>
 </tr>
 <tr class="even">
-<td><strong>MPPI’s dwell term penalizes velocity</strong>, not drift from the task-end pose (<code>hold_target</code> is computed but unused).</td>
-<td>Its docstring describes a different term than the code runs.</td>
-<td>Compendium, code issues</td>
-<td>Step 3</td>
-</tr>
-<tr class="odd">
 <td><strong>GPU runs are not repeatable between processes</strong> by default.</td>
 <td>The same MPPI call ended once flush and once tipped 1.4°.</td>
 <td><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html#tests">Step 1</a>, README</td>
 <td>Workaround: <code>XLA_FLAGS=--xla_gpu_deterministic_ops=true</code> (about 13% slower)</td>
 </tr>
+<tr class="odd">
+<td><strong>MPPI does not realize the pivot or break(g<sub>v</sub>)</strong> under any of five costs (0 of 3 starts each), nor break(g<sub>v</sub>) from 30°. The best costs realize 12 of 25 edits that pass H.</td>
+<td>The search cannot follow the chain past the pivot.</td>
+<td><a href="../../../research/nonprehensile/planar-build/03-local-solver.html">Step 3</a>, compendium (step 3)</td>
+<td>Change the solver for these edits (checkpoint 2 rule; contact-implicit MPC or a contact trust region), awaiting review</td>
+</tr>
 <tr class="even">
-<td><strong>MPPI fails the chain’s edits.</strong> In 24 full rollouts of the chain’s edits, none passes the solver’s success check, the passive breaks included (not because of ties).</td>
-<td>Edits that <code>Cand</code> offers are not realized, so the search cannot follow the chain.</td>
-<td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#eps-pen">Step 2</a>, compendium</td>
-<td>Step 3 (cost and success criteria)</td>
+<td><strong>The paper’s compiled cost is scaled by the box size</strong> (a = 125 mm).</td>
+<td>A 1 mm gap costs 6·10⁻⁵, so the barrier decides everything and contacts chatter; adding the margin term made it worse (4 of 25).</td>
+<td><a href="../../../research/nonprehensile/planar-build/03-local-solver.html">Step 3</a></td>
+<td>Contact terms over ε<sub>on</sub> (variant E), in the paper rewrite once chosen</td>
 </tr>
 <tr class="odd">
+<td><strong>The transition sweep’s default grid is coarse</strong> (5 points per direction).</td>
+<td>From 30° it finds one held pose where 9 points find eight.</td>
+<td><a href="../../../research/nonprehensile/planar-build/03-local-solver.html#sweep">Step 3</a></td>
+<td>Resolution choice (step 3; 9 points recommended)</td>
+</tr>
+<tr class="even">
 <td><strong>The hold tests are float32</strong> (the default LP gate and the exact cross-check).</td>
 <td>Answers within float32 of the support boundary can differ from a float64 reference. The default gate (LP with the disk’s motor limits) agrees with HiGHS on 1,000 of 1,000 random cases and on every near-boundary case 0.33 mm or more from the boundary; its only misses (9 of 208 on CPU, 6 on GPU) are acceptances with margin 0 at the boundary pose itself. No false rejections, no “uncertain”.</td>
 <td><a href="../../../research/nonprehensile/planar-build/02-hold-gate.html#gate">Step 2</a></td>
 <td>Acceptable; a positive <code>margin_min</code> if zero-margin poses must be refused</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>The LP gate in 3D is float32-limited.</strong> Rounding builds up in linrax’s dense tableau over the long pivot sequences of 3D cones (50–130 generators).</td>
-<td>About 1% of supported 3D cases end “uncertain” (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly.</td>
+<td>About 1% of supported 3D cases end “uncertain” (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly. On the GPU the 3D test now sees 4 uncertain of 64 (3 at <code>9261ece</code>, before step 3) against its budget of 2, so <code>test_3d_cones_finish_and_never_mislead</code> fails there; it passes on CPU.</td>
 <td><a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html#solving-it">LP tutorial</a>, compendium (hold-test LPs)</td>
 <td>Reinversion (rebuild the tableau from the final basis and continue), with the 3D build</td>
 </tr>
@@ -800,6 +812,14 @@ $$
 </tr>
 </thead>
 <tbody>
+<tr class="odd">
+<td>Each realizer graded itself (MPPI’s own gap-band test, not the paper’s Def. success)</td>
+<td>One shared success test for every realizer, extended to transfers and compound edges (step 3, Nov 7, <code>41b5721</code>)</td>
+</tr>
+<tr class="even">
+<td>The gate at χ₀ refused edits a motion could realize (break(g<sub>v</sub>) at 30°, held at 45°)</td>
+<td>H searches for a transition pose near χ₀ (Decision 10, <code>41b5721</code>)</td>
+</tr>
 <tr class="odd">
 <td>The transfer relation included 44 pairs that are not Xiao–Ji neighbors (20 going round a corner in one step, 24 changing both features), each skipping a contact state the motion passes through</td>
 <td>Transfers are Xiao–Ji containment (cases 2–3) only: 56 pairs (Decision 9, Nov 7, <code>9261ece</code>)</td>

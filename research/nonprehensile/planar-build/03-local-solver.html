@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>3. The local solver: cost, success and transitions – Aykut C. Satici</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../../">
+<link href="../../../research/nonprehensile/planar-build/xiao-ji.html" rel="next">
+<link href="../../../research/nonprehensile/planar-build/02-hold-gate.html" rel="prev">
+<link href="../../../images/robot-arm-favicon.png" rel="icon" type="image/png">
+<script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-dark-447e42e69aaa9833c0ba1b986f430b20.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../../site_libs/bootstrap/bootstrap-69b03ad0d42ef03750a3840f8cabaa2a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../../site_libs/bootstrap/bootstrap-dark-d73aae934b2937696c31dd5d38cbb7cf.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../../site_libs/bootstrap/bootstrap-69b03ad0d42ef03750a3840f8cabaa2a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../../site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="../../../site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="../../../site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<meta name="robots" content="noindex, nofollow">
+
+
+<link rel="stylesheet" href="../../../styles.css">
+<link rel="stylesheet" href="../../research.css">
+<meta property="og:title" content="3. The local solver: cost, success and transitions – Aykut C. Satici">
+<meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
+<meta property="og:image" content="https://Symplectomorphism.github.io/research/nonprehensile/planar-build/media/step3_sweep.svg">
+<meta property="og:site_name" content="Aykut C. Satici">
+<meta property="og:image:alt" content="break(gv) with the disk 40 mm below the face center. Line: the gate at the pose along the tilt. Dots: the sweep’s grid from χ₀ = 30° (recognized poses only; filled where {mx, sv} holds). The ring marks χt.">
+</head>
+
+<body class="nav-sidebar docked nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          toggle.setAttribute("aria-checked", alternate ? "true" : "false");
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455).
+    // Not run on load: stylesheets are set before first paint there, and
+    // scrolling would undo the scroll to a URL fragment (#14973).
+    // The one pixel nudge keeps the reader where they were.
+    const refreshSafariScrollbar = () => {
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        const scrollY = window.scrollY;
+        window.scrollTo(0, scrollY > 0 ? scrollY - 1 : 1);
+        setTimeout(() => {
+          window.scrollTo(0, scrollY);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const queryPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+    const darkModeDefault = queryPrefersDark.matches;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      refreshSafariScrollbar();
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    queryPrefersDark.addEventListener("change", e => {
+      if(window.localStorage.getItem("quarto-color-scheme") !== null)
+        return;
+      const alternate = e.matches
+      toggleColorMode(alternate);
+      refreshSafariScrollbar();
+      localAlternateSentinel = e.matches ? 'alternate' : 'default'; // this is used alongside local storage!
+      toggleGiscusIfUsed(alternate, darkModeDefault);
+    });
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../../index.html">
+    <span class="navbar-title">Aykut C. Satici</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="../../../research/index.html" aria-current="page"> 
+<span class="menu-text">Research</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../publications/index.html"> 
+<span class="menu-text">Publications</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../teaching/index.html"> 
+<span class="menu-text">Teaching</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../people/index.html"> 
+<span class="menu-text">People</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../news/index.html"> 
+<span class="menu-text">News</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../positions/index.html"> 
+<span class="menu-text">Opportunities</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-miscellaneous" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Miscellaneous</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-miscellaneous">    
+        <li>
+    <a class="dropdown-item" href="../../../fun/index.html">
+ <span class="dropdown-text">Fun</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../chiasson/index.html">
+ <span class="dropdown-text">John Chiasson</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../../body-weight/index.html">
+ <span class="dropdown-text">Body-Weight Dynamics</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+            <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/index.html">Planar Build</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/03-local-solver.html">3. The local solver: cost, success and transitions</a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto" aria-label="Section">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Research</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/robotics_and_control.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Robotics and Control</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../../research/nonprehensile/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Nonprehensile Manipulation</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section: Nonprehensile Manipulation">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planning-through-contact.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Planning Through Contact</span></a>
+  </div>
+</li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../../research/nonprehensile/code-walkthrough/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Code Walkthrough</span></a>
+            <button type="button" class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="false" aria-label="Toggle section: Code Walkthrough">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/01-scene.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1. The scene</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/02-templates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2. Templates and gaps</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/03-formations.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3. Formations</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/04-graph.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">4. The contact graph</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/05-hold.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">5. The hold LP</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/06-candidates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">6. Candidate edits</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/07-mppi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">7. One solver call</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/08-search.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">8. The search loop</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/code-walkthrough/09-step1.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">9. Where step 1 starts</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../../research/nonprehensile/planar-build/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text" id="quarto-sidebar-section-3-label">Planar Build</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-controls="quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section: Planar Build">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
+      </div>
+      <ul id="quarto-sidebar-section-3" aria-labelledby="quarto-sidebar-section-3-label" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/01-contact-layer.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1. The planar contact layer</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2. Valid, transfers and a certified hold gate</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/03-local-solver.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">3. The local solver: cost, success and transitions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/xiao-ji.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Decision 9: Xiao and Ji’s construction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/bg-exact-hold-test.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: deciding support exactly</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/bg-hold-lp.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: the hold test as a linear program</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/known-issues.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Known issues</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../../research/wind-esc/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Wind Turbine Control</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section: Wind Turbine Control">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/wind-esc/gradient-estimation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Extremum Seeking Control of Wind Turbines</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/wind-esc/gradient-noise.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Gradient Noise in Extremum Seeking</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/robust_machine_learning.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Robust Machine Learning</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#what-step-3-builds" id="toc-what-step-3-builds" class="nav-link active" data-scroll-target="#what-step-3-builds">What step 3 builds</a></li>
+  <li><a href="#sweep" id="toc-sweep" class="nav-link" data-scroll-target="#sweep">Where an edit happens: the transition sweep</a></li>
+  <li><a href="#the-cost-experiment" id="toc-the-cost-experiment" class="nav-link" data-scroll-target="#the-cost-experiment">The cost experiment</a></li>
+  <li><a href="#checkpoints-1-and-2" id="toc-checkpoints-1-and-2" class="nav-link" data-scroll-target="#checkpoints-1-and-2">Checkpoints 1 and 2</a></li>
+  <li><a href="#εpen-and-ties" id="toc-εpen-and-ties" class="nav-link" data-scroll-target="#εpen-and-ties">ε<sub>pen</sub> and ties</a></li>
+  <li><a href="#choices" id="toc-choices" class="nav-link" data-scroll-target="#choices">Choices for review</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
+$$
+% Define your custom commands here
+\newcommand{\bmat}[1]{\begin{bmatrix}#1\end{bmatrix}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\P}{\mathbb{P}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\S}{\mathbb{S}}
+\newcommand{\norm}[2]{\|{#1}\|_{{}_{#2}}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\vectornorm}[1]{\left|\left|#1\right|\right|}
+\newcommand{\abs}[1]{\left|{#1}\right|}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\bm}[1]{\boldsymbol{#1}}
+\newcommand{\nicefrac}[2]{{}^{#1}\!/_{\!#2}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\dd}{\operatorname{d}\!}
+$$
+</div>
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/index.html">Planar Build</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/03-local-solver.html">3. The local solver: cost, success and transitions</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">3. The local solver: cost, success and transitions</h1>
+<p class="subtitle lead">Critical-path step 3: one success test for every realizer, a hold gate that finds where an edit happens, the compiled cost against the current one, and checkpoints 1–2.</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><strong>Code.</strong> Branch <code>phase1/planar</code> of <code>Symplectomorphism/c-gnn</code>, commits <code>41b5721</code> (success predicate, transition sweep), <code>fb792ea</code> (compiled cost, MPPI) and <code>151ddf4</code>. New: <code>solver/success.py</code>, <code>physics/transition.py</code>, <code>cost/compiler.py</code>, <code>tests/test_step3.py</code>; changed: <code>Cand</code> (H by transition), <code>MPPISolver</code> (a compiled cost, the transition subgoal, the shared success test), <code>PlanarHold</code> (evaluates any pose). Scripts: <code>scripts/03_*.py</code> here.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Result: MPPI does not realize the chain
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>With the current cost (A), the paper’s compiled cost (B), and three extensions (C, D, E), <strong>no variant realizes the pivot or break(g<sub>v</sub>)</strong> (0 of 3 starts each, every variant). The best variants (B and E) realize 12 of the 25 edits that pass H; E also cuts the deepest penetration from 14 mm (A) to 4.7 mm. By the checkpoint rule agreed in Decision 5, the next step is to <strong>change the solver before anything else</strong> (see <a href="#choices">the choices</a>).</p>
+</div>
+</div>
+<section id="what-step-3-builds" class="level2">
+<h2 class="anchored" data-anchor-id="what-step-3-builds">What step 3 builds</h2>
+<ul>
+<li><strong>One success test for every realizer</strong> (<code>solver/success.py</code>), the paper’s Def. success extended to Xiao and Ji’s edits:
+<ul>
+<li><em>persistence:</em> every kept contact is on at every sample; for a transfer c → d, one of c and d is on at every sample (the contained contact’s points belong to the larger contact before the change);</li>
+<li><em>departure:</em> a contact dropped outright ends above ε<sub>on</sub>;</li>
+<li><em>dwell:</em> the recognized contacts equal σ′ for the last N<sub>δ</sub> samples, with no tie;</li>
+<li><em>penetration:</em> no gap below −ε<sub>pen</sub>;</li>
+<li>the manipulator horizon, support while the disk lets go, and progress toward the goal for transport.</li>
+</ul>
+The old MPPI test also asked that nothing moves by more than 1 mm during the dwell. That clause is not in the paper; it is now an option, off by default, and the experiment reports the drift instead.</li>
+<li><strong>The transition sweep</strong> (<code>physics/transition.py</code>, Decision 10): H now asks whether the less-constrained end holds at χ₀ <em>or at a nearby pose</em> of the more-constrained formation. Details <a href="#sweep">below</a>.</li>
+<li><strong>The compiled cost</strong> (<code>cost/compiler.py</code>): the paper’s dimensionless terms (band, leave, penetration, control, terminal barrier), extended to transfers by the point-contact view. A transfer keeps the contained contact and moves the <em>released end</em>: for g → g<sub>v</sub> the other bottom corner lifts until the tilt passes 2θ<sub>e</sub>; for the disk going round a box corner, the contact point slides past the vertex. A constraining transfer (s<sub>v</sub> → t) lays the edge flat. Compound edges add up their parts. Options: a margin term at the end, a dwell term, the two-phase subgoal (reach χ<sub>t</sub>, then change), and scaling the contact terms by ε<sub>on</sub> instead of the box size.</li>
+</ul>
+</section>
+<section id="sweep" class="level2">
+<h2 class="anchored" data-anchor-id="sweep">Where an edit happens: the transition sweep</h2>
+<p>The edit’s formation σ leaves a few free coordinates. For {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} they are the tilt and the disk’s height on −x<sub>B</sub>. The sweep:</p>
+<ol type="1">
+<li>finds them as the null space of the contact constraints’ Jacobian (one point constraint per vertex or disk contact, two per edge–edge contact);</li>
+<li>lays a grid along them (default: 5 points per direction, ±0.05 in metres, angles times ℓ = a/2);</li>
+<li>projects each grid pose back onto the constraints (Gauss–Newton), recognizes it (it must be exactly σ, no tie), and runs the hold LP on the less-constrained end.</li>
+</ol>
+<p>H passes if the gate passes at χ₀ or at any grid pose. It returns χ<sub>t</sub>, the nearest passing pose with margin at least γ<sub>min</sub> = 0.02 (provisional), and also the largest-margin pose. The sweep runs over the <em>more-constrained</em> end (σ for a break, σ′ for a make) and tests statics on the less-constrained one: the geometry of the larger set, the statics of the smaller.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="media/step3_sweep.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="break(gv) with the disk 40 mm below the face center. Line: the gate at the pose along the tilt. Dots: the sweep’s grid from χ₀ = 30° (recognized poses only; filled where {mx, sv} holds). The ring marks χt."><img src="media/step3_sweep.svg" class="img-fluid figure-img" alt="break(gv) with the disk 40 mm below the face center. Line: the gate at the pose along the tilt. Dots: the sweep’s grid from χ₀ = 30° (recognized poses only; filled where {mx, sv} holds). The ring marks χt."></a></p>
+<figcaption>break(g<sub>v</sub>) with the disk 40 mm below the face center. Line: the gate at the pose along the tilt. Dots: the sweep’s grid from χ₀ = 30° (recognized poses only; filled where {m<sub>x</sub>, s<sub>v</sub>} holds). The ring marks χ<sub>t</sub>.</figcaption>
+</figure>
+</div>
+<p>From <code>scripts/03_figures.py</code>:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Gate at χ₀ = 30° (disk 40 mm low)</td>
+<td>refused, margin −0.31</td>
+</tr>
+<tr class="even">
+<td>First tilt that holds with the disk 40 mm low</td>
+<td>42°</td>
+</tr>
+<tr class="odd">
+<td>Sweep, 5 points (default)</td>
+<td>2 free directions, 11 distinct recognized poses, 2 held: χ<sub>t</sub> at 45.0°, margin 0.25</td>
+</tr>
+<tr class="even">
+<td>Sweep, 9 points, same range</td>
+<td>39 recognized, 8 held: nearest 45.0° (0.25), largest margin 55.2° (0.48)</td>
+</tr>
+<tr class="odd">
+<td>Sweep, 9 points, range 0.08</td>
+<td>24 recognized, 8 held: nearest 42.0° (0.15), largest margin 62.7° (0.61)</td>
+</tr>
+</tbody>
+</table>
+<p>The default grid is coarse (2 held poses against 8), but here it returns the same χ<sub>t</sub> as the finer one. Distances use the paper’s d<sub>X</sub> with ℓ = a/2 (the box’s half-size), so angles count half as much as with ℓ = a. Tests (<code>test_step3.py</code>):</p>
+<ul>
+<li>the sweep contains the old gate (wherever χ₀ passes, the sweep passes);</li>
+<li>every pose the sweep accepts is supported according to an independent float64 LP (HiGHS, with the motor limits);</li>
+<li>break(g<sub>v</sub>) at 30° is refused at χ₀ and found near 45°.</li>
+</ul>
+</section>
+<section id="the-cost-experiment" class="level2">
+<h2 class="anchored" data-anchor-id="the-cost-experiment">The cost experiment</h2>
+<p><strong>Setup</strong> (<code>scripts/03_local_solver.py</code>). MPPI as configured in <code>step2d-base.yaml</code>: 256 samples, 5 updates, controls held 3 steps, 30-step look-ahead. The executed record is 60 + 20 steps (0.8 s): at the configuration’s 20 + 10 steps (0.3 s), a dry run failed every edit for every variant.</p>
+<ul>
+<li><strong>Edits:</strong> the chain of Decision 9, each from its canonical start and from 2 perturbed starts (projected onto the formation, recognized, and offered by <code>Cand</code>), plus break(g<sub>v</sub>) from 30°, which needs the sweep.</li>
+<li><strong>The variants:</strong>
+<ul>
+<li><strong>A:</strong> the current MPPI cost (hand-set weights; signed linear arrival).</li>
+<li><strong>B:</strong> the paper’s compiled cost.</li>
+<li><strong>C:</strong> B plus the terminal margin term and the dwell term.</li>
+<li><strong>D:</strong> C plus the transition subgoal.</li>
+<li><strong>E:</strong> D with the contact terms divided by ε<sub>on</sub> instead of the box size, a smooth terminal cost, and a barrier of 100.</li>
+</ul>
+B–E use a temperature relative to the samples’ cost spread and an idle input that carries the disk’s weight.</li>
+<li><strong>Success</strong> is the shared test. After a success, the next chain edit is attempted from where the record ended, if <code>Cand</code> offers it there.</li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="media/step3_success.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Successes per variant and edit, GPU run (canonical start and two perturbed starts per edit)."><img src="media/step3_success.svg" class="img-fluid figure-img" alt="Successes per variant and edit, GPU run (canonical start and two perturbed starts per edit)."></a></p>
+<figcaption>Successes per variant and edit, GPU run (canonical start and two perturbed starts per edit).</figcaption>
+</figure>
+</div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>Successes (of 25)</th>
+<th>Canonical (of 9)</th>
+<th>Reached σ′ at some sample</th>
+<th>Deepest penetration</th>
+<th>95th percentile</th>
+<th>Next edit succeeds</th>
+<th>Time per call</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A, current</td>
+<td>3</td>
+<td>1</td>
+<td>24</td>
+<td>14.1 mm</td>
+<td>12.5 mm</td>
+<td>0 of 3</td>
+<td>22.8 s</td>
+</tr>
+<tr class="even">
+<td>B, paper</td>
+<td>12</td>
+<td>4</td>
+<td>24</td>
+<td>8.1 mm</td>
+<td>5.4 mm</td>
+<td>4 of 9</td>
+<td>24.3 s</td>
+</tr>
+<tr class="odd">
+<td>C, + margin, dwell</td>
+<td>4</td>
+<td>1</td>
+<td>24</td>
+<td>8.2 mm</td>
+<td>5.0 mm</td>
+<td>0 of 4</td>
+<td>23.5 s</td>
+</tr>
+<tr class="even">
+<td>D, + subgoal</td>
+<td>4</td>
+<td>1</td>
+<td>25</td>
+<td>8.2 mm</td>
+<td>5.0 mm</td>
+<td>0 of 4</td>
+<td>23.5 s</td>
+</tr>
+<tr class="odd">
+<td>E, D scaled by ε<sub>on</sub></td>
+<td>12</td>
+<td>4</td>
+<td>24</td>
+<td>4.7 mm</td>
+<td>4.0 mm</td>
+<td>6 of 12</td>
+<td>23.4 s</td>
+</tr>
+</tbody>
+</table>
+<p>GPU (RTX 5080). On CPU the canonical starts give A 1 of 9 and E 4 of 9, the same as on the GPU, at 196 s and 120 s per call (<code>media/step3_experiment_cpu.json</code>).</p>
+<p><strong>What the table says</strong></p>
+<ul>
+<li><strong>The current cost penetrates.</strong> A reaches σ′ in 24 of 25 records but succeeds in 3. Its linear arrival term pushes contacts up to 14 mm deep, beyond ε<sub>pen</sub> = 10 mm.</li>
+<li><strong>The paper’s cost is badly scaled for millimetre contacts.</strong> With the box size a = 125 mm as the unit, a 1 mm gap costs (1/125)² ≈ 6·10⁻⁵, so the barrier (10³) decides almost everything. C and D are <em>worse</em> than B, probably because their margin term (on the scale of m g) outweighs those tiny contact terms; the run does not isolate the cause. E, the same terms over ε<sub>on</sub>, recovers B’s success rate with half the penetration and the best follow-on rate.</li>
+<li><strong>The subgoal changed nothing on the chain.</strong> D equals C everywhere. From every canonical start the gate passes at χ₀, so χ<sub>t</sub> = χ₀. Where it matters (break(g<sub>v</sub>) from 30°), D also fails.</li>
+<li><strong>What no variant does:</strong>
+<ul>
+<li><strong>The pivot</strong> {m<sub>x</sub>, g, s} → {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>}. B tilts the box to about 30° and reaches σ′ but fails another clause; E never tilts it.</li>
+<li><strong>break(g<sub>v</sub>)</strong> from 45°. B’s box topples past the corner onto the platform, ending in {m<sub>x</sub>, t}. E’s stays on its corner at 62–65° and never lifts.</li>
+<li><strong>break(g<sub>v</sub>) from 30°.</strong> No variant lifts the box.</li>
+</ul>
+These are the edits where the disk must hold the box on a corner through an unstable motion. A 0.3 s look-ahead with 1 N motors does not find that motion.</li>
+<li><strong>Transport</strong> succeeds with B (3 of 3) but not with E (0 of 3, still moving about 20 mm in the dwell window).</li>
+</ul>
+</section>
+<section id="checkpoints-1-and-2" class="level2">
+<h2 class="anchored" data-anchor-id="checkpoints-1-and-2">Checkpoints 1 and 2</h2>
+<p><strong>Checkpoint 1: does H prune much?</strong> From <code>scripts/03_checkpoints.py</code>. Among candidate edits that are edges and pass Near, the share H rejects:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Nodes</th>
+<th>Candidates</th>
+<th>Rejected at χ₀ (step 2)</th>
+<th>Rejected with the sweep</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>The chain’s 9 starts</td>
+<td>179</td>
+<td>18.4%</td>
+<td>14.5%</td>
+</tr>
+<tr class="even">
+<td>205 demo nodes (every 25th frame, plus jittered copies)</td>
+<td>3,112</td>
+<td>22.8%</td>
+<td>22.7%</td>
+</tr>
+</tbody>
+</table>
+<p>By type on the demo nodes:</p>
+<ul>
+<li><strong>Breaks:</strong> H rejects 211 of 280 (75%).</li>
+<li><strong>Transfers:</strong> 444 of 597 (74%).</li>
+<li><strong>Makes:</strong> 47 of 2,022. A make’s less-constrained end is the current formation, which already holds.</li>
+</ul>
+<p>So H prunes the edits that drop or shrink support, which are the ones that need it.</p>
+<p><strong>Checkpoint 2: does Λ realize the edits that pass H?</strong> Not reliably. Every edit in the experiment passes H, and the best variants realize 12 of 25 (48%). The pivot and break(g<sub>v</sub>) are never realized.</p>
+</section>
+<section id="εpen-and-ties" class="level2">
+<h2 class="anchored" data-anchor-id="εpen-and-ties">ε<sub>pen</sub> and ties</h2>
+<p>From <code>scripts/03_ties_eps_pen.py</code>, the step-2 stress test (4,000 jittered demo poses) with ε<sub>pen</sub> replaced:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>ε<sub>pen</sub></th>
+<th>1.5 mm</th>
+<th>2 mm</th>
+<th>3 mm</th>
+<th>4 mm</th>
+<th>5 mm</th>
+<th>10 mm (today)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tied poses</td>
+<td>25</td>
+<td>44</td>
+<td>98</td>
+<td>168</td>
+<td>257</td>
+<td>475</td>
+</tr>
+</tbody>
+</table>
+<p>Nearly all ties have a contact deeper than ε<sub>on</sub>. E’s rollouts penetrate at most 4.7 mm (95th percentile 4.0 mm). An ε<sub>pen</sub> below that would make E’s successes fail the penetration clause.</p>
+</section>
+<section id="choices" class="level2">
+<h2 class="anchored" data-anchor-id="choices">Choices for review</h2>
+<ol type="1">
+<li><strong>The solver</strong> (checkpoint 2 rule).
+<ul>
+<li><strong>Recommended:</strong> keep E as the cost and change the realizer for the edits that hold the box on a corner. Candidates are contact-implicit MPC and a contact trust region, both admitted by the paper’s Def. lambda.</li>
+<li><strong>Cheaper first test:</strong> a longer look-ahead and more samples for MPPI on the pivot alone, to see whether the failure is the horizon or the method.</li>
+</ul></li>
+<li><strong>The cost variant.</strong> Recommended: <strong>E</strong>, which has the best penetration and follow-on rate and ties B on successes. Rewrite the paper’s Def. cost with contact terms over ε<sub>on</sub>. Drop the terminal margin term as written (C), or rescale it before trying again.</li>
+<li><strong>ε<sub>pen</sub>.</strong> Recommended: <strong>5 mm</strong>. It covers E’s deepest penetration (4.7 mm) and cuts ties from 475 to 257. Stiffer contacts in the simulator (MuJoCo <code>solref</code>) would allow 2–3 mm (44–98 ties). The scene still uses 10 mm until you decide.</li>
+<li><strong>The χ<sub>t</sub> rule and γ<sub>min</sub>.</strong> Recommended: <strong>the nearest pose with margin at least γ<sub>min</sub> = 0.1</strong>. The nearest pose here (45°, margin 0.25) already clears it. The largest-margin pose moves much further (55° to 63°). γ<sub>min</sub> is 0.02 for now.</li>
+<li><strong>Sweep range and resolution.</strong> Recommended: <strong>keep 5 points and range 0.05 for now</strong>. With ℓ = a/2 the coarse grid returns the same χ<sub>t</sub> as 9 points, at about a third of the cost. With 32 edits per call, <code>Cand</code> takes 0.4–0.5 s per node on CPU. Revisit with the scene families.</li>
+</ol>
+<p>The experiment above ran with ℓ = a in d<sub>X</sub>, before the review aligned the code with the paper (ℓ = a/2). That changes only which held pose the sweep calls nearest, and the goal distance’s angle term, which is zero during transport.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const toggle = window.document.createElement('button');
+      toggle.type = "button";
+      toggle.setAttribute("role", "switch");
+      toggle.setAttribute("aria-checked", "false");
+      toggle.classList.add('top-right');
+      toggle.classList.add('quarto-color-scheme-toggle');
+      toggle.setAttribute("aria-label", "Toggle dark mode");
+      toggle.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      toggle.appendChild(i);
+      // Put the toggle in a landmark of its own, so that landmark navigation
+      // can reach it.
+      //
+      // The container is always a fresh direct child of body, and the toggle is
+      // never moved into page furniture that the theme or the author controls.
+      // The toggle is positioned against the page, so any ancestor that
+      // establishes a containing block captures it: a positioned element or a
+      // grid for position: absolute, and transform, filter, will-change or
+      // contain for position: fixed. A direct child of body has none of these
+      // to inherit, and the shift when one appears is silent and visual.
+      //
+      // ARIA says a document should have at most one banner, and axe reports a
+      // duplicate whether or not the banners carry distinct labels. So use a
+      // header when the page has no banner yet, and a named region otherwise.
+      //
+      // A header is a banner wherever it sits, unless it is inside sectioning
+      // content, so this cannot just look at the children of body: a custom
+      // page layout wraps the title block header in a plain div. An explicit
+      // role="banner" always counts.
+      const sectioning = 'article, aside, main, nav, section, [role="article"], [role="complementary"], [role="main"], [role="navigation"], [role="region"]';
+      const hasBanner = Array.from(
+        window.document.querySelectorAll('header:not([role]), [role="banner"]')
+      ).some(function(el) {
+        return el.hasAttribute("role") || el.closest(sectioning) === null;
+      });
+      const container = window.document.createElement(hasBanner ? "div" : "header");
+      if (hasBanner) {
+        container.setAttribute("role", "region");
+        container.setAttribute("aria-label", "Toggle dark mode");
+      }
+      container.classList.add('quarto-color-scheme-toggle-container');
+      container.appendChild(toggle);
+      window.document.body.appendChild(container);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/Symplectomorphism\.github\.io\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+      <a href="../../../research/nonprehensile/planar-build/02-hold-gate.html" class="pagination-link" aria-label="2. Valid, transfers and a certified hold gate">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">2. Valid, transfers and a certified hold gate</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../../research/nonprehensile/planar-build/xiao-ji.html" class="pagination-link" aria-label="Decision 9: Xiao and Ji's construction">
+        <span class="nav-page-text">Decision 9: Xiao and Ji’s construction</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Aykut C. Satici · Robot Control Lab · UT Dallas</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="mailto:aykut.satici@utdallas.edu">
+<p>Email</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/symplectomorphism">
+<p>GitHub</p>
+</a>
+  </li>  
+    <li class="nav-item">
+    <a class="nav-link" href="../../../positions/index.html">
+<p>Opportunities</p>
+</a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
