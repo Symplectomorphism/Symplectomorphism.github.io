@@ -3,7 +3,7 @@ title: "Known issues"
 subtitle: "Every open defect in the code and the paper that we know of: what it does, where it is documented, and which step fixes it."
 ---
 
-**Last checked:** 2026-11-07, against `phase1/planar` at `228950f`. This page
+**Last checked:** 2026-11-07, against `phase1/planar` at `faf4320`. This page
 is updated whenever an issue is found or closed. The full records are in the
 discussion compendium (`reports/discussion-compendium/` in `c-gnn`: sections
 "Step 1", "Plans" and "Code issues"). Walkthrough pages show many of these
@@ -13,7 +13,7 @@ issues as they happen.
 
 | Issue | Effect | Documented | Fix in |
 |---|---|---|---|
-| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 357 of 4,000 demo poses jittered by about 3 mm are ambiguous (tracked by a test). Since step 2 a tied pose cannot be a solver success or a search node. | [Step 1](01-contact-layer.qmd#other-refinements), [Step 2](02-hold-gate.qmd#eps-pen), README | Step 3: tighten ε<sub>pen</sub> once the cost stops rewarding penetration (rollouts reach 9.9 mm today) |
+| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 475 of 4,000 demo poses jittered by about 3 mm are ambiguous (357 before Decision 9; 474 of the 475 have a contact deeper than ε<sub>on</sub>; in 136, s<sub>v</sub> loses to t, which contains it). The stress test's budget was raised from 400 to 500. Since step 2 a tied pose cannot be a solver success or a search node. | [Step 1](01-contact-layer.qmd#other-refinements), [Step 2](02-hold-gate.qmd#eps-pen), README | Step 3: tighten ε<sub>pen</sub> once the cost stops rewarding penetration (rollouts reach 9.9 mm today) |
 | **Labels can flicker near θ<sub>e</sub>** along a trajectory. | A 3-frame flicker on the demo (frames 623–625) where the tilt hovers at 1.83°. | [Step 1](01-contact-layer.qmd#edge-contacts) | Execution monitor: hysteresis with thresholds from a noise model |
 | **The 3D catalog (`step.yaml`) keeps the old defects:** closed faces over-count bits, ±y faces, unset template IDs, a Python loop over templates, closest-pair ties broken by "first candidate". | Wrong formations and slow compiles for 3D scenes only. | Walkthrough [2](../code-walkthrough/02-templates.qmd), [3](../code-walkthrough/03-formations.qmd), [9](../code-walkthrough/09-step1.qmd) | Frozen with 3D (Decision 3); the planar catalog replaces it |
 
@@ -47,7 +47,17 @@ issues as they happen.
 
 ## Open: paper backlog
 
-The paper still follows the old chain or older decisions in these places:
+**The paper is being rewritten on Decision 9** (the current version is
+backed up first). Until then it still describes the old construction:
+
+- corner ownership and the platform's open end;
+- one contact per body pair;
+- transfers between "same or adjacent" features;
+- the two-transfer pass-through;
+- the landed box as {s<sub>v</sub>, t}.
+
+See [Decision 9](xiao-ji.qmd). It also still follows the old chain or older
+decisions in these places:
 
 - The chain of Decisions 2 and 7: the example formations and edits, the
   labels and caption of Figure 1, and the figures of the legal chain and the
@@ -63,6 +73,10 @@ The paper still follows the old chain or older decisions in these places:
 
 | Issue | Closed by |
 |---|---|
+| The transfer relation included 44 pairs that are not Xiao–Ji neighbors (20 going round a corner in one step, 24 changing both features), each skipping a contact state the motion passes through | Transfers are Xiao–Ji containment (cases 2–3) only: 56 pairs (Decision 9, Nov 7, `9261ece`) |
+| Disk around a box corner: one Λ call or two | Two transfers, through the disk-on-vertex contact (Decision 9, `9261ece`) |
+| Corner ownership: which body owns the step corner, and a general rule for other scenes | No rule needed: the environment is one object whose convex vertices are found from its geometry (Decision 9, `9261ece`) |
+| Compound edges were a rule fitted to the step ("two transfers in different body pairs") | Xiao–Ji's neighbor relation with the every-proper-subset-invalid rule; same edges on the step (Decision 9, `9261ece`) |
 | Margins were unbounded with the disk in the formation (its force had no limit, so the support cone often filled all of 3D) | The disk's motor limits (±1 N, read from the MuJoCo model) bound its force in the default gate; margins are finite (Nov 7, `228950f`) |
 | The gate's margin and solver were open (step-2 choices 3 and 4) | Set inclusion with the ℓ₁ default; the LP backbone with the motor limits is the default gate, the exact test its cross-check (Nov 7, `228950f`) |
 | linrax could loop forever (no iteration cap; cycling on degenerate 3D LPs), which hangs a whole `vmap` batch | Its pivot loop is replaced: a cap of 300 pivots per phase, Bland's leaving rule, artificial rows marked correctly (Nov 6) |
@@ -75,7 +89,7 @@ The paper still follows the old chain or older decisions in these places:
 | The paper's Lemma `markgraph-struct` and Remark `cube` assumed make and break only | Restated with transfer and pass-through, and checked exhaustively (step 2) |
 | One physical contact lit 3 to 6 template bits (closed faces share edges) | Principal-contact on-set, `ca4123b` |
 | The hold test used one tie-broken point per contact, blended by smoothing; ±y faces on a planar body | Contact-set endpoints as support points, planar catalog, `ca4123b` |
-| The step corner belonged to riser and platform; the floor–riser junction lit a bit | Corner ownership (Decision 4), `ca4123b` |
+| The step corner belonged to riser and platform; the floor–riser junction lit a bit | Corner ownership (Decision 4), `ca4123b`; replaced by the one-object environment (Decision 9, `9261ece`) |
 | Exclusions by integer index, then dropped; no vertex features for g<sub>v</sub>, s<sub>v</sub> | `step2d.yaml` with named templates and vertices, `ca4123b` |
 | Half-plane penetrations charged to the wrong surface (−31 mm into the platform) | Penetration attribution (approved Nov 5), `ca4123b` |
 | Python loop over templates in `Catalog.gap` | Planar catalog groups templates by kernel, one `vmap` each, `ca4123b` (the 3D catalog still loops) |

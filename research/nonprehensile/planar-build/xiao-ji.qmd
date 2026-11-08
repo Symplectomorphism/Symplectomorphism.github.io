@@ -1,0 +1,191 @@
+---
+title: "Decision 9: Xiao and Ji's construction"
+subtitle: "Why the planar build now follows Xiao and Ji's contact formations exactly, what we add to them, and what changed in the step chain."
+lightbox: true
+---
+
+**Code.** Branch `phase1/planar` of `Symplectomorphism/c-gnn`: commits
+`9261ece` (code and tests) and `af167f4` (compendium, Decision 9), Nov 7,
+2026. The landing change below was accepted by Aykut the same day. Every
+number on this page comes from
+[`scripts/03_xiao_ji.py`](#reproduce), run on the current code and on
+`84827c0`, the last commit before the change.
+
+## In one paragraph
+
+A contact state is a set of **principal contacts** (Xiao and Ji, *IJRR*
+2001, Def. 1): contacts between surface elements that are not the boundary
+of other contacting elements. Our earlier construction followed that
+definition for the on-set but drifted from it elsewhere. Those drifts were
+conveniences rather than needs, and they are gone. We keep only three
+additions that their papers do not cover:
+
+- **tolerances**, to recognize contacts in a simulator;
+- **several bodies**, including a manipulator (the disk);
+- **a no-contact state** for each pair of bodies.
+
+## What changed
+
+| | Before (`84827c0`) | Now (Decision 9) |
+|---|---|---|
+| Environment | Three convex bodies: floor, riser, platform. The step corner was *owned* by the riser, and the platform had an *open* end | One object E, a polygon. Its features are its edges (E:L, E:S, E:P) and its **convex** vertices, found from the geometry: only the step corner v<sub>S</sub> = E:S/P. The concave floor–riser junction is not a feature |
+| Contacts per pair | At most one per body pair (convexity of each piece) | At most one per *convex element pair*, and none alongside a contact it contains (their Def. 8). The box can touch floor and riser at once |
+| Transfers | Same or adjacent features on both sides: 92 pairs | Xiao–Ji containment only: one feature stays, the other is an edge and one of its own vertices. **56 pairs** |
+| Compound edges | "Two transfers in different body pairs" | A set of single changes, all relaxing or all constraining (their Def. 9), kept only if every proper subset gives an invalid formation. On the step: the pivot and its reverse, 128 instances, as before |
+| Hold gate | The contacts that persist through the edit | Statics of the edit's **less-constrained end**: the same contacts, now with a name and a precedent |
+| Valid markings | 11,959 of 12,393 | 37,203 of 59,049 (several box–environment contacts at once) |
+
+Of the 92 old transfer pairs, only 48 were Xiao–Ji neighbors. The other 44
+were not:
+
+- **20 went round a corner in one step.** Examples: the disk moving from
+  −x<sub>B</sub> to −z<sub>B</sub>, or the box rolling from one edge onto
+  the next.
+- **24 changed both features at once**, which their Def. 10 excludes.
+
+Each of these skips a contact state that the motion really passes through.
+The disk now goes round a box corner in two transfers, through the
+disk-on-vertex contact. That closes the open question "one Λ call or two".
+
+## Why Xiao and Ji, and not something else
+
+A literature search (three searches; 13 papers read in full against our
+requirements) looked for a representation that is simpler and still meets
+our needs:
+
+- several bodies, including a nonconvex environment;
+- one local transition per edge;
+- recognizable from a pose with tolerances;
+- encodable for a learner;
+- extends to 3D;
+- supports a statics test on the persisting contacts.
+
+None qualified. Everything simpler is coarser, and everything more
+principled is finer or impractical.
+
+**Coarser: they cannot see the pivot.** A box tipping from its edge onto
+its corner keeps the same label in all of these:
+
+- **stances** of legged and climbing planners: a set of link–surface
+  contacts with the location left continuous (Bretl 2006; Hauser, Bretl,
+  Latombe, Harada and Wilcox 2008; Escande, Kheddar and Miossec 2013);
+- **strata** of active contact constraints, per body pair (Kyaw and Kelly,
+  arXiv 2608.15541, 2026) or per designated point (Goodwine and Burdick
+  2002);
+- **classes of free motion** (Paul and Ikeuchi 1995: 18 states in the
+  plane, with no feature or body identity).
+
+Kyaw and Kelly assume each stratum has dimension n − |A|. That fails here:
+a box resting flat on its edge has a 1-dimensional set of poses, a box on
+its corner a 2-dimensional one, and both have the same single active body
+pair. With principal contacts as the label, the count comes out right.
+
+**Finer: one motion becomes several edges.**
+
+- The cells of the configuration-space obstacle, labeled by their active
+  point constraints, split a single slide along the riser top into two
+  edges.
+- Kwak, Hasegawa and Chung (2011) triangulate every face, so their states
+  depend on the triangulation.
+
+**The Leuven precedent.** Meeussen et al. (*T-RO* 2007) use Xiao–Ji contact
+formations as the discrete layer, with the graph software from Xiao's
+group. They then break each principal contact into point contacts ("we use
+the boundary points of the contacting area") for the force model, as
+Lefebvre, Bruyninckx and De Schutter (*TRA* 2003) do. That two-layer
+structure is ours too: principal contacts for the graph, and the endpoints
+of each contact set for the hold LP. Their wrench models are frictionless;
+ours has friction cones and motor limits.
+
+## The hold gate's rule has a name
+
+Multi-contact planners test the smaller stance at a transition. In Hauser
+et al. (2008): at the transition the robot "can support itself only with
+forces applied at the contact in [σ]", because "the applied force is zero
+at the instant of time when the contact is made or broken". Hauser, Bretl
+and Latombe (2005) already drop the moving hold from their classifier's
+input, "since the force exerted at this hold during transition must be
+zero". Escande et al. (2013) require "the stability constraints of the
+smallest one" of the two stances.
+
+Under Xiao–Ji's neighbor relation every edge links a formation to one it
+contains, so "the less-constrained end" is always defined, and it equals
+our persisting contacts. Step 2's choice 2 (use the old contact's normal)
+now follows. In containment cases 2–3 the feature that defines the normal
+is the one that stays.
+
+## The landing changes
+
+![The box near the step corner, labeled by the current code (+x to the left). Left: resting on the corner alone, {s<sub>v</sub>}. Middle: landed with +x<sub>B</sub> on the platform and overhanging the corner. v<sub>S</sub> is the end of the platform edge the box rests on, so the box's contact with v<sub>S</sub> is not principal, and the formation is {t}. Right: clear of the corner, still {t}.](media/xj_landing.svg){.lightbox}
+
+Before, ownership turned both s<sub>v</sub> and t on after the landing, so
+the landed box was {s<sub>v</sub>, t}. Under Xiao and Ji's Def. 1, v<sub>S</sub>
+is a boundary element of the contacting platform edge, so s<sub>v</sub> is
+not a principal contact there. The chain is one edit shorter:
+
+{g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} → *pivot* → {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>x</sub>, s<sub>v</sub>} → *transfer(s<sub>v</sub> → t)* → {m<sub>x</sub>, t} → {t} → {m<sub>z</sub>, t} → *transport*.
+
+**Two changes from the old chain:**
+
+- **Landing is now a transfer.** It goes from the corner to the platform
+  edge that the corner bounds.
+- **Sliding off the corner is now transport.** It changes no contact.
+
+**Support is unchanged.** t's contact set ends at the corner, so the landed
+box is held exactly when its center of mass is over [0, x + a/2]. The
+oracle test still agrees with the LP. `Cand` offers every step of the new
+chain from a pose in its formation; the suite checks this.
+
+## A caveat to carry into the paper: genericity
+
+Xiao and Ji's theory assumes general position. They leave out degenerate
+contacts because "these PCs have zero probability of occurrence in
+practice". They also enter "state splitting", which needs two dimensions
+to be exactly equal, by hand as exceptions. With tolerance bands, such
+coincidences happen with real probability.
+
+**How we handle it:**
+
+- **Simultaneous changes.** Our rule for compound edges ("every proper
+  subset is invalid") is the answer for simultaneous changes.
+- **Ambiguous poses.** A pose the tolerances leave ambiguous (a tie) is
+  refused as a node and as a solver success. Xiao (1993) treats such
+  contacts as "inherently ambiguous" for the same reason.
+
+**Ties rose under deep penetration.** On 4,000 jittered demo poses there
+are now 475 ties (357 before):
+
+- 474 of the 475 have a contact deeper than ε<sub>on</sub>;
+- in 136 of them s<sub>v</sub> loses to t, the contact that contains it
+  (median penetration 3.5 mm), where ownership used to turn both on.
+
+The demo itself still has 2 tied frames of 1,721. This is the known issue
+with ε<sub>pen</sub> = 10 mm, fixed in step 3; the test's budget is now 500.
+
+## Checks
+
+- The full suite, 68 tests, passes on Python 3.14, CPU (8:57) and GPU
+  (13:46).
+- **Gate equals persisting contacts.** For make, break, both transfer
+  directions and the pivot, the gate's support points equal the persisting
+  contacts.
+- **Normals.** For g → g<sub>v</sub> and s → s<sub>v</sub>, the contained
+  contact's normal equals the old contact's normal at the flush pose.
+- **Compound edges, brute force.** A search over all sets of two or three
+  single steps agrees with the implementation:
+  - on every marking that has a compound edge;
+  - on 1,500 random markings.
+
+  Allowing up to four changes finds nothing new.
+
+## Reproduce {#reproduce}
+
+```bash
+cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
+JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_xiao_ji.py <out dir>
+# the counts before Decision 9:
+mkdir -p /tmp/old && git archive 84827c0 cmg | tar -x -C /tmp/old && cd /tmp/old/cmg
+JAX_PLATFORMS=cpu PYTHONPATH=src ~/repos/research/c-gnn/cmg/.venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_xiao_ji.py --before
+```
+
+[1. The planar contact layer](01-contact-layer.qmd) · [2. Valid, transfers and a certified hold gate](02-hold-gate.qmd) · [Known issues](known-issues.qmd) · [Back to the planar build](index.qmd)

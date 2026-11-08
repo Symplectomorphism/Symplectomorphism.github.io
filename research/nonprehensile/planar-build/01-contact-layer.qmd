@@ -13,6 +13,17 @@ gradients, robustness tests), `62782b8`, `5f5a2e8` (θ<sub>e</sub>
 derived) and `583810b` (known issue recorded). Python 3.14 (`cmg/.venv314`); Angelo's `MPPISolver`, `Cand` and
 `Search` run on it unchanged.
 
+::: {.callout-important title="Updated for Decision 9 (Nov 7, 2026): Xiao and Ji's construction"}
+The environment is now **one object E** (a polygon) instead of three convex
+bodies. Its features are its edges and its convex vertices, found from the
+geometry, so the step corner needs no owner. A pair of convex elements
+carries at most one principal contact, so the box can touch floor and riser
+at once. The landed box is {t}, not {s<sub>v</sub>, t}. Figures, the viewer
+and the numbers on this page are regenerated with commit `9261ece`; text
+that described the old rule is marked. Why, and what else changed:
+[Decision 9](xiao-ji.qmd).
+:::
+
 ## What step 1 replaces
 
 The walkthrough ended on a list of defects in the contact layer
@@ -20,44 +31,52 @@ The walkthrough ended on a list of defects in the contact layer
 sets that share their edges, so one physical contact lit 3 to 6 template bits
 at once, on every frame of the demo. The search, the hold test and the graph
 all inherited that over-count. Step 1 rebuilds the layer in the x–z plane
-with the paper's contact names. Exactly one contact per body pair is on, and
-each contact carries its contact set, the part of the box that actually
-touches.
+with the paper's contact names. At most one contact per pair of convex
+elements is on (per body pair before Decision 9), and each contact carries
+its contact set, the part of the box that actually touches.
 
 ## The scene
 
-![The planar step scene, with +x to the left as in the paper. The box has four edges and four vertices; the disk has its boundary; floor, riser and platform are segments. The step corner v<sub>S</sub> belongs to the riser, so the platform's start is open (Decision 4), and the concave floor–riser junction is not a feature.](media/step1_scene.svg){.lightbox}
+![The planar step scene, with +x to the left as in the paper. The box has four edges and four vertices; the disk has its boundary. The environment is one object E (Decision 9): its edges E:L (floor), E:S (riser) and E:P (platform), and its only convex vertex, the step corner v<sub>S</sub> = E:S/P, found from the geometry. The concave floor–riser junction is not a feature (Xiao and Ji count a convex element against a concave one as several contacts).](media/step1_scene.svg){.lightbox}
 
 `step2d.yaml` declares the scene with `dimension: 2`. Its catalog has 40
-templates: 8 disk–box, 8 box–floor, 16 box–riser and 8 box–platform. The
+templates: 8 disk–box and 32 box–environment (the box's 8 features against
+E's 4: floor, riser, platform and the corner; before Decision 9, 8 box–floor,
+16 box–riser and 8 box–platform). The
 paper's count is 44 because it also lists the four disk–environment
 contacts, which the code leaves out. The seven named contacts are g (box
 bottom on the floor), g<sub>v</sub> (box corner on the floor), s (box side
 flush on the riser), s<sub>v</sub> (step corner on the box side), t (box on
 the platform), m<sub>x</sub> and m<sub>z</sub> (disk on a box face). The
 exclusions {g, t}, {g<sub>v</sub>, s}, {g, s<sub>v</sub>} and
-{g, m<sub>z</sub>} are given by name.
+{g, m<sub>z</sub>} are given by name; since Decision 9 the exclusions within a
+pair are derived (one contact per convex element pair, none alongside a
+contact it contains).
 
 ## When a contact is on
 
-For each body pair, a template is **on** when all of these hold:
+For each pair of objects (disk–box, box–E), a template is **on** when all of these hold:
 
 1. **In band.** Its gap is between −ε<sub>pen</sub> and ε<sub>on</sub> = 1 mm.
 2. **It touches inside both features.** The touching part may not sit only
-   at an endpoint the feature does not own. A box edge touching the floor
-   only at its end is the corner's contact, not the edge's. The step corner
-   counts for the riser, not the platform.
+   at an endpoint that is itself a vertex feature of the same object. A box
+   edge touching the floor only at its end is the corner's contact, not the
+   edge's; a box touching the riser or the platform only at v<sub>S</sub> is
+   the corner's contact (s<sub>v</sub>). *Before Decision 9 this read "an
+   endpoint the feature does not own", with the corner owned by the riser
+   and the platform's end open.*
 3. **Edge on edge needs alignment.** The two edges must be within
    θ<sub>e</sub> ≈ 1.83° of parallel (derived below) and overlap by at least ℓ<sub>min</sub> =
    a/16 (7.8 mm). Otherwise the contact is a corner contact.
 4. **The higher-dimensional contact wins.** A corner contact inside a flush
-   edge contact is not counted separately. Any tie the tolerances leave goes
-   to the higher-dimensional contact.
+   edge contact is not counted separately. Any tie the tolerances leave
+   between two contacts that cannot coexist (same convex element pair, or
+   one containing the other) goes to the higher-dimensional contact.
 
 This is the principal-contact rule of Xiao and Ji (2001) with tolerances,
 written in the paper as `def:near-map`.
 
-![The paper's chain σ<sub>0</sub> … σ<sub>8</sub> at constructed poses. Thick segments and dots are the contact sets of the contacts that are on; each panel's title gives its on-set, which matches Decisions 2 and 7 at every step.](media/step1_chain.svg){.lightbox}
+![The chain at constructed poses (Decisions 2, 7 and 9). Thick segments and dots are the contact sets of the contacts that are on, one color per convex element pair; each panel's title gives its on-set. Since Decision 9 the landed box is {m<sub>x</sub>, t} and then {t}: landing is the transfer s<sub>v</sub> → t, and the last panel is reached by transport.](media/step1_chain.svg){.lightbox}
 
 ## The demo, frame by frame
 
@@ -72,19 +91,23 @@ draws the contact sets.
 
 What to watch for:
 
-- **One bit per pair.** The table's "in band" column is the old closed-feature
-  count: up to 6 for one contact. The on column never holds more than one.
+- **One bit per convex element pair.** The table's "in band" column is the
+  old closed-feature count: up to 5 for one contact. The on column never
+  holds more than one.
 - **The chain, in order.** The formation goes {g} → {m<sub>x</sub>, g} →
   {m<sub>x</sub>, g, s} → {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} →
-  {m<sub>x</sub>, s<sub>v</sub>} → {s<sub>v</sub>} → {s<sub>v</sub>, t} →
-  {m<sub>z</sub>, s<sub>v</sub>, t} → {m<sub>z</sub>, t} → {t}. It never shows
-  an excluded formation.
+  {m<sub>x</sub>, s<sub>v</sub>} → {s<sub>v</sub>} → {t} → {m<sub>z</sub>, t}
+  → {t}, in 15 runs of frames. It never shows an excluded formation. (Before
+  Decision 9 the landed box read {s<sub>v</sub>, t} and
+  {m<sub>z</sub>, s<sub>v</sub>, t}.)
 - **Two rocks the chain leaves out.** At frame 609 the box hits the riser and
   rocks onto its corner, up to 2.6°. After landing (frames 708–712) it
   seesaws on the step corner with its platform end up, so only
   s<sub>v</sub> is on. Both are real motion; the next section is about them.
-- **One vertex–vertex frame** (920): box corner on the step corner as the
-  disk pushes the box clear.
+- **No vertex–vertex frame any more.** At frame 920 the box corner passes
+  over the step corner as the disk pushes the box clear; with +x<sub>B</sub>
+  on the platform that is {m<sub>z</sub>, t} (Decision 9). Before, it was a
+  one-frame vertex–vertex contact.
 - **Tie-breaks** fire on 2 frames, both with the box pressed more than 1 mm
   into the riser.
 
@@ -165,7 +188,8 @@ thresholds, one to make a contact and one to break it, remove the flicker.
 Hysteresis, not a minimum dwell, is the standard cure for chattering
 ([Hespanha, Liberzon and Morse 2003](https://www.ccdc.ucsb.edu/publications/11863)).
 A 3-frame dwell was tried and rejected because it also swallows real one-
-and two-frame formations, such as the vertex–vertex frame 920. The two
+and two-frame formations, such as the one-frame return to
+{m<sub>x</sub>, g, s} at frame 623. The two
 thresholds should come from a noise model, as in the filtering literature,
 and the simulator has none. So this waits for the execution monitor and the
 robot's perception noise. The on-set N(χ) itself stays a function of the
@@ -180,8 +204,9 @@ pose alone, because the search and the solver query single poses.
   the platform. The computation is exact: along a box edge every condition
   is linear, or a convex quadratic near an endpoint.
 - **A counted tie-break (kept as a fallback, with a known issue).** When
-  tolerances leave two templates of one pair, the higher-dimensional one
-  wins, then the smaller gap, and every use is counted (`tie_breaks`). On
+  tolerances leave two templates that cannot coexist (one pair before
+  Decision 9; since then, one convex element pair or one containing the
+  other), the higher-dimensional one wins, then the smaller gap, and every use is counted (`tie_breaks`). On
   the demo it fires on 2 of 1,721 frames (608–609): s and s<sub>v</sub> both
   survive with the box 1.1–1.8 mm into the riser, and s is chosen.
 
@@ -203,6 +228,11 @@ as Xiao (1993) reports it: a tied pose cannot become a search node or count
 as a solver success, and (iii) add the jittered-pose stress test to the
 suite. Widening the containment test by the penetration depth was tried and
 rejected: it removes the 2 demo ties but only 13% of the stress-test ties.
+
+*Since Decision 9:* 475 of the 4,000 poses tie (474 with a contact deeper
+than ε<sub>on</sub>); in 136 of them s<sub>v</sub> loses to t, which
+contains it, where ownership used to turn both on. (ii) and (iii) are done;
+(i) moved to step 3.
 :::
 
 ## The hold test on contact sets
@@ -217,8 +247,11 @@ instead of one tie-broken point blended by smoothing. On the named poses:
 | Tipped 30°, disk pushing, {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} | yes |
 | Same pose, disk let go: {g<sub>v</sub>, s<sub>v</sub>} | no (break m<sub>x</sub> refused mid-topple) |
 | Tipped 60°, {g<sub>v</sub>, s<sub>v</sub>} | yes (center of mass past the corner) |
-| Landed, {s<sub>v</sub>, t} and {t} | yes |
-| Landed but overhanging (center of mass at x = −0.02), {s<sub>v</sub>, t} | no |
+| Landed, {t} | yes |
+| Landed but overhanging (center of mass at x = −0.02), {t} | no |
+
+Before Decision 9 the landed rows asserted {s<sub>v</sub>, t}, which is no
+longer a formation (t contains s<sub>v</sub>); the answers are the same.
 
 A support-interval oracle (the exact range of support a contact set can give)
 agrees with the LP.
@@ -231,6 +264,7 @@ agrees with the LP.
   Decision 4's table, the switch at θ<sub>e</sub>, corner ownership, the disk
   rounding a corner, the demo sequence above, hold acceptance and the oracle.
   The full suite (31 items) passes on Python 3.14 (CPU and GPU) and on Python 3.12.
+  Since Decision 9 the suite has 68 tests, passing on Python 3.14 (CPU and GPU).
 - **Speed.** The planar gap takes 22 ms per 7,680 configurations, against
   57 ms for the 3D catalog. One full MPPI call takes 10 s on the RTX 5080
   against 36 s on the CPU.
@@ -250,8 +284,8 @@ The full list, across the code and the paper, is on [Known issues](known-issues.
   model exist.
 - `Cand` proposed a second contact for a pair that already had one; step 2
   added the Valid check ([page 2](02-hold-gate.qmd)).
-- Paper backlog: the chain's renumbering, the labels of Figure 1 and the
-  theory items still follow the old chain (status board of the compendium).
+- The paper still describes the old construction (corner ownership, the old
+  chain); it is being rewritten on Decision 9.
 
 ## Reproduce
 
@@ -264,4 +298,4 @@ JAX_PLATFORMS=cpu python -m pytest -q tests/test_planar_contact.py
 JAX_PLATFORMS=cpu python <website>/research/nonprehensile/planar-build/scripts/01_contact_layer.py <out dir>
 ```
 
-[2. Valid, transfers and a certified hold gate →](02-hold-gate.qmd) · [Back to the planar build](index.qmd)
+[2. Valid, transfers and a certified hold gate →](02-hold-gate.qmd) · [Decision 9: Xiao and Ji's construction](xiao-ji.qmd) · [Back to the planar build](index.qmd)

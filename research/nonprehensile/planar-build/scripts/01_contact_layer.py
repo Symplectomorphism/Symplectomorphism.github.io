@@ -42,10 +42,10 @@ THETA_E = math.degrees(cat.theta_e)
 
 inv = {i: n for n, i in cat.named.items()}
 label = [inv.get(i, cat.names[i]) for i in range(len(cat))]
-pair = np.asarray(cat._pair)
-PAIRS = ["M-B", "B-L", "B-S", "B-P"]          # pair ids 0..3 in catalog order
-# Categorical slots 1, 2, 3, 7 of the reference palette; every contact is also labeled.
-PAIR_COLOR = ["#2a78d6", "#eb6834", "#1baf7a", "#6250d6"]
+pair = np.asarray(cat._slot)    # convex element pair ("slot"): at most one principal contact each
+PAIRS = ["M–B", "B–E:L (floor)", "B–E:S (riser)", "B–E:P (platform)", "B–E:S/P (corner v_S)"]
+# Categorical slots 1, 2, 3, 7, 5 of the reference palette (validated); every contact is also labeled.
+PAIR_COLOR = ["#2a78d6", "#eb6834", "#1baf7a", "#6250d6", "#e87ba4"]
 INK, MUTED, BOXFILL = "#1f2328", "#656d76", "#f3e2c4"
 
 band = jax.jit(jax.vmap(lambda q: cat.band(config=q)))
@@ -88,7 +88,7 @@ CHAIN = [
     ("σ₅  landed, disk on top", LANDED + [A / 4, H + A + R]),
     ("σ₆  disk away", LANDED + FAR),
     ("σ₇  disk behind", LANDED + [-A / 4 - R, H + A / 2]),
-    ("σ₈  slid clear", SLID + [SLID[0] - A / 2 - R, H + A / 2]),
+    ("σ₈  slid clear (transport)", SLID + [SLID[0] - A / 2 - R, H + A / 2]),
 ]
 
 
@@ -160,17 +160,17 @@ for name, (u, w) in {"xpzp": (1, 1), "xpzn": (1, -1), "xnzp": (-1, 1), "xnzn": (
                 fontsize=7.5, ha="center", va="center", color=MUTED)
 ax.annotate("M (disk, r = a/8)", (X(-0.2), 0.0625 + R), xytext=(0, 10), textcoords="offset points",
             fontsize=8.5, ha="center", color=INK)
-ax.annotate("L:edge (floor)", (X(-0.27), 0), xytext=(0, -12), textcoords="offset points",
+ax.annotate("E:L (floor edge)", (X(-0.27), 0), xytext=(0, -12), textcoords="offset points",
             fontsize=8.5, ha="center", color=INK)
-ax.annotate("S:edge (riser)", (X(0), H / 2), xytext=(8, 0), textcoords="offset points",
+ax.annotate("E:S (riser edge)", (X(0), H / 2), xytext=(8, 0), textcoords="offset points",
             fontsize=8.5, ha="left", va="center", color=INK)
 ax.plot([X(0)], [H], "o", ms=5.5, color=INK, zorder=4)
-ax.annotate("S:end = v_S (owned by the riser)", (X(0), H), xytext=(-10, 30), textcoords="offset points",
+ax.annotate("E:S/P = v_S (convex vertex of E, derived)", (X(0), H), xytext=(-10, 30), textcoords="offset points",
             fontsize=8.5, ha="right", color=INK, arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
 ax.plot([X(0)], [H], "o", ms=10, mfc="none", mec=MUTED, lw=0.8, zorder=3)
-ax.annotate("P:edge (platform, open at its start)", (X(0.12), H), xytext=(0, 8), textcoords="offset points",
+ax.annotate("E:P (platform edge)", (X(0.12), H), xytext=(0, 8), textcoords="offset points",
             fontsize=8.5, ha="center", color=INK)
-ax.annotate("(0, 0): concave junction, not a feature", (X(0), 0), xytext=(-6, -14),
+ax.annotate("(0, 0): concave vertex of E, not a feature", (X(0), 0), xytext=(-6, -14),
             textcoords="offset points", fontsize=7.5, color=MUTED, ha="right")
 ax.annotate("", (X(-0.29), 0.17), xytext=(X(-0.24), 0.17),
             arrowprops=dict(arrowstyle="<-", color=MUTED, lw=1))
@@ -213,10 +213,10 @@ ks = np.asarray(kset(Q))
 th = np.degrees(qpos[:, 2])
 tilt = np.abs(((th + 45) % 90) - 45)
 
-per_pair_on = np.stack([on[:, pair == p].sum(1) for p in range(4)], 1)
-per_pair_ib = np.stack([ib[:, pair == p].sum(1) for p in range(4)], 1)
-print(f"demo: {len(qpos)} frames; max on-bits per pair {per_pair_on.max()}; "
-      f"max in-band bits per pair {per_pair_ib.max()}; tie frames {int((tb > 0).sum())}")
+per_pair_on = np.stack([on[:, pair == p].sum(1) for p in range(len(PAIRS))], 1)
+per_pair_ib = np.stack([ib[:, pair == p].sum(1) for p in range(len(PAIRS))], 1)
+print(f"demo: {len(qpos)} frames; max on-bits per convex element pair {per_pair_on.max()}; "
+      f"max in-band bits per convex element pair {per_pair_ib.max()}; tie frames {int((tb > 0).sum())}")
 
 seq = []
 for k in range(len(on)):
@@ -301,3 +301,29 @@ fig.tight_layout()
 fig.savefig(OUT / "step1_tilt.svg", bbox_inches="tight")
 plt.close(fig)
 print("wrote step1_scene.svg, step1_chain.svg, step1_tilt.svg")
+
+
+# ------------------------------------------------------------ the hold test on named poses
+
+from cmg.physics.hold import create_predicates
+from cmg.physics.world import ExecutionWorld, State
+
+_supported, _ = create_predicates(spec, cat, ExecutionWorld(spec.execution), tolerance=1e-3)
+_sup = lambda q, *names: bool(_supported(State(jnp.asarray(q, dtype=jnp.float32), jnp.zeros(5)),
+                                         cat.mask(*names)))
+_mid = pivot(math.radians(30))
+_p60 = pivot(math.radians(60))
+HOLD_ROWS = [
+    ("box flat, {g}", FLAT + FAR, ("g",)),
+    ("box flat, nothing asserted", FLAT + FAR, ()),
+    ("tipped 30°, disk pushing, {m_x, g_v, s_v}", _mid + disk_on_xn(_mid), ("m_x", "g_v", "s_v")),
+    ("same pose, disk let go, {g_v, s_v}", _mid + disk_on_xn(_mid), ("g_v", "s_v")),
+    ("tipped 60°, {g_v, s_v}", _p60 + FAR, ("g_v", "s_v")),
+    ("landed, {t}", LANDED + FAR, ("t",)),
+    ("landed but overhanging (COM at x = −0.02), {t}", [-0.02, H + A / 2, math.pi / 2] + FAR, ("t",)),
+]
+print("hold test on named poses:")
+for name, q, names in HOLD_ROWS:
+    print(f"  {name:52s} {'yes' if _sup(q, *names) else 'no'}")
+print("support-interval oracle (landed, {t} held iff x >= 0):",
+      all(_sup([x, H + A / 2, math.pi / 2] + FAR, "t") == (x >= 0) for x in (-0.03, -0.01, 0.01, 0.03, 0.05)))

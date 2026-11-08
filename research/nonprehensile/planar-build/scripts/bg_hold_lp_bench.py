@@ -8,6 +8,12 @@ c-gnn/cmg on branch phase1/planar:
     JAX_PLATFORMS=cpu .venv314/bin/python <this file>          # float32, CPU
     python <this file>                                         # float32, GPU
     JAX_ENABLE_X64=1 JAX_PLATFORMS=cpu .venv314/bin/python <this file>   # float64
+
+The tutorial's numbers were produced at c-gnn commit e29d96f (Nov 6, 2026), the
+LP adoption benchmark. Decision 9 (9261ece, Nov 7) changed the internals this
+script reaches into (body pairs became convex element pairs; PlanarHold._slots
+now takes the less-constrained end), so run it from e29d96f:
+    git switch --detach e29d96f
 """
 import json, math, os, sys, time, jax, jax.numpy as jnp, numpy as np
 sys.path.insert(0, "tests")
