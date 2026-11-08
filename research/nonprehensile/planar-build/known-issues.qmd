@@ -3,7 +3,7 @@ title: "Known issues"
 subtitle: "Every open defect in the code and the paper that we know of: what it does, where it is documented, and which step fixes it."
 ---
 
-**Last checked:** 2026-11-07, against `phase1/planar` at `faf4320`. This page
+**Last checked:** 2026-11-07, against `phase1/planar` at `b551f5b`. This page
 is updated whenever an issue is found or closed. The full records are in the
 discussion compendium (`reports/discussion-compendium/` in `c-gnn`: sections
 "Step 1", "Plans" and "Code issues"). Walkthrough pages show many of these
@@ -13,7 +13,7 @@ issues as they happen.
 
 | Issue | Effect | Documented | Fix in |
 |---|---|---|---|
-| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 475 of 4,000 demo poses jittered by about 3 mm are ambiguous (357 before Decision 9; 474 of the 475 have a contact deeper than ε<sub>on</sub>; in 136, s<sub>v</sub> loses to t, which contains it). The stress test's budget was raised from 400 to 500. Since step 2 a tied pose cannot be a solver success or a search node. | [Step 1](01-contact-layer.qmd#other-refinements), [Step 2](02-hold-gate.qmd#eps-pen), README | Step 3: tighten ε<sub>pen</sub> once the cost stops rewarding penetration (rollouts reach 9.9 mm today) |
+| **Ties under deep penetration.** ε<sub>pen</sub> = 10 mm is ten times ε<sub>on</sub>, so both corners of a tilted box edge can count as touching. | 475 of 4,000 demo poses jittered by about 3 mm are ambiguous (357 before Decision 9; 474 of the 475 have a contact deeper than ε<sub>on</sub>; in 136, s<sub>v</sub> loses to t, which contains it). The stress test's budget was raised from 400 to 500. Since step 2 a tied pose cannot be a solver success or a search node. | [Step 1](01-contact-layer.qmd#other-refinements), [Step 2](02-hold-gate.qmd#eps-pen), [Step 3](03-local-solver.qmd#ε_pen-and-ties), README | Awaiting the ε<sub>pen</sub> choice (step 3): 257 ties at 5 mm (recommended; covers the best cost's 4.7 mm penetration), 44 at 2 mm |
 | **Labels can flicker near θ<sub>e</sub>** along a trajectory. | A 3-frame flicker on the demo (frames 623–625) where the tilt hovers at 1.83°. | [Step 1](01-contact-layer.qmd#edge-contacts) | Execution monitor: hysteresis with thresholds from a noise model |
 | **The 3D catalog (`step.yaml`) keeps the old defects:** closed faces over-count bits, ±y faces, unset template IDs, a Python loop over templates, closest-pair ties broken by "first candidate". | Wrong formations and slow compiles for 3D scenes only. | Walkthrough [2](../code-walkthrough/02-templates.qmd), [3](../code-walkthrough/03-formations.qmd), [9](../code-walkthrough/09-step1.qmd) | Frozen with 3D (Decision 3); the planar catalog replaces it |
 
@@ -31,12 +31,13 @@ issues as they happen.
 
 | Issue | Effect | Documented | Fix in |
 |---|---|---|---|
-| **MPPI's arrival term is signed and linear** (10<sup>4</sup> φ). | It rewards penetration: the shove seen on walkthrough page 7. | Walkthrough [7](../code-walkthrough/07-mppi.qmd) | Step 3 (cost experiment) |
-| **MPPI's dwell term penalizes velocity**, not drift from the task-end pose (`hold_target` is computed but unused). | Its docstring describes a different term than the code runs. | Compendium, code issues | Step 3 |
+| **MPPI's default cost is still the current one** (variant A: signed linear arrival 10<sup>4</sup> φ, velocity dwell term). | It penetrates up to 14 mm (beyond ε<sub>pen</sub>) and realizes 3 of 25 edits in the step-3 experiment. The compiled costs (B–E) exist but are not the default. | Walkthrough [7](../code-walkthrough/07-mppi.qmd), [Step 3](03-local-solver.qmd) | The cost choice (step 3; E recommended) |
 | **GPU runs are not repeatable between processes** by default. | The same MPPI call ended once flush and once tipped 1.4°. | [Step 1](01-contact-layer.qmd#tests), README | Workaround: `XLA_FLAGS=--xla_gpu_deterministic_ops=true` (about 13% slower) |
-| **MPPI fails the chain's edits.** In 24 full rollouts of the chain's edits, none passes the solver's success check, the passive breaks included (not because of ties). | Edits that `Cand` offers are not realized, so the search cannot follow the chain. | [Step 2](02-hold-gate.qmd#eps-pen), compendium | Step 3 (cost and success criteria) |
+| **MPPI does not realize the pivot or break(g<sub>v</sub>)** under any of five costs (0 of 3 starts each), nor break(g<sub>v</sub>) from 30°. The best costs realize 12 of 25 edits that pass H. | The search cannot follow the chain past the pivot. | [Step 3](03-local-solver.qmd), compendium (step 3) | Change the solver for these edits (checkpoint 2 rule; contact-implicit MPC or a contact trust region), awaiting review |
+| **The paper's compiled cost is scaled by the box size** (a = 125 mm). | A 1 mm gap costs 6·10⁻⁵, so the barrier decides everything and contacts chatter; adding the margin term made it worse (4 of 25). | [Step 3](03-local-solver.qmd) | Contact terms over ε<sub>on</sub> (variant E), in the paper rewrite once chosen |
+| **The transition sweep's default grid is coarse** (5 points per direction). | From 30° it finds one held pose where 9 points find eight. | [Step 3](03-local-solver.qmd#sweep) | Resolution choice (step 3; 9 points recommended) |
 | **The hold tests are float32** (the default LP gate and the exact cross-check). | Answers within float32 of the support boundary can differ from a float64 reference. The default gate (LP with the disk's motor limits) agrees with HiGHS on 1,000 of 1,000 random cases and on every near-boundary case 0.33 mm or more from the boundary; its only misses (9 of 208 on CPU, 6 on GPU) are acceptances with margin 0 at the boundary pose itself. No false rejections, no "uncertain". | [Step 2](02-hold-gate.qmd#gate) | Acceptable; a positive `margin_min` if zero-margin poses must be refused |
-| **The LP gate in 3D is float32-limited.** Rounding builds up in linrax's dense tableau over the long pivot sequences of 3D cones (50–130 generators). | About 1% of supported 3D cases end "uncertain" (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly. | [LP tutorial](bg-hold-lp.qmd#solving-it), compendium (hold-test LPs) | Reinversion (rebuild the tableau from the final basis and continue), with the 3D build |
+| **The LP gate in 3D is float32-limited.** Rounding builds up in linrax's dense tableau over the long pivot sequences of 3D cones (50–130 generators). | About 1% of supported 3D cases end "uncertain" (rejected), and some exits read 0 (the margin is underestimated). Nothing is certified wrongly. On the GPU the 3D test now sees 4 uncertain of 64 (3 at `9261ece`, before step 3) against its budget of 2, so `test_3d_cones_finish_and_never_mislead` fails there; it passes on CPU. | [LP tutorial](bg-hold-lp.qmd#solving-it), compendium (hold-test LPs) | Reinversion (rebuild the tableau from the final basis and continue), with the 3D build |
 
 ## Open: tests and configuration
 
@@ -73,6 +74,8 @@ decisions in these places:
 
 | Issue | Closed by |
 |---|---|
+| Each realizer graded itself (MPPI's own gap-band test, not the paper's Def. success) | One shared success test for every realizer, extended to transfers and compound edges (step 3, Nov 7, `41b5721`) |
+| The gate at χ₀ refused edits a motion could realize (break(g<sub>v</sub>) at 30°, held at 45°) | H searches for a transition pose near χ₀ (Decision 10, `41b5721`) |
 | The transfer relation included 44 pairs that are not Xiao–Ji neighbors (20 going round a corner in one step, 24 changing both features), each skipping a contact state the motion passes through | Transfers are Xiao–Ji containment (cases 2–3) only: 56 pairs (Decision 9, Nov 7, `9261ece`) |
 | Disk around a box corner: one Λ call or two | Two transfers, through the disk-on-vertex contact (Decision 9, `9261ece`) |
 | Corner ownership: which body owns the step corner, and a general rule for other scenes | No rule needed: the environment is one object whose convex vertices are found from its geometry (Decision 9, `9261ece`) |
