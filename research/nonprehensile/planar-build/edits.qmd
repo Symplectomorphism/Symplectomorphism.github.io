@@ -1,0 +1,107 @@
+---
+title: "Edits"
+subtitle: "How one contact state leads to the next: make, break, transfer, the rare compound edge, and the step chain."
+lightbox: true
+---
+
+## The menu of edits
+
+An **edit** changes a formation σ into a neighbor σ′. It is built from
+elementary changes:
+
+| Change | What it does | Example on the step |
+|---|---|---|
+| make(c) | adds a contact | make(s): push the box against the riser |
+| break(c) | removes a contact | break(g<sub>v</sub>): lift the box's corner off the floor |
+| transfer(c → d) | replaces a contact by one it contains, or the reverse | g → g<sub>v</sub>: the box starts to tip onto its corner; s<sub>v</sub> → t: it lands on the platform |
+| transport | changes no contact; moves the pose toward the goal | slide the box along the floor |
+
+**Containment** is Xiao and Ji's (Def. 8): d is contained in c when d's
+features are c's or boundary elements of them. A transfer uses one-sided
+containment (their cases 2–3): one feature stays, and the other is an edge
+and one of its own end vertices. The box edge flat on the floor (g) shrinks
+to its corner on the floor (g<sub>v</sub>); the box side on the platform (t)
+shrinks to the box side on the step corner (s<sub>v</sub>). On the step
+there are 56 such pairs among the 40 templates.
+
+Break and transfer to a contained contact **relax**; make and transfer to a
+containing contact **constrain**. Transport is offered only when the
+current formation holds the box.
+
+## When several contacts change at once
+
+A set of elementary changes on different templates is an edge when:
+
+- they all relax or all constrain (Xiao and Ji's containment between
+  formations, Def. 9);
+- the result is valid;
+- every smaller nonempty subset of the changes gives an **invalid**
+  formation.
+
+A single valid change is always an edge. A **compound** edge is a set of
+changes that cannot be made one at a time. Moving the disk from −x<sub>B</sub>
+to −z<sub>B</sub> is not one edge: breaking m<sub>x</sub> first leaves a valid
+formation. The disk goes round the box corner in two transfers, through its
+contact with the vertex.
+
+On the step every compound edge is the **pivot** or its reverse:
+
+{m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>}.
+
+Tipping the box on its corner lifts its side off the riser at the same
+instant. Both one-at-a-time intermediates, {m<sub>x</sub>, g<sub>v</sub>, s}
+and {m<sub>x</sub>, g, s<sub>v</sub>}, are excluded. The pivot appears in 64
+contexts (the other contacts of the formation), so there are 128 compound
+edges, some of them in contexts no pose realizes, because the validity
+stand-in is only pairwise ([Issues](issues.qmd#validity)). The
+implementation enumerates compound edges of up to three changes; a search
+up to four finds no others on the step.
+
+## The marking graph
+
+The **marking graph** has the valid formations as vertices and the edits as
+edges: 37,203 vertices on the step. Checked exhaustively in the test suite:
+
+- every edge lands on a valid formation and has its reverse;
+- the graph is connected;
+- with at most k changes per edge, the graph distance between σ and σ′
+  lies between |σ △ σ′|/(2k) and |σ △ σ′| (the symmetric difference);
+- a brute force over sets of two or three single steps finds exactly the
+  implemented compound edges.
+
+## The step chain
+
+With the disk free at the start, a plan for the step is the walk
+
+{g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>}
+→ {m<sub>x</sub>, s<sub>v</sub>} → {m<sub>x</sub>, t} → {t} → {m<sub>z</sub>, t} → transport,
+
+that is: make m<sub>x</sub>, make s, the pivot, break g<sub>v</sub>,
+transfer s<sub>v</sub> → t, break m<sub>x</sub>, make m<sub>z</sub>, and
+transport.
+
+![The box near the step corner, labeled by the recognizer. Left: resting on the corner alone, {s<sub>v</sub>}. Middle: landed with +x<sub>B</sub> on the platform and overhanging the corner. v<sub>S</sub> is the end of the platform edge the box rests on, so the box's contact with v<sub>S</sub> is not principal, and the formation is {t}. Right: clear of the corner, still {t}.](media/xj_landing.svg){.lightbox}
+
+**Landing is a transfer.** Once +x<sub>B</sub> lies on the platform,
+v<sub>S</sub> is a boundary element of the touching platform edge, so the
+landed box realizes {t}, and sliding it clear of the corner changes no
+contact. Support is unaffected: t's contact set ends at the corner, so the
+landed box is held exactly when its center of mass is over the platform.
+
+`Cand`, the candidate generator, offers every step of the chain from a pose
+in its formation, provided the hold gate passes. Breaking g<sub>v</sub> needs
+the box tilted well past 30° with the disk low on its face
+([the hold gate](hold-gate.qmd#pivot)).
+
+## Reproduce
+
+```bash
+cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
+JAX_PLATFORMS=cpu PYTHONPATH=tests .venv314/bin/python -m pytest -q tests/test_planar_step2.py
+JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_xiao_ji.py <out dir>
+```
+
+`03_xiao_ji.py` prints the counts on this page (templates, containment
+pairs, valid formations, compound edges).
+
+[← Contact states](contact-states.qmd) · [The hold gate →](hold-gate.qmd)

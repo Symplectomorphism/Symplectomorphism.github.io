@@ -1,33 +1,52 @@
 ---
 title: "Planar Build"
-subtitle: "The critical path, one step at a time: what each step built, the evidence that it works, and the decisions still open."
+subtitle: "Planning nonprehensile manipulation through contact, in the plane: what is built, how it works, and what is still open."
+lightbox: true
 ---
 
 The [code walkthrough](../code-walkthrough/index.qmd) studies `cmg` as Angelo
-left it on `phase1/dev`. This section follows the work that builds on it: a
-planar (x–z) version of the box-over-a-step problem, on the branch
-`phase1/planar` of `Symplectomorphism/c-gnn`. Each page reports one step of the
-critical path (Decision 5 of the discussion compendium). It gives the results,
-figures you can inspect, and the choices that still need a decision. Pages are
-updated when a decision changes.
+left it on `phase1/dev`. This section describes the planar (x–z) version of
+the box-over-a-step problem built on top of it, on the branch
+`phase1/planar` of `Symplectomorphism/c-gnn`. The pages are organized by
+topic and describe the current state; how each part got there is collected
+on [Issues and resolutions](issues.qmd).
 
-| Step | What it delivers | Status |
-|---|---|---|
-| [1. The planar contact layer](01-contact-layer.qmd) | Planar scene, principal-contact on-set (one bit per convex element pair), contact sets, hold test on contact sets | Done (2026-11-05); all refinements settled; updated for Decision 9 (2026-11-07); known issue: ties under deep penetration (step 3) |
-| [2. Valid, transfers and a certified hold gate](02-hold-gate.qmd) | Valid, transfer and compound edges in `Cand`; H on the less-constrained end, decided with certificates and margins (LP gate with the disk's motor limits; exact test as cross-check); hold-solver benchmark; tied poses rejected | Done (2026-11-05); all four choices settled (2026-11-07); updated for Decision 9 (2026-11-07); ε<sub>pen</sub> moved to step 3 |
-| [Decision 9: Xiao and Ji's construction](xiao-ji.qmd) | One environment object with derived convex vertices; containment transfers; the general compound rule; the gate on the less-constrained end; the landing as transfer(s<sub>v</sub> → t) | Code done (2026-11-07, `9261ece`); landing change accepted; paper rewrite next |
-| [3. The local solver: cost, success and transitions](03-local-solver.qmd) | One success test for every realizer; H finds a transition pose (Decision 10); the paper's compiled cost and extensions against the current MPPI cost; checkpoints 1–2; ε<sub>pen</sub> and ties | Built (2026-11-07); **MPPI does not realize the pivot or break(g<sub>v</sub>) under any cost**: solver change, cost, ε<sub>pen</sub>, χ<sub>t</sub> rule and sweep resolution await review |
-| 4. The ranker | Attention over contact templates with a goal direction; LTS/PHS search | Planned |
+## The problem
 
-**Background tutorials** explain a method used in a step, from first
-principles:
+A disk pushes a square box over a step: the box slides on the floor, tips
+onto its corner against the riser, rests on the step corner, and lands on
+the platform. Each phase uses a different set of contacts with the
+environment, so a planner has to choose *which contacts* to make and break,
+in which order, and then find a motion for each change.
 
-- [Deciding support exactly](bg-exact-hold-test.qmd) (step 2): how the hold
-  test turns "can these contacts hold the box?" into a cone in three
-  dimensions, and answers with a witness, a certificate and a margin.
-- [The hold test as a linear program](bg-hold-lp.qmd): the same question as
-  LPs that serve the planar and the 3D builds alike, with force limits and
-  margins against a set of disturbances.
+![The step chain at constructed poses, +x to the left. Each panel's title is the set of contacts that are on; thick segments and dots are where they touch, one color per pair of convex elements.](media/step1_chain.svg){.lightbox}
 
-[Known issues](known-issues.qmd) lists every open defect we know of in the
-code and the paper, with where it is documented and which step fixes it.
+## The approach
+
+1. **[Contact states](contact-states.qmd).** A state is a set of
+   *principal contacts* in the sense of Xiao and Ji, recognized from a
+   simulated pose with small tolerances.
+2. **[Edits](edits.qmd).** Neighboring states differ by making, breaking or
+   shrinking one contact; several change at once only when no single change
+   is possible.
+3. **[The hold gate](hold-gate.qmd).** Before any motion is computed, a
+   small linear program checks that the contacts which persist through an
+   edit can hold the box, at a pose where the edit can happen.
+   [Background: deciding support](support-tutorial.qmd) derives the test
+   from first principles.
+4. **[The local solver](local-solver.qmd).** A trajectory optimizer (Λ)
+   tries to realize each edit that passes the gate.
+5. **[Search and ranking](search.qmd).** A search over edits, ordered by a
+   learned ranker, so that few expensive Λ calls are needed.
+
+## Where things stand
+
+| Step | What | Status | Date |
+|---|---|---|---|
+| 1 | [Contact states](contact-states.qmd): planar scene, principal contacts, recognizer | Done | Nov 5 (Xiao–Ji construction Nov 7) |
+| 2 | [Edits](edits.qmd) and [the hold gate](hold-gate.qmd): validity, transfers, compound edges; LP gate with motor limits and margins | Done | Nov 5–7 |
+| 3 | [The local solver](local-solver.qmd): success test, transition sweep, compiled cost, checkpoints 1–2 | Built; **MPPI does not realize the pivot**; choices open | Nov 7 |
+| 4 | [Search and ranking](search.qmd): geometric validity, scene families, ranker | Planned | — |
+
+Open decisions and known defects are on [Issues and resolutions](issues.qmd),
+at the top.

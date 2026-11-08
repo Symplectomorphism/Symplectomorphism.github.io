@@ -1,0 +1,196 @@
+---
+title: "Contact states"
+subtitle: "Which contacts are on at a pose: the planar scene, Xiao and Ji's principal contacts, and the recognizer that labels simulated poses."
+lightbox: true
+aliases:
+  - 01-contact-layer.html
+resources:
+  - contact-viewer.html
+  - media/step1_demo.json
+---
+
+## The scene
+
+![The planar step scene, +x to the left as in the paper. The box has four edges and four vertices; the disk has its boundary. The environment is one object E: its edges E:L (floor), E:S (riser) and E:P (platform), and its one convex vertex, the step corner v<sub>S</sub> = E:S/P.](media/step1_scene.svg){.lightbox}
+
+Three bodies move or touch in the x–z plane:
+
+- **the manipulator M**, a disk of radius r = a/8, driven by two slide motors
+  of ±1 N each;
+- **the object B**, a square box of side a = 125 mm and weight 0.98 N;
+- **the environment E**, one polygon: floor, riser of height h = a/4, and
+  platform.
+
+The features of a body are its edges and its convex vertices; the disk has
+one feature, its circle. E's convex vertices are found from the geometry,
+so only the step corner qualifies. The concave floor–riser junction is not
+a feature: Xiao and Ji count a convex element pressed into a concave corner
+as one contact with each of the two edges.
+
+A **template** is a pair of features on two different bodies that may
+touch. The catalog has 40: 8 disk–box (the disk against the box's 4 edges
+and 4 vertices) and 32 box–environment (the box's 8 features against E's 4).
+Seven have names, used throughout:
+
+| Name | Template | Meaning |
+|---|---|---|
+| g | (−z<sub>B</sub>, E:L) | box bottom flat on the floor |
+| g<sub>v</sub> | (v<sub>+−</sub>, E:L) | box corner on the floor |
+| s | (+x<sub>B</sub>, E:S) | box side flush on the riser |
+| s<sub>v</sub> | (+x<sub>B</sub>, v<sub>S</sub>) | box side on the step corner |
+| t | (+x<sub>B</sub>, E:P) | box side on the platform (the landed box) |
+| m<sub>x</sub>, m<sub>z</sub> | (∂M, −x<sub>B</sub>), (∂M, −z<sub>B</sub>) | disk on a box face |
+
+The paper also counts four disk–environment templates (44 in all); the
+code leaves them out.
+
+## Principal contacts
+
+Closed features share their boundaries. When the box sits flat on the
+floor, its bottom edge touches the floor, and so do its two bottom vertices
+and the lower ends of its sides. Counting every touching pair would light
+several templates for one physical contact.
+
+Xiao and Ji's **principal contact** fixes this (Xiao 1993; Xiao and Ji,
+*IJRR* 2001, Def. 1): a contact between two features counts only if it is
+not the boundary of a contact between higher-dimensional features. Flat on
+the floor, the box realizes {g}; tilted onto its corner, {g<sub>v</sub>}. A
+**formation** is a set of templates; a pose *realizes* a formation when the
+formation is exactly its set of principal contacts. Formations are what the
+planner searches over.
+
+Between two convex elements there is at most one principal contact at a
+time. The box can touch the floor and the riser at once ({g, s} in the
+corner), but not the floor with two edges.
+
+## The recognizer
+
+Simulated poses never touch exactly: contacts sink a little into each other
+and float a little apart. The recognizer labels a pose with tolerances
+ε<sub>on</sub> = 1 mm (separation) and ε<sub>pen</sub> (overlap). The
+**contact set** K<sub>c</sub> of a template lies on the box's feature and
+depends on the other feature:
+
+- against an edge of E: the part within ε<sub>on</sub> of the edge, or
+  sunk into E across it (an interval);
+- against a vertex of E: the point of the box's feature closest to it;
+- against the disk: the point of the box's feature closest to the disk's
+  center.
+
+A template is **on** when:
+
+1. **In band.** Its gap lies between −ε<sub>pen</sub> and ε<sub>on</sub>, and
+   K<sub>c</sub> is not empty.
+2. **It touches interiors.** The touching part is not only at an edge's end
+   that is itself a vertex feature of the same body. For example, a box
+   resting on v<sub>S</sub> alone is s<sub>v</sub>, not t or s.
+3. **Edge on edge needs alignment.** The two edges are parallel within
+   θ<sub>e</sub> and overlap by at least ℓ<sub>min</sub> = a/16 = 7.8 mm.
+4. **The larger contact wins.** K<sub>c</sub> is not contained, within
+   ε<sub>on</sub>, in the contact set of a higher-dimensional template of
+   the same pair that is also on.
+
+The tilt tolerance is derived, not tuned: θ<sub>e</sub> = arcsin(ε<sub>on</sub>/L<sub>e</sub>)
+≈ 1.83°, where L<sub>e</sub> = h is the shortest edge in an edge–edge
+template. On the riser that is the angle at which the far end of the
+overlap leaves the 1 mm band, so the test agrees with the point-contact
+test of physics engines there. Using one angle rather than a contact length
+makes a box flush in the step corner lose its floor and riser contacts at
+the same tilt. (Why a length rule failed: [Issues](issues.qmd#theta-e).)
+
+**Ambiguous poses.** If the tolerances leave two contacts that cannot
+coexist (the same pair of convex elements, or one containing the other),
+the recognizer reports the higher-dimensional one, then the smaller gap,
+then catalog order, and counts the tie. A tied pose is never a search node
+or a solver success. Ties happen under deep overlap: ε<sub>pen</sub> = 10 mm
+is provisional, and 475 of 4,000 jittered demo poses tie at that value
+([Issues](issues.qmd#eps-pen)).
+
+**Correctness.** The paper proves that within η<sub>max</sub> ≈ 0.35 mm of
+an exact pose that is well away from degenerate configurations, the
+recognizer returns exactly the exact principal contacts and the pose is not
+ambiguous. An independent check ran the code on 207,208 such poses and
+found no counterexample.
+
+## Validity
+
+A formation is **valid** if some admissible pose realizes it. Until that is
+computed from the geometry (step 4), validity uses a stand-in:
+
+- **derived exclusions:** at most one contact per pair of convex elements,
+  and no contact alongside one it contains;
+- **four declared pairs that cannot coexist:** {g, t} (the box cannot lie
+  on the floor and the platform), {g<sub>v</sub>, s} and {g, s<sub>v</sub>}
+  (a box tilted on its corner is not flush on the riser, and conversely), and
+  {g, m<sub>z</sub>} (with the box flat the disk cannot reach −z<sub>B</sub>).
+
+Of the 9<sup>5</sup> = 59,049 formations with at most one contact per convex
+element pair, 37,203 pass. The stand-in is pairwise and admits some
+formations no pose realizes ([Issues](issues.qmd#validity)).
+
+## Connected regions
+
+Xiao and Ji define a contact state as a formation together with one
+connected region of the poses that realize it. The search keys a node by
+the formation and a rounded pose, so it matters whether a formation's
+region splits. Checked by sampling (scripts in `c-gnn`,
+`reports/contact-mode-graphs/scripts/connectivity/`, at commit `9261ece`):
+
+- each of the chain's eight formations is one component at link radii of
+  20 and 40 mm, and at 5 and 10 mm too, except on a random half of the
+  full-band samples, where {m<sub>x</sub>, s<sub>v</sub>} splits at 5 mm and
+  {m<sub>z</sub>, t} at 10 mm;
+- discovery found 285 formations and 89 were analysed; 18 showed several
+  components at 20 or 40 mm, and 14 of those were densified. The two chain
+  formations and 8 others are then one component at 20 and 40 mm; the empty
+  formation splits on a random half at 20 mm; three with the box in the air
+  hold together only at 40 mm; the 4 not densified still split at 20 or
+  40 mm;
+- 196 rarely sampled formations were not analysed, 87 of them containing a
+  chain template.
+
+This is sampling evidence that the chain's formations are connected at
+link radii of 20 mm and more, not a proof.
+
+## The demo, frame by frame
+
+The viewer replays the 1,721-frame demo shipped with `cmg`
+(`step_example_trajectory.npz`), labels every frame with the recognizer,
+and draws the contact sets.
+
+<iframe src="contact-viewer.html" title="Contact layer viewer" loading="lazy" allow="fullscreen" allowfullscreen
+  style="width:100%;height:1260px;border:1px solid var(--bs-border-color, #d0d7de);border-radius:8px"></iframe>
+
+[Open the viewer on its own page](contact-viewer.html){target="_blank"} for more room.
+
+What to watch for:
+
+- **One contact per pair of convex elements.** The "in band" column is the
+  naive count of touching templates, up to 5 for one contact; the on column
+  never holds more than one.
+- **The chain, in order:** {g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s}
+  → {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>x</sub>, s<sub>v</sub>}
+  → {s<sub>v</sub>} → {t} → {m<sub>z</sub>, t} → {t}, in 15 runs of frames,
+  with no invalid formation.
+- **Two rocks.** At frame 609 the box hits the riser and rocks onto its
+  corner (up to 2.6°); after landing (frames 708–712) it seesaws on the step
+  corner, so only s<sub>v</sub> is on. Both are real motion.
+- **Ties** fire on 2 frames, both with the box pressed more than 1 mm into
+  the riser.
+
+![Box tilt through the push into the riser, the pivot and the landing (frames 604–719); shading marks runs of one formation. While the disk pushes the box along the floor the tilt reaches 0.58° (the box sinks unevenly into the soft floor). The rock at the riser (2.6°) and the seesaw after landing (2.9°) cross θ<sub>e</sub> ≈ 1.83°. Near θ<sub>e</sub> a label can flicker for a few frames (623–625); hysteresis for trajectory labels waits for a noise model.](media/step1_tilt.svg){.lightbox}
+
+## Reproduce
+
+```bash
+cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
+source .venv314/bin/activate      # Python 3.14; uv pip install -e ".[dev,cuda]" matplotlib
+JAX_PLATFORMS=cpu PYTHONPATH=tests python -m pytest -q tests/test_planar_contact.py
+JAX_PLATFORMS=cpu python <website>/research/nonprehensile/planar-build/scripts/01_contact_layer.py <out dir>
+```
+
+The planar gap takes 22 ms per 7,680 poses on the CPU. CPU runs repeat
+exactly; GPU runs repeat between processes only with
+`XLA_FLAGS=--xla_gpu_deterministic_ops=true`.
+
+[Edits →](edits.qmd)

@@ -1,0 +1,292 @@
+---
+title: "Issues and resolutions"
+subtitle: "Every open decision and known defect, and how each earlier one was resolved. Click an entry to expand it."
+aliases:
+  - known-issues.html
+  - xiao-ji.html
+---
+
+**Last checked:** 2026-11-07, against `phase1/planar` at `b551f5b` in
+`Symplectomorphism/c-gnn`. The full records are in the discussion
+compendium (`reports/discussion-compendium/`); commits are on that branch.
+
+## Open
+
+[]{#step3-choices}
+
+::: {.callout-important collapse="true"}
+## Step-3 choices await review: solver, cost, ε<sub>pen</sub>, transition pose, sweep
+1. **The solver.** MPPI does not realize the pivot or break(g<sub>v</sub>)
+   (next entry). Recommended: keep cost E and change the realizer for the
+   edits that hold the box on a corner (contact-implicit MPC or a contact
+   trust region); a cheaper first test is a longer look-ahead and more
+   samples on the pivot alone.
+2. **The cost.** Recommended: **E**, the paper's terms over ε<sub>on</sub>
+   (best overlap and follow-on rate, ties B on successes). MPPI's default is
+   still A, which overlaps up to 14 mm.
+3. **ε<sub>pen</sub>.** Recommended: **5 mm**: covers E's deepest overlap
+   (4.7 mm) and cuts ties from 475 to 257 of 4,000. The scene still uses
+   10 mm.
+4. **The transition pose and thresholds.** The gate accepts at margin ≥ 0
+   (float32 boundary acceptances are therefore not removed). The pose handed
+   to the solver is the nearest grid pose with margin ≥ 0.02 (provisional);
+   recommended: the nearest with margin ≥ 0.1.
+5. **The sweep.** Recommended: keep 5 points per direction and range 0.05 for
+   now; the sweep uses at most three free directions, so formations with
+   more (e.g. {m<sub>x</sub>} with box and disk free) get a slice. Revisit
+   with the scene families.
+
+[The local solver](local-solver.qmd), [the hold gate](hold-gate.qmd#sweep).
+:::
+
+::: {.callout-warning collapse="true"}
+## MPPI does not realize the pivot or break(g<sub>v</sub>) (checkpoint 2)
+Under all five costs, 0 of 3 starts each; the best costs realize 12 of 25
+edits that pass the gate. The search cannot follow the chain past the
+pivot. Fix: change the solver for these edits (choice 1 above).
+[The local solver](local-solver.qmd).
+:::
+
+[]{#eps-pen}
+
+::: {.callout-warning collapse="true"}
+## Ties under deep overlap (ε<sub>pen</sub> = 10 mm is provisional)
+ε<sub>pen</sub> is ten times ε<sub>on</sub>, so both corners of a tilted box
+edge can count as touching. 475 of 4,000 demo poses jittered by about 3 mm
+are ambiguous (474 with a contact deeper than ε<sub>on</sub>; in 136,
+s<sub>v</sub> loses to t, which contains it). A tied pose is never a search
+node or a solver success, so no wrong label is used; the stress test's
+budget is 500. Fix: the ε<sub>pen</sub> choice (step 3; 257 ties at 5 mm, 44
+at 2 mm). [Contact states](contact-states.qmd#the-recognizer).
+:::
+
+[]{#validity}
+
+::: {.callout-warning collapse="true"}
+## Validity is a pairwise stand-in until step 4
+A formation should be valid exactly when some admissible pose realizes it
+(decided Nov 7, compendium Decision 11). Today validity uses derived
+exclusions plus four declared pairs, which admits formations no pose
+realizes, e.g. the box bottom on floor and platform at once. The pivot's
+compound status rests on the declared pairs {g<sub>v</sub>, s} and
+{g, s<sub>v</sub>}, and some of its 64 contexts are impossible. Fix:
+validity computed from the geometry per formation, with the scene families
+(step 4). [Edits](edits.qmd).
+:::
+
+::: {.callout-warning collapse="true"}
+## The search: success flag ignored, requested formation stored, breaks unchecked, no goal
+Angelo's `Search` accepts when the requested contacts are in band, ignoring
+the solver's success flag; a node stores the requested formation, not the
+one reached (28 of 30 nodes in a 12-round run); a break is accepted without
+checking that the contact left (6 of 7); there is no goal test, goal input
+or budget. Fix: wiring Λ's shared success test into the search, then the
+goal-directed search of step 4. Walkthrough [8](../code-walkthrough/08-search.qmd).
+:::
+
+::: {.callout-warning collapse="true"}
+## The hold tests are float32
+The gate agrees with a float64 reference on 1,000 of 1,000 random cases and
+on every near-boundary case 0.33 mm or more from the boundary. Its only
+misses are acceptances with margin 0 (at most 2·10<sup>−7</sup>) at the
+boundary pose itself. A positive acceptance threshold would refuse them
+(choice 4 above). [The hold gate](hold-gate.qmd#accuracy).
+:::
+
+::: {.callout-warning collapse="true"}
+## The LP gate in 3D needs reinversion
+Float32 rounding builds up in linrax's dense tableau over the long pivot
+sequences of 3D cones: about 1% of supported 3D cases end "uncertain"
+(rejected, never certified wrongly). On the GPU the 3D test sees 4
+uncertain of 64 against its budget of 2, so
+`test_3d_cones_finish_and_never_mislead` fails there; it passes on the
+CPU. Fix: rebuild the tableau from the final basis and continue, with the
+3D build. [Background](support-tutorial.qmd).
+:::
+
+::: {.callout-note collapse="true"}
+## Smaller open items
+- **Label flicker near θ<sub>e</sub>** along a trajectory (frames 623–625 of
+  the demo). Fix: hysteresis with thresholds from a noise model, in the
+  execution monitor.
+- **GPU runs are not repeatable between processes** by default (one MPPI
+  call ended flush once and tipped 1.4° once). Workaround:
+  `XLA_FLAGS=--xla_gpu_deterministic_ops=true`, about 13% slower.
+- **The 3D catalog** (`step.yaml`) keeps the old defects (closed faces
+  over-count, ±y faces, a Python loop over templates). Frozen with 3D.
+- **`ContactGraph` drops edges** (`self.edges` never set). Nothing uses the
+  graph; superseded by attention over templates.
+- **`tests/test_local_solver.py`** reads `gradient_warm_start`, which MPPI no
+  longer has. For a fix-up PR to Angelo.
+- **The paper's pending results:** step-3 choices and results, the scene
+  families and the ranker are marked *pending* in the rewritten paper.
+:::
+
+## Resolved
+
+[]{#decision-9}
+
+::: {.callout-tip collapse="true"}
+## Xiao and Ji's construction adopted (Nov 7, `9261ece`)
+Our construction had drifted from Xiao and Ji's contact formations in ways
+that were conveniences, not needs. A literature search (13 papers read in
+full) found nothing simpler that still meets our needs: stances,
+body-pair strata and scene graphs cannot see a box tip from its edge onto
+its corner; configuration-space cells and triangulated subcontacts split one
+motion into several edges. We now follow Xiao and Ji exactly and add only
+tolerances, several bodies with a manipulator, and a no-contact state per
+pair.
+
+| | Before (`84827c0`) | After |
+|---|---|---|
+| Environment | three convex bodies; the step corner owned by the riser | one polygon E; convex vertices from the geometry |
+| Contacts per pair | at most one per body pair | at most one per pair of convex elements, none alongside one it contains |
+| Transfers | same or adjacent features: 92 pairs, only 48 Xiao–Ji neighbors | one-sided containment: 56 pairs |
+| Compound edges | two transfers in different body pairs | all relaxing or all constraining, every proper subset invalid (same 128 on the step) |
+| Valid formations | 11,959 of 12,393 | 37,203 of 59,049 |
+
+The landed box became {t} (next entry). [Contact states](contact-states.qmd), [edits](edits.qmd).
+:::
+
+::: {.callout-tip collapse="true"}
+## The landed box is {t}, not {s<sub>v</sub>, t} (Nov 7, accepted by Aykut)
+Once +x<sub>B</sub> lies on the platform, v<sub>S</sub> bounds the touching
+platform edge, so s<sub>v</sub> is not principal. Landing is
+transfer(s<sub>v</sub> → t), sliding off the corner is transport, and the
+chain is one edit shorter. Support is unchanged. [Edits](edits.qmd#the-step-chain).
+:::
+
+::: {.callout-tip collapse="true"}
+## Transfers, the disk around a corner, corner ownership (Nov 7, `9261ece`)
+- 44 of the 92 old transfers were not Xiao–Ji neighbors: 20 went round a
+  corner in one step, 24 changed both features at once. Transfers are now
+  one-sided containment only (56).
+- The disk goes round a box corner in two transfers, through its contact
+  with the vertex.
+- No ownership rule is needed: the environment is one object whose convex
+  vertices come from its geometry (this replaces the Nov 5 rule that the
+  riser owns the step corner).
+:::
+
+::: {.callout-tip collapse="true"}
+## Compound edges: the two-transfer rule, then the general rule (Nov 7, `5b25385`, `9261ece`)
+The pivot needs g → g<sub>v</sub> and s → s<sub>v</sub> together, since both
+one-at-a-time intermediates are excluded. Settled first as a closed form
+(two transfers in different body pairs with crossed exclusions), it was
+replaced the same day by Xiao and Ji's neighbor relation with the minimality
+rule, which gives the same edges on the step and needs no special case.
+:::
+
+::: {.callout-tip collapse="true"}
+## The gate tests the less-constrained end; a transfer keeps the old normal (Nov 7, `a3789d7`, `9261ece`)
+H first tested the contacts that persist through an edit, with the old
+contact's normal for a transfer (on the demo the two normals differ by at
+most 1.77° where it matters; using the new one changes none of 1,155
+decisions). Under Xiao and Ji's containment both follow from one rule: test
+the edit's less-constrained end, as multi-contact planners do (Hauser et
+al. 2005, 2008; Escande et al. 2013); the normal comes from the feature that
+stays.
+:::
+
+::: {.callout-tip collapse="true"}
+## The margin and the gate's solver (Nov 7, `228950f`)
+The margin is set inclusion of a disturbance polytope, by default the ℓ₁
+ball (0.2 = μ on the flat box). The disk's force is bounded by its motors
+(±1 N, read from the MuJoCo model), which also made margins with the disk
+finite; before, its unbounded push made the support cone fill all of 3D.
+The LP backbone is the gate; the exact cone test is its cross-check.
+[The hold gate](hold-gate.qmd).
+:::
+
+::: {.callout-tip collapse="true"}
+## The gate at χ₀ refused realizable edits (Nov 7, `41b5721`, `26c96d0`)
+break(g<sub>v</sub>) was refused at 30° although tilting further and then
+lifting is possible. H now searches near χ₀ over the more-constrained end's
+contacts for a transition pose where the less-constrained end holds, and
+passes it to the solver. Pose distances use the paper's weight a/2 on
+angles. [The hold gate](hold-gate.qmd#sweep).
+:::
+
+::: {.callout-tip collapse="true"}
+## One success test for every realizer (Nov 7, `41b5721`)
+MPPI graded itself with its own gap-band test. Every realizer now uses the
+paper's success test, extended to transfers and compound edges.
+[The local solver](local-solver.qmd).
+:::
+
+::: {.callout-tip collapse="true"}
+## The paper rewritten on the current construction (Nov 7, `e2f705c` to `63de648`)
+The old draft (archived, tag `paper-v1-2026-11-07`) described corner
+ownership, one contact per body pair, the old chain and stale numbers for
+h = a/4. The paper was rewritten from scratch and revised after four
+independent reviews; the proofs that the gate never refuses a realizable
+edit and that the recognizer is correct are in its appendices.
+:::
+
+::: {.callout-tip collapse="true"}
+## The hold LPs in float32 with linrax (Nov 6, `e29d96f`, `b354251`)
+- linrax had no iteration cap and could cycle on degenerate 3D LPs, hanging
+  a whole `vmap` batch: its pivot loop is replaced (300 pivots per phase,
+  Bland's leaving rule, artificial rows marked correctly).
+- It returned infeasible points as optimal in float32: fixed by
+  Householder-spread rows, primal and dual from the final basis, pivot
+  tolerance 10<sup>−4</sup>, exit cap 10, and every answer checked.
+- linrax has no license file; accepted (Aykut, Nov 6), pinned to 0.3.0.
+:::
+
+::: {.callout-tip collapse="true"}
+## Step 2's foundations (Nov 5, `d810e32`, `1986c73`)
+- `Cand` had no validity check (a second contact per pair, excluded
+  formations, transport always legal): edits now pass validity, transfer and
+  compound rules; transport only when supported.
+- No transfer generator: g → g<sub>v</sub> needed a break and a make through
+  a formation where the box does not touch the floor.
+- MPAX's "not supported" was uncertified (192–194 of 416 supported
+  near-boundary cases rejected): replaced by the exact cone test with
+  witness and certificate, later by the LP gate.
+- The cone test's margin was positive on a single-ray cone and failed below
+  three generators: fixed, and the margin proved to be the signed distance.
+- JAX's reduced-precision (TF32) GPU products broke the supporting-plane
+  checks: dot products are formed elementwise.
+- Tied poses are treated as ambiguous: never a node or a solver success.
+:::
+
+[]{#theta-e}
+
+::: {.callout-tip collapse="true"}
+## The edge-contact tilt θ<sub>e</sub> (Nov 5, `5f5a2e8`)
+A length rule ("flat if 7.8 mm lie within 1 mm") called a box tipped 7.35°
+flat, and as the box tipped over the step corner it switched the floor
+contact at 7.35° but the riser contact at 8.44°, labeling the impossible
+{g<sub>v</sub>, s} in between. An angle shared by both contacts fixes this.
+Two principled options were compared: the engines' point rule (both ends of
+the overlap within 1 mm), which switches floor and riser at 0.46° and 1.83°
+and realizes {g<sub>v</sub>, s} on 13 demo frames; and one derived angle,
+θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h) ≈ 1.83°, which switches both together
+and is exactly the point rule on the riser. The derived angle was adopted
+(a 2° value tuned to the demo, `62782b8`, was withdrawn). Hysteresis for
+trajectory labels was deferred to the execution monitor.
+:::
+
+::: {.callout-tip collapse="true"}
+## Step 1's foundations (Nov 4–5, `ca4123b`, `b2665cb`, `583810b`)
+- One physical contact lit 3 to 6 template bits (closed features share
+  boundaries): replaced by the principal-contact recognizer.
+- The hold test used one tie-broken point per contact, blended by
+  smoothing, and ±y faces on a planar body: replaced by the contact sets'
+  endpoints in a planar catalog.
+- Exclusions were integer indices, then dropped; there were no vertex
+  features for g<sub>v</sub>, s<sub>v</sub>: named templates and vertices in
+  `step2d.yaml`.
+- Overlaps were charged to the wrong surface (−31 mm into the platform):
+  each overlap is charged to the nearest environment segment or endpoint
+  (approved Nov 5).
+- A Python loop over templates: one `vmap` per kernel (the 3D catalog still
+  loops).
+- NaN gradients in the planar kernels: safe norms and roots.
+- The tie-break was kept as the recognizer's fallback, with every use
+  counted.
+- `pyproject.toml` was invalid TOML: fixed upstream.
+:::
+
+[Back to the overview](index.qmd)

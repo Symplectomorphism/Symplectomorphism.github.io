@@ -91,11 +91,11 @@ ax.plot([-40], [30], "D", mfc="none", mec=INK, ms=7, mew=1.4)
 ax.annotate("disk low, 30°: refused\n(motors too weak)", (-40, 30), xytext=(-25, 14), fontsize=8, color=INK,
             arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
 ax.plot([-40], [45], "s", mfc="none", mec=INK, ms=8, mew=1.4)
-ax.annotate("chain pose (disk low, 45°): admitted", (-40, 45), xytext=(-60, 77.5), fontsize=8, color=INK,
+ax.annotate("test pose (disk 40 mm low, 45°): admitted", (-40, 45), xytext=(-60, 77.5), fontsize=8, color=INK,
             arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
 ax.set_ylim(degs[0] - 1, 82)
 ax.set_xlabel("disk height on −x_B from the face center (mm; negative = toward the floor)", fontsize=9, color=INK)
-ax.set_ylabel("box tilt θ (deg)", fontsize=9, color=INK)
+ax.set_ylabel("box tilt from rest (deg)", fontsize=9, color=INK)
 ax.tick_params(labelsize=8, colors=MUTED)
 cb = fig.colorbar(im, ax=ax, pad=0.02)
 cb.set_label("support margin of {m_x, s_v} (units of m g; clipped to ±1)", fontsize=8, color=INK)

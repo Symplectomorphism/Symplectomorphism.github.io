@@ -1,0 +1,134 @@
+---
+title: "The local solver"
+subtitle: "Realizing an edit: one success test for every realizer, the compiled cost, and whether MPPI can follow the step chain."
+lightbox: true
+aliases:
+  - 03-local-solver.html
+---
+
+::: {.callout-warning title="Result: MPPI does not realize the chain"}
+With the current cost (A), the paper's compiled cost (B), and three
+extensions (C, D, E), **no variant realizes the pivot or break(g<sub>v</sub>)**
+(0 of 3 starts each). The best variants (B and E) realize 12 of the 25
+edits that pass the gate; E also cuts the deepest overlap from 14 mm (A) to
+4.7 mm. By the checkpoint rule of the plan, the next step is to **change
+the solver before anything else**. The choices are open:
+[Issues](issues.qmd#step3-choices).
+:::
+
+## What the solver must do
+
+The local solver Λ gets an edit σ → σ′ that passed [the hold gate](hold-gate.qmd),
+the current pose χ₀, and the transition pose χ<sub>tr</sub> the gate found.
+It returns a simulated record, and the edit is accepted only if the record
+passes one **success test**, shared by every realizer:
+
+- **persistence:** every kept contact is on at every sample; for a transfer
+  c → d, one of c and d is on at every sample;
+- **departure:** a contact dropped outright ends above ε<sub>on</sub>;
+- **dwell:** the recognized formation equals σ′ for the last samples, with
+  no tie;
+- **overlap:** no gap below −ε<sub>pen</sub>;
+- the manipulator's time limit, support while the disk lets go, and progress
+  toward the goal for transport.
+
+## The compiled cost
+
+The first Λ is MPPI, a sampling-based model-predictive controller running
+the MuJoCo simulation. The paper's compiled cost is dimensionless: band,
+leave and overlap terms on the gaps, a control term, and a terminal barrier
+on the destination formation. It extends to Xiao and Ji's edits through the
+point-contact view:
+
+- **a transfer** keeps the contained contact and moves the *released end*:
+  for g → g<sub>v</sub> the other bottom corner lifts until the tilt passes
+  2θ<sub>e</sub>; for the disk going round a box corner, the contact point
+  slides past the vertex; a constraining transfer (s<sub>v</sub> → t) lays
+  the edge flat;
+- **a compound edge** adds up its parts;
+- **options:** a margin term at the end, a dwell term, the two-phase
+  subgoal (reach χ<sub>tr</sub>, then change), and scaling the contact terms
+  by ε<sub>on</sub> instead of the box size.
+
+## The cost experiment
+
+**Setup.** MPPI with 256 samples, 5 updates, controls held 3 steps and a
+30-step look-ahead; executed records of 60 + 20 steps (0.8 s). Each edit of
+the chain is tried from its canonical start and from 2 perturbed starts, plus
+break(g<sub>v</sub>) from 30°, which needs the sweep. The variants:
+
+- **A:** the current MPPI cost (hand-set weights; a signed linear arrival
+  term);
+- **B:** the paper's compiled cost;
+- **C:** B plus the terminal margin and dwell terms;
+- **D:** C plus the transition subgoal;
+- **E:** D with the contact terms divided by ε<sub>on</sub> instead of the
+  box size, a smooth terminal cost, and a barrier of 100.
+
+After a success, the next chain edit is attempted from where the record
+ended.
+
+![Successes per variant and edit, GPU run (canonical start and two perturbed starts per edit).](media/step3_success.svg){.lightbox}
+
+| Variant | Successes (of 25) | Canonical (of 9) | Reached σ′ at some sample | Deepest overlap | 95th percentile | Next edit succeeds | Time per call |
+|---|---|---|---|---|---|---|---|
+| A, current | 3 | 1 | 24 | 14.1 mm | 12.5 mm | 0 of 3 | 22.8 s |
+| B, paper | 12 | 4 | 24 | 8.1 mm | 5.4 mm | 4 of 9 | 24.3 s |
+| C, + margin, dwell | 4 | 1 | 24 | 8.2 mm | 5.0 mm | 0 of 4 | 23.5 s |
+| D, + subgoal | 4 | 1 | 25 | 8.2 mm | 5.0 mm | 0 of 4 | 23.5 s |
+| E, D scaled by ε<sub>on</sub> | 12 | 4 | 24 | 4.7 mm | 4.0 mm | 6 of 12 | 23.4 s |
+
+GPU (RTX 5080). On the CPU the canonical starts give A 1 of 9 and E 4 of 9,
+as on the GPU, at 196 s and 120 s per call. The experiment ran before the
+code's pose distance was aligned with the paper's (angles weighted by a/2
+instead of a), which affects only which held pose the sweep calls nearest
+and the goal distance's angle term, zero during transport.
+
+**What the table says**
+
+- **The current cost overlaps.** A reaches σ′ in 24 of 25 records but
+  succeeds in 3: its linear arrival term pushes contacts up to 14 mm deep.
+- **The paper's cost is badly scaled for millimetre contacts.** With the box
+  size as the unit, a 1 mm gap costs (1/125)² ≈ 6·10⁻⁵, so the barrier
+  decides almost everything. C and D are *worse* than B, probably because
+  their margin term outweighs those tiny contact terms (the run does not
+  isolate the cause). E, the same terms over ε<sub>on</sub>, matches B's
+  success rate with half the overlap and the best follow-on rate.
+- **The subgoal changed nothing on the chain:** from every canonical start
+  the gate passes at χ₀, so χ<sub>tr</sub> = χ₀. Where it matters
+  (break(g<sub>v</sub>) from 30°), D also fails.
+- **What no variant does:** the pivot (B tilts the box to about 30° and
+  reaches σ′ but fails another clause; E never tilts it); break(g<sub>v</sub>)
+  from 45° (B's box topples onto the platform; E's stays on its corner at
+  62–65° and never lifts); break(g<sub>v</sub>) from 30°. These are the edits
+  where the disk must hold the box on a corner through an unstable motion,
+  and a 0.3 s look-ahead with 1 N motors does not find that motion.
+- **Transport** succeeds with B (3 of 3) but not with E (0 of 3, still
+  moving about 20 mm in the dwell window).
+
+**Checkpoint 2: does Λ realize the edits that pass the gate?** Not
+reliably: 12 of 25 (48%) at best, and never the pivot or break(g<sub>v</sub>).
+(Checkpoint 1, whether the gate prunes, is on [the hold gate](hold-gate.qmd#checkpoint-1).)
+
+## ε<sub>pen</sub> and ties
+
+The recognizer's overlap tolerance ε<sub>pen</sub> = 10 mm is provisional.
+Ties on the 4,000 jittered demo poses, with ε<sub>pen</sub> replaced:
+
+| ε<sub>pen</sub> | 1.5 mm | 2 mm | 3 mm | 4 mm | 5 mm | 10 mm (today) |
+|---|---|---|---|---|---|---|
+| Tied poses | 25 | 44 | 98 | 168 | 257 | 475 |
+
+E's rollouts overlap at most 4.7 mm (95th percentile 4.0 mm); an
+ε<sub>pen</sub> below that would fail E's successes on the overlap clause.
+
+## Reproduce
+
+```bash
+cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
+JAX_PLATFORMS=cpu PYTHONPATH=tests .venv314/bin/python -m pytest -q tests/test_step3.py
+.venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_local_solver.py <out dir>     # the experiment (about 70 min on GPU)
+JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_ties_eps_pen.py <out dir>
+```
+
+[← The hold gate](hold-gate.qmd) · [Search and ranking →](search.qmd)
