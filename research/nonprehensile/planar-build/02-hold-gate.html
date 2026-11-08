@@ -71,7 +71,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../../">
-<link href="../../../research/nonprehensile/planar-build/bg-exact-hold-test.html" rel="next">
+<link href="../../../research/nonprehensile/planar-build/xiao-ji.html" rel="next">
 <link href="../../../research/nonprehensile/planar-build/01-contact-layer.html" rel="prev">
 <link href="../../../images/robot-arm-favicon.png" rel="icon" type="image/png">
 <script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
@@ -519,6 +519,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/xiao-ji.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Decision 9: Xiao and Ji’s construction</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../../research/nonprehensile/planar-build/bg-exact-hold-test.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Background: deciding support exactly</span></a>
   </div>
@@ -639,11 +645,30 @@ $$
 
 
 <p><strong>Code.</strong> Branch <code>phase1/planar</code> of <code>Symplectomorphism/c-gnn</code>, commit <code>d810e32</code>. New: <code>marking/edits.py</code>, <code>physics/planar_hold.py</code>, <code>tests/test_planar_step2.py</code> (17 tests); changed: <code>Cand</code>, the solver’s success check and the search’s acceptance, for planar scenes only. Angelo’s 3D path is untouched.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Updated for Decision 9 (Nov 7, 2026): Xiao and Ji’s construction
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Commit <code>9261ece</code> replaces three parts of this step with Xiao and Ji’s construction (<a href="../../../research/nonprehensile/planar-build/xiao-ji.html">Decision 9</a>):</p>
+<ul>
+<li><strong>Exclusions within a pair are derived:</strong> one contact per convex element pair, none alongside a contact it contains.</li>
+<li><strong>Transfers are Xiao–Ji containment only:</strong> 56 pairs, down from 92. The disk now goes round a box corner in two transfers.</li>
+<li><strong>Pass-through becomes the general compound rule:</strong> all changes relaxing or all constraining, kept only if every proper subset is invalid.</li>
+</ul>
+<p>The gate tests statics of the less-constrained end of each edit. The landed box is {t}, so landing is the transfer s<sub>v</sub> → t. Superseded text below is marked.</p>
+</div>
+</div>
 <section id="what-step-2-changes" class="level2">
 <h2 class="anchored" data-anchor-id="what-step-2-changes">What step 2 changes</h2>
 <p>Step 1 made the contact labels right. Step 2 makes the planner’s menu of edits right. <code>Cand</code> proposes an edit only when it passes the paper’s checks:</p>
 <ul>
-<li><strong>The edit is an edge of the marking graph:</strong> both the current formation and the new one are <strong>Valid</strong>. No two excluded contacts ({g, t}, {g<sub>v</sub>, s}, {g, s<sub>v</sub>}, {g, m<sub>z</sub>}), and at most one contact per body pair.</li>
+<li><strong>The edit is an edge of the marking graph:</strong> both the current formation and the new one are <strong>Valid</strong>. No two excluded contacts ({g, t}, {g<sub>v</sub>, s}, {g, s<sub>v</sub>}, {g, m<sub>z</sub>}), at most one contact per convex element pair, and no contact alongside one it contains (per body pair before Decision 9).</li>
 <li><strong>Near:</strong> a contact it adds is already within the gap gate.</li>
 <li><strong>H:</strong> the contacts that persist through the edit hold the box at the current pose.</li>
 </ul>
@@ -674,12 +699,12 @@ $$
 </tr>
 <tr class="odd">
 <td><strong>transfer(c → d)</strong> (new)</td>
-<td>one contact for a neighbouring one in the same pair</td>
-<td>g → g<sub>v</sub>: the box starts to tip onto its corner</td>
+<td>one contact for one it contains, or the reverse (Xiao–Ji cases 2–3)</td>
+<td>g → g<sub>v</sub>: the box starts to tip onto its corner; s<sub>v</sub> → t: it lands</td>
 </tr>
 <tr class="even">
-<td><strong>pass-through</strong> (new)</td>
-<td>two transfers that cannot be separated</td>
+<td><strong>compound</strong> (new; “pass-through” before Decision 9)</td>
+<td>several single changes that cannot be separated</td>
 <td>the pivot: g → g<sub>v</sub> and s → s<sub>v</sub> at once</td>
 </tr>
 </tbody>
@@ -689,6 +714,20 @@ $$
 </section>
 <section id="pass-through-made-precise" class="level2">
 <h2 class="anchored" data-anchor-id="pass-through-made-precise">Pass-through, made precise</h2>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Superseded by Decision 9 (Nov 7, 2026)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The two-transfer rule below is replaced by Xiao and Ji’s neighbor relation. An edge applies a set of single changes (make, break, transfer), all relaxing or all constraining. It is kept only if the result is valid and every nonempty proper subset of the changes gives an invalid formation; compound edges are capped at three changes.</p>
+<p>On the step this gives the same compound edges, the pivot and its reverse (128 instances), and searching up to four changes finds no more. A make followed by a break in one pair is still not an edit, because it passes through a valid formation. The rest of this section is kept as the record of choice 1.</p>
+</div>
+</div>
 <p>Decision 7 adopted pass-through edges for the pivot: from {m<sub>x</sub>, g, s} the box can only reach {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} by changing two contacts at once, because both one-at-a-time intermediates, {g<sub>v</sub>, s} and {g, s<sub>v</sub>}, are excluded. Taken literally (“some sequence of steps through invalid markings”), the definition would also let any contact replace any other contact of its pair in one edit: make the new one first, which is invalid because the pair then has two, then break the old one. That would make transfer adjacency pointless.</p>
 <p><strong>Implemented:</strong> two single steps in different body pairs whose intermediates are invalid <em>in both orders</em>. Both must then be transfers with crossed exclusions. On the step scene the only pass-throughs are the pivot and its reverse. A brute-force search over all 12,393 markings with at most one contact per pair finds exactly the same 128 pass-through edges.</p>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -713,6 +752,20 @@ $$
 </section>
 <section id="h-exact" class="level2">
 <h2 class="anchored" data-anchor-id="h-exact">H: persistent contacts, decided exactly</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Since Decision 9: statics of the less-constrained end
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Every edge now links a formation to one it contains, so H tests the <strong>less-constrained end</strong>: the new formation for a relaxing edit, the current one for a constraining edit. This is the transition rule of multi-contact planning. Hauser et al.&nbsp;(2008): the robot “can support itself only with forces applied at the contact in [σ]”, since “the applied force is zero at the instant of time when the contact is made or broken”. Hauser, Bretl and Latombe (2005) and Escande et al.&nbsp;(2013) state the same rule.</p>
+<p>The test suite checks that the less-constrained end equals the persisting contacts below, for make, break, both transfer directions and the pivot. The old contact’s normal (choice 2) now follows from containment: the feature that defines the normal is the one that stays.</p>
+</div>
+</div>
 <p>H asks whether the contacts that <strong>persist</strong> through the edit hold the box (Decision 7). For a make or a break that is the paper’s rule (the contacts kept). For a transfer, only the part of the old contact set that the new one still covers persists: for g → g<sub>v</sub>, the box’s corner.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -753,8 +806,8 @@ $$
 <figcaption>Whether the box, tipped by θ onto the step corner, holds on the corner and the disk alone ({m<sub>x</sub>, s<sub>v</sub>}): the hold test of break(g<sub>v</sub>), by the default gate (the LP with the disk’s motor limits, ±1 N; ℓ₁ margin). Blue: held, with the margin; red: not held, by how much; the black line is the boundary. Blank: the box is not in the formation at that pose. With unlimited disk force the held region was more than twice as large (815 against 382 of the 1,599 poses); everything held here is also held there.</figcaption>
 </figure>
 </div>
-<p>The chain’s canonical pose for σ<sub>3</sub> puts the disk at the middle of −x<sub>B</sub>. There, H refuses break(g<sub>v</sub>): pushing at mid-height, the disk cannot keep the box on the step corner without the floor. It must push low (toward the floor), and, since its motors give at most 1 N per axis, the box must already be tipped about 40° or more: at 30° holding the box on the corner takes more force than the motors give, wherever the disk pushes. Between about 65° and 70° any disk height works; past about 72° the box falls onto the platform. A search gets there by transport, tilting the box further and moving the disk down the face within the formation. A float64 LP with the same motor limits confirms every answer, so this is a fact about the physics (and the motors), not about the test. The same holds for make(t) at σ<sub>4</sub>.</p>
-<p>With that, <code>Cand</code> offers every step of the paper’s chain from a pose in its formation: make(m<sub>x</sub>), make(s), the pivot pass-through, break(g<sub>v</sub>), make(t), break(m<sub>x</sub>), make(m<sub>z</sub>), break(s<sub>v</sub>). Theorem <code>relocate</code> holds: with σ = {m<sub>x</sub>, s}, break(m<sub>x</sub>) is never offered.</p>
+<p>The chain’s canonical pose for σ<sub>3</sub> puts the disk at the middle of −x<sub>B</sub>. There, H refuses break(g<sub>v</sub>): pushing at mid-height, the disk cannot keep the box on the step corner without the floor. It must push low (toward the floor), and, since its motors give at most 1 N per axis, the box must already be tipped about 40° or more: at 30° holding the box on the corner takes more force than the motors give, wherever the disk pushes. Between about 65° and 70° any disk height works; past about 72° the box falls onto the platform. A search gets there by transport, tilting the box further and moving the disk down the face within the formation. A float64 LP with the same motor limits confirms every answer, so this is a fact about the physics (and the motors), not about the test. The same holds for the landing at σ<sub>4</sub>, now transfer(s<sub>v</sub> → t).</p>
+<p>With that, <code>Cand</code> offers every step of the chain from a pose in its formation: make(m<sub>x</sub>), make(s), the pivot (compound), break(g<sub>v</sub>), transfer(s<sub>v</sub> → t), break(m<sub>x</sub>), make(m<sub>z</sub>), then transport. <em>Before Decision 9 the landing was make(t) and the last edit break(s<sub>v</sub>); the landed box is now {t}.</em> Theorem <code>relocate</code> holds: with σ = {m<sub>x</sub>, s}, break(m<sub>x</sub>) is never offered.</p>
 </section>
 <section id="which-solver" class="level2">
 <h2 class="anchored" data-anchor-id="which-solver">Which hold solver</h2>
@@ -862,22 +915,29 @@ $$
 <li>The cause is MPPI’s cost, whose arrival term rewards penetration (the shove on walkthrough page 7). A tighter ε<sub>pen</sub> now would fail every pushing rollout.</li>
 <li>So ε<sub>pen</sub> moves to step 3, after the cost.</li>
 </ul>
-<p>Done now: a pose with a tie can neither count as a solver success nor become a search node. A stress test in the suite tracks ties on 4,000 jittered demo poses (357 today).</p>
+<p>Done now: a pose with a tie can neither count as a solver success nor become a search node. A stress test in the suite tracks ties on 4,000 jittered demo poses: 357 when step 2 was built, 475 since Decision 9. 474 of the 475 have a contact deeper than ε<sub>on</sub>, and in 136 of them s<sub>v</sub> loses to t, which contains it. The test’s budget is 500.</p>
 <p>One more finding for step 3: all 24 rollouts fail the solver’s success check, the passive breaks included, and not because of ties.</p>
 </section>
 <section id="checks" class="level2">
 <h2 class="anchored" data-anchor-id="checks">Checks</h2>
 <ul>
-<li><strong>The marking graph, exhaustively</strong> (11,959 valid markings): every edge lands on a valid formation; every edge has its reverse; the degree bound holds; the graph is connected, and its distance is between a quarter of the Hamming distance and the Hamming distance. These are the claims of the restated Lemma <code>markgraph-struct</code> in the paper.</li>
+<li><strong>The marking graph, exhaustively</strong> (11,959 valid markings; since Decision 9, 37,203 of the 59,049 markings with at most one contact per convex element pair):
+<ul>
+<li>every edge lands on a valid formation;</li>
+<li>every edge has its reverse;</li>
+<li>the degree bound holds;</li>
+<li>the graph is connected, and its distance is between a quarter of the Hamming distance and the Hamming distance.</li>
+</ul>
+These are the claims of the restated Lemma <code>markgraph-struct</code> in the paper.</li>
 <li><strong>Supported against the float64 LP:</strong> 250 random cases and the pivot scan, all certified, all equal.</li>
 <li><strong>The cone test</strong> against HiGHS on 400 random cones in 3D, plus the degenerate cases (wedge, ray, empty, all of 3D).</li>
-<li><strong>The full suite</strong>, 48 tests, passes on Python 3.14 (CPU and GPU) and 3.12.</li>
+<li><strong>The full suite</strong>, 48 tests, passes on Python 3.14 (CPU and GPU) and 3.12. Since Decision 9: 68 tests on Python 3.14, CPU and GPU.</li>
 </ul>
 </section>
 <section id="for-review" class="level2">
 <h2 class="anchored" data-anchor-id="for-review">For review</h2>
 <ol type="1">
-<li><del>The pass-through reading</del> settled Nov 7: the two-transfer rule (above).</li>
+<li><del>The pass-through reading</del> settled Nov 7: the two-transfer rule (above), then generalized by <a href="../../../research/nonprehensile/planar-build/xiao-ji.html">Decision 9</a>.</li>
 <li><del>The persistent set of a transfer’s normal</del> settled Nov 7: the old contact’s normal (above).</li>
 <li><del>The margin’s definition and its cap</del> settled Nov 7: set inclusion with the ℓ₁ default, and the simulator’s actuator limits (<a href="#gate">the gate</a>).</li>
 <li><del>The exact test replacing MPAX</del> settled Nov 7: the LP backbone is the gate, the exact test its cross-check (<a href="#gate">the gate</a>).</li>
@@ -889,7 +949,7 @@ $$
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv314/bin/activate</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="va">JAX_PLATFORMS</span><span class="op">=</span>cpu <span class="va">PYTHONPATH</span><span class="op">=</span>tests <span class="ex">python</span> <span class="at">-m</span> pytest <span class="at">-q</span> tests/test_planar_step2.py</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="va">JAX_PLATFORMS</span><span class="op">=</span>cpu <span class="ex">python</span> <span class="op">&lt;</span>website<span class="op">&gt;</span>/research/nonprehensile/planar-build/scripts/02_hold_gate.py <span class="op">&lt;</span>out dir<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html">← 1. The planar contact layer</a> · <a href="../../../research/nonprehensile/planar-build/known-issues.html">Known issues</a> · <a href="../../../research/nonprehensile/planar-build/index.html">Back to the planar build</a></p>
+<p><a href="../../../research/nonprehensile/planar-build/01-contact-layer.html">← 1. The planar contact layer</a> · <a href="../../../research/nonprehensile/planar-build/xiao-ji.html">Decision 9: Xiao and Ji’s construction</a> · <a href="../../../research/nonprehensile/planar-build/known-issues.html">Known issues</a> · <a href="../../../research/nonprehensile/planar-build/index.html">Back to the planar build</a></p>
 
 
 </section>
@@ -1426,8 +1486,8 @@ $$
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../../research/nonprehensile/planar-build/bg-exact-hold-test.html" class="pagination-link" aria-label="Background: deciding support exactly">
-        <span class="nav-page-text">Background: deciding support exactly</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../../research/nonprehensile/planar-build/xiao-ji.html" class="pagination-link" aria-label="Decision 9: Xiao and Ji's construction">
+        <span class="nav-page-text">Decision 9: Xiao and Ji’s construction</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

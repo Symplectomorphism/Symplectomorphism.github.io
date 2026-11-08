@@ -10,21 +10,21 @@
   --bg: #ffffff; --fg: #1f2328; --muted: #656d76; --line: #d0d7de; --panel: #f6f8fa;
   --box: #f3e2c4; --boxline: #7a4f0e; --disk: #c9d8fb; --diskline: #14307a; --ground: #d9dde1;
   --env: #1f2328; --cursor: #1f2328; --bandA: #eef1f4; --bandB: #f8f9fa; --tilt: #2a78d6; --warn: #b35900;
-  --p0: #2a78d6; --p1: #eb6834; --p2: #1baf7a; --p3: #6250d6;
+  --p0: #2a78d6; --p1: #eb6834; --p2: #1baf7a; --p3: #6250d6; --p4: #e87ba4;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #30363d; --panel: #161b22;
     --box: #4a3a22; --boxline: #f0c27a; --disk: #24345e; --diskline: #b8ccff; --ground: #2b3138;
     --env: #e6edf3; --cursor: #e6edf3; --bandA: #1c222a; --bandB: #141920; --tilt: #3987e5; --warn: #f0a050;
-    --p0: #3987e5; --p1: #d95926; --p2: #199e70; --p3: #9085e9;
+    --p0: #3987e5; --p1: #d95926; --p2: #199e70; --p3: #9085e9; --p4: #d55181;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --line: #30363d; --panel: #161b22;
   --box: #4a3a22; --boxline: #f0c27a; --disk: #24345e; --diskline: #b8ccff; --ground: #2b3138;
   --env: #e6edf3; --cursor: #e6edf3; --bandA: #1c222a; --bandB: #141920; --tilt: #3987e5; --warn: #f0a050;
-  --p0: #3987e5; --p1: #d95926; --p2: #199e70; --p3: #9085e9;
+  --p0: #3987e5; --p1: #d95926; --p2: #199e70; --p3: #9085e9; --p4: #d55181;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg);
@@ -92,12 +92,13 @@ svg text { fill: var(--fg); }
         over the corner onto the platform, then pushes it along the platform. Each frame is labeled by the
         step-1 contact layer (<code>PlanarCatalog.band</code>), with θ<sub>e</sub> = arcsin(ε<sub>on</sub>/h) ≈ 1.83°.</li>
       <li><b>The scene</b> is drawn in the x–z plane with +x to the left, as in the paper. Thick colored
-        segments are the <b>contact sets K<sub>c</sub></b> of the contacts that are on, one color per body
-        pair; a dot is a one-point contact set. Labels are the paper's names where there is one
+        segments are the <b>contact sets K<sub>c</sub></b> of the contacts that are on, one color per convex element
+        pair (disk–box, or the box against one element of the environment E: floor, riser, platform, or the corner v<sub>S</sub>); a dot is a one-point contact set. Labels are the paper's names where there is one
         (g, g<sub>v</sub>, s, s<sub>v</sub>, t, m<sub>x</sub>, m<sub>z</sub>), else the catalog name.</li>
-      <li><b>The table</b> compares, per body pair, the one contact the principal-contact rule turns on with
-        the number of closed-feature templates in band (the old test, which lit 3 to 6 bits for one physical
-        contact).</li>
+      <li><b>The table</b> compares, per convex element pair, the one contact the principal-contact rule turns on with
+        the number of closed-feature templates in band (the old test, which lit several bits for one physical
+        contact). Since Decision 9 (Nov 7) the environment is one object E (Xiao and Ji); a pair of convex
+        elements carries at most one principal contact, so the box can touch floor and riser at once.</li>
       <li><b>The two strips</b> under the scene span the whole demo: the formation (one shade per run of
         frames with the same on-set; hover for it) and the box tilt with the θ<sub>e</sub> threshold. Click or drag on
         either to jump. The buttons above jump to the key moments.</li>
@@ -122,7 +123,7 @@ svg text { fill: var(--fg); }
     </div>
     <div class="card">
       <h3>Contacts at this frame</h3>
-      <table id="pairs"><thead><tr><th>Body pair</th><th>On (principal)</th><th>In band (closed features)</th></tr></thead><tbody></tbody></table>
+      <table id="pairs"><thead><tr><th>Convex element pair</th><th>On (principal)</th><th>In band (closed features)</th></tr></thead><tbody></tbody></table>
       <div class="small" id="note" style="margin-top:8px"></div>
       <h3 style="margin-top:14px">Formation runs</h3>
       <div class="small">Each row is a run of frames with one on-set; click to jump.</div>
@@ -141,13 +142,13 @@ const el = (tag, attrs, parent) => {
   if (parent) parent.appendChild(e);
   return e;
 };
-const PAIRVAR = ["var(--p0)", "var(--p1)", "var(--p2)", "var(--p3)"];
+const PAIRVAR = ["var(--p0)", "var(--p1)", "var(--p2)", "var(--p3)", "var(--p4)"];
 const PRETTY = { g_v: "gᵥ", s_v: "sᵥ", m_x: "mₓ", m_z: "m_z" };
 const pretty = (n) => PRETTY[n] || n;
 const JUMPS = [
   ["Rest {g}", 0], ["Disk reaches the box", 520], ["Hits the riser", 609], ["Rocks onto its corner", 613],
-  ["Flush {mₓ, g, s}", 640], ["Pivot", 682], ["Lifted", 692], ["Lands", 703], ["Seesaws on v_S", 709],
-  ["Disk behind {m_z, sᵥ, t}", 860], ["Vertex–vertex frame", 920], ["Pushed clear", 1000], ["End {t}", 1720],
+  ["Flush {mₓ, g, s}", 640], ["Pivot", 682], ["Lifted", 692], ["Lands {t}", 703], ["Seesaws on v_S", 709],
+  ["Disk behind {m_z, t}", 860], ["Corner over v_S, still {m_z, t}", 920], ["Pushed clear", 1000], ["End {t}", 1720],
 ];
 let D = null, k = 0, playing = null;
 const view = { cx: -0.04, cz: 0.085, w: 0.56 };   // world window (center, width)
