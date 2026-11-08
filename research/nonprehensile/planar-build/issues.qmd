@@ -6,58 +6,79 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-07, against `phase1/planar` at `b551f5b` in
+**Last checked:** 2026-11-08, against `phase1/planar` at `533fd2b` in
 `Symplectomorphism/c-gnn`. The full records are in the discussion
 compendium (`reports/discussion-compendium/`); commits are on that branch.
 
 ## Open
 
-[]{#step3-choices}
+[]{#step3c-choices}
 
 ::: {.callout-important collapse="true"}
-## Step-3 choices await review: solver, cost, ε<sub>pen</sub>, transition pose, sweep
-1. **The solver.** MPPI does not realize the pivot or break(g<sub>v</sub>)
-   (next entry). Recommended: keep cost E and change the realizer for the
-   edits that hold the box on a corner (contact-implicit MPC or a contact
-   trust region); a cheaper first test is a longer look-ahead and more
-   samples on the pivot alone.
-2. **The cost.** Recommended: **E**, the paper's terms over ε<sub>on</sub>
-   (best overlap and follow-on rate, ties B on successes). MPPI's default is
-   still A, which overlaps up to 14 mm.
-3. **ε<sub>pen</sub>.** Recommended: **5 mm**: covers E's deepest overlap
-   (4.7 mm) and cuts ties from 475 to 257 of 4,000. The scene still uses
-   10 mm.
-4. **The transition pose and thresholds.** The gate accepts at margin ≥ 0
-   (float32 boundary acceptances are therefore not removed). The pose handed
-   to the solver is the nearest grid pose with margin ≥ 0.02 (provisional);
-   recommended: the nearest with margin ≥ 0.1.
-5. **The sweep.** Recommended: keep 5 points per direction and range 0.05 for
-   now; the sweep uses at most three free directions, so formations with
-   more (e.g. {m<sub>x</sub>} with box and disk free) get a slice. Revisit
-   with the scene families.
+## Step-3c choices await review: re-planning, F1/F2, the friction mismatch
+1. **Re-planning.** It does not raise success (the chain: open loop 23 of
+   24, RH80 23, RH20 and RH40 22; the hard breaks: 0 of 6 for every
+   variant). Recommended: keep it available, not the default; if used,
+   RH20 (half the tracking deviation, least overlap) with χ<sub>tr</sub>
+   kept fixed: re-sweeping it loses transfer(s<sub>v</sub> → t).
+2. **F1 and F2** (plan farther past the release; ramp from the equilibrium
+   force). Recommended: drop both: no gain on any break, and F2 costs a
+   transfer.
+3. **The friction mismatch** (next entry). Recommended first: give the gate
+   and the plan the friction the realizer can use at the manipulator
+   contact, so the gate rejects what the realizer cannot do; then a tracker
+   that can use high friction, and only then a quasi-dynamic method for
+   these breaks.
+4. Still open from step 3b: a repositioning transport for chaining after
+   the pivot; obstacle avoidance for the disk's free motion; stiffer
+   contacts after a retune.
 
-[The local solver](local-solver.qmd), [the hold gate](hold-gate.qmd#sweep).
+[The local solver](local-solver.qmd#step-3c).
 :::
 
+[]{#friction-mismatch}
+
 ::: {.callout-warning collapse="true"}
-## MPPI does not realize the pivot or break(g<sub>v</sub>) (checkpoint 2)
-Under all five costs, 0 of 3 starts each; the best costs realize 12 of 25
-edits that pass the gate. The search cannot follow the chain past the
-pivot. Fix: change the solver for these edits (choice 1 above).
-[The local solver](local-solver.qmd).
+## Corner-holding breaks need more disk friction than the tracker uses (checkpoint 2)
+Every remaining failure of the quasi-static realizer is a break(g<sub>v</sub>):
+all six hard starts (30°, 35°, 40°, disk 40 or 20 mm low) and one or two
+perturbed chain starts. The gate and the plan use the simulator's disk–box
+friction (μ = 0.99); the tracker keeps the disk's force inside μ = 0.35 so
+the soft contact sticks. The plan's force at the 30° start has a
+tangential/normal ratio of 0.99; the tracker applies half of it, and the
+box slumps (disk 40 mm low) or the floor corner never lifts while the
+riser contact slides (disk 20 mm low). With the plan held to μ = 0.35 no
+disk force balances the box through these breaks (residual 0.22–0.27
+instead of 0.015). So the gate passes edits this realizer cannot do.
+Fix: choice 3 above. [The local solver](local-solver.qmd#diagnosis).
+:::
+
+[]{#gap-sign}
+
+::: {.callout-warning collapse="true"}
+## One polygon–segment gap has the wrong sign on the GPU (near-parallel faces)
+At one landed pose (the box at θ = π/2 − 4.6·10⁻⁵, its top face 96 mm from
+the riser and almost parallel to it) the signed gap of B:zp–E:S is −96.24 mm
+on the GPU and +96.24 mm on the CPU; any nearby angle gives +96 mm. The
+magnitude is right; the sign comes from a near-degenerate orientation test.
+The success test checks every template, so one such sample refuses a
+success (one re-planned transport run in step 3c). Fix: make the sign robust
+for near-parallel faces in the contact kernels and add the pose to the
+tests. Reproducer: `cmg/scripts/step3c/gap_sign_repro.py`.
 :::
 
 []{#eps-pen}
 
 ::: {.callout-warning collapse="true"}
-## Ties under deep overlap (ε<sub>pen</sub> = 10 mm is provisional)
+## Ties under deep overlap (ε<sub>pen</sub> = 5 mm is provisional)
 ε<sub>pen</sub> is ten times ε<sub>on</sub>, so both corners of a tilted box
 edge can count as touching. 475 of 4,000 demo poses jittered by about 3 mm
 are ambiguous (474 with a contact deeper than ε<sub>on</sub>; in 136,
 s<sub>v</sub> loses to t, which contains it). A tied pose is never a search
 node or a solver success, so no wrong label is used; the stress test's
-budget is 500. Fix: the ε<sub>pen</sub> choice (step 3; 257 ties at 5 mm, 44
-at 2 mm). [Contact states](contact-states.qmd#the-recognizer).
+budget is 500. Since step 3b ε<sub>pen</sub> = 5 mm (257 ties); 2–3 mm
+(44–98 ties) needs stiffer contacts, which keep penetration under 0.22 mm
+but need the controller retuned first. [Contact states](contact-states.qmd#the-recognizer).
 :::
 
 []{#validity}
@@ -123,6 +144,34 @@ CPU. Fix: rebuild the tableau from the final basis and continue, with the
 :::
 
 ## Resolved
+
+[]{#replan-defect}
+
+::: {.callout-tip collapse="true"}
+## Re-planning restarted the change at every re-plan (Nov 8, `7e2234f`)
+The first re-planning version gave every new plan the time the open-loop
+plan had left, re-swept χ<sub>tr</sub>, and re-planned phase I while the box
+was still recognized as σ, which it is until the change completes. The
+change was pushed to the last steps and made fast: make(s) and
+transfer(s<sub>v</sub> → t) failed by overshoot, and re-planning was worse
+than open loop. Fixed: each phase keeps its scheduled end, χ<sub>tr</sub> is
+kept, and once the plan has passed χ<sub>tr</sub> the previous plan continues
+until σ′ is recognized. [The local solver](local-solver.qmd#step-3c).
+:::
+
+[]{#step3-decided}
+
+::: {.callout-tip collapse="true"}
+## Step-3 choices decided: the mode-scheduled realizer, cost E, ε<sub>pen</sub> = 5 mm, thresholds (Nov 7, `767ab7a`, `6dec516`)
+Aykut chose a mode-scheduled quasi-static realizer with tracking in MuJoCo
+(Λ<sub>qs</sub>) over MPPI, which stays as the baseline with cost E (the
+paper's terms over ε<sub>on</sub>); ε<sub>pen</sub> = 5 mm; χ<sub>tr</sub> the
+nearest swept pose with margin ≥ γ<sub>tr</sub> = 0.1; acceptance at margin ≥
+γ<sub>min</sub> = 10⁻⁵; the sweep's defaults. Λ<sub>qs</sub> realizes every
+chain edit from its canonical start, including the pivot and
+break(g<sub>v</sub>) at 45°, which no MPPI cost realized (checkpoint 2: 23 of
+25, against 13 of 25 for MPPI-E). [The local solver](local-solver.qmd#lambda-qs).
+:::
 
 []{#decision-9}
 

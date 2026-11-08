@@ -1,19 +1,20 @@
 ---
 title: "The local solver"
-subtitle: "Realizing an edit: one success test for every realizer, the compiled cost, and whether MPPI can follow the step chain."
+subtitle: "Realizing an edit: one success test for every realizer, the mode-scheduled quasi-static realizer, re-planning and failure diagnostics, and the MPPI baseline."
 lightbox: true
 aliases:
   - 03-local-solver.html
 ---
 
-::: {.callout-warning title="Result: MPPI does not realize the chain"}
-With the current cost (A), the paper's compiled cost (B), and three
-extensions (C, D, E), **no variant realizes the pivot or break(g<sub>v</sub>)**
-(0 of 3 starts each). The best variants (B and E) realize 12 of the 25
-edits that pass the gate; E also cuts the deepest overlap from 14 mm (A) to
-4.7 mm. By the checkpoint rule of the plan, the next step is to **change
-the solver before anything else**. The choices are open:
-[Issues](issues.qmd#step3-choices).
+::: {.callout-note title="Result (steps 3b–3c): the quasi-static realizer follows the chain; one class of breaks remains"}
+The mode-scheduled realizer **Λ<sub>qs</sub>** realizes **23 of 24** chain
+edits from canonical and perturbed starts (GPU), including the pivot that no
+MPPI cost realized; MPPI-E realizes 15. **Receding-horizon re-planning does
+not raise success** (22–23 of 24) but halves the tracking deviation at a
+0.2 s interval. Every remaining failure is a **break(g<sub>v</sub>) whose
+quasi-static hold needs more disk friction than the tracker uses**: the
+gate and the plan count on μ = 0.99 at the disk, the tracker on 0.35.
+Choices for Aykut: [Issues](issues.qmd#step3c-choices).
 :::
 
 ## What the solver must do
@@ -32,7 +33,194 @@ passes one **success test**, shared by every realizer:
 - the manipulator's time limit, support while the disk lets go, and progress
   toward the goal for transport.
 
-## The compiled cost
+## The mode-scheduled realizer Λ<sub>qs</sub> (step 3b) {#lambda-qs}
+
+The edit names the contacts before and after, and the gate's sweep gives
+χ<sub>tr</sub>, so Λ<sub>qs</sub> plans on known contacts and tracks the plan
+in MuJoCo:
+
+- **plan:** knots on the contact constraints (Gauss–Newton projection of an
+  interpolation); phase I from χ₀ to χ<sub>tr</sub> keeping σ; phase II by
+  edit kind: a relaxing edit ends at the nearest pose recognized exactly as
+  σ′ with σ′ holding; a constraining edit ends at χ<sub>tr</sub> projected
+  onto σ′ and pressed 2 mm past the closure; transport moves up to 0.05
+  toward the goal;
+- **feed-forward:** a quasi-static force at each knot (nonnegative least
+  squares over the gate's friction-cone rays);
+- **tracking:** while the disk touches, a PD force along the box's free
+  directions, mapped through the contact and kept inside the disk's friction
+  cone (μ = 0.35, below the simulator's 0.99, so the contact sticks) and the
+  ±1 N motor box; otherwise PD on the planned disk positions.
+
+## Re-planning and failure diagnostics (step 3c) {#step-3c}
+
+**Re-planning (RH*k*).** Every *k* steps (20, 40, 80: every 0.2, 0.4, 0.8 s)
+the plan is rebuilt from the current simulated state and its first segment
+tracked. The phase comes from the recognized formation: still σ, re-plan
+phase I toward the same χ<sub>tr</sub>; already σ′, a path to the previous end
+pose; in between, or past χ<sub>tr</sub> on the schedule but not yet σ′, the
+previous plan continues. Each phase keeps its scheduled end. The record
+stops early if a contact that must persist is lost. The first version gave
+every new plan the time that was left and restarted the change at each
+re-plan, and was worse than open loop
+([issue](issues.qmd#replan-defect)); the table is after the fix.
+
+**Ablations.** F1: a release must lift the dropped contact at least 4 mm
+(phase II goes farther past χ<sub>tr</sub>). F2: the feed-forward ramps in from
+the start's equilibrium force instead of from zero. RH40r re-sweeps
+χ<sub>tr</sub> at each re-plan.
+
+**Diagnostics** for every run (time series kept for failed ones): planned vs
+executed box and disk, the deviation; recognized vs planned formation and
+the first unexpected loss or gain; the edit's gaps; MuJoCo's contact forces
+(replayed), friction-cone ratios and slip; motor commands against the
+limits; the box's kinetic energy; the re-plan log; a one-line diagnosis and
+a failure mode.
+
+**Cases.** The chain's 8 edits from a canonical and 2 perturbed starts (24
+calls) and a hard set of 6: break(g<sub>v</sub>) from 30°, 35°, 40° with the
+disk 40 or 20 mm low. After a success the next chain edit is tried from
+where the record ended.
+
+| Variant | Chain (of 24) | Hard (of 6) | Canonical (of 8) | Next edit | Deepest overlap | Median max deviation | Time per call |
+|---|---|---|---|---|---|---|---|
+| open loop (3b) | **23** | 0 | 8 | 12 of 20 | 4.2 mm | 37 mm | 2.7 s |
+| open + F1, F2 | 22 | 0 | 7 | 10 of 19 | 5.5 mm | 39 mm | 2.8 s |
+| RH20 | 22 | 0 | 8 | 12 of 19 | **2.9 mm** | **19 mm** | 8.8 s |
+| RH40 | 22 | 0 | 8 | 12 of 19 | 4.2 mm | 42 mm | 7.5 s |
+| RH80 | 22\* | 0 | 8 | 12 of 20 | 4.2 mm\* | 42 mm | 5.7 s |
+| RH20 + F | 21 | 0 | 7 | 11 of 18 | 5.5 mm | 19 mm | 10.4 s |
+| RH40 + F | 21 | 0 | 7 | 11 of 18 | 5.5 mm | 41 mm | 7.5 s |
+| RH80 + F | 21 | 0 | 7 | 11 of 18 | 5.5 mm | 40 mm | 5.7 s |
+| RH40r (χ<sub>tr</sub> re-swept) | 20 | 0 | 7 | 9 of 17 | 4.2 mm | 35 mm | 9.8 s |
+| MPPI-E | 15 | 0 | 5 | 6 of 15 | 4.6 mm | — | 40 s |
+
+GPU (RTX 5080). \* One transport run fails on a single sample whose gap has
+the wrong sign (−96 mm for +96 mm; [issue](issues.qmd#gap-sign)); without
+it RH80 is 23 of 24.
+
+::: {.callout-note collapse="true" title="The same on the CPU"}
+| Variant | Chain (of 24) | Hard (of 6) | Canonical (of 8) | Next edit | Deepest overlap | Median max deviation | Time per call |
+|---|---|---|---|---|---|---|---|
+| open loop | 22 | 0 | 7 | 12 of 19 | 3.4 mm | 43 mm | 0.16 s |
+| open + F1, F2 | 22 | 0 | 7 | 11 of 19 | 4.5 mm | 23 mm | 0.16 s |
+| RH20 | 22 | 0 | 7 | 11 of 19 | 3.4 mm | 21 mm | 1.5 s |
+| RH40 | 21 | 0 | 7 | 11 of 18 | 3.4 mm | 43 mm | 1.1 s |
+| RH80 | 22 | 0 | 7 | 12 of 19 | 3.4 mm | 43 mm | 0.9 s |
+| RH20 + F | 23 | 0 | 7 | 11 of 20 | 4.8 mm | 21 mm | 1.5 s |
+| RH40 + F | 23 | 0 | 7 | 11 of 20 | 4.5 mm | 24 mm | 1.1 s |
+| RH80 + F | 23 | 0 | 7 | 10 of 20 | 4.5 mm | 24 mm | 0.9 s |
+| RH40r | 19 | 0 | 6 | 8 of 16 | 3.4 mm | 27 mm | 1.3 s |
+
+Python 3.14; MPPI-E not run (120 s per call on the CPU). Failures: corner
+not released 4–6 and slump in ramp-in 3 for every variant, plus 3
+overshoots for RH40r.
+:::
+
+**Failure modes** (failed runs per variant, GPU):
+
+| Variant | Corner not released | Late change | Slump in ramp-in | Persistence loss | Overshoot | Slip, disk | Slip, environment |
+|---|---|---|---|---|---|---|---|
+| open loop | 4 | 0 | 3 | 0 | 0 | 0 | 0 |
+| open + F | 4 | 0 | 3 | 1 | 0 | 0 | 0 |
+| RH20 | 5 | 0 | 3 | 0 | 0 | 0 | 0 |
+| RH40 | 3 | 2 | 3 | 0 | 0 | 0 | 0 |
+| RH80\* | 3 | 1 | 3 | 0 | 0 | 0 | 0 |
+| RH20 + F | 4 | 1 | 3 | 1 | 0 | 0 | 0 |
+| RH40 + F | 5 | 0 | 3 | 1 | 0 | 0 | 0 |
+| RH80 + F | 5 | 0 | 3 | 1 | 0 | 0 | 0 |
+| RH40r | 4 | 0 | 3 | 0 | 3 | 0 | 0 |
+| MPPI-E | 6 | 0 | 0 | 2 | 3 | 2 | 2 |
+
+### Why the remaining runs fail {#diagnosis}
+
+All are break(g<sub>v</sub>): the hard set and one or two perturbed chain
+starts.
+
+- **Slump during ramp-in** (disk 40 mm low, every quasi-static variant).
+  The riser contact s<sub>v</sub> is lost within 9–21 steps; from 30° the box
+  falls flat in 0.2 s. The motors are not saturated then and the disk
+  barely slides. At that start the plan asks the disk for (0.33, 0.09) N, a
+  tangential/normal ratio of 0.99 at the disk–box contact, which the
+  simulator's μ = 0.99 allows and the gate counts on. The tracker keeps the
+  disk's force inside μ = 0.35 and applies (0.16, −0.03) N, the same with
+  and without F2 (both ramps are projected onto the same point of the
+  cone, so F2 changes nothing here).
+- **Corner not released** (disk 20 mm low, and the failing chain starts).
+  The box tilts, but the riser contact runs at its friction limit (ratio
+  1.00, the environment's μ = 0.2) and the box chatters between riser and
+  floor, so the floor corner never opens past ε<sub>on</sub>, or opens and
+  falls back in the dwell when the disk's force drops. The lift the plan
+  gives to disk friction lands on the riser contact, which cannot carry it.
+- **Late change** (RH40, RH80): σ′ is reached in the last 0.2 s, fewer than
+  the 20 dwell samples.
+
+**The check.** With the plan's forces computed with the disk's friction
+capped at 0.35, the quasi-static residual of every failing break rises from
+about 0.015 to 0.22–0.27: no disk force inside the tracker's cone holds the
+box through these breaks. Raising the tracker's μ to 0.6 removes the slump
+at 30° and 40° but the corner still stays down (5 of 12 probe cases instead
+of 4); at 0.9 the disk slides on the soft contact (2 of 12). So the gate
+passes edits that this realizer cannot do, and the fix starts with giving
+the gate and the plan the friction the realizer can use.
+
+**F1 and F2.** No consistent effect: on the GPU they cost a
+transfer(s<sub>v</sub> → t) start (the full equilibrium force at the first step
+overshoots the soft contact), on the CPU they gain a break(g<sub>v</sub>) start
+with re-planning. F1 cannot help the remaining failures: the corner does not
+follow the planned lift at all.
+
+**Re-planning before the fix** realized 1–2 hard starts per variant (all
+with the disk 20 mm low) while failing the chain's constraining edits: its
+compressed, faster phase II lifted the corner where the quasi-static
+schedule does not. That points at quasi-dynamic motion for these breaks,
+after the friction question.
+
+::: {.callout-note collapse="true" title="Failure plots: open loop and RH20 (GPU)"}
+Each figure: box tilt planned and executed with the deviation; the edit's
+gaps; contact normal forces (MuJoCo replay) and the planned disk force;
+friction-cone ratios; motor commands and limits; slip speeds and the box's
+kinetic energy; the one-line diagnosis at the bottom.
+
+![RH20: break(g<sub>v</sub>) from 30°, disk 20 mm low](media/step3c/RH20_break_g_v_from_30_deg_disk_20_mm_low_hard.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>) from 30°, disk 40 mm low](media/step3c/RH20_break_g_v_from_30_deg_disk_40_mm_low_hard.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>) from 35°, disk 20 mm low](media/step3c/RH20_break_g_v_from_35_deg_disk_20_mm_low_hard.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>) from 35°, disk 40 mm low](media/step3c/RH20_break_g_v_from_35_deg_disk_40_mm_low_hard.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>) from 40°, disk 20 mm low](media/step3c/RH20_break_g_v_from_40_deg_disk_20_mm_low_hard.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>) from 40°, disk 40 mm low](media/step3c/RH20_break_g_v_from_40_deg_disk_40_mm_low_hard.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>), perturbed start 1](media/step3c/RH20_break_g_v_perturbed_1.svg){.lightbox group="step3c"}
+
+![RH20: break(g<sub>v</sub>), perturbed start 2](media/step3c/RH20_break_g_v_perturbed_2.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>) from 30°, disk 20 mm low](media/step3c/open_break_g_v_from_30_deg_disk_20_mm_low_hard.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>) from 30°, disk 40 mm low](media/step3c/open_break_g_v_from_30_deg_disk_40_mm_low_hard.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>) from 35°, disk 20 mm low](media/step3c/open_break_g_v_from_35_deg_disk_20_mm_low_hard.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>) from 35°, disk 40 mm low](media/step3c/open_break_g_v_from_35_deg_disk_40_mm_low_hard.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>) from 40°, disk 20 mm low](media/step3c/open_break_g_v_from_40_deg_disk_20_mm_low_hard.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>) from 40°, disk 40 mm low](media/step3c/open_break_g_v_from_40_deg_disk_40_mm_low_hard.svg){.lightbox group="step3c"}
+
+![Open loop: break(g<sub>v</sub>), perturbed start 2](media/step3c/open_break_g_v_perturbed_2.svg){.lightbox group="step3c"}
+:::
+
+**Checkpoint 2: does Λ realize the edits that pass the gate?** On the
+chain, 96% on the GPU (open loop, 23 of 24; 92% for RH20 and RH40; MPPI-E
+63%), 92% on the CPU. With the hard set, all of which pass the gate, 77% (23 of 30). What
+the gate passes and Λ<sub>qs</sub> cannot realize is now one class: breaks
+that hold the box on a corner with more disk friction than the tracker
+uses.
+
+## The compiled cost (step 3, MPPI)
 
 The first Λ is MPPI, a sampling-based model-predictive controller running
 the MuJoCo simulation. The paper's compiled cost is dimensionless: band,
@@ -50,7 +238,7 @@ point-contact view:
   subgoal (reach χ<sub>tr</sub>, then change), and scaling the contact terms
   by ε<sub>on</sub> instead of the box size.
 
-## The cost experiment
+## The cost experiment (step 3, MPPI)
 
 **Setup.** MPPI with 256 samples, 5 updates, controls held 3 steps and a
 30-step look-ahead; executed records of 60 + 20 steps (0.8 s). Each edit of
@@ -106,13 +294,15 @@ and the goal distance's angle term, zero during transport.
 - **Transport** succeeds with B (3 of 3) but not with E (0 of 3, still
   moving about 20 mm in the dwell window).
 
-**Checkpoint 2: does Λ realize the edits that pass the gate?** Not
-reliably: 12 of 25 (48%) at best, and never the pivot or break(g<sub>v</sub>).
+**Checkpoint 2 with MPPI: does Λ realize the edits that pass the gate?**
+Not reliably: 12 of 25 (48%) at best, and never the pivot or
+break(g<sub>v</sub>). (With Λ<sub>qs</sub>: [step 3c](#step-3c).)
 (Checkpoint 1, whether the gate prunes, is on [the hold gate](hold-gate.qmd#checkpoint-1).)
 
 ## ε<sub>pen</sub> and ties
 
-The recognizer's overlap tolerance ε<sub>pen</sub> = 10 mm is provisional.
+The recognizer's overlap tolerance was 10 mm at step 3; since step 3b it is
+5 mm (provisional).
 Ties on the 4,000 jittered demo poses, with ε<sub>pen</sub> replaced:
 
 | ε<sub>pen</sub> | 1.5 mm | 2 mm | 3 mm | 4 mm | 5 mm | 10 mm (today) |
@@ -123,6 +313,21 @@ E's rollouts overlap at most 4.7 mm (95th percentile 4.0 mm); an
 ε<sub>pen</sub> below that would fail E's successes on the overlap clause.
 
 ## Reproduce
+
+Steps 3b–3c (in `cmg/`; every heavy run in a memory-capped scope):
+
+```bash
+cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
+JAX_PLATFORMS=cpu PYTHONPATH=tests .venv314/bin/python -m pytest -q tests/test_modesched.py tests/test_receding.py
+R=scripts/step3c/results
+scripts/step3c/capped.sh 16G .venv314/bin/python scripts/step3c/experiment.py --out $R/gpu.json --log $R/gpu.log \
+    --variants open,open+F,RH20,RH40,RH80,RH20+F,RH40+F,RH80+F,RH40r,E      # about 3 h on GPU
+.venv314/bin/python scripts/step3c/eta.py $R/gpu.log                                 # progress and time left
+.venv314/bin/python scripts/step3c/plots.py $R/gpu.json <out dir> --variants open,RH20      # failure plots and tables
+JAX_PLATFORMS=cpu .venv314/bin/python scripts/step3c/friction_probe.py 0.35,0.6,0.9 "break(g_v);hard" [--plan-mu]
+```
+
+Step 3 (MPPI and the compiled cost):
 
 ```bash
 cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
