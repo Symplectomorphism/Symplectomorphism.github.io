@@ -5,7 +5,8 @@ Run from c-gnn/cmg on branch phase1/planar (Python 3.14 env):
     JAX_PLATFORMS=cpu PYTHONPATH=src:tests .venv314/bin/python <this file> <website media dir>
 
 Uses the real code: the node key ``NodeKey`` (cmg/search/contact_state.py) with the
-merge rule of ``SearchState`` (cmg/search/__init__.py), the earlier grid key
+merge rule of ``SearchState`` (cmg/search/__init__.py; merge by evaluation: equal gate
+verdicts within the 10 mm test radius, using the search's gate signature from ``Cand``), the earlier grid key
 ``Discretizer`` (1 mm / 0.01 rad cells from step2d.yaml), and the recognizer
 ``Catalog.band``. For each example pair it prints and saves (node_identity.json):
 the two formations, the grid keys, the full Xiao-Ji contact state (formation +
@@ -21,7 +22,11 @@ from pathlib import Path
 import jax.numpy as jnp
 import numpy as np
 
+import jax
+
 from cmg.catalog.templates import Catalog
+from cmg.marking.candidate import Cand
+from cmg.physics.world import ExecutionWorld
 from cmg.physics.world import State
 from cmg.scene.spec import SceneSpec
 from cmg.search import Discretizer, RealizedPath, SearchState
@@ -34,6 +39,16 @@ spec = SceneSpec.from_yaml(resolve_path("src/cmg/scene/families/step2d.yaml"))
 cat = Catalog.from_spec(spec)
 grid = Discretizer.from_spec(spec)
 nk = NodeKey.from_spec(spec, cat)
+cand = Cand.from_spec(spec, cat, ExecutionWorld(spec.execution))
+_report = jax.jit(lambda s, f: cand.gate_report(s, formation=f))
+SIG = ("edge", "near", "hold", "local", "legal")
+
+
+def gate(st, f):
+    """The search's gate signature (as in cmg.search.Search): the per-edit verdict flags."""
+    r = {k: np.asarray(v) for k, v in jax.block_until_ready(_report(st, jnp.asarray(f, jnp.bool_))).items()}
+    flags = {k: r[k].astype(np.bool_) for k in SIG}
+    return {"legal": flags["legal"], "sig": b"".join(flags[k].tobytes() for k in SIG)}
 
 
 def box_on_floor(x):
@@ -63,7 +78,7 @@ def names(f):
 def node_key_same(q1, q2):
     """Real merge rule: make a node at q1 (as a search would), then key q2 against it."""
     f1, f2 = formation(q1), formation(q2)
-    st = SearchState(nk, "page")
+    st = SearchState(nk, "page", gate=gate)
     st.add(state(q1), tuple(f1))
     k1 = st.key(state(q1), tuple(f1))
     k2 = st.key(state(q2), tuple(f2))
@@ -82,7 +97,7 @@ cases = [
      box_on_floor(-0.0999) + disk_free_left(box_on_floor(-0.0999)),
      box_on_floor(-0.1001) + disk_free_left(box_on_floor(-0.1001))),
     ("box 5 mm apart",
-     "Within the merge radius (9 mm placeholder until the per-key gate).",
+     "Within the 10 mm test radius, and the gate gives both poses the same verdicts.",
      box_on_floor(x0) + disk_free_left(box_on_floor(x0)),
      box_on_floor(x0 - 0.005) + disk_free_left(box_on_floor(x0 - 0.005))),
     ("box 30 cm apart",
@@ -102,7 +117,7 @@ for title, why, q1, q2 in cases:
                xiao_ji_same=same_form,     # flat on the floor: one connected region per formation
                node_key_same=bool(same_nk),
                box_distance_mm=round(1000 * nk.box_distance(nk.box_pose(state(q1)), nk.box_pose(state(q2))), 2),
-               merge_radius_mm=round(1000 * nk.R_ID_PLACEHOLDER, 1))
+               r_max_mm=round(1000 * nk.r_max, 1))
     examples.append(row)
     print(f"{title}: formation {row['formation']} | grid same {row['grid_same']} | "
           f"Xiao-Ji same {row['xiao_ji_same']} | node key same {row['node_key_same']} "
@@ -110,7 +125,7 @@ for title, why, q1, q2 in cases:
 
 (out / "node_identity.json").write_text(json.dumps(dict(
     examples=examples, eta_mm=1000 * spec.execution.eta, eta_theta=spec.execution.eta_theta,
-    key_kind=nk.kind, merge_radius_placeholder_mm=1000 * nk.R_ID_PLACEHOLDER), indent=1))
+    key_kind=nk.kind, r_max_mm=1000 * nk.r_max, merge="evaluation (equal gate verdicts within r_max)"), indent=1))
 
 # Figure: the scene (+x to the left, as in the paper) with the example poses.
 import matplotlib
