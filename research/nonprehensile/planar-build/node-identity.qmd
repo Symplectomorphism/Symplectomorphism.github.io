@@ -1,0 +1,158 @@
+---
+title: "Node identity"
+subtitle: "When does the search treat two states as the same node? Formation, the disk's connected region, and the box's pose within a certified radius."
+lightbox: true
+---
+
+The search builds a tree of simulated states. It reaches the same physical
+situation by different routes all the time, and it has to recognize that, or
+it calls the expensive local solver Λ again and again on what is really one
+situation. This page explains the rule it uses to decide that two states are
+"the same node", why the rule looks the way it does, and what it costs.
+
+## What a node is
+
+A search node is a full simulator state: the box's pose (x, z, θ), the disk's
+position, and their velocities. Two states are practically never equal, so
+"the same node" has to mean something coarser. Whatever we choose is the
+node's **key**: two states with the same key are duplicates, and the search
+keeps only the more promising one (the duplicate rule is below).
+
+The key matters twice. In practice it decides how many Λ calls the search
+spends on repeats. In theory, the call bound of the paper (Orseau and Lelis's
+bound for policy-guided search) holds only if states with the same key really
+behave alike: from either one, the same edits should succeed.
+
+## Three answers, and why we use the third
+
+![Two of the page's examples. Blue: the disk hovering in either of two places
+above or beside a box resting near the step; these are one node. Red: the same
+box 30 cm farther from the step; one Xiao–Ji contact state with the blue box,
+but a different node. +x is to the left, as in the
+paper.](media/node_identity.svg){.lightbox}
+
+**1. Round the pose to a grid.** Put each coordinate in a cell (1 mm in
+position, 0.01 rad in angle) and key the node by its formation and its cell.
+This was the original search's key. It's simple, but the cells are arbitrary:
+two states 0.2 mm apart can straddle a cell boundary and become different
+nodes, and the grid treats every move of the disk as a new node even when
+nothing about the contacts changed.
+
+**2. Xiao and Ji's contact state.** Xiao and Ji (2001, Def. 6) define a
+contact state as a formation together with one connected region of the poses
+that realize it. Within that region, any pose can be reached from any other
+without changing contacts, so the pose inside it doesn't matter. No grid,
+no resolution parameter. This is the principled object, and the construction
+we adopted (Decision 9).
+
+**3. Our key: collapse what we drive, keep what we don't.** Xiao and Ji
+assume the object is *driven*: in their assembly setting a robot holds it and
+moves it anywhere in the region. Our box is not held. It moves only when the
+disk pushes it. Take "box flat on the floor, disk touching nothing": the box
+10 cm from the step and the box 40 cm from the step are one Xiao–Ji contact
+state (the box could slide between them without changing contacts), but
+nothing can slide it there without the disk touching it, which is a different
+formation. Merging the two would let the search throw away the box near the
+step, which is the one the pivot needs. The disk is different: we drive it,
+so where it hovers inside its free region really doesn't matter, because the
+next edit's Λ call can move it anywhere there first.
+
+So two states are the same node when they have
+
+- the same formation σ (the recognized contacts),
+- the same goal bit (whether the state is in the goal region),
+- the disk in the same connected region of its in-σ positions, given the
+  box's pose (Xiao and Ji's contact state over the disk's coordinates), and
+- the box's poses within a merge radius r of each other.
+
+Nothing is rounded or snapped: every node keeps its real simulated state, and
+Λ always starts from where the previous motion actually ended.
+
+## The four examples, computed
+
+The examples below are computed with the search's real key code
+(`NodeKey` and the merge rule of `SearchState` in `cmg/search`) and the old
+grid key, by [`scripts/04_node_identity.py`](scripts/04_node_identity.py). In
+all four the formation is the same: the box's bottom face on the floor,
+{B:zn–E:L}.
+
+| Pair of states | Grid (1 mm cells) | Xiao–Ji contact state | **Our key** (r = 9 mm) |
+|---|---|---|---|
+| disk in two places, box fixed | different | same | **same** |
+| box 0.2 mm apart, across a cell boundary | different | same | **same** |
+| box 5 mm apart | different | same | **same** |
+| box 30 cm apart | different | same | **different** |
+
+The grid is wrong in the first three rows (it splits one situation into
+several nodes, which only costs repeated calls). The Xiao–Ji contact state is
+wrong in the last row (it merges situations with different futures, which can
+lose the solution). Our key gets all four right.
+
+## The merge radius
+
+How close must two box poses be to count as one? Not an arbitrary cell
+size: close enough that the hold gate gives the same verdict on every edit
+from either pose. The theory note derives r for each node from the gate's
+margins: how far each edit's best margin sits above the acceptance threshold,
+how fast the margin can change as the box moves, and how far the pose is from
+the edges of the recognizer's tolerance zones. On the step scene this gives
+about 9–15 mm, roughly ten times the old cell. The code uses 9 mm (the low end)
+until the gate is evaluated once per key, which the per-node formula needs.
+Where a margin sits right at the threshold, r = 0 and nothing is merged.
+
+"Within r" is not transitive: A near B and B near C does not make A near C.
+So a new state is compared only with nodes the search actually made, never
+with ones it dropped, and it joins the key of the earliest made node within
+that node's radius. A dropped state can therefore never pull a later one into
+its key. A chain of merges can only run through nodes the search made, and a
+duplicate is made only when its path is more probable than every earlier node
+of its key (next section). The theory note shows the call bound stays a fixed
+number under this rule.
+
+## When a duplicate is dropped
+
+A new child whose key is already taken is dropped only if a node already
+made with that key has a path probability π at least as large (Decision 13,
+the "safe" rule). Otherwise it is made as a new node. Dropping by first
+arrival instead breaks the call bound by an unbounded factor (it approaches d
+when the dropped node is d calls deep); re-parenting the old node to the new,
+more probable path breaks it too.
+
+## What changed in the search because of this
+
+- **Children are labeled by what was reached.** A Λ call counts only if it
+  succeeds and the recognizer returns exactly the requested formation; the
+  child gets the recognized formation (before, the search stored the formation
+  it had asked for).
+- **Moving within a node is part of an edit.** Under these keys, a pure
+  repositioning step always lands on its parent's key and would always be
+  dropped. So the disk's motion to the edit's transition pose is the first part
+  of the edit's own Λ call, not a separate search step.
+- **The gate is evaluated per key** and cached (Decision 18), with the local
+  sweep as a refinement at the node's actual pose.
+
+## What is still being checked
+
+The key assumes that from any state of a node, the next edit's Λ call succeeds
+when it succeeds from one of them: in particular, that the disk can always get
+from wherever it is in its region to where the edit needs it. A measurement
+of exactly this, over many start states per node, is running on the clusters,
+and the merge radius is waiting on certified constants from the theory note.
+Both will be reported here.
+
+## Check yourself
+
+1. Why is the disk's position collapsed but the box's pose is not, even though
+   both can lie anywhere in a connected region of poses that realize σ?
+2. In the formation "box flush against the riser, disk away", what does the
+   merge radius do, and why doesn't it matter? (Hint: can the box move at all
+   without changing σ?)
+3. Three box poses A, B, C on a line at 0, 6 and 12 mm, same formation and disk
+   region, all with r = 9 mm; each later arrival has a lower π than A, so it is
+   dropped if its key is taken. Arrivals in the order A, C, B: which keys do C and
+   B get? And in the order A, B, C? (Hint: is a dropped state ever compared
+   against?)
+4. Why does dropping a duplicate by first arrival break the call bound, while
+   the safe rule does not?
+
+[← The local solver](local-solver.qmd) · [Search and ranking →](search.qmd)
