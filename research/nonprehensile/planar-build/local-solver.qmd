@@ -268,6 +268,48 @@ sweep (9 points, or adaptive around the best pose) before the teacher
 search; for the hard breaks, a tracker that also keeps the environment
 contacts inside their cones, then a quasi-dynamic method.
 
+**Decided** (Nov 8, Decision 16): the cap stays unset; the hard breaks wait
+for an environment-aware tracker, then a quasi-dynamic method; the sweep's
+resolution was settled by measurement (next section).
+
+## The sweep's resolution, measured (step 3d follow-up) {#sweep-resolution}
+
+Every candidate edit that is an edge and passes Near, on the chain's
+starts, the six hard break(g<sub>v</sub>) starts and the 205 demo nodes
+(1,797 candidates), was swept with several grids and compared with a dense
+reference (65 × 65 poses for two free directions, up to 4,913 poses), at
+the simulator's friction and at the stress case μ = 0.35. The `cube` grid is
+the old one (5 or 9 values on all three directions; unused directions
+repeat poses). The `dim` grid puts about N poses on the directions that are
+actually free (8 × 8 for two directions at N = 64). Refinement adds a 3 × 3 × 3
+grid at half spacing around the recognized pose of largest margin, twice.
+
+| grid | poses | CPU ms per candidate | false refusals, μ<sub>sim</sub> | false refusals, μ = 0.35 |
+|---|---:|---:|---:|---:|
+| cube 5 (until now) | 125 | 13.7 | 0 | 1 |
+| cube 9 | 729 | 96.8 | 0 | 0 |
+| dim 125 | 125 | 13.8 | 0 | 2 |
+| **dim 64 + 2 levels (now the default)** | 118 | 12.1 | 0 | 0 |
+| cube 5 + 2 levels | 179 | 18.8 | 0 | 0 |
+| reference | ≤ 4,913 | 767 | (1,112 pass) | (1,112 pass) |
+
+No grid ever passes an edit the reference refuses. At the default friction
+the resolution changes no verdict; at 0.35 the 5-point grid refuses the
+chain's realizable break(g<sub>v</sub>) from 45°, and the adaptive grid
+does not. It costs what the old grid cost, a seventh of 9 points.
+
+**What the gate costs in a search.** Per expanded node: one Λ call (0.16 s
+on CPU, open loop) and one gate evaluation (0.75 s on CPU; 0.33 s at χ₀,
+0.42 s for the sweep). So the gate is about 82% of a node's time; 9 points
+would make it 95% and a node 4× slower. The gate is 13× faster on CPU than
+on a GPU (the LPs' iterations batch poorly). Two cheaper levers remain:
+sizing the sweep's slots to a node's candidates (32 slots for 8.6
+candidates on average; 8 slots: 0.43 s per node), and evaluating the gate
+once per key (Decision 18): the demo nodes fall into about 8 keys, about 26
+nodes each, which would bring the gate's share to about 16% if a per-key
+gate cost about one node's.
+
+
 ## The compiled cost (step 3, MPPI)
 
 The first Λ is MPPI, a sampling-based model-predictive controller running
