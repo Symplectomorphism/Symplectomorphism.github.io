@@ -52,6 +52,32 @@ in MuJoCo:
   cone (μ = 0.35, below the simulator's 0.99, so the contact sticks) and the
   ±1 N motor box; otherwise PD on the planned disk positions.
 
+## A learned skill for the hard breaks (in progress) {#learned-skill}
+
+The hard break(g<sub>v</sub>) starts fail for every planner so far because
+the box's corners slide: the maneuver needs timing or momentum that a
+quasi-static plan can't provide. So a controller for this one maneuver is
+being *learned*, in the same MJX simulator the rest of the system uses:
+
+- **Two algorithms, two variants:** proximal policy optimization (PPO) and
+  soft actor-critic (SAC), from Brax, each trained as a **residual**
+  correction on top of Λ<sub>qs</sub>'s commands and **from scratch**.
+- **Training:** randomized starts (tilt 30–45°, disk height, friction, mass)
+  with a curriculum from easy to hard tilts; the reward is reaching the target
+  formation under the strict success test, with penalties for slipping,
+  falling and deep penetration. On Juno's H200 GPUs, several seeds each.
+- **Validation:** the six hard starts and 50+ held-out ones, against
+  Λ<sub>qs</sub> and MPPI (both 0 of 6 so far), with a penetration limit and a
+  re-check with stiffer contacts, so a policy can't win by exploiting the
+  simulator.
+- **Feasibility:** if some start stays unsolved by every run, a brute-force
+  search over open-loop force sequences within the motors' ±1 N tells whether
+  it is hard to learn or impossible.
+
+A learned skill would carry a measured success rate, not a quasi-static
+certificate; the call bound still holds (it counts Λ calls). Results will be
+reported here.
+
 ## Re-planning and failure diagnostics (step 3c) {#step-3c}
 
 **Re-planning (RH*k*).** Every *k* steps (20, 40, 80: every 0.2, 0.4, 0.8 s)
