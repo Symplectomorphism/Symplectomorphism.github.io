@@ -14,19 +14,22 @@ format:
     footer: "[← Course Home](index.qmd) · Systems Architecture · Chapter 11"
     logo: /images/monogram_solid-blk.png
     chalkboard: false
-    css: revealjs-styles.css
+    css: [revealjs-styles.css, chapter11-styles.css]
 ---
 
 ## Stakeholder Needs and System Goals {.smaller}
 
-- Chapters 9–10 examined upstream and downstream influences. This chapter translates those inputs into goals for the system
-- This chapter develops a systematic process: identify **stakeholders and their needs**, characterize and prioritize those needs, and translate them into **goals** the architect can actually design against
-- Running example throughout: a **Hybrid Car** project, plus a closing case study on the 1998 Nagano Olympics IT system
+- Chapters 9–10 identified influences on architecture. Chapter 11 turns those influences into **prioritized goals**
+- **Needs** belong to beneficiaries. **Goals** state what the producing enterprise chooses to accomplish to meet those needs
+- Three challenges recur: discovering **latent needs**, comparing **many stakeholders**, and recognizing **indirect value delivery**
+- We follow the Hybrid Car example, then examine IBM's 1998 Nagano Olympics IT system
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.1.
+
 - Chapter 11 asks what the system must accomplish, building on the influences examined in Chapters 9 and 10.
 - Chs. 9-10 mapped the terrain (architect's role, product development process, upstream/downstream influences) but never said, concretely, what to build: this chapter fills that gap with a repeatable process
-- **Throughline** (recurs all lecture): identify stakeholders/needs (11.2) → characterize/prioritize needs (11.3) → translate needs into goals (11.4-11.5)
+- **Throughline** (recurs all lecture): identify beneficiaries/stakeholders and needs (11.2), characterize/prioritize needs (11.3), interpret needs as goals (11.4), and prioritize goals (11.5)
 - Running example: **Hybrid Car** project (continues into Ch. 12)
 - Closes with a real, high-stakes case study: IBM's IT system for the 1998 Nagano Winter Olympics
 
@@ -34,15 +37,29 @@ format:
 
 :::
 
-## Figure 11.1 · The Needs-to-Goals Framework {.smaller}
+## Needs-to-Goals Framework {.smaller}
 
-![](assets/chapter11/fig11_1_needs_to_goals.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_1_needs_to_goals.jpg){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+1. **Identify** beneficiaries, stakeholders, and needs (§11.2)
+2. **Characterize** and prioritize needs (§11.3)
+3. **Interpret** selected needs as goals (§11.4)
+4. **Prioritize** goals, with metrics and targets (§11.5)
+
+**Feedback:** check that goals meet key needs. Repeat as evidence changes.
+:::
+:::
 
 ::: {.side-caption}
-Four major steps: identify stakeholders and beneficiaries, characterize their needs, interpret needs as goals, and prioritize goals with metrics: closing the loop by checking key needs are met. Source: Crawley, Cameron & Selva (2016), Fig. 11.1.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.1.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.1.
+
 - **This diagram is the map for the whole chapter**: every remaining slide fits into one of its boxes
 - **Four ellipses = four process steps**: identify stakeholders/beneficiaries → characterize needs → interpret needs as goals → prioritize goals/establish metrics
 - Sub-task boxes below each: e.g. "identify" = stakeholders, beneficiaries, operators/users, inside/outside-enterprise interests, institutions; "characterize needs" = benefit, detriment, urgency, awareness, coupling, supply availability
@@ -55,17 +72,30 @@ Four major steps: identify stakeholders and beneficiaries, characterize their ne
 
 :::
 
-# 11.2 Identifying Stakeholders and Their Needs
+# 11.2 Identifying Beneficiaries and Stakeholders
 
-## Figure 11.2 · Stakeholders and Beneficiaries {.smaller}
+## Beneficiaries and Stakeholders {.smaller}
 
-![](assets/chapter11/fig11_2_stakeholders_beneficiaries.jpg){height=380px fig-align="center"}
+::: {.columns}
+::: {.column width="42%"}
+![](assets/chapter11/fig11_2_stakeholders_beneficiaries.jpg){width=100% height=330px fig-align="center"}
+:::
+::: {.column width="58%"}
+- **Beneficiary:** “Who benefits from the outputs of this project?”
+- **Stakeholder:** “Who provides inputs that are required to make this project successful?”
+- **Beneficial stakeholders** both receive and provide value
+- **Charitable beneficiaries** receive value without a return
+- **Problem stakeholders** supply needed inputs without a valued return
+:::
+:::
 
 ::: {.side-caption}
-**Beneficiaries** are those whom the architecture addresses; you are important *to them*. **Stakeholders** have a stake in the outcome; they are important *to you*. **Charitable beneficiaries** are beneficiaries who aren't also stakeholders. Source: Crawley, Cameron & Selva (2016), Fig. 11.2.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.2.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - Distinguish beneficiaries from stakeholders using the relationships shown in the figure.
 - "Stakeholder" became extremely broad since Freeman's 1984 *Stakeholder Management*: often reduced to a PR activity instead of the upstream process it should be
 - **Beneficiaries**: benefit from your actions: you are important *to them*
@@ -82,15 +112,37 @@ Four major steps: identify stakeholders and beneficiaries, characterize their ne
 
 :::
 
-## Setting Bounds and Granularity {.smaller}
+## Beneficiary, Stakeholder, Operator {.smaller}
 
-Two difficulties in stakeholder analysis: setting **bounds** (how far to trace ripple effects: e.g., the economic multiplier of a contractor's spending) and setting **granularity** (individual suppliers, or "Suppliers" as one abstraction?).
+| Role | Taxi example | Architectural concern |
+|---|---|---|
+| **Primary beneficiary** receives the main benefit | Passenger | Safe, timely transportation |
+| **Stakeholder** supplies a needed input | Fleet owner provides the vehicle and investment | Viable operations and return |
+| **Operator** runs the system | Driver | Usable controls and working conditions |
 
-::: {.fragment .callout-tip title="Bounding test"}
-Our test for both: does the choice among architectures *under consideration* matter to this stakeholder? If every candidate architecture delivers the same benefit, the stakeholder still needs managing: but may not merit shaping the architectural decision.
-:::
+- A consumer may fill all three roles. Corporate and government systems often separate them, creating different incentives
+- Search **inside** the enterprise as well as outside it: design, implementation, operations, sales, service, and management all supply inputs or receive outcomes
+- Begin with the **primary beneficiary**. A system cannot succeed if it fails to meet that beneficiary's primary need
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2, pp. 242–243. The last column gives teaching examples of concerns for the book's taxi roles.
+
+**Discussion:** How would confusing the passenger with the fleet owner affect the goals?
+
+**Suggested answer:** It could favor operating cost and return while missing passenger outcomes. Both sets of needs matter, and the operator adds another perspective.
+:::
+
+## Setting Bounds and Granularity {.smaller}
+
+- **Bounds:** how far should we trace effects beyond the project? Contractor payments can affect suppliers, employees, and local businesses
+- **Granularity:** should we model individual suppliers, their departments, or a single “Suppliers” group? Separate actors when their needs or influence differ
+- **Architectural-impact test:** could the choice among the candidate architectures matter to this stakeholder or beneficiary?
+- If all candidates deliver the same benefit, retain the stakeholder's management needs but reduce the detail used for architectural comparison
+- Revisit the boundary and grouping when the alternatives or project context change
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Two genuine methodological difficulties students will hit in any real project**
 - **Bounds**: how far to trace ripple effects before stopping: e.g. economic multiplier effect (contractor spends money, employees spend it locally, ripples outward indefinitely). Real economic literature exists, but deep analysis of every ripple is usually impractical
 - **Granularity**: right level of abstraction: individual suppliers, or one abstraction "Suppliers"? Matters if individual suppliers have meaningfully different needs/influence
@@ -103,16 +155,25 @@ Our test for both: does the choice among architectures *under consideration* mat
 
 ## Box 11.1 · Principle of the Beginning {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-*"The beginning of the work is most important."*: Plato, *The Republic*
+**Early participation has an outsized influence on the architecture.** Choose the initial participants deliberately.
 
-*"Great warriors position themselves where they will surely win, prevailing over those who have already lost."*: Sun Tzu, *The Art of War*
+- Include actors who strongly need the project's outputs and actors whose outputs the project needs
+- Separate gathering opinions from granting **decision rights**
+
+| Decision role | Meaning |
+|---|---|
+| Informed | Receives decisions and their rationale |
+| Consulted | Supplies views for consideration |
+| Voting | Participates in choosing among options |
+| Veto | Can prevent a decision from proceeding |
+
+::: {.side-caption}
+Principle of the Beginning. Crawley, Cameron & Selva (2016), Box 11.1.
 :::
 
-- Early stakeholder involvement can strongly influence the architecture. Decide whom to involve and how their input will inform decisions
-- Balance engaging stakeholders for their views against their actual **decision rights**: informed, consulted, voting, or veto
-
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Unpack both quotes briefly**: Plato: beginning disproportionately shapes everything downstream. Sun Tzu: great warriors/architects position early so success is secured before the real contest begins
 - **Principle**: stakeholders included at *early* stages of product definition have an outsized impact on the eventual architecture: be deliberate, not casual, about who's in the room
 - **Second bullet**: engaging a stakeholder for views ≠ their actual **decision rights**
@@ -129,24 +190,27 @@ Our test for both: does the choice among architectures *under consideration* mat
 
 ::: {.columns}
 ::: {.column width="50%"}
-- Driver/owner (primary beneficiary)
-- Regulator
-- Producing enterprise or company
-- Investors in the enterprise
+- **Driver/owner:** primary beneficiary
+- **Regulator:** approval
+- **Producing enterprise:** investment and technology
+- **Investors:** capital for the enterprise
+- **Suppliers:** parts and technology
 :::
 ::: {.column width="50%"}
-- Suppliers
-- Local community
-- Environmental NGOs
-- Competitors (e.g., oil companies)
+- **Local community:** workforce
+- **Environmental NGOs:** assurance and political support
+- **Oil companies:** fuel supply
+- **Hybrid Car project:** reference actor with its own input needs
 :::
 :::
 
-::: {.fragment .callout-tip title="A first pass, not the final list"}
-This first-pass list gets revisited once we prioritize: treat it as a starting point, not a final answer.
-:::
+- Start from existing products, customers, shareholders, suppliers, and Chapter 10's upstream/downstream influences
+- The book omits other car companies from the detailed network. Include them if market share or consumer acceptance makes their role relevant
+- This is a **first pass**. Exchanges and prioritization may reveal missing actors or justify regrouping
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **First concrete use of the Hybrid Car example**: walk through the book's first-pass stakeholder list
 - Driver/owner = primary beneficiary; regulator (safety/emissions); the enterprise; investors; suppliers; local community; environmental NGOs; oil companies (unusual: a "competitor," since hybrids reduce gasoline consumption)
 - Producing this initial list isn't hard: existing products/customers/shareholders/suppliers + Ch. 10's upstream/downstream influences get you a reasonable first draft fast
@@ -160,15 +224,17 @@ This first-pass list gets revisited once we prioritize: treat it as a starting p
 
 ## Box 11.2 · Definition of Needs {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-A **need** may be defined as: a necessity, an overall desire or want, or a wish for something that is lacking.
-:::
+A **need** is a necessity, an overall desire or want, or a wish for something lacking.
 
-- Beneficiaries may leave needs unexpressed or may not yet recognize them
-- Needs are primarily *outside* the producing enterprise: they are owned by the beneficiary, not chosen by the firm
-- Needs are a product/system attribute; they are interpreted, in part, by the architect
+- Needs belong to the beneficiary and may be ambiguous, unexpressed, or unrecognized. The architect interprets them when defining goals
+- For **each beneficiary and stakeholder**, ask which of their needs this system could satisfy
+- Start with the **primary beneficiary's primary need** and the change in the principal value-related operand
+- For the Hybrid Car, the driver/owner needs transportation. The operand is **people and possessions**, whose **location** changes
+- Customer specifications and previous products are useful evidence, but easily quantified technical requirements can hide less tangible needs
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Pin down "need" precisely**: the chapter's entire logical structure depends on distinguishing needs from goals (Section 11.4). Conflating the two is the #1 student error
 - Need = a necessity, an overall desire/want, or a wish for something lacking
 - **Three properties, one at a time**:
@@ -183,15 +249,27 @@ A **need** may be defined as: a necessity, an overall desire or want, or a wish 
 
 :::
 
-## Figure 11.3 · Needs of the Beneficiaries for the Hybrid Car {.smaller}
+## Hybrid Car Beneficiary Needs {.smaller}
 
-![](assets/chapter11/fig11_3_hybrid_car_needs.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="58%"}
+![](assets/chapter11/fig11_3_hybrid_car_needs.jpg){width=100% height=440px fig-align="center"}
+:::
+::: {.column width="42%"}
+- **Driver/owner:** transportation, fuel efficiency, baggage, driving experience, environmental satisfaction
+- **Other actors:** revenue, employment, investment, environmental protection, political support
+- **Project:** investment, parts, workforce, technology, sales, and approval
+- Needs are incomplete. Tax incentives, for example, require actors beyond the producer
+:::
+:::
 
 ::: {.side-caption}
-Starting with the primary beneficiary, the driver/owner, and their primary need (transportation), we work outward to the other stakeholders and their needs. Source: Crawley, Cameron & Selva (2016), Fig. 11.3.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.3.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Example of everything so far**. Guidance: start with the primary beneficiary and their primary need, tied to changes in the principal value-related operand (Ch. 7)
 - Driver/owner = primary beneficiary, primary need = fuel-efficient transportation
 - **Trace the diagram**: Driver/Owner → transportation, fuel efficiency, driving experience, baggage, environmental satisfaction, financial incentives, gas (grouped as "transportation product"). Regulators → environmental protection, political support. Suppliers → revenue. Enterprise → revenue, investment. Local community → employment, environmental benefits. The project itself → investment, parts, workforce, technology, sales dollars, regulatory approval (it's its own stakeholder in the network). NGOs → environmental assurance. Investors → ROI. Oil company → revenue
@@ -205,15 +283,15 @@ Starting with the primary beneficiary, the driver/owner, and their primary need 
 
 ## Latent Needs {.smaller}
 
-::: {.callout-important appearance="minimal" icon=false}
-**Latent needs** exist before beneficiaries recognize or express them. Investigate these needs through observation and concept testing rather than assuming the firm can choose them.
-:::
-
-- How did Whirlpool know customers "needed" an ice dispenser before it existed? How did GM know drivers with cell phones would "need" OnStar?
-- Identifying latent needs requires observing users and testing alternative concepts. No procedure guarantees that every need will be found
-- **Caution**: Edison in 1922: *"The radio craze will die out in time."* Ken Olson, DEC founder, in 1977: *"There is no reason anyone would want a computer in their home."*
+- **Latent needs** exist before beneficiaries recognize or express them. A new product may satisfy a need that existing products leave unmet
+- The book asks how Whirlpool identified demand for an exterior ice dispenser and how GM identified demand for OnStar among drivers who already had phones
+- **Observe people in context** and use in-depth interviews to understand outcomes, frustrations, and workarounds
+- Review feedback on earlier products and **iterate concepts with users**. No procedure guarantees discovery of every latent need
+- Treat a proposed feature's value as a hypothesis to test. Engineering the feature does not establish that customers value it
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - Discuss how a team can investigate needs that users have not expressed.
 - Many transformative architectures serve needs nobody had recognized/expressed yet: **latent needs**: fundamental to the beneficiary, exist prior to and independent of the product that satisfies them
 - **Examples**: Whirlpool's ice dispenser (before it existed, how did they know customers needed it?), GM's OnStar (drivers already had cell phones: redundant-seeming, yet needed)
@@ -226,15 +304,27 @@ Starting with the primary beneficiary, the driver/owner, and their primary need 
 
 :::
 
-## Figure 11.4 · Needs Arise from an Exchange {.smaller}
+## Value Delivery as an Exchange {.smaller}
 
-![](assets/chapter11/fig11_4_value_exchange.jpg){height=400px fig-align="center"}
+::: {.columns}
+::: {.column width="55%"}
+![](assets/chapter11/fig11_4_value_exchange.jpg){width=100% height=340px fig-align="center"}
+:::
+::: {.column width="45%"}
+- **Project output:** what do we provide, and whose real need does it meet?
+- **Project input:** what do we need, and who can provide it?
+- Change the reference actor and repeat these questions around the network
+- **Completeness check:** match needed inputs to providers and outputs to recipients. Unmatched flows expose omissions or unused outputs
+:::
+:::
 
 ::: {.side-caption}
-A central tenet of stakeholder theory: value results from an *exchange*. Your outputs satisfy their needs; their outputs satisfy yours. This completeness criterion helps surface additional stakeholders. Source: Crawley, Cameron & Selva (2016), Fig. 11.4.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.4.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Foundational tenet: structures the rest of the chapter** through the stakeholder-map/value-loop material in 11.3: value results from an **exchange**
 - We've been finding beneficiary needs to satisfy: that's only half. The other half: stakeholders have outputs that meet *our* project's needs
 - Diagram: beneficial stakeholders on one side, project on the other, two flows: "their outputs" satisfy "your needs" and vice versa
@@ -246,15 +336,27 @@ A central tenet of stakeholder theory: value results from an *exchange*. Your ou
 
 :::
 
-## Figure 11.5 · Grouping the Hybrid-Car Stakeholders {.smaller}
+## Hybrid Car Exchange Groups {.smaller}
 
-![](assets/chapter11/fig11_5_stakeholder_groups.png){height=320px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_5_stakeholder_groups.png){width=100% height=320px fig-align="center"}
+:::
+::: {.column width="40%"}
+- **Charitable beneficiary:** NGO in this initial grouping
+- **Beneficial stakeholders:** driver/owner, local community, suppliers
+- **Problem stakeholders:** enterprise, regulator, oil company, investors
+- These categories describe exchanges. A charging partnership could give an oil company a valued return and change its category
+:::
+:::
 
 ::: {.side-caption}
-The NGO is a charitable beneficiary; the driver/owner, local community, and suppliers are beneficial stakeholders; the enterprise, regulator, oil company, and investors are classified as problem stakeholders in this initial view. Source: Crawley, Cameron & Selva (2016), Fig. 11.5.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.5.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - Read the three categories as exchange relationships, not moral judgments. A problem stakeholder supplies something the project needs but does not receive a clear benefit in this first model.
 - The regulator supplies approval; the oil company supplies fuel while the project aims to reduce fuel use. A different arrangement can change the classification: the book's charging-station partnership could make an oil company a beneficial stakeholder.
 - This first-pass grouping is distinct from the must/should/might prioritization on the next slides.
@@ -266,17 +368,19 @@ The NGO is a charitable beneficiary; the driver/owner, local community, and supp
 
 ## Grouping Stakeholders {.smaller}
 
-Group stakeholders by the degree to which their needs must be considered and satisfied:
+The book proposes three initial priority groups:
 
-::: {.callout-note appearance="simple" icon=false}
-Stakeholders who **must** be considered and satisfied. Stakeholders who **must** be considered and **should** be satisfied. Stakeholders who **should** be considered and **might** be satisfied.
-:::
+- Stakeholders who **must be considered and satisfied**
+- Stakeholders who **must be considered and should be satisfied**
+- Stakeholders who **should be considered and might be satisfied**
 
-::: {.fragment .callout-tip title="Why guess first"}
-This first-guess taxonomy, applied *before* an in-depth analysis, is useful precisely because it lets us later compare expectations against what analysis reveals.
-:::
+Record this **first judgment before detailed analysis** so that the later network analysis can confirm or challenge it.
+
+Keep this grouping separate from both **exchange categories** (charitable, beneficial, problem) and **decision rights** (consultation, vote, veto).
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Final task of Step 1** in the Fig. 11.1 framework: rough first pass at prioritizing, before the deeper analysis in 11.3
 - **Three-bucket taxonomy**: must be considered *and* satisfied; must be considered, *should* be satisfied; should be considered, *might* be satisfied
 - Alternative framing worth mentioning: grouping by decision-involvement (veto, vote, non-voting opinion, consultation, informed)
@@ -289,15 +393,28 @@ This first-guess taxonomy, applied *before* an in-depth analysis, is useful prec
 
 :::
 
-## Figure 11.6 · Stakeholder Prioritization for the Hybrid Car {.smaller}
+## Initial Stakeholder Priorities {.smaller}
 
-![](assets/chapter11/fig11_6_prioritization_circles.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_6_prioritization_circles.jpg){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+- **Inner ring:** enterprise and regulator
+- **Middle ring:** driver/owner and local community
+- **Outer ring:** suppliers, NGO, and investors
+- Other car companies and the project reference sit outside the rings
+- This records an initial expectation. Section 11.3 tests priorities using needs and exchanges
+:::
+:::
 
 ::: {.side-caption}
-Concentric rings show the first-guess priority: enterprise and regulator innermost, then driver/owner and local community, then suppliers, NGOs, and investors: with other car companies and the project itself outside. Source: Crawley, Cameron & Selva (2016), Fig. 11.6.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.6.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Concrete application of the three-bucket taxonomy** to the Hybrid Car
 - Innermost ring (must consider + satisfy): enterprise, regulator. Middle ring (must consider, should satisfy): driver/owner, local community. Outer ring (must consider, might satisfy): suppliers, NGOs, investors. Outside even that: other car companies, the project itself
 - **Discussion prompt**: shouldn't driver/owner (primary beneficiary) be innermost, not middle? Good tension to surface: author's own judgment call at this early, un-rigorous stage
@@ -310,12 +427,15 @@ Concentric rings show the first-guess priority: enterprise and regulator innermo
 
 ## Section 11.2 Summary {.smaller}
 
-- Stakeholder analysis requires setting bounds and granularity: test both against whether the choice among candidate architectures would matter to that stakeholder
-- Needs belong to beneficiaries and may be unexpressed or latent. The architect interprets them when developing goals
-- Value delivery is fundamentally an *exchange*: tracing outputs and inputs both ways is what reveals a complete stakeholder list
-- A first-guess grouping of stakeholders, made before deep analysis, is a useful checkpoint against later, more rigorous prioritization
+- Identify beneficiaries by the **outputs they benefit from**, and stakeholders by the **required inputs they provide**
+- Distinguish the **operator** when ownership, operation, and benefit belong to different actors
+- Set bounds and granularity by testing for **architectural impact**
+- Elicit needs, beginning with the primary beneficiary's primary need, and match inputs and outputs around the network
+- Record exchange categories and initial priority groups. Keep decision rights explicit
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.2.
+
 - **Review before 11.3**: students should now be comfortable with:
   - Bounds/granularity test (does the choice among architectures matter to this stakeholder?)
   - Precise "need" vs. "goal" separation (goal still ahead in 11.4)
@@ -335,21 +455,27 @@ Concentric rings show the first-guess priority: enterprise and regulator innermo
 
 ## Dimensions of Stakeholder Needs {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-*"Find the appropriate balance of competing claims by various groups of stakeholders. All claims deserve consideration but some claims are more important than others."*: Warren G. Bennis
-:::
+- **Benefit intensity:** how much utility, worth, or benefit fulfillment brings
+- **Detriment:** the adverse reaction if the need remains unmet
+- **Urgency:** how quickly fulfillment is needed
+- **Awareness:** whether the stakeholder recognizes the need
+- **Coupling:** whether fulfilling one need relieves or intensifies another
+- **Supply availability:** whether other sources could fulfill the need
 
-Five need dimensions shown here; the later supplier-availability diagram adds a property of each value flow: **benefit intensity** (utility/worth), **detriment** (adverse reaction if unmet), **urgency** (how quickly it must be fulfilled), **awareness** (how aware stakeholders are of it), and **coupling** (how it relieves or intensifies other needs).
+Supply availability is more precisely a property of the **value flow**. The book includes it here because alternatives affect prioritization.
 
 ::: {.notes}
-- **Open with the Bennis quote**: frames the section: not a single "most important" claim, but a *balance* among competing claims, unequal weight acknowledged
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
+- Introduce the six dimensions as ways to compare needs and to reason about competing stakeholder claims.
 - 11.2 completed column 1 of Fig. 11.1: now characterize needs to eventually prioritize them
-- **Five dimensions** (useful vocabulary beyond this course):
+- **Six dimensions** (useful vocabulary beyond this course):
   - **Benefit intensity**: utility/worth of fulfilling
   - **Detriment**: adverse reaction if unmet (distinct from benefit: can be low-benefit/high-detriment or vice versa)
   - **Urgency**: how quickly it must be fulfilled
   - **Awareness**: how aware stakeholders are of having it (ties to latent needs)
   - **Coupling**: degree to which satisfying one relieves/intensifies another
+  - **Supply availability**: whether alternative sources can fulfill the need. This is more precisely a property of the flow.
 - Formal survey methods exist (direct ranking, conjoint analysis, AHP): but next slide's **Kano analysis** is the model the book develops in detail
 
 **Discussion:** Why can the same performance improvement produce different satisfaction responses?
@@ -358,15 +484,27 @@ Five need dimensions shown here; the later supplier-availability diagram adds a 
 
 :::
 
-## Figure 11.7 · Kano Analysis {.smaller}
+## Kano Analysis {.smaller}
 
-![](assets/chapter11/fig11_7_kano_analysis.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="54%"}
+![](assets/chapter11/fig11_7_kano_analysis.jpg){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="46%"}
+- **Must have:** absence causes strong dissatisfaction. Presence earns little extra satisfaction, as with good brakes
+- **Should have:** improved performance brings more satisfaction, as with fuel efficiency
+- **Might have:** presence delights, while absence causes little regret. Self-parking is the book's example
+- Categories depend on the market and time. A delight can become expected
+:::
+:::
 
 ::: {.side-caption}
-Three categories: **Must have** (unmet → strong dissatisfaction; met → no extra credit: "good brakes"), **Should have** (roughly linear satisfaction: "fuel efficient"), **Might have** (an excitement/delight attribute: "self-parking"). Categories shift over time as features become expected. Source: Crawley, Cameron & Selva (2016), Fig. 11.7.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.7.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - Use Kano analysis to compare how fulfillment affects satisfaction for different kinds of need.
 - For each need, presence/absence falls into three categories:
   - **Must have**: essential, regret its absence
@@ -386,10 +524,15 @@ Three categories: **Must have** (unmet → strong dissatisfaction; met → no ex
 
 ## Judgment Still Matters {.smaller}
 
-- Use formal methods such as Kano analysis alongside experienced judgment. The method's value depends on the available data and how well its assumptions fit the market
-- Comparing needs across stakeholders is harder than comparing one stakeholder's needs, especially when the benefits use different measures
+- **Direct ranking:** ask a stakeholder to assign importance on an anchored scale
+- **Pairwise preferences:** compare needs using methods such as conjoint analysis or the analytic hierarchy process
+- **Kano analysis:** compare reactions to a need's fulfillment and absence
+- Use the evidence with experienced judgment. Large consumer data sets and mature technical buying criteria can strengthen formal analysis
+- Ranking **one actor's needs** is easier than comparing **needs across actors**. The stakeholder network helps explain how their needs affect the project
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - Discuss the evidence and judgment needed when applying formal prioritization methods.
 - **First**: in many real markets, formal methods (even Kano) are *outmatched* by experienced practitioner judgment. Analysis earns its keep with large consumer datasets or mature technical buying criteria: otherwise, don't let it supplant seasoned judgment
 - **Second**: many methods compare needs *within* one stakeholder (Kano); few compare needs *across* stakeholders (driver's handling need vs. regulator's emissions need?): tests genuine limits of human reasoning
@@ -401,10 +544,17 @@ Three categories: **Must have** (unmet → strong dissatisfaction; met → no ex
 
 ## Stakeholders as a System {.smaller}
 
-- Taken as a group, the set of stakeholder exchanges *itself* forms a system: we can build a **stakeholder map**
-- Three steps: (1) *who* could satisfy each stakeholder's needs? (2) *what* are the project's outputs, and to whom do they flow? (3) combinatorially pair stakeholders and check for relevant transactions between them
+1. **Find providers:** who could satisfy each stakeholder's needs? Suppliers provide the project's parts
+2. **Find recipients:** what does the project produce, and who needs it? Employment can meet community needs while securing a workforce
+3. **Check stakeholder pairs:** which relevant exchanges occur between actors beyond the project?
+
+- A **value flow** connects an output to another actor's input. Each flow has one direction and need not have an immediate return
+- Label potential flows in **solution-neutral terms**. The map describes needs without committing to a concept
+- An output with no genuine recipient need delivers no value. Record unused outputs rather than inventing needs to justify them
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - Stakeholder exchanges form a system of entities and relationships. Represent those exchanges in a stakeholder map.
 - Justifies building a **stakeholder map**: systems thinking applied to the stakeholder network itself
 - **Three-step construction procedure** (directly builds the next two figures):
@@ -417,15 +567,27 @@ Three categories: **Must have** (unmet → strong dissatisfaction; met → no ex
 
 :::
 
-## Figure 11.8 · Hub-and-Spoke Stakeholder Map {.smaller}
+## Hub-and-Spoke Stakeholder Map {.smaller}
 
-![](assets/chapter11/fig11_8_hub_spoke.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="58%"}
+![](assets/chapter11/fig11_8_hub_spoke.jpg){width=100% height=430px fig-align="center"}
+:::
+::: {.column width="42%"}
+- Begin at the **project hub** and identify both directions of exchange
+- The driver receives transportation and returns sales revenue. Suppliers return parts for revenue
+- Flow types: **policy, money, workforce, technology, knowledge, goods and services**
+- NGO, oil company, and investors have no direct project exchange here. The next step examines their indirect roles
+:::
+:::
 
 ::: {.side-caption}
-The project as hub, with flows to and from each stakeholder: six categories: policy, money, workforce, technology, knowledge, goods and services. Source: Crawley, Cameron & Selva (2016), Fig. 11.8.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.8.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - **Output of applying steps 1-2** (previous slide) to the Hybrid Car. Project at center as hub, stakeholders connected by directional flows:
   - Enterprise: provides technology/investment, receives revenue
   - Suppliers: provide parts, receive revenue
@@ -443,15 +605,27 @@ The project as hub, with flows to and from each stakeholder: six categories: pol
 
 :::
 
-## Figure 11.9 · The Full Stakeholder Network {.smaller}
+## Full Stakeholder Network {.smaller}
 
-![](assets/chapter11/fig11_9_stakeholder_needs_map.jpg){height=410px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_9_stakeholder_needs_map.jpg){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+- Add exchanges **between stakeholders**: tax credits to drivers, investment to the enterprise
+- NGO, oil company, and investors now enter the network
+- The line styles also record **must/should/might** benefit rankings
+- A **value loop** returns to its starting actor through reciprocal exchanges
+:::
+:::
 
 ::: {.side-caption}
-Pairing stakeholders combinatorially reveals **indirect transactions**: like the tax credit flowing from local community to driver/owner. NGOs, oil companies, and investors appear here even though they were absent from the hub-and-spoke view, because they don't transact *directly* with the project. Source: Crawley, Cameron & Selva (2016), Fig. 11.9.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.9.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - **Example of Step 3**: combinatorially pairing stakeholders, checking transactions between *them*, not just with the project
 - **What's new vs. hub-and-spoke**: NGOs, oil companies, investors now appear: absent from Fig. 11.8 because none transact *directly* with the project. They only appear via transactions *between other stakeholders* (e.g. investors relate to the enterprise, not the project)
 - **Trace one chain** (preview of "value loop" next): local community → tax credit → driver/owner, plus other flows completing a longer loop through environmental benefit, environmental assurance, political support, regulatory approval, cycling back to the project
@@ -463,16 +637,138 @@ Pairing stakeholders combinatorially reveals **indirect transactions**: like the
 
 :::
 
-## Value Loops and Indirect Transactions {.smaller}
+## Supply Availability and Importance {.smaller}
 
-::: {.callout-important appearance="minimal" icon=false}
-A **value loop** is a series of value flows that return to the starting stakeholder: the system behavior of the stakeholder network.
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_10_supplier_availability.png){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+- **Supply availability:** can substitutes provide the same input?
+- Environmental protection has many sources. Regulatory approval has one
+- More substitutes reduce dependence on a particular provider
+- Approval ranks **Hi**, environmental protection **Lo**. The labels express **supply importance**
+:::
 :::
 
-- Indirect transactions have one or more intermediaries between the firm and the end stakeholder: common in complex systems, e.g., a firm securing a foreign contract through a local partner who, in turn, provides jobs to a government that grants the contract
-- We prioritize outputs by tracing backward from important inputs, through the chain, to the stakeholders who ultimately provide them: not just by direct transaction size
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Fig. 11.10.
+:::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
+- Supply availability concerns alternative sources, while the figure's Hi/Med/Lo ranks express supply importance: regulatory approval is Hi despite having no alternative provider. Do not equate Hi with many substitutes. Competition in supply is a property of the flow.
+- More substitute suppliers can reduce a provider's bargaining power and the urgency of obtaining that particular provider's output.
+- Contrast the project's environmental-protection output with the regulator's approval: those two exchanges do not have symmetric alternatives.
+
+**Discussion:** Why might two equally desired inputs receive different priority?
+
+**Suggested answer:** If one can be supplied by many substitutes and the other only by one actor, the latter relationship is harder to replace.
+:::
+
+## Combining Need and Flow Importance {.smaller}
+
+::: {.columns}
+::: {.column width="55%"}
+![](assets/chapter11/fig11_11_priority_mesh.png){width=100% height=320px fig-align="center"}
+:::
+::: {.column width="45%"}
+- Combine the recipient's **benefit ranking** with the flow's **supply importance**
+- **Must be + Hi** gives **0.95** in this example
+- **Might be + Low** gives **0.1**
+- These are illustrative relative weights. A score of 0.95 is neither a probability nor a universal constant
+- Record the judgments behind the scale and test whether rankings depend on them
+:::
+:::
+
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Fig. 11.11.
+:::
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
+- The horizontal axis ranks the need's benefit; the vertical axis ranks the importance of supply availability. Their combination assigns one score to a flow.
+- The numerical mapping is a modeling choice. A “must be” need with high supply importance receives 0.95 in this example; a “might be” need with low supply importance receives 0.1.
+- Do not present these numbers as empirical constants. State whose judgment produced the ranks and examine sensitivity to a different mapping.
+
+**Discussion:** What would a score of 0.95 mean here?
+
+**Suggested answer:** This model assigns high importance to a flow linked to a must-have need and a high-importance supply relationship. It is relative within this analysis, not a 95% probability.
+:::
+
+## Priorities in Direct Exchanges {.smaller}
+
+::: {.columns}
+::: {.column width="58%"}
+![](assets/chapter11/fig11_12_direct_priority.png){width=100% height=360px fig-align="center"}
+:::
+::: {.column width="42%"}
+- If both clients return only money for the same good, revenue can rank the direct exchange
+- A nonmonetary input may be more critical than its price suggests
+- An inexpensive part or service can determine whether the whole system works
+- **Prioritize stakeholders by the importance of the inputs they provide to the project**
+:::
+:::
+
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Fig. 11.12.
+:::
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
+- If two customers return only money for the same good, revenue can rank their direct value to the firm.
+- Monetary size is inadequate for inputs such as a critical service, permission, or technology. A low-cost component or service can be indispensable.
+- Prioritize stakeholders by the importance of what they provide to the project, not solely by the price of what the project gives them.
+
+**Discussion:** Why could the lower-revenue client receive higher priority?
+
+**Suggested answer:** It may supply a more critical nonmonetary input. The project must evaluate the returned flow, not just sales volume.
+:::
+
+## An Indirect Value Loop {.smaller}
+
+::: {.columns}
+::: {.column width="55%"}
+![](assets/chapter11/fig11_13_indirect_transaction.png){width=100% height=370px fig-align="center"}
+:::
+::: {.column width="45%"}
+- The firm provides **technology** to a local partner
+- The partner provides **jobs** valued by the government
+- The government provides a **contract** to the firm
+- Direct revenue from the local partner misses its role in securing the contract. Follow the complete loop
+:::
+:::
+
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Fig. 11.13.
+:::
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
+- Trace the arrows all the way around. The local firm may provide little direct revenue, yet it is part of the path to an important government contract.
+- Begin with a critical input to the project, trace backward through providers, then identify the project output that helps complete the loop.
+- The recipient of a benefit need not be the party that pays for it.
+
+**Discussion:** Which project output could be undervalued by direct-revenue ranking?
+
+**Suggested answer:** Technology delivered to the local firm, because its indirect contribution to the government contract is absent from a direct-sales view.
+:::
+
+## Value Loops and Indirect Transactions {.smaller}
+
+- A **value loop** is a sequence of value flows that returns to its starting stakeholder
+- An **indirect transaction** involves at least one intermediary. The beneficiary need not be the party that pays
+- Trace **backward from an important project input**, through its providers, to the project output that helps secure it
+- A small partner may deserve high priority if it strongly influences a critical contract or approval
+- Where several paths reach the same input, compare the strength of their value loops
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - **Precise term for the previous slide's pattern**: **value loop** = series of value flows returning to the starting stakeholder: literally the emergent "system behavior" of the network (Ch. 2 sense)
 - Hub-and-spoke only shows bilateral exchanges; the full network can contain real feedback loops, visible only once indirect transactions are traced
 - **Indirect transactions**: one or more intermediaries between firm and end stakeholder. Example: firm gives technology to a local partner, partner gives employment to a government, government grants the contract back to the firm
@@ -486,110 +782,53 @@ A **value loop** is a series of value flows that return to the starting stakehol
 
 :::
 
-## Figure 11.10 · Availability of Alternative Suppliers {.smaller}
-
-![](assets/chapter11/fig11_10_supplier_availability.png){height=425px fig-align="center"}
-
-::: {.side-caption}
-Supply availability is added to the stakeholder flows. The project is one of many possible sources of environmental protection, while the regulator is the only source of regulatory approval. Source: Crawley, Cameron & Selva (2016), Fig. 11.10.
-:::
-
-::: {.notes}
-- Hi/Med/Lo labels describe the availability of alternative suppliers for each flow. This is a property of the flow, rather than another need in the stakeholder's mind.
-- More substitute suppliers can reduce a provider's bargaining power and the urgency of obtaining that particular provider's output.
-- Contrast the project's environmental-protection output with the regulator's approval: those two exchanges do not have symmetric alternatives.
-
-**Discussion:** Why might two equally desired inputs receive different priority?
-
-**Suggested answer:** If one can be supplied by many substitutes and the other only by one actor, the latter relationship is harder to replace.
-:::
-
-## Figure 11.11 · Combining Need and Flow Importance {.smaller}
-
-![](assets/chapter11/fig11_11_priority_mesh.png){height=390px fig-align="center"}
-
-::: {.side-caption}
-Illustrative meshing of Kano benefit rank with the importance of a supply flow. The resulting scores range from 0.1 to 0.95; they are an example scale, not universal conversion factors. Source: Crawley, Cameron & Selva (2016), Fig. 11.11.
-:::
-
-::: {.notes}
-- The horizontal axis ranks the need's benefit; the vertical axis ranks the importance of supply availability. Their combination assigns one score to a flow.
-- The numerical mapping is a modeling choice. A “must be” need with high supply importance receives 0.95 in this example; a “might be” need with low supply importance receives 0.1.
-- Do not present these numbers as empirical constants. State whose judgment produced the ranks and examine sensitivity to a different mapping.
-
-**Discussion:** What would a score of 0.95 mean here?
-
-**Suggested answer:** This model assigns high importance to a flow linked to a must-have need and a high-importance supply relationship. It is relative within this analysis, not a 95% probability.
-:::
-
-## Figure 11.12 · Direct Exchanges Can Mislead {.smaller}
-
-![](assets/chapter11/fig11_12_direct_priority.png){height=365px fig-align="center"}
-
-::: {.side-caption}
-Revenue ranks two otherwise similar customers on the left. On the right, nonmonetary returns make the more important customer less obvious. Source: Crawley, Cameron & Selva (2016), Fig. 11.12.
-:::
-
-::: {.notes}
-- If two customers return only money for the same good, revenue can rank their direct value to the firm.
-- Monetary size is inadequate for inputs such as a critical service, permission, or technology. A low-cost component or service can be indispensable.
-- Prioritize stakeholders by the importance of what they provide to the project, not solely by the price of what the project gives them.
-
-**Discussion:** Why could the lower-revenue client receive higher priority?
-
-**Suggested answer:** It may supply a more critical nonmonetary input. The project must evaluate the returned flow, not just sales volume.
-:::
-
-## Figure 11.13 · An Indirect Value Loop {.smaller}
-
-![](assets/chapter11/fig11_13_indirect_transaction.png){height=385px fig-align="center"}
-
-::: {.side-caption}
-The firm supplies technology to a local partner; the partner creates jobs; the government awards a contract to the firm. The firm and government exchange value through an intermediary. Source: Crawley, Cameron & Selva (2016), Fig. 11.13.
-:::
-
-::: {.notes}
-- Trace the arrows all the way around. The local firm may provide little direct revenue, yet it is part of the path to an important government contract.
-- Begin with a critical input to the project, trace backward through providers, then identify the project output that helps complete the loop.
-- The recipient of a benefit need not be the party that pays for it.
-
-**Discussion:** Which project output could be undervalued by direct-revenue ranking?
-
-**Suggested answer:** Technology delivered to the local firm, because its indirect contribution to the government contract is absent from a direct-sales view.
-:::
-
 ## From Value Loops to Ranked Needs {.smaller}
 
-For a simple comparison, multiply the importance scores of the links in a loop:
+A simple loop-strength model multiplies the link importance scores:
 
 $$S_{\mathrm{loop}}=\prod_{k=1}^{n} w_k$$
 
-- Trace backward from an important project input to the output that helps secure it
-- Compare the resulting loop strengths; if several paths lead to one input, examine the stronger path
-- Use the scores to inform judgment, then check sensitivity to the assumed ranks and network boundary
+- **Teaching example:** link weights 0.8, 0.5, and 0.4 give a loop strength of **0.16**
+- Compare loops leading to an important input. Other things equal, stronger satisfaction at each link creates a stronger incentive to complete the exchange
+- Weight project outputs according to the loops in which they participate, then normalize their relative priorities
+- Check sensitivity to weights and network boundaries. The product is one modeling procedure, not a universal measure of value
 
 ::: {.side-caption}
-The book presents this product as a simple analytical procedure, not a universal measure of value. Source: Crawley, Cameron & Selva (2016), §11.3, pp. 256–257.
+Source: Crawley, Cameron & Selva (2016), §11.3, pp. 256–257. Numerical teaching example is illustrative.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - This makes explicit the calculation between Figures 11.11–11.13 and the ranked outputs in Figure 11.14.
 - For illustration only, three link scores 0.8, 0.5, and 0.4 give a loop strength of 0.16. The numbers should come from an actual project's need and flow assessments.
 - A product is only one possible aggregation rule; changing the scope or score mapping can change the ranking.
 :::
 
-## Figure 11.14 · Prioritized Needs for the Hybrid Car {.smaller}
+## Prioritized Hybrid Car Needs {.smaller}
 
-![](assets/chapter11/fig11_14_prioritization_bars.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="58%"}
+![](assets/chapter11/fig11_14_prioritization_bars.jpg){width=100% height=390px fig-align="center"}
+:::
+::: {.column width="42%"}
+- Six project outputs receive **normalized priorities summing to one**
+- Transportation ranks highest. Environmental assurance and enterprise revenue also matter
+- Ranking follows **stakeholder-assessed needs and network structure**, instead of first assigning importance to whole stakeholders
+- A purely bilateral analysis would miss the NGO's indirect role in regulatory approval
+:::
+:::
 
 ::: {.side-caption}
-The preceding flow scores and value-loop comparisons yield a ranked, normalized priority for the outputs the project must deliver: transportation dominates, but environmental assurance and enterprise revenue matter too. Source: Crawley, Cameron & Selva (2016), Fig. 11.14.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.14.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - **Quantitative culmination** of the last several slides: applying the value-loop method to the six needs directly fulfilled by Hybrid Car outputs
 - **Transportation dominates** (~0.4, normalized to sum to 1): primary beneficiary's primary need, strongest direct loop. Then environmental assurance and enterprise revenue meaningfully high, then environmental protection, supplier revenue, employment trailing
-- **What's powerful**: ranks stakeholders/needs *without* the firm subjectively pre-judging importance: inputs are just each stakeholder's individually-judged need priority (Kano, 11.3) plus the network's objective structure. The enterprise-vs-regulator ranking *emerged*, wasn't declared a priori: same as any emergent property in this course
+- The ranking avoids assigning stakeholder-level importance in advance. It still depends on judgments about needs, supply importance, score mapping, and which exchanges the model includes. The represented network is not independent of analyst judgment.
 - **Honest limitation**: ignoring indirect transactions, a simpler method (order by direct need satisfaction) would work: but it misses third-party levers (like the NGO) that are individually unimportant bilaterally but matter through the network toward something big (regulatory approval)
 - Architect must judge which systems need indirect-transaction analysis vs. simpler bilateral reasoning
 
@@ -601,17 +840,20 @@ The preceding flow scores and value-loop comparisons yield a ranked, normalized 
 
 ## Box 11.3 · Principle of Balance {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-*"Bring balance to the Force, not leave it in darkness…"*: Obi-Wan Kenobi
+**Balance the system around its most important stakeholders.**
 
-*"No complex system can be optimized to all parties concerned."*: Eberhardt Rechtin
+- The architect may never enumerate or quantify every influence. Tradeoffs remain necessary even after detailed analysis
+- Balance the **whole system**. Optimizing each element separately does not ensure a balanced outcome
+- **Optimality and flexibility compete:** tailoring the architecture tightly to today's use can reduce its ability to accommodate new uses or technologies
+- Flexibility usually requires margin, which carries cost or reduces current performance
+
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Box 11.3, Principle of Balance.
 :::
 
-- One may never be able to enumerate, let alone quantify, all the factors: one must make tradeoffs among the factors that come close to satisfying the recognized influences
-- The system must be balanced *as a whole*, not just the sum of balanced elements
-- The architect is always balancing **optimality** against **flexibility**: the more optimized for a given application, the less flexible to new use cases and technologies
-
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - Explain why competing stakeholder goals require tradeoffs. Relate the quotations to the examples already discussed.
 - **Three bullets, connected argument**:
   - You may never fully enumerate/quantify every factor: goal isn't a perfect optimum, it's sensible tradeoffs among identified factors
@@ -627,13 +869,17 @@ The preceding flow scores and value-loop comparisons yield a ranked, normalized 
 
 ## Section 11.3 Summary {.smaller}
 
-- Characterize needs using the five dimensions. Kano analysis provides one way to relate fulfillment to satisfaction
-- Treating the stakeholder set as a *system*, with value loops and indirect transactions, reveals stakeholders and priorities invisible from a purely direct, hub-and-spoke view
-- Architectural decisions must account for competing stakeholder claims and their effects on the whole system
+- Characterize needs using **all six dimensions**, including supply availability. Use Kano analysis to distinguish must, should, and might needs
+- First compare needs within each stakeholder. Then compare across stakeholders through their exchanges
+- Model **direct flows and indirect loops** when third-party relationships affect critical project inputs
+- Rank project outputs by their contribution to securing those inputs. Check the effect of the model's assumptions
+- Use the result to make system-level tradeoffs. Detailed network analysis is worthwhile when indirect exchanges matter
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.3.
+
 - **Review before goals**: students should be comfortable with:
-  - Five dimensions (benefit intensity, detriment, urgency, awareness, coupling) + Kano's three categories
+  - Six dimensions (benefit intensity, detriment, urgency, awareness, coupling, supply availability) + Kano's three categories
   - Formal methods can be outmatched by human judgment; cross-stakeholder comparison harder than within-stakeholder
   - Stakeholder map construction (three-step procedure) treating the stakeholder set as a system
   - Indirect transactions and value loops → quantitative, network-derived prioritization
@@ -650,14 +896,15 @@ The preceding flow scores and value-loop comparisons yield a ranked, normalized 
 
 ## Box 11.4 · Definition of Goals {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-**Goals** are defined as: what is planned to be accomplished, and what the producing enterprise hopes to achieve. Goals are a product/system attribute.
-:::
-
-- Needs exist in the stakeholder's mind; **goals are defined by the producing enterprise** with the intent of meeting those needs
-- Goals are under the architect's control: they are not static, and are often traded off against other product attributes in design
+- **Needs** express what beneficiaries lack or desire
+- **Goals** state what the producing enterprise plans and hopes to accomplish to meet selected needs
+- The architect chooses a **well-defined subset** of needs to address, including beneficiary outcomes, enterprise strategy, and regulatory influences
+- Choosing markets or deployment timing changes the applicable goals. Once a market is chosen, mandatory regulations remain constraints
+- Goals can evolve as tradeoffs and evidence develop. The book uses “goals” to make those choices explicit
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - Distinguish stakeholder needs from the goals chosen by the producing enterprise.
 - Goal = what is planned to be accomplished, what the enterprise hopes to achieve: a **product/system attribute**, contrasting with needs (mind/heart of stakeholder, owned by the beneficiary)
 - **Side-by-side comparison**: needs exist in the stakeholder's mind, prior to any product; goals are defined *by the enterprise*, intended to meet those needs. Needs aren't chosen by the firm; goals absolutely are: under the architect's control
@@ -672,19 +919,21 @@ The preceding flow scores and value-loop comparisons yield a ranked, normalized 
 
 ## Five Criteria for Goals {.smaller}
 
-| Criterion | Meaning |
+| Criterion | Check on the goal set |
 |---|---|
-| **Representative** | Goals reflect stakeholder needs: meeting the goals meets the needs |
-| **Complete** | Satisfying all goals satisfies all *prioritized* needs |
-| **Humanly Solvable** | Goals are comprehensible and aid the problem solver |
-| **Consistent** | Goals do not conflict with each other |
-| **Attainable** | Goals can be reached with available resources |
+| **Representative** | Satisfying goals meets stakeholder needs |
+| **Complete** | The goal set covers all prioritized needs |
+| **Humanly solvable** | Designers can understand and use the goals |
+| **Consistent** | Targets can hold together without contradiction |
+| **Attainable** | Available resources suffice to reach the goals |
 
-::: {.side-caption}
-For comparison, INCOSE's eight requirement criteria collapse into essentially the same five, once "necessary/implementation-independent/clear-and-concise" are folded into Representative and Humanly Solvable. Source: Crawley, Cameron & Selva (2016), §11.4.
-:::
+Check each **upstream influence** against the goals. Capture it or record a reason for excluding it. Trace needs to goals to expose omissions.
+
+SMART addresses individual goals. Also check the **completeness and consistency of the whole set**.
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - **Evaluative standard** for the rest of the chapter/Part 3: since goals are architect decisions, we need explicit criteria to judge them
 - **Representative**: meeting the goals actually meets the underlying needs
 - **Complete**: satisfying all goals satisfies all *prioritized* needs (qualifier matters: measured against 11.3's prioritization, not every conceivable need)
@@ -702,15 +951,15 @@ For comparison, INCOSE's eight requirement criteria collapse into essentially th
 
 ## Crafting Humanly Solvable Goals {.smaller}
 
-- The problem statement influences which solutions designers consider and how they interpret the goals
-- Extraneous information distracts, even if not strictly wrong: *"Find the voltage drop across a 5-ohm resistor... in a 120-V DC circuit"*: the "120-V DC circuit" detail can mislead designers into reasoning about resistance–temperature dependency that was never intended
-- Information *not* in the problem statement may be wrongly assumed excluded: crafting a statement is a balancing act: enough solution-neutral information, without extraneous or misleading detail
-
-::: {.fragment .callout-tip title="The F-16 lesson"}
-Maier & Rechtin: the F-16's original problem statement, "build a Mach2+ fighter," focused designers on top speed: when the underlying need was really to *exit a dogfight quickly*, better served by thrust-to-weight ratio.
-:::
+- Keep goals **clear and minimal**. Extraneous information directs attention even when it is irrelevant
+- Omitting information can also mislead: readers may assume that an unstated effect or constraint does not matter
+- Preserve **solution-neutral intent** to leave room for alternative concepts
+- In the book's F-16 example, specifying a **Mach 2+ fighter** emphasizes maximum speed. The underlying need, **exiting a dogfight quickly**, directs attention to acceleration and thrust-to-weight ratio
+- A useful statement contains enough information to express the important needs without prescribing unnecessary design choices
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - Humanly solvable goals give designers enough relevant information to reason about the problem without misleading detail.
 - **Toy example**: "voltage drop across a 5-ohm resistor, 12-amp current, in a 120-V DC circuit": physics is trivial (5×12=60V), everything stated is true, but "120-V DC circuit" is extraneous and predisposes readers to reason about irrelevant things (e.g. resistance-temperature dependency)
 - Simple problems: extraneous distraction is easy to catch. Complex systems: can't so easily dismiss extra info as irrelevant: misleading
@@ -724,14 +973,16 @@ Maier & Rechtin: the F-16's original problem statement, "build a Mach2+ fighter,
 
 ## Box 11.5 · Principle of the System Problem Statement {.smaller}
 
-::: {.callout-important appearance="minimal" icon=false}
-The statement of the problem defines the high-level goal and establishes the boundaries of the system: it divides content from context. Challenge and refine it until you are satisfied it is correct. It is rarely stated properly on first formulation.
-:::
+The **System Problem Statement (SPS)** is a concise assertion of what the system should accomplish to deliver value.
 
-- The **System Problem Statement (SPS)** is the single assertion of what the system is intended to accomplish to deliver value: much like a mission statement
-- A common failure mode: the de facto problem statement reverts to a previous product with a modifier: "cheaper electric toaster," "more efficient roadster"
+- It defines the **high-level goal** and draws the boundary between system content and context
+- It provides the starting point for detailed goals and a common message for the design team
+- Challenge and refine it early and repeatedly. The first formulation is rarely adequate
+- A long requirements document can obscure the central purpose. Labels such as “cheaper toaster” inherit a previous solution without clarifying the beneficiary's need
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - **Formalizes the F-16 lesson**: the **System Problem Statement (SPS)**: the single assertion of what the system is intended to accomplish to deliver value, like an organization's mission statement
 - **Core claim**: the problem statement defines the high-level goal *and* establishes the system boundary (Ch. 2's content/context split): architectural consequences for scope
 - **Rarely stated correctly on first formulation**: challenge and refine repeatedly, treat the first draft as a starting point for interrogation, not a finished artifact
@@ -744,23 +995,38 @@ The statement of the problem defines the high-level goal and establishes the bou
 
 :::
 
-## The To-By-Using Framework {.smaller}
+## Hybrid Car SPS: First Formulation {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-**To**...[the statement of (solution-neutral functional) intent]
-**By** verb-ing...[the statement (solution-specific) of function]
-**Using**...[the statement of form]
-:::
+The book's first formulation proposes manufacturing and selling a successful hybrid gas/electric car to environmentally conscious consumers.
 
-::: {.fragment}
-Example, from the U.S. Constitution: *"...to form a more perfect union...promote the general welfare... (By)...laying and collecting taxes, paying debts... (Using)...the powers of...The Congress."*
-:::
+- **“Manufacture”** commits the enterprise to production rather than outsourcing
+- **“Hybrid gas/electric car”** selects a form before stating the intended benefit
+- **“Successful”** gives no test of success, and “consumers” leaves the target group unclear
+- Selling and manufacturing describe enterprise activities. They do not state the primary beneficiary's transformation
 
-::: {.fragment .callout-tip title="Primary beneficiary first"}
-The value delivery to the **primary beneficiary** must be presented first: targeting the Hybrid Car at police fleets instead of consumers would change the SPS, and with it, priorities like crash safety and idle time.
-:::
+The next formulation begins with **transporting people and possessions** and separates intent, function, and form.
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4, pp. 261–263.
+
+**Discussion:** What design freedom returns when the statement begins with transportation?
+
+**Suggested answer:** Other transport concepts can be considered before choosing a car, a propulsion system, or a production arrangement.
+:::
+
+## The To-By-Using Framework {.smaller}
+
+- **To:** the solution-neutral functional intent, including the operand, its beneficial attribute, and the desired change
+- **By:** the solution-specific operating process and its performance attributes
+- **Using:** the system form and its attributes
+
+**Value delivery to the primary beneficiary comes first.** A police fleet and a consumer driver can imply different priorities for crash safety, equipment additions, and idle time.
+
+Early discussions can use **To** alone. Add **By** and **Using** as architecting develops the concept, so an early choice does not unnecessarily restrict alternatives.
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - **To-By-Using framework**: the practical tool for writing a good SPS (a canonical structure, not the book's own invention)
 - **To** = solution-neutral functional intent (pure purpose, no mechanism). **By verb-ing** = solution-*specific* function. **Using** = form: connects to Ch. 2 form/function and Ch. 7 solution-neutral function
 - **U.S. Constitution example** (non-engineering, memorable): "to form a more perfect union...promote the general welfare" (To) / "by laying and collecting taxes, paying debts" (By) / "using the powers of...Congress" (Using): shows the pattern generalizes beyond product design
@@ -773,15 +1039,28 @@ The value delivery to the **primary beneficiary** must be presented first: targe
 
 :::
 
-## Figure 11.15 · The To–By–Using Framework {.smaller}
+## To-By-Using and OPM {.smaller}
 
-![](assets/chapter11/fig11_15_to_by_using.png){height=425px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_15_to_by_using.png){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+- **Intent:** operand and beneficial state change
+- **Function:** operating process producing the change
+- **Form:** object enabling the process
+- The SPS aligns with Chapter 7's **OPM concept representation**
+- Specify transformation, process, and form attributes that affect value
+:::
+:::
 
 ::: {.side-caption}
-The general template separates solution-neutral intent (*To*), a specific operating process (*By*), and enabling form (*Using*), aligned with the OPM concept model. Source: Crawley, Cameron & Selva (2016), Fig. 11.15.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.15.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - Trace the left-hand sentence template to the right-hand OPM concepts: operand and beneficial attribute for intent, a specific operating process for function, and a specific system object for form.
 - The same need can support multiple By/Using alternatives. In early meetings, state the To clause before freezing a process or object.
 - Figure 11.16 applies this general template to the hybrid car.
@@ -791,15 +1070,27 @@ The general template separates solution-neutral intent (*To*), a specific operat
 **Suggested answer:** The intended benefit in To, subject to new stakeholder evidence. By and Using are candidate means and may change.
 :::
 
-## Figure 11.16 · System Problem Statement for the Hybrid Car {.smaller}
+## Hybrid Car System Problem Statement {.smaller}
 
-![](assets/chapter11/fig11_16_sps_hybrid_car.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="58%"}
+![](assets/chapter11/fig11_16_sps_hybrid_car.jpg){width=100% height=430px fig-align="center"}
+:::
+::: {.column width="42%"}
+- **To:** transport people and possessions inexpensively and with acceptable environmental impact
+- **By:** enabling drivers to move themselves, passengers, and light cargo fuel-efficiently with good handling
+- **Using:** a hybrid gas/electric car
+- **OPM:** people/cargo are the operand, location is the attribute, driving is the process, and the car is the form
+:::
+:::
 
 ::: {.side-caption}
-The To-By-Using framework maps directly onto the familiar OPM concept template (Fig. 7.4): intent → function → form. *To* change the location of people and cargo inexpensively and environmentally; *by* driving fuel-efficiently with good handling; *using* a hybrid car. Source: Crawley, Cameron & Selva (2016), Fig. 11.16.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.16.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - **Finished Hybrid Car SPS**, traced against the OPM diagram
 - **To**: change, inexpensively and environmentally, the location of people and possessions (still abstract: not "driving" or "a car" yet)
 - **By**: driving: driver drives themselves, passengers, light cargo, fuel-efficiently, good handling
@@ -816,28 +1107,21 @@ The To-By-Using framework maps directly onto the familiar OPM concept template (
 
 ## From SPS to Detailed Goals {.smaller}
 
-Given the SPS, we enumerate descriptive goals for each need the project intends to satisfy:
+The SPS leads to descriptive goals for the primary beneficiary:
 
-::: {.columns}
-::: {.column width="50%"}
-- Shall provide transportation performance
-- Shall be inexpensive
-- Shall have environmental satisfaction
-- Shall accommodate a driver (size)
-:::
-::: {.column width="50%"}
-- Shall carry passengers and cargo
-- Shall have good fuel efficiency
-- Shall have desirable handling
-- Shall satisfy regulatory requirements
-:::
-:::
+- **Transportation performance:** range, speed, and acceleration
+- **Affordability:** acquisition cost and associated value to the driver
+- **Environmental satisfaction:** the benefit the driver perceives
+- **Driver accommodation:** body size and usable space
+- **Passenger accommodation:** size and number of occupants
+- **Cargo capacity:** mass, dimensions, and volume
+- **Fuel efficiency** and **handling characteristics**
 
-::: {.fragment .callout-tip title="Goals, not requirements"}
-Note we deliberately say **goals**, not "requirements": architects must be free to make tradeoffs among them, which "shall" language tends to obscure.
-:::
+The book initially states all descriptive goals with “shall.” Priority and measurable targets are still to be established.
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - **Direct systematic expansion of the SPS**: a goal per need, no priority yet (comes in 11.5)
 - First goals shown (transportation performance, inexpensive, environmental satisfaction, driver accommodation, passengers/cargo, fuel efficiency, handling) trace to vehicle attributes vs. the driver/owner's value function
 - Full list continues to other stakeholders (from 11.3's prioritization): modest investment/volume sales (investors/enterprise), stable supplier relationships, stable employment (community), regulatory/environmental requirements (regulators/NGOs)
@@ -850,6 +1134,24 @@ Note we deliberately say **goals**, not "requirements": architects must be free 
 
 :::
 
+## Detailed Goals for Other Stakeholders {.smaller}
+
+- **Enterprise:** modest investment, sales volume, and financial return, with the intent of securing investment and technology
+- **Suppliers:** stable relationships and revenue, with the intent of securing uninterrupted quality parts
+- **Local community:** stable, rewarding employment, with the intent of securing a dedicated workforce
+- **Regulator and NGO:** regulatory compliance, environmental protection, and environmental assurance
+- For an **indirect exchange**, record both the delivered benefit and its purpose: assurance to the NGO should support the political support needed for regulatory approval
+
+Trace each goal to the **need and value flow** it represents.
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4, p. 264. These goals complete the descriptive set beyond vehicle attributes.
+
+**Discussion:** Why record the intended return from environmental assurance?
+
+**Suggested answer:** Assurance is part of an indirect loop. Recording the intended support for approval explains why the project prioritizes that output and what dependency needs checking.
+:::
+
 ## Section 11.4 Summary {.smaller}
 
 - Goals are enterprise-defined, prioritizable interpretations of stakeholder needs: evaluated against five criteria: representative, complete, humanly solvable, consistent, attainable
@@ -857,6 +1159,8 @@ Note we deliberately say **goals**, not "requirements": architects must be free 
 - Early architecting should stay solution-neutral (**To**) as long as possible before adding solution-specific function (**By**) and form (**Using**)
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.4.
+
 - **Review before prioritization**: students should be comfortable with:
   - Needs (beneficiary-owned, unchosen) vs. goals (enterprise-defined, chosen, tradable)
   - Five criteria (representative, complete, humanly solvable, consistent, attainable), and why humanly solvable is hardest
@@ -873,29 +1177,19 @@ Note we deliberately say **goals**, not "requirements": architects must be free 
 
 ## Critical, Important, Desirable {.smaller}
 
-::: {.columns}
-::: {.column width="33%"}
-**Critical goals**
+| Priority | Meaning | Resource allocation |
+|---|---|---|
+| **Critical** | About 3–7 absolute necessities for success | Protect resources needed to meet them |
+| **Important** | Major contributors to success | Trade resources among them |
+| **Desirable** | Useful outcomes with lower priority | Pursue when resources remain |
 
-The 3–7 goals essential to product success.
-:::
-::: {.column width="33%"}
-**Important goals**
-
-Major goals that contribute to, but are not absolutely necessary for, success.
-:::
-::: {.column width="33%"}
-**Desirable goals**
-
-Objectives that would be nice to meet, but are not critical to the project.
-:::
-:::
-
-::: {.fragment .callout-tip title="Allocating resources by priority"}
-This framework allocates limited project resources: spend on critical goals, trade among important goals, and apply leftover resources to desirable goals.
-:::
+- Compare stakeholder goals using the **importance of inputs returned to the project**
+- **Priority** and **rigidity** are separate. A goal can be strongly constraining without being ranked among the critical goals
+- Distinguish absolutely constraining needs, constraining needs for a selected market, and unconstrained performance aspirations
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - **Three-tier prioritization for goals**: direct structural parallel to the three-bucket stakeholder grouping (Section 11.2), same idea applied to goals
 - **Critical**: 3-7 absolute necessities, "live or die": vivid phrase, real binding urgency
 - **Important**: contribute meaningfully, not absolutely necessary
@@ -908,12 +1202,44 @@ This framework allocates limited project resources: spend on critical goals, tra
 
 :::
 
-## Goals Need Metrics and Targets {.smaller}
+## Hybrid Car Goal Priorities {.smaller}
 
-- A goal without a metric and target value is incomplete: "should have good fuel efficiency" implies a metric (MPG) but sets no target
-- The **rigidity** of a goal matters too: *constraining* ("must accommodate a driver of dimensions XYZ") vs. *unconstrained* ("should have good fuel efficiency"): the architect must decide which needs constrain the design, accepting the consequence of a narrower target market
+| Priority | Illustrative allocation in the book |
+|---|---|
+| **Critical** | Driver environmental satisfaction, stable supplier relationships, driver accommodation |
+| **Important** | Range, regulatory compliance, passenger accommodation, rewarding employment, fuel efficiency |
+| **Desirable** | Enterprise investment and return, handling, cargo capacity, low price |
+
+- **Driver accommodation** is critical and constraining. **Compliance** is important and constraining
+- **Importance does not determine rigidity.** Mandatory compliance remains a market-entry condition
+- Priorities depend on the beneficiary and stakeholder analysis
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5, pp. 265–266. Preserve the book's illustrative allocation without implying that mandatory law can be traded away.
+
+**Discussion:** Why is “important” an inadequate instruction for compliance?
+
+**Suggested answer:** Priority describes resource emphasis. The compliance constraint still needs an explicit pass condition for the chosen market.
+:::
+
+## Goals Need Metrics and Targets {.smaller}
+
+A complete goal identifies a **metric and target value**, along with its priority and rigidity.
+
+| Descriptive goal | Metric suggested in the book |
+|---|---|
+| Good fuel efficiency | MPG or MPGe |
+| Transport range | Miles |
+| Driver accommodation | Percentage of the target population accommodated |
+| Regulatory compliance | Certificate of compliance |
+| Stable employment | Employee turnover rate |
+| Desirable handling | Skidpad acceleration in g |
+
+The book supplies these **metrics**, but leaves numerical targets to be set. A metric alone does not define “good” performance.
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - **Practical refinement**: a goal without a metric + target value is incomplete: can't check if it's met. "Should have good fuel efficiency" implies MPG but sets no number: how much counts as "good"?
 - **Rigidity**: second, orthogonal attribute: **constraining** ("must accommodate driver dimensions XYZ": hard boundary) vs. **unconstrained** ("should have good fuel efficiency": optimization target, no pass/fail line)
 - Architect decides goal by goal: real tradeoff: more constraining goals shrink the target market (fewer designs satisfy every constraint); more unconstrained goals risk under-delivering on something firmly needed
@@ -923,17 +1249,46 @@ This framework allocates limited project resources: spend on critical goals, tra
 
 :::
 
-## Box 11.6 · Principle of Ambiguity and Goals {.smaller}
+## A Measurable Goal Example {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-*"Always aim higher than you want to climb, for one usually stops below the goal one sets."*: Traditional Chinese Saying
-:::
+**Teaching example, with an illustrative target:**
 
-- The early phase of system design is characterized by great ambiguity: the architect must resolve it into a small, complete, consistent, humanly solvable set of goals
-- No one designs or rigorously controls the upstream process: expect uncoordinated, incomplete, and conflicting inputs
-- Because context and customer needs evolve, there must be a **process to continuously reexamine and update** the goals
+Provide a driving range of **at least 300 miles** over a specified test cycle, vehicle load, and environmental conditions.
+
+- **Metric:** distance traveled before the defined refueling or recharging endpoint
+- **Target:** at least 300 miles
+- **Priority:** important in the book's illustrative goal allocation
+- **Rigidity:** state whether the target is a negotiable performance objective or a constraint for the chosen market
+- **Trace:** driver transportation need, the SPS transportation intent, and the range goal
+
+The architect must justify the target and test conditions from the intended use. The book does not prescribe 300 miles.
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
+Source for goal structure: Crawley, Cameron & Selva (2016), §11.5. The 300-mile target is a classroom example only.
+
+**Discussion:** Why specify the operating conditions as well as the distance?
+
+**Suggested answer:** Range changes with load, driving cycle, and environment. The same number can represent different performance without agreed conditions.
+:::
+
+## Box 11.6 · Principle of Ambiguity and Goals {.smaller}
+
+Early design contains **known unknowns, unknown unknowns, conflicting assumptions, and false assumptions**.
+
+- Upstream inputs are often uncoordinated, incomplete, and contradictory
+- Resolve them into a small set of goals that is representative, complete, consistent, humanly solvable, and challenging yet attainable
+- Account for competitive pressures, enterprise strategy, available technology/resources, and regulatory influences
+- Maintain a **process for revisiting goals** as needs and context evolve
+
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Box 11.6, Principle of Ambiguity and Goals.
+:::
+
+::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - Goal-setting remains uncertain even when the process is organized. Revisit goals as new information becomes available.
 - Proverb: aim higher than you expect to achieve: real execution tends to fall short regardless
 - **Three substantive bullets, honest picture of reality**:
@@ -949,10 +1304,15 @@ This framework allocates limited project resources: spend on critical goals, tra
 
 ## Consistency and Attainability {.smaller}
 
-- **Consistency** requires examining conflicts among goals, such as range and battery weight. An analytical model may be needed to assess the shape and severity of the tradeoff
-- **Attainability** means goals can be reached within technology, schedule, resource, and risk constraints: much easier for derivative products than clean-slate designs. When goals aren't attainable: reduce scope, or add resources
+- **Logical consistency:** targets using the same metric must not contradict each other
+- **System consistency:** goals such as low mass, long range, and high acceleration interact. The shape and severity of those tradeoffs may require an analytical model
+- Some metrics add directly, such as component mass. Others emerge from the interaction of the architecture's elements
+- **Attainability:** check technology, development schedule, resources, and risk together. Derivative products offer more evidence than entirely new designs
+- If the goal set cannot be attained, revise its scope or add resources. Assess whether the model is reliable enough to support that choice
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - **Deeper on two of the five criteria**: subtle, not simple checkboxes
 - **Consistency**: many real goals conflict (e.g. range vs. battery weight). Not enough to know a tradeoff exists: need its *shape*: shallow, steep, or non-monotonic? Often can't assess by inspection: needs an analytical model (low- or high-fidelity), and you must separately trust the model's accuracy
 - **Attainability**: reachable given technology, schedule, resources, risk. Much easier for derivative products than clean-slate designs (higher tech/schedule risk)
@@ -963,15 +1323,27 @@ This framework allocates limited project resources: spend on critical goals, tra
 
 :::
 
-## Figure 11.17 · Checking Whether Goals Meet Criteria {.smaller}
+## Verification and Validation {.smaller}
 
-![](assets/chapter11/fig11_17_verification_loop.jpg){height=410px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_17_verification_loop.jpg){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+- **Validation loop:** delivered function meets stakeholder needs
+- **Verification loop:** delivered values meet goal metrics and targets
+- Five checks: **representative, complete, humanly solvable, consistent, attainable**
+- Models help test the goal set as the concept and form develop
+:::
+:::
 
 ::: {.side-caption}
-Two nested loops: the **validation loop** asks "is the goal representative?" by comparing delivered function against upstream influences; the **verification loop** asks "is it attainable, complete, consistent, solvable?" by comparing delivered goals against the concept, form, and intended function. Source: Crawley, Cameron & Selva (2016), Fig. 11.17.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.17.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - **Compact visual summary tying together all five criteria**: where each gets checked as a project proceeds from goal-setting to delivered system
 - **Outer path**: upstream influences → goals (metrics + targets) → concept → form → intended function → functional deployment → delivered function
 - **Validation loop**: "is the goal representative?": compares delivered function against the original upstream influences. Checks whether we built something addressing real stakeholder needs, not just a self-consistent spec
@@ -984,11 +1356,15 @@ Two nested loops: the **validation loop** asks "is the goal representative?" by 
 
 ## Section 11.5 Summary {.smaller}
 
-- Goals should be grouped as critical, important, and desirable: this framework governs how limited resources get allocated
-- Every goal needs an explicit metric, target value, and a stated rigidity (constraining vs. unconstrained)
-- Consistency and attainability may require analytical models to check: logical inspection alone is often not enough
+- Prioritize goals as **critical, important, or desirable** to guide resource decisions
+- Record **rigidity separately** from importance, including constraints associated with the chosen market
+- Specify **metrics, target values, and applicable conditions** so success can be assessed
+- Use logical checks and models to assess consistency and attainability
+- Verify performance against goals and validate that the delivered function meets stakeholder needs. Update the goals when the evidence changes
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - **Closes 11.5 before chapter wrap-up**: students should be comfortable with:
   - Critical/important/desirable tiers and resource allocation
   - Every goal needs a metric, target value, and rigidity (constraining vs. unconstrained), not just prose
@@ -1001,7 +1377,7 @@ Two nested loops: the **validation loop** asks "is the goal representative?" by 
 
 :::
 
-## Chapter 11 Summary {.smaller}
+## 11.6 Chapter Summary {.smaller}
 
 - Complex systems face real challenges managing stakeholders: many of them, often with unclear relative priority, sometimes providing only non-monetary inputs, and often delivering value indirectly
 - Value delivery is an **exchange**: your outputs meet their needs, and their outputs meet yours
@@ -1013,6 +1389,8 @@ Crawley, E., Cameron, B., & Selva, D. (2016). *System Architecture: Strategy and
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.5.
+
 - **Full-chapter recap**: walk back through Fig. 11.1 one more time
 - **Three opening challenges**: many stakeholders; unclear relative priority (especially non-monetary inputs like political support vs. revenue); value often delivered *indirectly* through intermediaries
 - **Process built in order**:
@@ -1028,7 +1406,7 @@ Crawley, E., Cameron, B., & Selva, D. (2016). *System Architecture: Strategy and
 
 :::
 
-# Case Study: 1998 Nagano Winter Olympics: Stakeholders in IT Architecture
+# 11.7 Nagano Winter Olympics: Stakeholders in IT Architecture
 
 ## Scope of the Nagano IT System {.smaller}
 
@@ -1039,6 +1417,8 @@ Crawley, E., Cameron, B., & Selva, D. (2016). *System Architecture: Strategy and
 - A genuine **system-of-systems**: each constituent system has a different stakeholder, with distinct priorities, interests, and biases
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - **Unusual provenance**: written directly by Dr. Victor Tang, IBM's actual Director of IT Client Relations for the 1998 Games: first-hand practitioner account, not a retrospective
 - **Scale and stakes**: IBM, one of 11 top sponsors (~\$60-80M sponsorship), contractually obligated to build/operate/maintain the *entire* IT system: results computation/delivery, athlete records, accreditation, drug-testing results, more
 - Numbers: **25M lines of software**, 10 mainframes, 5,000 PCs, 1,500 printers, 160 servers, 2,000 routers, serving ~150,000 athletes/officials/volunteers
@@ -1050,15 +1430,27 @@ Crawley, E., Cameron, B., & Selva, D. (2016). *System Architecture: Strategy and
 
 :::
 
-## Figure 11.18 · The Nagano IT System, Clients, and Users {.smaller}
+## Nagano IT Systems and Stakeholders {.smaller}
 
-![](assets/chapter11/fig11_18_nagano_it_system.jpg){height=440px fig-align="center"}
+::: {.columns}
+::: {.column width="58%"}
+![](assets/chapter11/fig11_18_nagano_it_system.jpg){width=100% height=430px fig-align="center"}
+:::
+::: {.column width="42%"}
+- **Core systems:** Athlete Qualification, Games Management, Results, and INFO98
+- **Stakeholders:** organizers, sports federations, media, volunteers, medical and transport services
+- Athlete and results data cross subsystem boundaries
+- Each constituent system serves different priorities. The architecture must support the Games as a whole
+:::
+:::
 
 ::: {.side-caption}
-Athlete Qualification, Games Management, Results, and INFO98 form the core: surrounded by dozens of client stakeholders: press, medical, accreditation, transportation, accommodation, volunteers, and more. Source: Crawley, Cameron & Selva (2016), Fig. 11.18.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.18.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - **Concrete visualization of the system-of-systems scale**: four core systems (Athlete Qualification, Games Management, Results, INFO98) connected by athlete/results/bio data flows
 - Surrounding client-facing layer: press, scoreboards, local print, TV graphics/commentator info, medical, accreditation, volunteers, transportation, accommodation, data collection, email/info retrieval
 - Echoes the chapter's stakeholder-map exercises: same logic, real historical high-stakes system, mostly data flows instead of money/goods
@@ -1070,11 +1462,15 @@ Athlete Qualification, Games Management, Results, and INFO98 form the core: surr
 
 ## Rethinking IBM's Strategy {.smaller}
 
-- Problems with immature products and technology at the 1996 Atlanta Games damaged the IOC's confidence in IBM
-- IBM shifted its emphasis from showcasing products and technology to delivering an **IT service** for the Games
-- IBM communicated this explicitly: *"IT as a service...helping those running the Games, run the Games."* IBM had **moved the system boundary**
+- At Atlanta in 1996, immature technology and poor execution damaged confidence in IBM
+- For Nagano, IBM framed the mission as an **IT service that helps people run the Games**
+- This changed the system boundary: reliable operations and stakeholder processes became part of the architectural concern
+- **X-teams** connected domain experts across organizational boundaries. IBM invited stakeholders into development and embedded its engineers in stakeholders' processes
+- Participants gained a better understanding of reciprocal dependencies and became credible advocates for the work
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - The Atlanta Games exposed problems with products and technology that were not ready, damaging confidence before Nagano.
 - Chapter's core theme (needs vs. goals, getting the problem statement right) plays out at enormous real stakes
 - **IBM's strategic shift**: from product-technology-centric to products/technology as *the means* to deliver a *service*. Publicly stated: "IT as a service...helping those running the Games, run the Games...enhancing the Olympic experience"
@@ -1087,29 +1483,40 @@ Athlete Qualification, Games Management, Results, and INFO98 form the core: surr
 
 :::
 
-## Figure 11.19 · Without X-Teams {.smaller}
+## Responsibilities Without X-Teams {.smaller}
 
-![](assets/chapter11/fig11_19_without_xteams.png){width=95% fig-align="center"}
+![](assets/chapter11/fig11_19_without_xteams.png){width=95% height=310px fig-align="center"}
+
+- IBM owns requirements, specifications, software, and documentation
+- Sports, news, and NAOC mainly review test work. Their operational knowledge enters late
 
 ::: {.side-caption}
-IBM writes requirements, specifications, software, and documentation. Xerox and the IOC review those artifacts; other stakeholders mainly review tests. Source: Crawley, Cameron & Selva (2016), Fig. 11.19 (upper table).
+Source: Crawley, Cameron & Selva (2016), Fig. 11.19.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - Read columns left to right: IBM, Xerox, Sports, News, NAOC, IOC. Blank cells mean no role shown in this figure.
 - Xerox does some test-case writing and test execution. Sports, News, NAOC, and IOC mainly review tests, then concur on performance and training.
 - IBM only concurs on training; Xerox does and concurs. Do not infer that IBM created training in this baseline.
 :::
 
-## Figure 11.19 · With X-Teams {.smaller}
+## Responsibilities With X-Teams {.smaller}
 
-![](assets/chapter11/fig11_19_with_xteams.png){width=95% fig-align="center"}
+![](assets/chapter11/fig11_19_with_xteams.png){width=95% height=310px fig-align="center"}
+
+- Xerox joins requirements and specifications work
+- Sports, news, and NAOC help create and run tests and contribute to training
+- IBM retains software responsibility while stakeholders participate more broadly
 
 ::: {.side-caption}
-Columns remain IBM, Xerox, Sports, News, NAOC, IOC. Xerox joins requirements and specifications work; Sports, News, and NAOC take active roles in writing and running tests and in training. Source: Crawley, Cameron & Selva (2016), Fig. 11.19 (lower table).
+Source: Crawley, Cameron & Selva (2016), Fig. 11.19.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - IBM still does the requirements, specifications, software, and documentation work. Xerox now also does and reviews requirements and specifications.
 - Sports, News, and NAOC move from reviewing test cases to doing and reviewing them. IOC continues to review test cases.
 - Sports, News, and NAOC also move from concurring on training to doing and concurring. IBM still only concurs; Xerox still does and concurs. Performance concurrence does not change.
@@ -1121,21 +1528,34 @@ Columns remain IBM, Xerox, Sports, News, NAOC, IOC. Xerox joins requirements and
 
 ## What the X-Team Comparison Shows {.smaller}
 
-- Xerox joins early requirements/specification work; sports, news, and NAOC representatives help write and run tests and prepare training
-- IBM remains responsible for software and documentation, while more stakeholders review them
-- Performance concurrence stays the same; the new roles concentrate on requirements, tests, and training
+- Requirements and specifications gain early input from Xerox and broader review from the operating stakeholders
+- Sports, news, and NAOC representatives help write and run tests and participate in training
+- IBM retains responsibility for software and documentation. Wider participation complements its technical work
+- Performance concurrence remains the same. The changed responsibilities concentrate on requirements, tests, and training
+- The organizational arrangement helps reveal **needs and reciprocal dependencies** that document review alone can miss
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 The precise role matrix matters because “co-development” does not mean everyone jointly did every task. X-teams brought domain knowledge into decisions and tests where it could prevent misunderstandings. Compare this to Box 11.1's distinction among consultation, participation, and decision rights.
 :::
 
 ## Rebuilding Trust Through the ICPG Process {.smaller}
 
-- Four "IBM Must Do" goals emerged from the Atlanta debrief: meet all technical/management requirements, ensure no surprises during the Games, provide 24/7 operations, and ensure highly secure/usable systems
-- IBM used **International Competitions Prior to the Games (ICPGs)**: practice events, often World Cup competitions: as a forum with sports federations and the IOC to surface and resolve errors *before* the real Games
-- Solving the documented ICPG errors and shortcomings became management's agreed interpretation of satisfying "all requirements": turning an impossible-to-fully-specify requirement set into something tractable
+IBM's four “Must Do” goals were:
+
+- Meet all technical and management requirements
+- Avoid surprises during the Games
+- Provide 24/7 operations
+- Provide highly secure and usable systems
+
+**International Competitions Prior to the Games (ICPGs)** provided practice events using the rules and IT systems.
+
+IBM convened federations, IOC representatives, and stakeholders to review documented errors. They agreed to treat resolving those errors and shortcomings as satisfying the requirements, making the work tractable through **management by exception**.
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - **Four "IBM Must Do" goals** from the Atlanta debrief: meet all technical/management requirements, no surprises during the Games, 24/7 operations, highly secure/usable systems: reads exactly like Section 11.5's critical-goals category
 - **Clever practical move**: tackling "meet all technical and management requirements": the full documented requirement set (Seiko timing, Xerox printing/distribution, accreditation/security, volunteer training, more) was "voluminous," daunting to fully satisfy
 - **ICPGs (International Competitions Prior to the Games)**: real practice events (often existing World Cup competitions) testing new/modified Olympic rules and IT systems under live conditions first
@@ -1150,15 +1570,15 @@ The precise role matrix matters because “co-development” does not mean every
 
 ## Architecture as a Utility {.smaller}
 
-::: {.callout-note appearance="simple" icon=false}
-*"Form follows function."*: Louis Sullivan, inventor of the skyscraper
-:::
-
-- IBM re-conceptualized the Olympics IT system as a **utility**: highly secure, plug-and-play, with networked servers as the power plant/distribution grid, applications as generators, and structured data as the utility's output: serving stakeholders and the public as clients
-- Stakeholders initially questioned the utility concept. IBM needed to demonstrate that it would meet their operating needs
-- The Results System, the most important subsystem, used **stepwise decomposition** and the classic pattern of **reliability through redundancy**, duplicating key components so a single failure never took down operations
+- IBM treated IT as a **secure, usable utility** that continuously supplies data and information
+- Networked servers provided the equivalent of a utility's plant and distribution grid. Applications generated the structured data used by clients
+- Existing Athlete Qualification, Games Management, Results, and INFO98 systems formed the core. The design had to reuse, modify, or protect legacy systems
+- The Results System decomposed into venue subsystems, connecting Seiko timing inputs to scoreboards and information services
+- **Redundancy** duplicated key components so a failed component could be replaced by its counterpart while operations continued
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - **Open with the Louis Sullivan quote** (skyscraper's inventor): connect to Ch. 7's concept/form material: architecture is a mapping from function-space to form-space, and meaningful architecture needs workable *concepts* embodying an abstract idea into a real, functioning artifact
 - Book calls this **embodiment of an idea**: the most creative, challenging part of architecting; brilliant architectures need brilliant embodiments, not just correct requirements
 - **IBM's concept, worth spelling out in full**: re-conceptualized the system as a *utility* (highly secure, plug-and-play),
@@ -1175,29 +1595,53 @@ The precise role matrix matters because “co-development” does not mean every
 
 :::
 
-## Figure 11.20 · Nagano IT Data Flows {.smaller}
+## Nagano IT Data Flows {.smaller}
 
-![](assets/chapter11/fig11_20_nagano_data_flow.png){height=455px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_20_nagano_data_flow.png){width=100% height=440px fig-align="center"}
+:::
+::: {.column width="40%"}
+- **Results** connects competition entries and timing to media, scoreboards, and commentator information
+- **Accreditation** supports access and athlete/staff services
+- **INFO98** provides information management and retrieval
+- Data and function flows integrate the legacy systems into a coherent service for the Games
+:::
+:::
 
 ::: {.side-caption}
-Results, accreditation, and INFO98 exchange data with organizers, media, scoreboards, and public information services. Source: Crawley, Cameron & Selva (2016), Fig. 11.20.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.20.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - The utility metaphor becomes a concrete service architecture: results are collected and distributed to scoreboards, commentators, broadcasters, and information services.
 - Accreditation supports security and access-related services; INFO98 distributes information through management, email, and terminals.
 - Ask which interfaces need timely and trustworthy results. The figure represents data and service flows, not ownership of every connected organization.
 :::
 
-## Figure 11.21 · Redundancy in the Results System {.smaller}
+## Results System Redundancy {.smaller}
 
-![](assets/chapter11/fig11_21_nagano_redundancy.png){height=425px fig-align="center"}
+::: {.columns}
+::: {.column width="60%"}
+![](assets/chapter11/fig11_21_nagano_redundancy.png){width=100% height=410px fig-align="center"}
+:::
+::: {.column width="40%"}
+- Follow **capture, ranking, database update, and distribution**
+- **A/B paths** duplicate timing, event control, databases, and output interfaces
+- The pattern supports the critical continuity goal
+- Test interfaces and failover. Duplicating hardware alone cannot establish continuity
+:::
+:::
 
 ::: {.side-caption}
-The Results System duplicates timing capture, event-control and database paths, and output interfaces to support continuous service. Source: Crawley, Cameron & Selva (2016), Fig. 11.21.
+Source: Crawley, Cameron & Selva (2016), Fig. 11.21.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - Follow the primary and backup Seiko timing inputs through A/B timing interfaces, event controllers, database servers, ORTO output, scoreboard control, and CIS controllers.
 - Duplication helps a working path continue if one component fails, but the drawing alone does not establish independent failure modes or guarantee availability. Test failover and shared infrastructure.
 - This architectural pattern is tied to the critical goals of 24/7 operations and no surprises during the Games.
@@ -1214,22 +1658,22 @@ The Results System duplicates timing capture, event-control and database paths, 
 - IBM's service framing ties these technical choices to event operations and user trust
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 Use Figures 11.20 and 11.21 together. Figure 11.20 identifies who depends on the information; Figure 11.21 shows one way to protect its production and distribution. Ask students to trace a result from Seiko's timing input to a scoreboard and to name where a backup path must take over.
 :::
 
 ## Lessons from the Nagano IT Project {.smaller}
 
-::: {.callout-important appearance="minimal" icon=false}
-**1.** To paraphrase Clemenceau: *"IT architecture is too important to be left to technical experts."* IT is a technical expression of business policy: architecture must be positioned within that context to be meaningful to decision makers, stakeholders, and users.
-
-**2.** The architect is always **accountable for the integrity** of the system, but not responsible for its implementation: which must be delegated. This is especially true for large-scale social and technical systems.
-:::
-
-::: {.fragment}
-IBM began Nagano with zero confidence from the IOC. After the Games, the IOC director general said: *"Technology at the Winter Games in Nagano has been outstanding."* IBM's strategy of conceiving IT as a service, and its underlying architecture, was validated.
-:::
+- **Architecture expresses business policy.** IBM's service mission gave stakeholders a common basis for judging technical decisions
+- **The architect remains accountable for system integrity.** Implementation responsibilities must be delegated across a large organization
+- X-teams brought stakeholder expertise into requirements, testing, and training
+- Practice competitions converted broad expectations into an agreed body of issues to resolve
+- Data flows, legacy integration, and redundancy supported the operational goals. The IOC's favorable assessment after the Games supported the service approach
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - **Two headline lessons IBM itself drew: connect each back to the chapter's themes**, the purpose of closing on this case study
 - **Lesson 1**: paraphrase of Clemenceau (war too important to be left to generals): IT architecture too important to be left entirely to technical experts, since IT is a technical *expression* of business policy. Must be positioned within that context to be meaningful to decision-makers, stakeholders, users: restates this chapter's core argument: architecture grounded in real needs/goals, not technical elegance alone
 - **Lesson 2**: architect is always **accountable** for overall system integrity, but not personally **responsible** for implementation: implementation must be delegated. Especially critical for large-scale social/technical systems: no one person could implement it alone, but someone must hold the integrated whole together and answer for whether it works
@@ -1242,15 +1686,20 @@ IBM began Nagano with zero confidence from the IOC. After the Games, the IOC dir
 
 :::
 
-## Next: Applying Creativity to Generating a Concept
+## Next: Generating Concepts {.smaller}
 
-Chapter 12 turns from goals back to synthesis: the structured creativity techniques architects use to generate concept alternatives once goals are in hand.
+- Chapter 11 produces a **prioritized goal set** tied to stakeholder needs and value exchanges
+- The solution-neutral **To** statement defines the intended benefit without fixing the mechanism
+- Chapter 12 develops alternative concepts through structured creativity
+- Compare candidate **By** processes and **Using** forms against the goals, then revisit the goals where concept exploration reveals new evidence
 
-::: {.callout-tip title="Reference"}
-Crawley, E., Cameron, B., & Selva, D. (2016). *System Architecture: Strategy and Product Development for Complex Systems*. Pearson. Chapter 11.
+::: {.side-caption}
+Source: Crawley, Cameron & Selva (2016), Chapters 11–12.
 :::
 
 ::: {.notes}
+Source: Crawley, Cameron & Selva (2016), §11.7.
+
 - Chapter 12 uses the goals developed here as the basis for generating concept alternatives.
 - This chapter produced a prioritized, metric-bearing goal set for the Hybrid Car, built systematically from needs via SPS + To-By-Using
 - Ch. 12 picks up *exactly* here: goals in hand, turns to structured-creativity techniques for generating concept alternatives: echoes Ch. 1's "Structured Creativity" (structured beats unstructured)
