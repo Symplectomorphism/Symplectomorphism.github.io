@@ -6,65 +6,28 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-08, against `phase1/planar` at `533fd2b` in
+**Last checked:** 2026-11-08, against `phase1/planar` at `8c5f0ad` in
 `Symplectomorphism/c-gnn`. The full records are in the discussion
 compendium (`reports/discussion-compendium/`); commits are on that branch.
 
 ## Open
 
-[]{#step3c-choices}
-
-::: {.callout-important collapse="true"}
-## Step-3c choices await review: re-planning, F1/F2, the friction mismatch
-1. **Re-planning.** It does not raise success (the chain: open loop 23 of
-   24, RH80 23, RH20 and RH40 22; the hard breaks: 0 of 6 for every
-   variant). Recommended: keep it available, not the default; if used,
-   RH20 (half the tracking deviation, least overlap) with χ<sub>tr</sub>
-   kept fixed: re-sweeping it loses transfer(s<sub>v</sub> → t).
-2. **F1 and F2** (plan farther past the release; ramp from the equilibrium
-   force). Recommended: drop both: no gain on any break, and F2 costs a
-   transfer.
-3. **The friction mismatch** (next entry). Recommended first: give the gate
-   and the plan the friction the realizer can use at the manipulator
-   contact, so the gate rejects what the realizer cannot do; then a tracker
-   that can use high friction, and only then a quasi-dynamic method for
-   these breaks.
-4. Still open from step 3b: a repositioning transport for chaining after
-   the pivot; obstacle avoidance for the disk's free motion; stiffer
-   contacts after a retune.
-
-[The local solver](local-solver.qmd#step-3c).
-:::
-
 []{#friction-mismatch}
 
-::: {.callout-warning collapse="true"}
-## Corner-holding breaks need more disk friction than the tracker uses (checkpoint 2)
-Every remaining failure of the quasi-static realizer is a break(g<sub>v</sub>):
-all six hard starts (30°, 35°, 40°, disk 40 or 20 mm low) and one or two
-perturbed chain starts. The gate and the plan use the simulator's disk–box
-friction (μ = 0.99); the tracker keeps the disk's force inside μ = 0.35 so
-the soft contact sticks. The plan's force at the 30° start has a
-tangential/normal ratio of 0.99; the tracker applies half of it, and the
-box slumps (disk 40 mm low) or the floor corner never lifts while the
-riser contact slides (disk 20 mm low). With the plan held to μ = 0.35 no
-disk force balances the box through these breaks (residual 0.22–0.27
-instead of 0.015). So the gate passes edits this realizer cannot do.
-Fix: choice 3 above. [The local solver](local-solver.qmd#diagnosis).
-:::
-
-[]{#gap-sign}
-
-::: {.callout-warning collapse="true"}
-## One polygon–segment gap has the wrong sign on the GPU (near-parallel faces)
-At one landed pose (the box at θ = π/2 − 4.6·10⁻⁵, its top face 96 mm from
-the riser and almost parallel to it) the signed gap of B:zp–E:S is −96.24 mm
-on the GPU and +96.24 mm on the CPU; any nearby angle gives +96 mm. The
-magnitude is right; the sign comes from a near-degenerate orientation test.
-The success test checks every template, so one such sample refuses a
-success (one re-planned transport run in step 3c). Fix: make the sign robust
-for near-parallel faces in the contact kernels and add the pose to the
-tests. Reproducer: `cmg/scripts/step3c/gap_sign_repro.py`.
+::: {.callout-important collapse="true"}
+## Step 3d choices: the friction cap, the sweep's resolution, the hard breaks
+The friction match (Decision 15) is built as `manipulator_friction` and
+**left unset**: with the decided 5-point sweep, μ = 0.35 makes the gate
+refuse the chain's own break(g<sub>v</sub>), which the realizer does; with
+a 9-point sweep it passes every break(g<sub>v</sub>) start, including the
+six the realizer fails. Those fail dynamically: with friction-matched
+plans the disk's contact stays inside its cone, but the box's corners on
+the floor and riser slide (ratio 1.0) while the tracker's correction
+doubles the planned force. Recommended: (1) keep the cap unset; (2) refine
+the sweep (9 points, or adaptive) before the teacher search: the verdict
+flips with its resolution; (3) for the hard breaks, a tracker that keeps
+the environment contacts inside their cones, then a quasi-dynamic method.
+[The local solver](local-solver.qmd#step-3d).
 :::
 
 []{#eps-pen}
@@ -79,20 +42,6 @@ node or a solver success, so no wrong label is used; the stress test's
 budget is 500. Since step 3b ε<sub>pen</sub> = 5 mm (257 ties); 2–3 mm
 (44–98 ties) needs stiffer contacts, which keep penetration under 0.22 mm
 but need the controller retuned first. [Contact states](contact-states.qmd#the-recognizer).
-:::
-
-[]{#validity}
-
-::: {.callout-warning collapse="true"}
-## Validity is a pairwise stand-in until step 4
-A formation should be valid exactly when some admissible pose realizes it
-(decided Nov 7, compendium Decision 11). Today validity uses derived
-exclusions plus four declared pairs, which admits formations no pose
-realizes, e.g. the box bottom on floor and platform at once. The pivot's
-compound status rests on the declared pairs {g<sub>v</sub>, s} and
-{g, s<sub>v</sub>}, and some of its 64 contexts are impossible. Fix:
-validity computed from the geometry per formation, with the scene families
-(step 4). [Edits](edits.qmd).
 :::
 
 ::: {.callout-warning collapse="true"}
@@ -144,6 +93,76 @@ CPU. Fix: rebuild the tableau from the final basis and continue, with the
 :::
 
 ## Resolved
+
+[]{#sweep-basis}
+
+::: {.callout-tip collapse="true"}
+## The gate's sweep probed different poses on the CPU and the GPU (Nov 8, `f54dc73`)
+The transition sweep's grid followed the SVD's null vectors, which are any
+rotation of a basis when two or more directions are free; the CPU and the
+GPU returned different rotations. Harmless at μ = 0.99, decisive at 0.35.
+Now a canonical basis of the subspace (pivoted Gram–Schmidt on its
+projector); the backends agree, and a test rotates the basis and checks
+nothing changes.
+:::
+
+[]{#step3c-choices}
+
+::: {.callout-tip collapse="true"}
+## Step-3c choices decided: open loop stays the default, RH20 optional, F1/F2 removed (Nov 8, Decision 15)
+Aykut accepted the recommendations. Λ<sub>qs</sub> open loop stays the
+default realizer; receding-horizon re-planning stays available with RH20
+and χ<sub>tr</sub> kept fixed as its defaults (half the tracking deviation,
+no gain in success); F1 and F2 are removed from the code (± 1 run, opposite
+signs on GPU and CPU). Next: the friction match (step 3d, below and on
+[the local solver](local-solver.qmd#step-3d)); then a tracker that can use
+high friction; quasi-dynamic methods last.
+:::
+
+[]{#gap-sign}
+
+::: {.callout-tip collapse="true"}
+## The GPU's −96 mm gap was a float32 sliver in the penetration attribution (Nov 8)
+At the landed pose with the box's top face almost parallel to the riser,
+the box's lower corner sits 2·10⁻⁸ m inside the platform (float32 noise).
+That penetration belongs to the platform, the nearer segment, but on the
+GPU a one-ulp piece of the face, λ ∈ [0.99999994, 1], stayed attributed to
+the riser: it has no representable midpoint, so the strict "another
+segment is closer" test was evaluated at its end and failed, and the
+sliver carried the riser's h = −96 mm as its depth. Fix: attributed pieces
+narrower than 10⁻⁶ (in λ) are dropped; CPU and GPU now agree (+96.24 mm),
+and the pose is a test (`test_gap_sign_near_parallel_resting_box`).
+:::
+
+[]{#validity}
+
+::: {.callout-tip collapse="true"}
+## Exact validity and the local compound rule (Nov 8, Decisions 11, 12, 14; merge `9ea09bb`)
+Validity now comes from the geometry: a certified table of the 357
+formations some admissible pose realizes (the stand-in admitted 37,203),
+from 552 excluded pairs and 4 triples. Compound edges follow the local rule
+by default (Decision 14): no intermediate is realized within ρ = 25 mm of
+the transition pose. On the step scene that gives 96 compound instances
+(the global rule 136; the dropped 40 join formations realized 85–184 mm
+apart, which no single motion connects); the pivot stays compound. The
+global rule stays selectable. [Edits](edits.qmd).
+:::
+
+[]{#safe-pruning}
+
+::: {.callout-tip collapse="true"}
+## Duplicate keys: safe pruning and canonical states, so the call bound holds (Nov 8, Decision 13)
+The theory note proves that the search makes at most min ν/π calls of Λ
+(Orseau and Lelis's policy-guided search bound). With duplicate node keys
+the bound needs two things: nodes of one key behave alike (one canonical
+state per key, the first one made) and the *safe* rule: drop a new child
+only if a node already made with its key has π at least as large;
+otherwise make it as a new node. First-come pruning breaks the bound
+(17,664 calls against 10,020 in the theory note's example); so does
+re-parenting the existing node to the higher-π arrival (26 against 22.2
+in a small example). Implemented in `cmg/search` (`SearchState`,
+`PolicyRanker`) with both examples as tests.
+:::
 
 []{#replan-defect}
 
