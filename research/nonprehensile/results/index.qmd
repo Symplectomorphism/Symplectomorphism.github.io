@@ -1,12 +1,18 @@
 ---
 title: "Results"
-subtitle: "The planner's motions on the step scene: solved tasks, the learned skills, the proposed tie rule, and the failures that are still open."
+subtitle: "The planner's motions on the step scene: the November 9 change to elliptic contacts, the redesign's first solutions, the CMGMP baseline, and the earlier runs on pyramidal contacts."
 resources:
   - media/*.mp4
+  - media/cmgmp/*.mp4
+  - media/d23/*.mp4
 ---
 
+The newest results come first: [November 9](#nov9), on elliptic friction
+contacts. The [sections after it](#pyramidal) are the November 8–9 runs on
+MuJoCo's pyramidal contacts, kept for the record and marked as superseded.
+
 Each clip replays calls that the planner actually made in its teacher runs
-(November 8–9, branch `phase1/planar`). No motion here was staged for the
+(branch `phase1/planar`). No motion here was staged for the
 video. The search chose the edits (the contact changes), and each edit was
 executed by the local solver the run used: the quasi-static realizer Λ_qs or
 a learned skill Λ_RL (see [The local solver](../planar-build/local-solver.qmd)).
@@ -32,6 +38,160 @@ not match is labelled **DIVERGED** below.
   second, so their first 0.6 s plays at 0.25× (slow motion).
 - **Cards.** A short hold after each segment, then the strict test's verdict
   (SOLVED, or FAILED with the clause that failed).
+:::
+
+## November 9: elliptic contacts, the redesign, and CMGMP {#nov9}
+
+Three things happened on November 9. The simulator's friction model turned
+out to be wrong for a box at rest, and was changed. A redesigned search
+([Search](../planar-build/search.qmd#redesign)) solved its first lowering
+tasks. And the CMGMP baseline was re-run on the new contacts. Tonight's work
+fixed the lift's pivot; the redesign's full teacher run is starting now, so
+its numbers are **pending**.
+
+### The simulator, not the gate, was wrong
+
+MuJoCo's default *pyramidal* friction cones let a box creep off a rest that
+the statics say is held. *Elliptic* cones (impedance ratio 10), at the same
+step and contact parameters, remove the creep. On the box leaning on the step
+corner with the disk pulled away:
+
+| | pyramidal (old default) | elliptic, impratio 10 (adopted) |
+|---|---|---|
+| creep, °/s | 0.40 | 0.008 |
+| rests held for 10 s | 0 of 84 | 84 of 84 |
+| simulator agrees with the gate (poses away from the tipping boundary) | 87 of 453 | 452 of 453 |
+
+So the gate's statics were right; the simulator let held boxes slide. Every
+scene now uses elliptic cones and full float32 matrix products, and every
+result is being re-run on them. The results further down this page used the
+pyramidal cones.
+
+### CMGMP on elliptic contacts
+
+CMGMP (the contact-mode-guided planner of Cheng et al., the authors' C++
+code, patched for our disk's 1 N motors) ran on the 50 shared test starts,
+25 per task. Each start gets up to 1,800 s; CMGMP is restarted with fresh
+seeds until an executed plan passes. Every plan is executed in our MJX
+simulator on elliptic contacts and graded by our strict test. A lift counts
+only if the box ends *fully* on the platform, at rest.
+
+| Task (25 starts) | within 60 s | within 300 s | within 1,800 s | plans claimed |
+|---|---|---|---|---|
+| lift | 1 (1–20%) | 5 (9–39%) | 15 (41–77%) | 22 |
+| lower | 14 (37–73%) | 21 (65–94%) | 24 (80–99%) | 25 |
+
+95% Wilson intervals in brackets. Seeds run 0, 1, 2, …, so each budget's
+column is a prefix of one run. The lift needs many restarts (median 141
+planning attempts per start). An earlier grading of the same lift run used a
+looser rule (the box only partly over the platform: 3 / 14 / 20) and is
+superseded.
+
+**Not yet a comparison.** Our planner has not run on these 50 starts. The
+paired comparison (same starts, same goal test and grading, matched
+wall-clock budget, McNemar's test) runs after the redesign's teacher run.
+**Results pending.**
+
+### How CMGMP lifts
+
+Every CMGMP lift we rendered takes the same route, read by our formation
+recognizer:
+
+```text
+{g} → {m_x, g} → {m_x, s, g} → {m_x, g_v, s_v} → {m_x, s_v} → {m_x, t}
+```
+
+The disk pushes the box against the riser and tips it into **our pivot
+formation** {m_x, g_v, s_v}. The floor corner lets go and the box hangs on the
+step corner, {m_x, s_v}. The disk keeps pushing and rolls the box a quarter
+turn onto its +x face on the platform, {m_x, t}, with the disk still on the
+face it pushed. Our planned route shares the pivot, then moves the disk round
+the box's corner onto its top instead.
+
+<video src="media/cmgmp/F1-lift-s0-00006_seed1.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**CMGMP, lift instance 6, seed 1 (23 s, real time).** Passes under the
+full rule. The box drops off the pivot once for 0.15 s and regains it before
+the roll.
+
+<video src="media/cmgmp/F1-lift-s0-00021_seed3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**CMGMP, lift instance 21, seed 3 (15 s).** Passes. The disk leaves the box
+for a moment after the roll.
+
+<video src="media/cmgmp/F1-lift-s0-00018_seed63.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**CMGMP, lift instance 18, seed 63 (15 s).** Passes, on the 64th seed: the
+same route, found late.
+
+### The redesign's first solutions: lowering, with a known issue
+
+In the redesign's smoke test (three instances, a check of the code, not a
+result) the search solved both lowering instances in 13 calls each. Each
+solution is two calls: make the disk's contact on the box's +x face, then a
+**release**: the disk pushes the box off the platform and lets it fall to the
+floor. Both replays reproduce the logged calls exactly.
+
+::: {.callout-warning}
+## Known issue: the release throws the box
+
+The release's push does not set the box down; it throws it. In instance 14
+the box leaves at 1.46 m/s and lands 0.54 m past the predicted landing; in
+instance 3, 0.19 m past. Both still end at rest inside the goal, so both
+count. Releases also end in the same pose whatever formation they were asked
+for. This is a property of the release's scripted push, not yet fixed.
+:::
+
+<video src="media/d23/v_linear_F1-lower-s0-00014.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Redesign, lower instance 14 (2 calls, 12 s).** make, then the release.
+Watch the throw: the box lands well past the step.
+
+<video src="media/d23/v_linear_F1-lower-s0-00003.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Redesign, lower instance 3 (2 calls, 9 s).** The same two calls; the box
+lands 0.19 m past the prediction.
+
+### Tonight's work: the lift's pivot
+
+On elliptic contacts the lift stalled at its first hard step, the pivot
+{m_x, g, s} ⇒ {m_x, g_v, s_v} (box flat against the riser tipping onto its
+floor corner). The cause was a friction mismatch. The gate assumed the
+simulator's disk–box friction, 0.99, and placed the disk 45 mm below the
+middle of the box's face. The controller only uses 0.35, and from there it
+could not tip the box: 0.01° over 680 samples. On pyramidal cones the same
+pivot had passed only because the disk slipped up the face.
+
+Two fixes, both decided by Aykut tonight:
+
+1. **The gate uses the controller's friction, 0.35**, at the disk. The
+   hard break that follows the pivot stays legal.
+2. **The disk goes to the most robust placement.** The gate is re-checked
+   exactly at several placements along the face (5 or 9; being finalized),
+   and the one with the largest margin wins. This is an interim rule: in the
+   long run a learned pivot skill chooses its own placement (three seeds are
+   training now).
+
+With both, lift instance 2's pivot passes into exactly {m_x, g_v, s_v}, with
+the disk 44 mm *above* the face's middle, and the search went on to a release
+onto the platform. A side finding: the exact gate passes at every disk height
+on that face, but the controller succeeds only from about 10 mm below the
+middle upward, so low on the face the gate is no test of what the controller
+can do. Checking 9 placements costs about 3× per search node (13.5 → 40.5 s).
+
+**Pending:** the redesign's full teacher run (lift and lower, elliptic
+contacts), launching tonight; then the paired comparison with CMGMP and the
+learned value's retraining.
+
+## Earlier runs on pyramidal contacts (superseded) {#pyramidal}
+
+::: {.callout-important}
+## Superseded
+
+Everything below was run on MuJoCo's pyramidal friction cones, under which
+held boxes creep (see [above](#nov9)), and with the search as it was before
+the redesign. These runs are not being continued; they are kept as the
+record of what the old pipeline did.
 :::
 
 ## The tie rule (`transfer_ties`)
@@ -146,8 +306,9 @@ is the pivot formation {g_v, s_v}.
 
 ## Open: lowering the box off the platform
 
-The planner solves 0 of 40 lowering tasks. The CMGMP baseline lowers 19
-of 25. The only way off the platform in our graph is a **knife-edge transfer**:
+The planner solves 0 of 40 lowering tasks. The CMGMP baseline lowered 19
+of 25 (pyramidal contacts, 60 s per start; [now 24 of 25](#nov9) in 1,800 s
+on elliptic contacts). The only way off the platform in our graph is a **knife-edge transfer**:
 the box's bottom moves from the platform onto the step corner. It was tried in
 the 11 instances whose box started 0.6–32.8 mm from the edge; farther away
 nothing brings the box to the edge. Λ_qs fails it every time (52 of 52 calls).
