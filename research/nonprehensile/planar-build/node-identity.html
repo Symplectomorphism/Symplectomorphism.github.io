@@ -650,17 +650,19 @@ $$
 <p>The examples below are computed with the search’s real key code (<code>NodeKey</code> and the merge rule of <code>SearchState</code> in <code>cmg/search</code>, with the search’s own gate) and the old grid key, by <a href="scripts/04_node_identity.py"><code>scripts/04_node_identity.py</code></a>. In all four the formation is the same: the box’s bottom face on the floor, {B:zn–E:L}.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
 </colgroup>
 <thead>
 <tr class="header">
 <th>Pair of states</th>
 <th>Grid (1 mm cells)</th>
 <th>Xiao–Ji contact state</th>
-<th><strong>Our key</strong> (current code)</th>
+<th>Our key, per-pose gate</th>
+<th><strong>Our key, relaxed gate (default)</strong></th>
 </tr>
 </thead>
 <tbody>
@@ -668,11 +670,13 @@ $$
 <td>disk in two places, box fixed</td>
 <td>different</td>
 <td>same</td>
-<td><strong>different</strong> (see below)</td>
+<td>different</td>
+<td><strong>same</strong></td>
 </tr>
 <tr class="even">
 <td>box 0.2 mm apart, across a cell boundary</td>
 <td>different</td>
+<td>same</td>
 <td>same</td>
 <td><strong>same</strong></td>
 </tr>
@@ -680,19 +684,65 @@ $$
 <td>box 5 mm apart</td>
 <td>different</td>
 <td>same</td>
+<td>same</td>
 <td><strong>same</strong></td>
 </tr>
 <tr class="even">
 <td>box 30 cm apart</td>
 <td>different</td>
 <td>same</td>
+<td>different</td>
 <td><strong>different</strong></td>
 </tr>
 </tbody>
 </table>
-<p>The grid splits the first three rows into several nodes, which only costs repeated calls. The Xiao–Ji contact state merges the last row, situations with different futures, which can lose the solution. Our key gets rows 2–4 right.</p>
-<p>Row 1 is a known gap between the decision and the code. The decision collapses the disk’s position, but the code currently evaluates the gate at each node’s own disk position, and a different disk position can change a verdict (for example, which contacts are near enough to make). So the merge test keeps the two states apart.</p>
-<p><strong>Decided fix (Decision 21): ask the gate the right question.</strong> A node’s verdict should be “is there <em>some</em> disk position in its region from which the box can be held through this edit?” That’s computed as a relaxation in the same hold LP: the disk’s contact becomes a contact that may slide along the reachable stretch of the face it will touch (a sliding contact on a straight face can push like either of the stretch’s two endpoints), so it’s one LP of the same size. It never rejects an edit some disk position could realize, which is the gate’s guarantee, and Λ decides where the disk actually goes. A sampled version (the gate at six disk spots) also closes the gap and was measured: 39% more accepted calls, admitted edits realized just as often, but twice the time and not guaranteed. The relaxed version’s theory is done: on a single straight stretch the two endpoint contacts are <em>exact</em>, not just a relaxation (their forces add up to one force at their centre of pressure), and around a corner they are exact unless the arc is very wide; the gate’s guarantee carries over, and its verdicts depend on the node’s identity alone. The suggested disk position is re-checked with the exact gate before Λ uses it. The implementation is being built and will be compared with the sampled version.</p>
+<p>The grid splits the first three rows into several nodes, which only costs repeated calls. The Xiao–Ji contact state merges the last row, situations with different futures, which can lose the solution. Our key with the relaxed gate, now the default, gets all four right. (The per-pose column comes from the script; the relaxed column’s row 1 is checked by the test <code>test_relaxed_verdicts_and_keys_ignore_the_disk_position</code> and by the search benchmark below.)</p>
+<p>Row 1 was a gap between the decision and the code. The decision collapses the disk’s position, but the code currently evaluates the gate at each node’s own disk position, and a different disk position can change a verdict (for example, which contacts are near enough to make). So the merge test kept the two states apart.</p>
+<p><strong>The fix (Decision 21, now the default): ask the gate the right question.</strong> A node’s verdict should be “is there <em>some</em> disk position in its region from which the box can be held through this edit?” That’s computed as a relaxation in the same hold LP: the disk’s contact becomes a contact that may slide along the reachable stretch of the face it will touch (a sliding contact on a straight face can push like either of the stretch’s two endpoints), so it’s one LP of the same size. It never rejects an edit some disk position could realize, which is the gate’s guarantee, and Λ decides where the disk actually goes. A sampled version (the gate at six disk spots) also closes the gap and was measured: 39% more accepted calls, admitted edits realized just as often, but twice the time and not guaranteed. The relaxed version’s theory is done: on a single straight stretch the two endpoint contacts are <em>exact</em>, not just a relaxation (their forces add up to one force at their centre of pressure), and around a corner they are exact unless the arc is very wide; the gate’s guarantee carries over, and its verdicts depend on the node’s identity alone. The suggested disk position is re-checked with the exact gate before Λ uses it.</p>
+<p><strong>Measured, and adopted.</strong> In short searches from the chain’s starts:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Per-pose gate</th>
+<th>Sampled (6 disk spots)</th>
+<th><strong>Relaxed (default)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Seconds per gate evaluation</td>
+<td>3.45</td>
+<td>21.1</td>
+<td><strong>4.40</strong></td>
+</tr>
+<tr class="even">
+<td>Λ’s acceptance per call</td>
+<td>0.27</td>
+<td>0.26</td>
+<td><strong>0.36</strong></td>
+</tr>
+<tr class="odd">
+<td>Merged nodes</td>
+<td>9</td>
+<td>13</td>
+<td><strong>18</strong></td>
+</tr>
+<tr class="even">
+<td>Strict successes over 370 spread-out start–edit pairs</td>
+<td>45</td>
+<td>60</td>
+<td><strong>119</strong></td>
+</tr>
+</tbody>
+</table>
+<p>With the relaxed gate, 72 of the disk-free pairs succeed (24 sampled, 9 per-pose) and 47 with the disk on the box (36). On 214 nodes it admits every edit the other two admit, with one exception that turned out to be <em>their</em> bug: on one formation they admit making disk contact with the disk inside the platform, because their sweep never checks the disk’s clearance from the environment (being fixed). The exact re-check at the suggested disk position fails on 1 of 246 admitted edits. Two implementation details differ from the theory note: the sweep still moves the disk along its contact, and the reachable stretch is computed once at the starting pose.</p>
 </section>
 <section id="merging-by-evaluation" class="level2">
 <h2 class="anchored" data-anchor-id="merging-by-evaluation">Merging by evaluation</h2>

@@ -598,7 +598,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#what-the-solver-must-do" id="toc-what-the-solver-must-do" class="nav-link active" data-scroll-target="#what-the-solver-must-do">What the solver must do</a></li>
   <li><a href="#lambda-qs" id="toc-lambda-qs" class="nav-link" data-scroll-target="#lambda-qs">The mode-scheduled realizer Λ<sub>qs</sub> (step 3b)</a></li>
-  <li><a href="#learned-skill" id="toc-learned-skill" class="nav-link" data-scroll-target="#learned-skill">A learned skill for the hard breaks (in progress)</a></li>
+  <li><a href="#learned-skill" id="toc-learned-skill" class="nav-link" data-scroll-target="#learned-skill">A learned skill for the hard breaks</a></li>
   <li><a href="#step-3c" id="toc-step-3c" class="nav-link" data-scroll-target="#step-3c">Re-planning and failure diagnostics (step 3c)</a>
   <ul class="collapse">
   <li><a href="#diagnosis" id="toc-diagnosis" class="nav-link" data-scroll-target="#diagnosis">Why the remaining runs fail</a></li>
@@ -693,7 +693,7 @@ $$
 </ul>
 </section>
 <section id="learned-skill" class="level2">
-<h2 class="anchored" data-anchor-id="learned-skill">A learned skill for the hard breaks (in progress)</h2>
+<h2 class="anchored" data-anchor-id="learned-skill">A learned skill for the hard breaks</h2>
 <p>The hard break(g<sub>v</sub>) starts fail for every planner so far because the box’s corners slide: the maneuver needs timing or momentum that a quasi-static plan can’t provide. So a controller for this one maneuver is being <em>learned</em>, in the same MJX simulator the rest of the system uses:</p>
 <ul>
 <li><strong>Two algorithms, two variants:</strong> proximal policy optimization (PPO) and soft actor-critic (SAC), from Brax, each trained as a <strong>residual</strong> correction on top of Λ<sub>qs</sub>’s commands and <strong>from scratch</strong>.</li>
@@ -701,7 +701,57 @@ $$
 <li><strong>Validation:</strong> the six hard starts and 50+ held-out ones, against Λ<sub>qs</sub> and MPPI (both 0 of 6 so far), with a penetration limit and a re-check with stiffer contacts, so a policy can’t win by exploiting the simulator.</li>
 <li><strong>Feasibility:</strong> if some start stays unsolved by every run, a brute-force search over open-loop force sequences within the motors’ ±1 N tells whether it is hard to learn or impossible.</li>
 </ul>
-<p>A learned skill would carry a measured success rate, not a quasi-static certificate; the call bound still holds (it counts Λ calls). Results will be reported here.</p>
+<p>A learned skill would carry a measured success rate, not a quasi-static certificate; the call bound still holds (it counts Λ calls).</p>
+<p><strong>Result: SAC trained from scratch solves the whole family.</strong> Under the strict success test, on the same starts for every method:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Hard starts</th>
+<th>Held-out starts (95% CI)</th>
+<th>Penetration violations</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>SAC, from scratch</strong> (3 seeds)</td>
+<td><strong>18 / 18</strong></td>
+<td><strong>150 / 150</strong> (98–100%)</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>SAC, residual on Λ<sub>qs</sub></td>
+<td>6 / 18</td>
+<td>50 / 150 (26–41%)</td>
+<td>75</td>
+</tr>
+<tr class="odd">
+<td>PPO, residual or from scratch</td>
+<td>0 / 18</td>
+<td>0 / 150</td>
+<td>82–86</td>
+</tr>
+<tr class="even">
+<td>Λ<sub>qs</sub> (quasi-static)</td>
+<td>0 / 6</td>
+<td>1 / 50</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>MPPI</td>
+<td>0 / 6</td>
+<td>0 / 50</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>SAC gives the same result with stiffer contacts, so it isn’t exploiting soft contacts; every hard start was solved, so the feasibility search wasn’t needed. Learning from scratch beats the residual because Λ<sub>qs</sub>’s commands are a poor starting point here (they fail 79 of 80 grid starts). PPO learned nothing under the same tuning budget. Two caveats: SAC is unstable (two of three seeds collapse after peaking, so the best checkpoint is kept), and the policy tips the box to about 72° in 0.25 s and then holds the new contact state in a small limit cycle (about ±2° at 4 Hz), which the strict test accepts because its settle clause is off. The skill exists as Λ<sub>RL</sub> (<code>cmg/rl/skill.py</code>) but isn’t yet used by the search; how the search should call it is being decided.</p>
 </section>
 <section id="step-3c" class="level2">
 <h2 class="anchored" data-anchor-id="step-3c">Re-planning and failure diagnostics (step 3c)</h2>
