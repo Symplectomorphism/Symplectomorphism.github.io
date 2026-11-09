@@ -568,6 +568,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#the-search" id="toc-the-search" class="nav-link active" data-scroll-target="#the-search">The search</a></li>
   <li><a href="#the-ranker" id="toc-the-ranker" class="nav-link" data-scroll-target="#the-ranker">The ranker</a></li>
   <li><a href="#scene-families" id="toc-scene-families" class="nav-link" data-scroll-target="#scene-families">Scene families</a></li>
+  <li><a href="#redesign" id="toc-redesign" class="nav-link" data-scroll-target="#redesign">The redesign (Decision 23, Nov 9)</a></li>
   </ul>
 </nav>
     </div>
@@ -624,11 +625,11 @@ $$
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Planned
+<span class="screen-reader-only">Note</span>Partly built
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Nothing on this page is built yet. It records the plan agreed on Nov 7, 2026; the page will report results as they come.</p>
+<p>The plan was agreed on Nov 7, 2026. Since then the teacher search has run (Nov 8–9) and the CMGMP baseline has been evaluated; the ranker is not trained yet, and a redesign of the search, decided on Nov 9, is being implemented (<a href="#redesign">below</a>).</p>
 </div>
 </div>
 <section id="the-search" class="level2">
@@ -672,7 +673,7 @@ $$
 </tr>
 </tbody>
 </table>
-<p>Each family with one or two disks, and the motor limit as a parameter (two weak disks still need the environment; two strong ones can lift the box). Validity is computed from the geometry for each family (<a href="../../../research/nonprehensile/planar-build/issues.html#validity">Issues</a>).</p>
+<p>One disk for now. The families come after the redesign below works on the step, and a second disk after that (decided Nov 9). Validity is computed from the geometry for each family (<a href="../../../research/nonprehensile/planar-build/issues.html#validity">Issues</a>).</p>
 <p><strong>Teacher search: the first full run (Nov 8–9).</strong> The pipeline generates seeded step instances, runs the search with a teacher ranker, and logs every Λ call with the gate’s verdicts as training data for the ranker. Its first small check solved none; the transfers it failed were real realizer failures (makes that never reached the contact, disk transfers planned as a retreat, contacts placed at feature ends, hand-overs lingering in a tie), and the fixed realizer accepts 51 of the 76 it had failed. The full run (200 instances; the relaxed gate, the learned break skill, retries from other nodes of a key):</p>
 <table class="caption-top table">
 <thead>
@@ -710,7 +711,7 @@ $$
 </tr>
 </tbody>
 </table>
-<p>7,795 Λ calls (4,954 accepted) are recorded as training data (<code>cmg/scripts/step4/teacher/results/t-full/merged/</code>). Lifting has since been solved in 5 of 10 instances with a second learned skill (<a href="../../../research/nonprehensile/planar-build/local-solver.html#learned-skill">the local solver</a>). Lowering is open: the only edit off the platform, onto the step corner, is a balance Λ<sub>qs</sub> can’t hold (0/52), and nothing brings the box to the edge.</p>
+<p>7,795 Λ calls (4,954 accepted) are recorded as training data (<code>cmg/scripts/step4/teacher/results/t-full/merged/</code>). Lifting has since been solved in 5 of 10 instances with a second learned skill (<a href="../../../research/nonprehensile/planar-build/local-solver.html#learned-skill">the local solver</a>). Lowering is open: the only edit off the platform, onto the step corner, is a balance Λ<sub>qs</sub> can’t hold (0/52, tried in the 11 instances whose box started 0.6–32.8 mm from the edge), and nothing brings a box farther away to the edge. Six of the 52 calls dropped the box into the lowering goal, in 3 of the 40 instances, and were rejected because they didn’t end in the requested formation; the redesign keeps such outcomes (<a href="#redesign">below</a>).</p>
 <p><strong>Baseline: the contact-mode-guided planner (CMGMP).</strong> Built from the authors’ code without root (in a container on Juno) and patched for the disk’s 1 N limit. Its plan for lowering, executed in our simulator and graded by the same strict test, <strong>succeeds</strong>: the box comes off the platform and rests flat on the floor.</p>
 <p><strong>Evaluated on 50 shared test starts</strong> (25 per task; 60 s per start on one CPU core, with restarts; settings chosen on 10 separate tuning starts; every plan executed in our MJX simulator and graded by the same strict test):</p>
 <table class="caption-top table">
@@ -748,7 +749,8 @@ $$
 </tbody>
 </table>
 <p>Lift plans are rare, and half of them fail in execution because the box doesn’t hold the goal; lower plans come easily, but 50 of 71 executions don’t hold the goal, and retries within the budget give 19/25.</p>
-<p><strong>Not yet a paired comparison.</strong> Our planner lifts 5/10 with the learned skills (7/10 with the proposed tie rule) and lowers none, but on different instances and with a budget counted in Λ calls; a script pairs the two once our planner runs on the same 50 starts. So far the baseline is ahead on lowering, ours on lifting.</p>
+<p><strong>Not yet a paired comparison.</strong> Our planner lifts 5/10 with the learned skills (7/10 with the proposed tie rule) and lowers none, but on different instances and with a budget counted in Λ calls. So far the baseline is ahead on lowering, ours on lifting. Our lift instances 0–9 happen to be CMGMP’s first 10 lift starts (ours 5/10, or 7/10 with the tie rule; CMGMP 2/10), but under different success criteria and budgets, so that is not the comparison either.</p>
+<p><strong>The paired comparison’s protocol</strong> (decided Nov 9; run after the redesign): the same 50 starts (25 lift, 25 lower); the same goal test and the same strict grading of every plan executed in MJX; a matched wall-clock budget per start on the same hardware class; no retries in our planner; Wilson intervals and McNemar’s test on the paired outcomes; both planners’ plan-found and executed-success rates reported.</p>
 <p><em>Caveats:</em> the baseline plans quasi-statically with a point finger, while execution is dynamic with soft contacts; moves between its planned contacts are tracked along straight lines without collision planning, so some execution failures may be the executor’s; its 1 N limit is applied per contact component (up to about 1.4 N along a world axis); and its contact-mode code was patched for the box wedged into the floor–riser corner.</p>
 <p><strong>Built (Nov 8): the validity tables for all three families.</strong> The builder now takes any polygonal environment and a rectangular box. It reproduces the step’s tables exactly, and built the two new families (default dimensions; random-instance ranges are documented, not yet sampled):</p>
 <table class="caption-top table">
@@ -794,7 +796,55 @@ $$
 </tbody>
 </table>
 <p>New in the families: concave corners the box can wedge into (80 staircase formations, 42 wall-and-ledge), and pivot-like compound edges at every convex corner. Neither has collinear edges, so the “pit” case of the theory note doesn’t arise yet.</p>
-<p><strong>The test:</strong> a 2 × 2 table of transfer, holding out an environment family (F3) and holding out the number of disks, with cost measured in Λ calls. A targeted literature search found learned guidance for contact or mode search tested on held-out instances, objects, object counts or robot counts, but not on a held-out family of environments; the closest work counts solver calls with learned feasibility for pick-and-place (Ortiz-Haro et al., ICRA 2023).</p>
+<p><strong>The test:</strong> a 2 × 2 table of transfer, holding out an environment family (F3) and holding out the number of disks (once a second disk is built), with cost measured in Λ calls. A targeted literature search found learned guidance for contact or mode search tested on held-out instances, objects, object counts or robot counts, but not on a held-out family of environments; the closest work counts solver calls with learned feasibility for pick-and-place (Ortiz-Haro et al., ICRA 2023).</p>
+</section>
+<section id="redesign" class="level2">
+<h2 class="anchored" data-anchor-id="redesign">The redesign (Decision 23, Nov 9)</h2>
+<p><strong>Why.</strong> The search throws away motions that make progress but don’t end in the requested contact state. Asked to lift the box’s floor corner, Λ<sub>qs</sub> instead tilts the box from about 10° to 67° while keeping all three contacts. The call fails, but the box is now where a short route lifts it without any learned skill: move the disk under the box, then push it over the step corner (<a href="../../../research/nonprehensile/results/index.html">the video</a>).</p>
+<p><strong>What changes</strong> (being implemented behind flags; defaults are set after an evaluation on 10 lift and 10 lower instances):</p>
+<ul>
+<li><strong>Outcome children.</strong> A call yields at most one child, labelled by the state it actually reaches. The child is accepted if it is the requested state, or if it lowers a value estimate by at least δ = 10 mm.</li>
+<li><strong>Two new actions,</strong> each with its own gate: moving the box <em>within</em> its contact state, and <strong>releases</strong>, where the box is let go and comes to rest in the next state. Lowering becomes a push toward the platform’s edge, then a release to the floor. The final roll onto the platform becomes a release too, so the tie rule and the roll skill are shelved.</li>
+<li><strong>The order of the search</strong> is PHS* (Orseau and Lelis 2021), with its heuristic factor η from a value function, clipped to [1, η<sub>max</sub>] (η<sub>max</sub> = 10 to start; 4, 10 and 30 to be measured).</li>
+<li><strong>The value.</strong> To start, 𝒱₀: the distance to the goal in the edit graph plus the box’s distance to a fixed set of poses where the next edit passes the gate. Then one learned value V₁, the expected number of Λ calls to the goal, trained by temporal differences on every logged call, failures included (a call that succeeds with probability p costs about 1/p calls). The distance to the goal enters only as shaping and as an input.</li>
+<li><strong>Smaller decisions.</strong> The 125 mm gap screen (Near) is dropped: the gate and box transport decide, and distance only orders the candidates. The disk’s clearance check stays, as part of the gate. Duplicate pruning also compares calls per path probability. The approach lasts as long as its path needs. The settle clause is off for formation edits and required for releases and the final goal state. Retries (2 per node) are for the teacher only; the planner and every reported result use none. The search keeps popping batches, and a batched version of the call bound is being proved.</li>
+</ul>
+<p><strong>The release route, tested first</strong> (84 starts, the break states the teacher search reached; <code>cmg/scripts/step4/release_test/</code>, commit <code>12fc963</code>):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Λ<sub>qs</sub>’s “failed” break keeps all three contacts</td>
+<td>84/84, tilt about 10° → 67°</td>
+</tr>
+<tr class="even">
+<td>The route end to end, Λ<sub>qs</sub> as it was</td>
+<td>2/84</td>
+</tr>
+<tr class="odd">
+<td>Why: with the disk away, the box creeps in MJX (about 0.5°/s) while each approach lasted 16.2 s</td>
+<td>box slid off the step corner in 80/84</td>
+</tr>
+<tr class="even">
+<td>The route with a short approach: the next two edits reach their states</td>
+<td>84/84</td>
+</tr>
+<tr class="odd">
+<td>The release push, stop when the box is fully on the platform: at rest, fully on</td>
+<td><strong>76/84</strong> (82–95%)</td>
+</tr>
+</tbody>
+</table>
+<p>From these: the approach now lasts only as long as its path needs (<code>3c52753</code>); the release realizer is the push with the “fully on” stop; the box counts as at rest within 1 mm and about 15 mrad (MJX shows a small periodic tilt cycle at rest, up to 12.5 mrad); simulator settings are being tested for the creep. One problem remains: the strict test rejects the step that brings the disk under the box (84/84), because the approach path brushes the box. The path is being fixed; how the recognizer reads such brushes is queued for a separate rethink.</p>
 <p><a href="../../../research/nonprehensile/planar-build/node-identity.html">← Node identity</a> · <a href="../../../research/nonprehensile/planar-build/index.html">Back to the overview</a></p>
 
 
