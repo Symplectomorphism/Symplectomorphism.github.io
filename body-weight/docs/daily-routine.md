@@ -34,17 +34,17 @@ This morning's weight (2026-10-28), lb: 203.6
 Waist, in (due; last 2026-10-21); blank skips: 38.2
   updated 2026-10-28: weight_lb 203.6, waist_in 38.2
 Health readings; blank skips.
-  fasting glucose, mg/dL: 94
-  ketones, mmol/L: 0.6
+  fasting glucose, mg/dL:
+  ketones, mmol/L:
   resting heart rate, bpm: 61
   blood pressure, systolic:
-  updated 2026-10-28: glucose_mg_dl 94, ketones_mmol_l 0.6, resting_hr_bpm 61
+  updated 2026-10-28: resting_hr_bpm 61
 ```
 
 - **Yesterday's food** is asked for only if yesterday's row has no food at all (no `kcal` and no full macro split), and then only for the fields still empty. If you log meals with `wdm log` as you go, you will never see this question.
 - **This morning's weight** is asked for unless today's row already has one.
 - **The waist** is asked for when seven days have passed since the last reading (see [the waist tape](#the-waist-tape)).
-- **The health readings** (fasting glucose, ketones, resting heart rate, blood pressure) are asked for every morning unless today's row has them; the diastolic only after a systolic. The model does not use them, so skip any you did not take ([how to take them](data.md#health-readings)).
+- **The health readings** (fasting glucose, ketones, resting heart rate, blood pressure) are asked for every morning unless today's row has them; the diastolic only after a systolic. The model does not use them, so skip any you did not take ([how to take them](data.md#health-readings)). Glucose and ketones are taken about two hours after waking, so skip them here and add them later with `wdm log`, as in the example above.
 
 A blank answer skips the item. A value that conflicts with one already in the file is refused, not overwritten, because a silent overwrite is how a typo becomes data; if the old value is the wrong one, `wdm log --set` replaces it (for example `wdm log --set --weight 203.4`). A day's row that does not exist yet is created in the latest episode.
 
@@ -95,7 +95,8 @@ A weekly waist measurement is the only reading that responds to fat mass directl
 |---|---|---|
 | Every morning | Weigh in; get today's prescription | `wdm daily` |
 | Weekly (it asks) | Waist at the navel | answer `wdm daily`'s prompt, or `wdm log --waist IN` |
-| Every morning (optional) | Glucose, ketones, resting heart rate, blood pressure | answer `wdm daily`'s prompts, or `--glucose`, `--ketones`, `--hr`, `--bp SYS DIA` |
+| Every morning (optional) | Resting heart rate, blood pressure | answer `wdm daily`'s prompts, or `--hr`, `--bp SYS DIA` |
+| About 2 h after waking, fasted (optional) | Glucose, ketones | `wdm log --glucose MG_DL --ketones MMOL_L` |
 | Before each meal | Add the meal; see what is left | `wdm log --kcal ... --protein ... --carb ... --fat ...` |
 | After training | Add the session's energy | `wdm session-kcal --session "Lower A"`, then `wdm log --exercise KCAL` |
 | At night (optional) | The day's step count | `wdm log --steps N` |

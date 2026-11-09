@@ -90,7 +90,7 @@ Optional, and the only reading that responds to fat mass directly; weekly is ple
 
 Fasting glucose, ketones, resting heart rate, and blood pressure are logged and plotted (`wdm plots` draws a `health` figure once any is logged) but never used by the model, so a blank one costs nothing. A file gets each column the first time it has a value. Take them the same way every morning, before exercise, since the trend is what is worth reading; a workout raises or lowers glucose, raises ketones, and leaves blood pressure low for hours. On a morning that has already had a workout, leave them blank:
 
-- **Glucose and ketones:** finger-stick, on waking, before food, coffee, or exercise.
+- **Glucose and ketones:** finger-stick, about two hours after waking, at the same time each day, still fasted: before food, coffee, or exercise. Not on waking: before you wake, cortisol and growth hormone make the liver release glucose (the *dawn phenomenon*), so a reading on waking can run noticeably above one taken a couple of hours later. Two hours on is also closer to a lab's fasting draw, which comes after at least eight hours without food but rarely right out of bed. `wdm daily` runs too early for these two: skip them at its prompt and add them with `wdm log --glucose MG_DL --ketones MMOL_L`.
 - **Resting heart rate:** the watch's own daily figure, read in the morning; it is measured asleep or at rest, steadier than a spot reading.
 - **Blood pressure:** before exercise, seated after five quiet minutes, arm supported at heart level, the same arm each time; the average of two readings a minute apart.
 
