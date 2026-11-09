@@ -667,7 +667,45 @@ $$
 </tbody>
 </table>
 <p>Each family with one or two disks, and the motor limit as a parameter (two weak disks still need the environment; two strong ones can lift the box). Validity is computed from the geometry for each family (<a href="../../../research/nonprehensile/planar-build/issues.html#validity">Issues</a>).</p>
-<p><strong>Teacher search: pipeline built, first check.</strong> The pipeline generates seeded step instances (lift onto the platform, lower from it), runs the search with a teacher ranker, and logs every Λ call with the gate’s verdicts as training data for the ranker. Its first small validation (12 instances, before the relaxed gate and the learned skill) solved none: the per-pose gate admitted too few edits, lifting needs the hard break, and Λ<sub>qs</sub> failed to move the disk onto box corners. The full run waits for those fixes; a failed edit will now block only the node it failed from, and short sub-goal tasks are added so early runs yield solution paths. The choice of external baselines (a contact-mode-guided planner and a contact-implicit trajectory optimizer are recommended) is under assessment.</p>
+<p><strong>Teacher search: the first full run (Nov 8–9).</strong> The pipeline generates seeded step instances, runs the search with a teacher ranker, and logs every Λ call with the gate’s verdicts as training data for the ranker. Its first small check solved none; the transfers it failed were real realizer failures (makes that never reached the contact, disk transfers planned as a retreat, contacts placed at feature ends, hand-overs lingering in a tie), and the fixed realizer accepts 51 of the 76 it had failed. The full run (200 instances; the relaxed gate, the learned break skill, retries from other nodes of a key):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Task</th>
+<th>Solved</th>
+<th>Λ calls per solve</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Disk contact on the box’s side (sub-goal)</td>
+<td>40/40</td>
+<td>5.1</td>
+</tr>
+<tr class="even">
+<td>Box flush on the riser (sub-goal)</td>
+<td>40/40</td>
+<td>17.5</td>
+</tr>
+<tr class="odd">
+<td>The pivot formation (sub-goal)</td>
+<td>39/40</td>
+<td>18.8</td>
+</tr>
+<tr class="even">
+<td>Lift onto the platform</td>
+<td>0/40</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>Lower to the floor</td>
+<td>0/40</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>7,795 Λ calls (4,954 accepted) are recorded as training data (<code>cmg/scripts/step4/teacher/results/t-full/merged/</code>). Lifting has since been solved in 5 of 10 instances with a second learned skill (<a href="../../../research/nonprehensile/planar-build/local-solver.html#learned-skill">the local solver</a>). Lowering is open: the only edit off the platform, onto the step corner, is a balance Λ<sub>qs</sub> can’t hold (0/52), and nothing brings the box to the edge.</p>
+<p><strong>Baseline: the contact-mode-guided planner (CMGMP).</strong> Built from the authors’ code without root (in a container on Juno) and patched for the disk’s 1 N limit. Its plan for lowering, executed in our simulator and graded by the same strict test, <strong>succeeds</strong>: the box comes off the platform and rests flat on the floor. So on lowering the baseline is ahead of our planner for now. The full 50-start comparison is in progress.</p>
 <p><strong>Built (Nov 8): the validity tables for all three families.</strong> The builder now takes any polygonal environment and a rectangular box. It reproduces the step’s tables exactly, and built the two new families (default dimensions; random-instance ranges are documented, not yet sampled):</p>
 <table class="caption-top table">
 <colgroup>

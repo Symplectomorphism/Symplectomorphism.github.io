@@ -732,7 +732,7 @@ $$
 <td>75</td>
 </tr>
 <tr class="odd">
-<td>PPO, residual or from scratch (equal 4-configuration budget; a larger sweep is running)</td>
+<td>PPO, residual or from scratch (equal 4-configuration budget, and a further 16 configurations at 100M steps)</td>
 <td>0 / 18</td>
 <td>0 / 150</td>
 <td>82–86</td>
@@ -752,6 +752,51 @@ $$
 </tbody>
 </table>
 <p>SAC gives the same result with stiffer contacts, so it isn’t exploiting soft contacts; every hard start was solved, so the feasibility search wasn’t needed. Learning from scratch beats the residual because Λ<sub>qs</sub>’s commands are a poor starting point here (they fail 79 of 80 grid starts). PPO learned nothing under the same tuning budget. Two caveats: SAC is unstable (two of three seeds collapse after peaking, so the best checkpoint is kept), and the policy tips the box to about 72° in 0.25 s and then holds the new contact state in a small limit cycle (about ±2° at 4 Hz), which the strict test accepts because its settle clause is off; the settle-on numbers will decide that clause’s default. The skill exists as Λ<sub>RL</sub> (<code>cmg/rl/skill.py</code>): the search will call it for the hard break whenever the start is within its training range, and Λ<sub>qs</sub> otherwise (being wired in). It carries an empirical success rate with a confidence interval, outside the gate’s quasi-static certificate; the call bound treats it as a solver that succeeds at random.</p>
+<p><strong>Overnight Nov 8–9: from the break to a solved lift.</strong></p>
+<ul>
+<li><p><strong>Settle clause (decision pending).</strong> With the clause on at 10⁻³ the policy fails; SAC retrained with a settling term passes 4/18 and 32/150 (10/18 and 93/150 with stiffer contacts). But Λ<sub>qs</sub>’s own chain edits also pass only 2 of 7 at that tolerance (6 of 7 with it off), so turning it on would redefine success for the whole system.</p></li>
+<li><p><strong>PPO with more budget:</strong> a further 16 configurations at 100M steps all fail; the box slides back or tips onto the platform.</p></li>
+<li><p><strong>The skill’s range, from the search.</strong> The teacher search reaches the break at about 10° tilt with the disk about 10 mm above the box’s centre line, far from the training range, so the skill was never used. SAC retrained over tilt 5–45° and disk heights −40 to +20 mm solves <strong>all 84 break states the search actually reached</strong> in every seed (Λ<sub>qs</sub>: 0/84). That is now the deployed skill. Widening to 70° didn’t help.</p></li>
+<li><p><strong>The next step, the roll onto the platform.</strong> After the break the box stands at about 83° on the step corner, and Λ<sub>qs</sub>’s roll onto the platform fails (0/16: the box falls back to about 86° before the success window). A second learned skill for that roll (off by default):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Strict test (teacher states / held-out)</th>
+<th>seed 0 (deployed)</th>
+<th>seed 1</th>
+<th>seed 2</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>as now</td>
+<td>7/16 + 33/76</td>
+<td>3/16 + 31/76</td>
+<td>0/16 + 20/76</td>
+</tr>
+<tr class="even">
+<td>with the proposed tie rule</td>
+<td>16/16 + 62/76</td>
+<td>14/16 + 68/76</td>
+<td>16/16 + 64/76</td>
+</tr>
+<tr class="odd">
+<td>stiffer contacts</td>
+<td>16/16 + 76/76</td>
+<td>15/16 + 72/76</td>
+<td>16/16 + 76/76</td>
+</tr>
+</tbody>
+</table>
+<p>The failures “as now” are tied samples during the hand-over from corner to face lasting longer than the success window. The proposed tie rule (<code>transfer_ties</code>, tied samples count toward either formation during a transfer) is a change to the success test, pending a decision. A realizer-side alternative, aiming the roll a few degrees past flush, gets 13/16 with the same rule and 0/16 without it.</p></li>
+<li><p><strong>Lift, end to end.</strong> On 10 lift instances, the search with both skills solves <strong>5</strong> (125 Λ calls per solve), and <strong>7</strong> with the proposed tie rule (72 calls per solve); before, none. The same 3 instances fail both ways: they run out of budget before reaching the break.</p></li>
+</ul>
 </section>
 <section id="step-3c" class="level2">
 <h2 class="anchored" data-anchor-id="step-3c">Re-planning and failure diagnostics (step 3c)</h2>
