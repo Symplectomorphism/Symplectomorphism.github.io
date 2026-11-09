@@ -85,7 +85,7 @@ the same starts for every method:
 |---|---|---|---|
 | **SAC, from scratch** (3 seeds) | **18 / 18** | **150 / 150** (98–100%) | 0 |
 | SAC, residual on Λ<sub>qs</sub> | 6 / 18 | 50 / 150 (26–41%) | 75 |
-| PPO, residual or from scratch (equal 4-configuration budget; a larger sweep is running) | 0 / 18 | 0 / 150 | 82–86 |
+| PPO, residual or from scratch (equal 4-configuration budget, and a further 16 configurations at 100M steps) | 0 / 18 | 0 / 150 | 82–86 |
 | Λ<sub>qs</sub> (quasi-static) | 0 / 6 | 1 / 50 | 0 |
 | MPPI | 0 / 6 | 0 / 50 | 0 |
 
@@ -104,6 +104,43 @@ training range, and Λ<sub>qs</sub> otherwise (being wired in). It carries an
 empirical success rate with a confidence interval, outside the gate's
 quasi-static certificate; the call bound treats it as a solver that succeeds at
 random.
+
+**Overnight Nov 8–9: from the break to a solved lift.**
+
+- **Settle clause (decision pending).** With the clause on at 10⁻³ the policy
+  fails; SAC retrained with a settling term passes 4/18 and 32/150 (10/18 and
+  93/150 with stiffer contacts). But Λ<sub>qs</sub>'s own chain edits also pass
+  only 2 of 7 at that tolerance (6 of 7 with it off), so turning it on would
+  redefine success for the whole system.
+- **PPO with more budget:** a further 16 configurations at 100M steps all
+  fail; the box slides back or tips onto the platform.
+- **The skill's range, from the search.** The teacher search reaches the break
+  at about 10° tilt with the disk about 10 mm above the box's centre line, far
+  from the training range, so the skill was never used. SAC retrained over tilt
+  5–45° and disk heights −40 to +20 mm solves **all 84 break states the search
+  actually reached** in every seed (Λ<sub>qs</sub>: 0/84). That is now the
+  deployed skill. Widening to 70° didn't help.
+- **The next step, the roll onto the platform.** After the break the box stands
+  at about 83° on the step corner, and Λ<sub>qs</sub>'s roll onto the platform
+  fails (0/16: the box falls back to about 86° before the success window). A
+  second learned skill for that roll (off by default):
+
+  | Strict test (teacher states / held-out) | seed 0 (deployed) | seed 1 | seed 2 |
+  |---|---|---|---|
+  | as now | 7/16 + 33/76 | 3/16 + 31/76 | 0/16 + 20/76 |
+  | with the proposed tie rule | 16/16 + 62/76 | 14/16 + 68/76 | 16/16 + 64/76 |
+  | stiffer contacts | 16/16 + 76/76 | 15/16 + 72/76 | 16/16 + 76/76 |
+
+  The failures "as now" are tied samples during the hand-over from corner to
+  face lasting longer than the success window. The proposed tie rule
+  (`transfer_ties`, tied samples count toward either formation during a
+  transfer) is a change to the success test, pending a decision. A
+  realizer-side alternative, aiming the roll a few degrees past flush, gets
+  13/16 with the same rule and 0/16 without it.
+- **Lift, end to end.** On 10 lift instances, the search with both skills
+  solves **5** (125 Λ calls per solve), and **7** with the proposed tie rule
+  (72 calls per solve); before, none. The same 3 instances fail both ways: they
+  run out of budget before reaching the break.
 
 ## Re-planning and failure diagnostics (step 3c) {#step-3c}
 
