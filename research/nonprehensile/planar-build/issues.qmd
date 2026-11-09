@@ -6,7 +6,7 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-08, against `phase1/planar` at `46b4ee0` in
+**Last checked:** 2026-11-09, against `phase1/planar` at `ff3c1b1` in
 `Symplectomorphism/c-gnn`. The full records are in the discussion
 compendium (`reports/supporting_docs/discussion-compendium/`); commits are on that branch.
 
@@ -15,23 +15,39 @@ compendium (`reports/supporting_docs/discussion-compendium/`); commits are on th
 []{#node-identity-evidence}
 
 ::: {.callout-important collapse="true"}
-## Lowering the box off the platform is unsolved (open, decision pending)
+## Lowering the box off the platform is unsolved (open; direction decided Nov 9)
 The full teacher run solved no lowering task (0/40). The only edit off the
 platform moves the box onto the step corner, a balance Λ<sub>qs</sub> can't
-hold (0/52), and nothing brings the box to the edge first. Options: a learned
-drop or lower skill (or a new edit from the edge to the box on the floor), or
-pushing the box along the platform inside an edit's call. The CMGMP baseline
-solves lowering in our simulator on 19 of 25 test starts (it lifts 6 of 25), so
-its plans are worth studying for the fix. [Search](search.qmd).
+hold (0/52). It was tried only in the 11 instances whose box started 0.6–32.8 mm
+from the edge, and nothing brings a box farther away to the edge first. Six of
+the 52 calls dropped the box into the lowering goal (3 of 40 instances) and
+were rejected for not ending in the requested state. Decided (the redesign):
+push the box toward the edge, then release it to the floor, and keep outcomes
+like those six. The CMGMP baseline solves lowering in our simulator on 19 of 25
+test starts (it lifts 6 of 25). [Search](search.qmd#redesign).
 :::
 
 ::: {.callout-important collapse="true"}
-## Decisions pending (Nov 9)
-The strict test's settle clause default (at 10⁻³ it fails Λ<sub>qs</sub>'s own
-chain, 2/7); adopting the tie rule for transfers (it decides both lift fixes);
-turning on the roll skill; the lowering fix; confirming that retries from other
-nodes of a key are for the teacher only (the call bound assumes none).
-[The local solver](local-solver.qmd#learned-skill).
+## Still open after the Nov 9 decisions
+The approach path brushes the box, so the strict test rejects the step that
+brings the disk under it (84/84 in the release test): the path is being fixed,
+and how the recognizer reads such brushes is queued for a separate rethink.
+The box creeps in MJX when nothing holds it (about 0.5°/s): simulator settings
+are being tested. The release gate's exact form and which state pairs a
+release may join are part of the redesign's implementation.
+[Search](search.qmd#redesign).
+:::
+
+::: {.callout-tip collapse="true"}
+## Decided Nov 9: the redesign and the pending choices
+The settle clause is off for formation edits (reported separately) and
+required for releases and the final goal state. The tie rule and the roll skill
+are shelved (off, kept as a variant of Λ). Lowering: a push toward the edge,
+then a release. Retries from other nodes of a key are for the teacher only; the
+planner and every reported result use none. The search gets outcome children,
+box moves within a contact state and releases as actions, and PHS\* ordered by
+a value (one learned V₁: expected Λ calls to the goal). The 125 mm gap screen
+is dropped. [Search](search.qmd#redesign).
 :::
 
 []{#hard-breaks}
@@ -42,8 +58,8 @@ The quasi-static realizers fail it because the box's corners slide. A learned
 SAC skill solves the family (18/18 hard, 150/150 held-out) and, retrained on the
 range the search reaches, all 84 break states the search actually met; the
 search calls it whenever it applies. Lifting now succeeds in 5 of 10 instances
-with a second skill for the roll onto the platform. Still open: the settle
-clause (see the pending decisions). [The local solver](local-solver.qmd#learned-skill).
+with a second skill for the roll onto the platform. The settle clause,
+decided Nov 9: off for formation edits such as this break. [The local solver](local-solver.qmd#learned-skill).
 :::
 
 ::: {.callout-tip collapse="true"}
@@ -63,7 +79,8 @@ edge can count as touching. 475 of 4,000 demo poses jittered by about 3 mm
 are ambiguous (474 with a contact deeper than ε<sub>on</sub>; in 136,
 s<sub>v</sub> loses to t, which contains it). A tied pose is never a search
 node or a solver success, so no wrong label is used; the stress test's
-budget is 500. Since step 3b ε<sub>pen</sub> = 5 mm (257 ties); 2–3 mm
+budget is 500, set for those 475 ties at ε<sub>pen</sub> = 10 mm and loose at
+today's 257. Since step 3b ε<sub>pen</sub> = 5 mm (257 ties); 2–3 mm
 (44–98 ties) needs stiffer contacts, which keep penetration under 0.22 mm
 but need the controller retuned first. [Contact states](contact-states.qmd#the-recognizer).
 :::

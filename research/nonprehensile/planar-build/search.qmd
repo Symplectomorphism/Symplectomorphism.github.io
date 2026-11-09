@@ -3,9 +3,11 @@ title: "Search and ranking"
 subtitle: "Planned (step 4): a search over edits ordered by a learned ranker, measured in calls to the local solver."
 ---
 
-::: {.callout-note title="Planned"}
-Nothing on this page is built yet. It records the plan agreed on Nov 7,
-2026; the page will report results as they come.
+::: {.callout-note title="Partly built"}
+The plan was agreed on Nov 7, 2026. Since then the teacher search has run
+(Nov 8–9) and the CMGMP baseline has been evaluated; the ranker is not
+trained yet, and a redesign of the search, decided on Nov 9, is being
+implemented ([below](#redesign)).
 :::
 
 ## The search
@@ -47,9 +49,8 @@ and to a Λ that fails at random (with restarts).
 | F2. Staircase | two or three steps of random rise and tread |
 | F3. Wall and ledge | topple the box against a wall, or lift it onto a ledge beside it |
 
-Each family with one or two disks, and the motor limit as a parameter (two
-weak disks still need the environment; two strong ones can lift the box).
-Validity is computed from the geometry for each family
+One disk for now. The families come after the redesign below works on the
+step, and a second disk after that (decided Nov 9). Validity is computed from the geometry for each family
 ([Issues](issues.qmd#validity)).
 
 **Teacher search: the first full run (Nov 8–9).** The pipeline generates
@@ -74,7 +75,11 @@ gate, the learned break skill, retries from other nodes of a key):
 solved in 5 of 10 instances with a second learned skill
 ([the local solver](local-solver.qmd#learned-skill)). Lowering is open: the
 only edit off the platform, onto the step corner, is a balance Λ<sub>qs</sub>
-can't hold (0/52), and nothing brings the box to the edge.
+can't hold (0/52, tried in the 11 instances whose box started 0.6–32.8 mm
+from the edge), and nothing brings a box farther away to the edge. Six of the
+52 calls dropped the box into the lowering goal, in 3 of the 40 instances, and
+were rejected because they didn't end in the requested formation; the
+redesign keeps such outcomes ([below](#redesign)).
 
 **Baseline: the contact-mode-guided planner (CMGMP).** Built from the authors'
 code without root (in a container on Juno) and patched for the disk's 1 N
@@ -97,9 +102,17 @@ goal, and retries within the budget give 19/25.
 
 **Not yet a paired comparison.** Our planner lifts 5/10 with the learned
 skills (7/10 with the proposed tie rule) and lowers none, but on different
-instances and with a budget counted in Λ calls; a script pairs the two once our
-planner runs on the same 50 starts. So far the baseline is ahead on lowering,
-ours on lifting.
+instances and with a budget counted in Λ calls. So far the baseline is ahead on
+lowering, ours on lifting. Our lift instances 0–9 happen to be CMGMP's first 10
+lift starts (ours 5/10, or 7/10 with the tie rule; CMGMP 2/10), but under
+different success criteria and budgets, so that is not the comparison either.
+
+**The paired comparison's protocol** (decided Nov 9; run after the redesign):
+the same 50 starts (25 lift, 25 lower); the same goal test and the same strict
+grading of every plan executed in MJX; a matched wall-clock budget per start on
+the same hardware class; no retries in our planner; Wilson intervals and
+McNemar's test on the paired outcomes; both planners' plan-found and
+executed-success rates reported.
 
 *Caveats:* the baseline plans quasi-statically with a point finger, while
 execution is dynamic with soft contacts; moves between its planned contacts are
@@ -126,11 +139,69 @@ corner. Neither has collinear edges, so the "pit" case of the theory note
 doesn't arise yet.
 
 **The test:** a 2 × 2 table of transfer, holding out an environment family
-(F3) and holding out the number of disks, with cost measured in Λ calls. A
+(F3) and holding out the number of disks (once a second disk is built), with cost measured in Λ calls. A
 targeted literature search found learned guidance for contact or mode search
 tested on held-out instances, objects, object counts or robot counts, but
 not on a held-out family of environments; the closest work counts solver
 calls with learned feasibility for pick-and-place (Ortiz-Haro et al., ICRA
 2023).
+
+## The redesign (Decision 23, Nov 9) {#redesign}
+
+**Why.** The search throws away motions that make progress but don't end in
+the requested contact state. Asked to lift the box's floor corner, Λ<sub>qs</sub>
+instead tilts the box from about 10° to 67° while keeping all three contacts.
+The call fails, but the box is now where a short route lifts it without any
+learned skill: move the disk under the box, then push it over the step corner
+([the video](../results/index.qmd)).
+
+**What changes** (being implemented behind flags; defaults are set after an
+evaluation on 10 lift and 10 lower instances):
+
+- **Outcome children.** A call yields at most one child, labelled by the state
+  it actually reaches. The child is accepted if it is the requested state, or
+  if it lowers a value estimate by at least δ = 10 mm.
+- **Two new actions,** each with its own gate: moving the box *within* its
+  contact state, and **releases**, where the box is let go and comes to rest in
+  the next state. Lowering becomes a push toward the platform's edge, then a
+  release to the floor. The final roll onto the platform becomes a release
+  too, so the tie rule and the roll skill are shelved.
+- **The order of the search** is PHS\* (Orseau and Lelis 2021), with its
+  heuristic factor η from a value function, clipped to [1, η<sub>max</sub>]
+  (η<sub>max</sub> = 10 to start; 4, 10 and 30 to be measured).
+- **The value.** To start, 𝒱₀: the distance to the goal in the edit graph plus
+  the box's distance to a fixed set of poses where the next edit passes the
+  gate. Then one learned value V₁, the expected number of Λ calls to the
+  goal, trained by temporal differences on every logged call, failures
+  included (a call that succeeds with probability p costs about 1/p calls).
+  The distance to the goal enters only as shaping and as an input.
+- **Smaller decisions.** The 125 mm gap screen (Near) is dropped: the gate and
+  box transport decide, and distance only orders the candidates. The disk's
+  clearance check stays, as part of the gate. Duplicate pruning also compares
+  calls per path probability. The approach lasts as long as its path needs.
+  The settle clause is off for formation edits and required for releases and
+  the final goal state. Retries (2 per node) are for the teacher only; the
+  planner and every reported result use none. The search keeps popping
+  batches, and a batched version of the call bound is being proved.
+
+**The release route, tested first** (84 starts, the break states the teacher
+search reached; `cmg/scripts/step4/release_test/`, commit `12fc963`):
+
+| | Result |
+|---|---|
+| Λ<sub>qs</sub>'s "failed" break keeps all three contacts | 84/84, tilt about 10° → 67° |
+| The route end to end, Λ<sub>qs</sub> as it was | 2/84 |
+| Why: with the disk away, the box creeps in MJX (about 0.5°/s) while each approach lasted 16.2 s | box slid off the step corner in 80/84 |
+| The route with a short approach: the next two edits reach their states | 84/84 |
+| The release push, stop when the box is fully on the platform: at rest, fully on | **76/84** (82–95%) |
+
+From these: the approach now lasts only as long as its path needs (`3c52753`);
+the release realizer is the push with the "fully on" stop; the box counts as at
+rest within 1 mm and about 15 mrad (MJX shows a small periodic tilt cycle at
+rest, up to 12.5 mrad); simulator settings are being tested for the creep. One
+problem remains: the strict test rejects the step that brings the disk under
+the box (84/84), because the approach path brushes the box. The path is being
+fixed; how the recognizer reads such brushes is queued for a separate
+rethink.
 
 [← Node identity](node-identity.qmd) · [Back to the overview](index.qmd)

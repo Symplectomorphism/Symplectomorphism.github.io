@@ -62,8 +62,10 @@ being *learned*, in the same MJX simulator the rest of the system uses:
 - **Two algorithms, two variants:** proximal policy optimization (PPO) and
   soft actor-critic (SAC), from Brax, each trained as a **residual**
   correction on top of Λ<sub>qs</sub>'s commands and **from scratch**.
-- **Training:** randomized starts (tilt 30–45°, disk height, friction, mass)
-  with a curriculum from easy to hard tilts; the reward is reaching the target
+- **Training:** randomized starts (tilt 30–45°, disk height, friction, mass),
+  with 30% of starts drawn from the easy end (40–45°) throughout training (a
+  fixed mixture, not a curriculum; the later wide-range skill uses uniform
+  starts); the reward is reaching the target
   formation under the strict success test, with penalties for slipping,
   falling and deep penetration. On Juno's H200 GPUs, several seeds each.
 - **Validation:** the six hard starts and 50+ held-out ones, against
@@ -107,11 +109,13 @@ random.
 
 **Overnight Nov 8–9: from the break to a solved lift.**
 
-- **Settle clause (decision pending).** With the clause on at 10⁻³ the policy
+- **Settle clause (decided Nov 9).** With the clause on at 10⁻³ the policy
   fails; SAC retrained with a settling term passes 4/18 and 32/150 (10/18 and
   93/150 with stiffer contacts). But Λ<sub>qs</sub>'s own chain edits also pass
   only 2 of 7 at that tolerance (6 of 7 with it off), so turning it on would
-  redefine success for the whole system.
+  redefine success for the whole system. Decided: off for formation edits
+  (its effect reported separately), required for releases and the final goal
+  state.
 - **PPO with more budget:** a further 16 configurations at 100M steps all
   fail; the box slides back or tips onto the platform.
 - **The skill's range, from the search.** The teacher search reaches the break
@@ -134,13 +138,20 @@ random.
   The failures "as now" are tied samples during the hand-over from corner to
   face lasting longer than the success window. The proposed tie rule
   (`transfer_ties`, tied samples count toward either formation during a
-  transfer) is a change to the success test, pending a decision. A
-  realizer-side alternative, aiming the roll a few degrees past flush, gets
-  13/16 with the same rule and 0/16 without it.
+  transfer) is a change to the success test. A realizer-side alternative,
+  aiming the roll a few degrees past flush, gets 13/16 with the same rule and
+  0/16 without it. **Decided Nov 9:** the tie rule and the roll skill are
+  shelved (off, kept as a variant of Λ); in the redesign the roll onto the
+  platform becomes a *release* edit judged by the box coming to rest
+  ([Search](search.qmd#redesign)).
 - **Lift, end to end.** On 10 lift instances, the search with both skills
   solves **5** (125 Λ calls per solve), and **7** with the proposed tie rule
-  (72 calls per solve); before, none. The same 3 instances fail both ways: they
-  run out of budget before reaching the break.
+  (72 calls per solve); before, none. The same 3 instances fail both ways, and
+  not for lack of calls: they stop after 34–47 of 256 calls with nothing left to
+  try. Their boxes start 137–148 mm from the riser, beyond the 125 mm gap screen
+  (Near) that a make must pass, so pushing the box to the riser is never tried.
+  Near is being dropped as a filter (decided Nov 9; corrected here the same
+  day, this page said they ran out of budget).
 
 ## Re-planning and failure diagnostics (step 3c) {#step-3c}
 
@@ -330,7 +341,8 @@ the subspace only. The backends now agree to 10⁻³, and checkpoint 1 at the
 simulator's friction is unchanged.
 
 **What the gate says at μ = 0.35** (sweep margin; start = tilt / disk depth
-below the corner):
+below the centre of the box's −x face, so 40 mm is 22.5 mm above its bottom
+corner):
 
 | sweep | 45° / 40 mm (chain) | 30° / 40 | 35° / 40 | 40° / 40 | 30° / 20 | 35° / 20 | 40° / 20 |
 |---|---|---|---|---|---|---|---|
