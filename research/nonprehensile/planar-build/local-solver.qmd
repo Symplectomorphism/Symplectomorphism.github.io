@@ -52,7 +52,7 @@ in MuJoCo:
   cone (μ = 0.35, below the simulator's 0.99, so the contact sticks) and the
   ±1 N motor box; otherwise PD on the planned disk positions.
 
-## A learned skill for the hard breaks (in progress) {#learned-skill}
+## A learned skill for the hard breaks {#learned-skill}
 
 The hard break(g<sub>v</sub>) starts fail for every planner so far because
 the box's corners slide: the maneuver needs timing or momentum that a
@@ -75,8 +75,30 @@ being *learned*, in the same MJX simulator the rest of the system uses:
   it is hard to learn or impossible.
 
 A learned skill would carry a measured success rate, not a quasi-static
-certificate; the call bound still holds (it counts Λ calls). Results will be
-reported here.
+certificate; the call bound still holds (it counts Λ calls).
+
+**Result: SAC trained from scratch solves the whole family.** Under the strict
+success test, on the same starts for every method:
+
+| Method | Hard starts | Held-out starts (95% CI) | Penetration violations |
+|---|---|---|---|
+| **SAC, from scratch** (3 seeds) | **18 / 18** | **150 / 150** (98–100%) | 0 |
+| SAC, residual on Λ<sub>qs</sub> | 6 / 18 | 50 / 150 (26–41%) | 75 |
+| PPO, residual or from scratch | 0 / 18 | 0 / 150 | 82–86 |
+| Λ<sub>qs</sub> (quasi-static) | 0 / 6 | 1 / 50 | 0 |
+| MPPI | 0 / 6 | 0 / 50 | 0 |
+
+SAC gives the same result with stiffer contacts, so it isn't exploiting soft
+contacts; every hard start was solved, so the feasibility search wasn't
+needed. Learning from scratch beats the residual because Λ<sub>qs</sub>'s
+commands are a poor starting point here (they fail 79 of 80 grid starts). PPO
+learned nothing under the same tuning budget. Two caveats: SAC is unstable
+(two of three seeds collapse after peaking, so the best checkpoint is kept),
+and the policy tips the box to about 72° in 0.25 s and then holds the new
+contact state in a small limit cycle (about ±2° at 4 Hz), which the strict test
+accepts because its settle clause is off. The skill exists as
+Λ<sub>RL</sub> (`cmg/rl/skill.py`) but isn't yet used by the search; how the
+search should call it is being decided.
 
 ## Re-planning and failure diagnostics (step 3c) {#step-3c}
 

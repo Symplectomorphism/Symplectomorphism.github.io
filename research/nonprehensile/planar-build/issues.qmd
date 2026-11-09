@@ -6,7 +6,7 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-08, against `phase1/planar` at `22df4a4` in
+**Last checked:** 2026-11-08, against `phase1/planar` at `6af5dd3` in
 `Symplectomorphism/c-gnn`. The full records are in the discussion
 compendium (`reports/discussion-compendium/`); commits are on that branch.
 
@@ -15,26 +15,23 @@ compendium (`reports/discussion-compendium/`); commits are on that branch.
 []{#node-identity-evidence}
 
 ::: {.callout-important collapse="true"}
-## Node identity: the disk is not yet collapsed in the code (open, decision pending)
-Decision 17 collapses the disk's position within its region, but merge by
-evaluation compares gate verdicts at each node's *own* disk position (the
-search's default `region_placements = 0`), so two states differing only in
-where the disk hovers can stay separate nodes. The fix is to evaluate the gate
-over the disk's region (`region_placements > 0`); it becomes the default
-once the realizer's approach (step 4, item 2) is shown to realize those
-verdicts from any disk position. Being measured. [Node identity](node-identity.qmd).
+## The per-pose and sampled gates don't check the disk's clearance from the environment (open)
+Their transition sweep never checks that the disk stays clear of the
+environment, so on one formation they admit making disk contact with the disk
+inside the platform. The relaxed gate (now the default) is unaffected. Being
+fixed; it changes those gates' counts. [Node identity](node-identity.qmd).
 :::
 
 []{#hard-breaks}
 
 ::: {.callout-important collapse="true"}
-## The hard break(g<sub>v</sub>) starts fail dynamically (open, later)
-Every realizer fails the six hard break(g<sub>v</sub>) starts: with
+## The hard break(g<sub>v</sub>) starts: solved by a learned skill, not yet used by the search (open)
+The quasi-static realizers fail the hard break(g<sub>v</sub>) starts: with
 friction-matched plans the disk's contact stays inside its cone, but the
-box's corners on the floor and riser slide while the tracker's correction
-doubles the planned force. Decided (Decision 16): a tracker that keeps the
-environment contacts inside their cones, then a quasi-dynamic method; not
-now. [The local solver](local-solver.qmd#step-3d).
+box's corners on the floor and riser slide. A learned SAC skill now solves the
+family (18/18 hard, 150/150 held-out); open: how the search should call it,
+and whether the strict test should require the box to settle (the skill holds
+the new contacts in a small limit cycle). [The local solver](local-solver.qmd#learned-skill).
 :::
 
 []{#eps-pen}
@@ -106,6 +103,24 @@ CPU. Fix: rebuild the tableau from the final basis and continue, with the
 ## Resolved
 
 []{#friction-mismatch}
+
+::: {.callout-tip collapse="true"}
+## The disk is collapsed: the relaxed gate is the default (Nov 8, Decision 21, `72bb943`)
+The gate now asks whether *some* disk position in the disk's region holds the
+box through an edit (one LP over the reachable stretch of the face), so two
+states differing only in where the disk sits are one node. Measured against
+the per-pose and sampled gates: Λ accepts 0.36 of its calls (0.27, 0.26), and
+119 of 370 spread-out start–edit pairs succeed (45, 60), at 1.3× the per-pose
+cost. [Node identity](node-identity.qmd).
+:::
+
+::: {.callout-tip collapse="true"}
+## The hard break(g<sub>v</sub>) is solved by a learned skill (Nov 8, `9e7211f`)
+SAC trained from scratch in the MJX simulator solves 18/18 hard and 150/150
+held-out starts under the strict test, where Λ<sub>qs</sub> and MPPI solve
+almost none. Not yet wired into the search.
+[The local solver](local-solver.qmd#learned-skill).
+:::
 
 ::: {.callout-tip collapse="true"}
 ## Cluster jobs died with "LLVM: Cannot allocate memory" (Nov 8, `1e6fce8`)
