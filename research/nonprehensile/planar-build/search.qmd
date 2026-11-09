@@ -80,8 +80,33 @@ can't hold (0/52), and nothing brings the box to the edge.
 code without root (in a container on Juno) and patched for the disk's 1 N
 limit. Its plan for lowering, executed in our simulator and graded by the same
 strict test, **succeeds**: the box comes off the platform and rests flat on
-the floor. So on lowering the baseline is ahead of our planner for now. The
-full 50-start comparison is in progress.
+the floor.
+
+**Evaluated on 50 shared test starts** (25 per task; 60 s per start on one
+CPU core, with restarts; settings chosen on 10 separate tuning starts; every
+plan executed in our MJX simulator and graded by the same strict test):
+
+| Task | Plan returned | Strict success | 95% CI | Median time to success |
+|---|---|---|---|---|
+| Lift | 11/25 | **6/25** | 11–43% | 45.2 s |
+| Lower | 25/25 | **19/25** | 57–89% | 39.4 s |
+
+Lift plans are rare, and half of them fail in execution because the box doesn't
+hold the goal; lower plans come easily, but 50 of 71 executions don't hold the
+goal, and retries within the budget give 19/25.
+
+**Not yet a paired comparison.** Our planner lifts 5/10 with the learned
+skills (7/10 with the proposed tie rule) and lowers none, but on different
+instances and with a budget counted in Λ calls; a script pairs the two once our
+planner runs on the same 50 starts. So far the baseline is ahead on lowering,
+ours on lifting.
+
+*Caveats:* the baseline plans quasi-statically with a point finger, while
+execution is dynamic with soft contacts; moves between its planned contacts are
+tracked along straight lines without collision planning, so some execution
+failures may be the executor's; its 1 N limit is applied per contact component
+(up to about 1.4 N along a world axis); and its contact-mode code was patched for
+the box wedged into the floor–riser corner.
 
 **Built (Nov 8): the validity tables for all three families.** The builder
 now takes any polygonal environment and a rectangular box. It reproduces the
