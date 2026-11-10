@@ -809,6 +809,13 @@ $$
 <li><strong>The value.</strong> To start, 𝒱₀: the distance to the goal in the edit graph plus the box’s distance to a fixed set of poses where the next edit passes the gate. Then one learned value V₁, the expected number of Λ calls to the goal, trained by temporal differences on every logged call, failures included (a call that succeeds with probability p costs about 1/p calls). The distance to the goal enters only as shaping and as an input.</li>
 <li><strong>Smaller decisions.</strong> The 125 mm gap screen (Near) is dropped: the gate and box transport decide, and distance only orders the candidates. The disk’s clearance check stays, as part of the gate. Duplicate pruning also compares calls per path probability. The approach lasts as long as its path needs. The settle clause is off for formation edits and required for releases and the final goal state. Retries (2 per node) are for the teacher only; the planner and every reported result use none. The search keeps popping batches, and a batched version of the call bound is being proved.</li>
 </ul>
+<p><strong>Since Nov 10</strong> (decided with Aykut, one at a time):</p>
+<ul>
+<li><strong>The goal push aims at the goal window’s centre</strong> (default). Aiming at the nearest goal pose, the window’s edge, left boxes a few mm short and stuck: 15 against 13 of 16 end-to-end instances, paired, no losses.</li>
+<li><strong>The push gate</strong> (default): a box move is refused when no disk placement on the face can push the box along the planned path (a linear program at five poses). A paired check is running; shortening an unpushable push to its last pushable pose is built behind a flag.</li>
+<li><strong>Which ends count.</strong> An end with the disk outside its workspace (the joint ranges) is invalid; quasi-static runs reject ends reached through a dynamic event, and other runs tag and count them.</li>
+<li><strong>The value.</strong> V₁ and the ranker are retrained on the full lift goal (V₁’s error on lift-goal pairs 1.03 → 0.33 calls). V₁ enters only η, as 1 + k̂/g, behind a flag. Acceptance stays on 𝒱₀ with δ = 10 mm, which is derived from the merge radius, not chosen; V₁ takes over acceptance once it has a certified Lipschitz bound, and an exploration loop is to follow.</li>
+</ul>
 <p><strong>The release route, tested first</strong> (84 starts, the break states the teacher search reached; <code>cmg/scripts/step4/release_test/</code>, commit <code>12fc963</code>):</p>
 <table class="caption-top table">
 <colgroup>
