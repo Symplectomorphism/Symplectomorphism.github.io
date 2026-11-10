@@ -577,7 +577,7 @@ window.MathJax = {
   <li><a href="#nov10" id="toc-nov10" class="nav-link active" data-scroll-target="#nov10">Night of November 9–10: end to end</a>
   <ul class="collapse">
   <li><a href="#what-made-the-platform-pushes-work" id="toc-what-made-the-platform-pushes-work" class="nav-link" data-scroll-target="#what-made-the-platform-pushes-work">What made the platform pushes work</a></li>
-  <li><a href="#where-the-two-misses-stop" id="toc-where-the-two-misses-stop" class="nav-link" data-scroll-target="#where-the-two-misses-stop">Where the two misses stop</a></li>
+  <li><a href="#where-the-misses-stop" id="toc-where-the-misses-stop" class="nav-link" data-scroll-target="#where-the-misses-stop">Where the misses stop</a></li>
   <li><a href="#a-quasi-static-lift-and-a-caveat" id="toc-a-quasi-static-lift-and-a-caveat" class="nav-link" data-scroll-target="#a-quasi-static-lift-and-a-caveat">A quasi-static lift, and a caveat</a></li>
   <li><a href="#lower-friction" id="toc-lower-friction" class="nav-link" data-scroll-target="#lower-friction">Lower friction</a></li>
   <li><a href="#where-to-put-the-disk-on-a-face" id="toc-where-to-put-the-disk-on-a-face" class="nav-link" data-scroll-target="#where-to-put-the-disk-on-a-face">Where to put the disk on a face</a></li>
@@ -692,8 +692,8 @@ $$
 <h3 class="anchored" data-anchor-id="what-made-the-platform-pushes-work">What made the platform pushes work</h3>
 <p>All evening, every push along the platform was refused before the disk moved: “the target is not in the disk’s run along the contacted feature”. The cause was the disk’s placement, not the mechanics. The relaxed gate put the disk <strong>0.8 mm past the end</strong> of the stretch of face the controller recognises. The fix (decided by Aykut): for a push, the disk goes to the most robust of 5 placements inside that stretch, as it already did for contact changes. In the replays, two pushes that had moved the box 0 mm then moved it 48.6 mm and 47.2 mm.</p>
 </section>
-<section id="where-the-two-misses-stop" class="level3">
-<h3 class="anchored" data-anchor-id="where-the-two-misses-stop">Where the two misses stop</h3>
+<section id="where-the-misses-stop" class="level3">
+<h3 class="anchored" data-anchor-id="where-the-misses-stop">Where the misses stop</h3>
 <p>The solved instances end at x = 0.240–0.245 m, the <strong>near edge</strong> of the window. A push toward the goal aims at the nearest of the goal poses, which are spread across the window, so it aims at the edge, x = 0.24, and the realizer stops a few millimetres short of its aim. Once the box is within 10 mm of a goal pose no further push counts as progress, so one instance stalled at x = 0.2374, just outside. Aiming the last push at the window’s centre (a flag, off by default) solves that instance (ends at x = 0.247) and keeps the others solved. Paired on all 16 instances, the flag solves 15 against 13, loses none, and never needs more calls (median 148 against 180). The one instance it misses fails for another reason (its long pushes came too late in the budget).</p>
 </section>
 <section id="a-quasi-static-lift-and-a-caveat" class="level3">
@@ -818,7 +818,7 @@ $$
 </tr>
 </tbody>
 </table>
-<p>So the gate’s statics were right; the simulator let held boxes slide. Every scene now uses elliptic cones and full float32 matrix products, and every result is being re-run on them. The results further down this page used the pyramidal cones.</p>
+<p>So the gate’s statics were right; the simulator let held boxes slide. Every scene now uses elliptic cones and full float32 matrix products. The redesigned search and CMGMP are run on them; the earlier pipeline is superseded by the redesign and is not re-run (Aykut’s decision, Nov 9). The results further down this page, below the November 9 section, used the pyramidal cones.</p>
 </section>
 <section id="cmgmp-on-elliptic-contacts" class="level3">
 <h3 class="anchored" data-anchor-id="cmgmp-on-elliptic-contacts">CMGMP on elliptic contacts</h3>
@@ -1002,7 +1002,7 @@ $$
 <section id="a-first-learned-ranker" class="level3">
 <h3 class="anchored" data-anchor-id="a-first-learned-ranker">A first learned ranker</h3>
 <p>A value network V₁ and a ranker π were trained on tonight’s lowering run and the 64-call lifting run (the solutions relabeled in hindsight). On 11 held-out instances V₁ predicts the remaining Λ calls with a mean error of 0.19 calls (the graph’s hop count: 0.63; V₀: 0.77), and π puts its top choice on the solution’s edit 97% of the time (uniform: 24%).</p>
-<p>Used in the search (95% learned, 5% uniform, so no edit is ever ruled out), on <strong>3 lifting instances from a seed the training never saw</strong>, at budget 64: the learned ranker solves <strong>3 of 3</strong> (in 44, 53 and 43 calls), the uniform ranker none. Three instances are a small sample; it shows the mechanism, not a rate. V₁ itself does not yet order the search.</p>
+<p>Used in the search (95% learned, 5% uniform, so no edit is ever ruled out), on <strong>3 lifting instances from a seed the training never saw</strong>, at budget 64: the learned ranker solves <strong>3 of 3</strong> (in 44, 53 and 43 calls), the uniform ranker none. Three instances are a small sample; it shows the mechanism, not a rate. V₁ itself does not yet order the search. <em>(Update, Nov 10: on 40 unseen instances, paired with uniform, 40 against 3; see <a href="#nov10">above</a>.)</em></p>
 <video src="media/d23/lift_s1_00002_learned_ranker.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
 <p><strong>Learned ranker, unseen lift instance (seed 1, instance 2): SOLVED in 43 calls (26 s).</strong> The uniform ranker does not solve it within 64. The replay reproduces the log exactly.</p>
@@ -1040,7 +1040,7 @@ $$
 </ol>
 <p>With both, lift instance 2’s pivot passes into exactly {m_x, g_v, s_v}, with the disk 44 mm <em>above</em> the face’s middle, and the search went on to a release onto the platform. A side finding: the exact gate passes at every disk height on that face, but the controller succeeds only from about 10 mm below the middle upward, so low on the face the gate is no test of what the controller can do. Checking 5 placements costs about 5.6× the gate at a node where the disk touches the box.</p>
 <p>The full run <a href="#d23-results">above</a> uses this fix: every lift solution passes the pivot. On 353 held-out pivot states the quasi-static realizer with the robust placement passes 348, a learned pivot skill 337, and the two together all 353.</p>
-<p><strong>Still pending:</strong> V₁ in the search’s ordering, and Aykut’s quasi-static route test (releases off, transport aimed at every next edit).</p>
+<p><strong>Since then:</strong> Aykut’s quasi-static route test has run (releases off; see <a href="#nov10">the night of November 9–10</a>). V₁ is still not in the search’s ordering: it waits on a retrain with the full lift goal.</p>
 </section>
 </section>
 <section id="pyramidal" class="level2">
