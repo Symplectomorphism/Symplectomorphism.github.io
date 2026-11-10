@@ -184,6 +184,24 @@ lift and 40 lower instances, see [the results](../results/index.qmd#d23-results)
   planner and every reported result use none. The search keeps popping
   batches, and a batched version of the call bound is being proved.
 
+**Since Nov 10** (decided with Aykut, one at a time):
+
+- **The goal push aims at the goal window's centre** (default). Aiming at the
+  nearest goal pose, the window's edge, left boxes a few mm short and stuck:
+  15 against 13 of 16 end-to-end instances, paired, no losses.
+- **The push gate** (default): a box move is refused when no disk placement on
+  the face can push the box along the planned path (a linear program at five
+  poses). A paired check is running; shortening an unpushable push to its last
+  pushable pose is built behind a flag.
+- **Which ends count.** An end with the disk outside its workspace (the
+  joint ranges) is invalid; quasi-static runs reject ends reached through a
+  dynamic event, and other runs tag and count them.
+- **The value.** V₁ and the ranker are retrained on the full lift goal (V₁'s
+  error on lift-goal pairs 1.03 → 0.33 calls). V₁ enters only η, as
+  1 + k̂/g, behind a flag. Acceptance stays on 𝒱₀ with δ = 10 mm, which is
+  derived from the merge radius, not chosen; V₁ takes over acceptance once it
+  has a certified Lipschitz bound, and an exploration loop is to follow.
+
 **The release route, tested first** (84 starts, the break states the teacher
 search reached; `cmg/scripts/step4/release_test/`, commit `12fc963`):
 
