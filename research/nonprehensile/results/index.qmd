@@ -1,6 +1,6 @@
 ---
 title: "Results"
-subtitle: "The planner's motions on the step scene: the end-to-end task overnight (floor to x = 25 cm on the platform, 13 of 16; 15 with the goal aim), the learned ranker against uniform (40 vs 3 of 40), lower friction; the November 9 change to elliptic contacts, the redesigned search's teacher results (lift 37/40, lower 40/40), the paired comparison with CMGMP, and the earlier runs on pyramidal contacts."
+subtitle: "The planner's motions on the step scene: the end-to-end task overnight (floor to x = 25 cm on the platform, 15 of 16 with the goal push aimed at the window's centre, the default since Nov 10; 13 aimed at its edge; both with a temporary ±20 cm push range, without which the task fails), the learned ranker against uniform (40 vs 3 of 40), lower friction; the November 9 change to elliptic contacts, the redesigned search's teacher results (lift 37/40, lower 40/40), the paired comparison with CMGMP, and the earlier runs on pyramidal contacts."
 resources:
   - media/*.mp4
   - media/cmgmp/*.mp4
@@ -51,11 +51,23 @@ not match is labelled **DIVERGED** below.
 
 ## Night of November 9–10: end to end {#nov10}
 
+::: {.callout-warning title="These runs used a temporary ±20 cm push range"}
+The end-to-end, lower-friction and quasi-static runs in this section ran
+with the transport's push range widened from the stock ±5 cm to **±20 cm**, a
+temporary setting until the parametric push certificate (below) is built. A
+single push could then move the box up to 200 mm. This was not stated here
+before (it was set outside the recorded run options). The teacher runs, the
+learned-ranker comparison and the November 9 results below use the stock
+range. Without the wider range the end-to-end task fails: see [the push range
+decides the task](#push-range).
+:::
+
 Overnight the search did the whole task: **lift the box onto the platform and
 push it to a set place there**. The task (`lift_to`) asks for the box's centre
 at x = 0.25 ± 0.01 m on the platform, at rest. On 16 instances the redesign
-solves **13** (Wilson 95%: 57–93%), and **15** with the goal-aim flag described
-below; every solve takes the same route:
+solves **13** (Wilson 95%: 57–93%), and **15** with the last push aimed at the
+window's centre (described below; the default since November 10), both with
+the ±20 cm push range. Every solve takes the same route:
 
 push to the riser → make s → **pivot** → **release** onto {t} → disk to the
 box's side face → **push** → **push** to the window.
@@ -91,16 +103,29 @@ are spread across the window, so it aims at the edge, x = 0.24, and the
 realizer stops a few millimetres short of its aim. Once the box is within
 10 mm of a goal pose no further push counts as progress, so one instance
 stalled at x = 0.2374, just outside. Aiming the last push at the window's
-centre (a flag, off by default) solves that instance (ends at x = 0.247) and
+centre (the default since Nov 10) solves that instance (ends at x = 0.247) and
 keeps the others solved. Paired on all 16 instances, the flag solves 15
 against 13, loses none, and never needs more calls (median 148 against 180).
 The one instance it misses fails for another reason (its long pushes came too
 late in the budget).
 
+### The push range decides the task {#push-range}
+
+At the stock range (±5 cm per push) the same task fails: **0 of 3** instances
+on November 9 and **0 of 7** on the morning of November 10 (the second run
+with the push feasibility check on), 0 of 10 in all. Each 200 mm slide along
+the platform becomes four or five 50 mm pushes, each needing its own approach,
+and the search runs out of its 256 calls with the box about 5 cm short of the
+window. The ±20 cm range works because it checks a 200 mm push as **one** call.
+Doing that properly is the job of the next build, a **parametric push
+certificate**: certify that the disk can push the box along the whole path,
+as a function of the position along it, instead of on a fixed 5 cm grid. These
+runs are the evidence for why it comes next.
+
 ### A quasi-static lift, and a caveat
 
 With releases switched off, the search must keep the box held at every
-instant. On the evening's code it solved lift instance 2 that way in 52 calls,
+instant (these runs also used the ±20 cm push range). On the evening's code it solved lift instance 2 that way in 52 calls,
 5 on the path: the pivot, a held tilt-up from 3° to 73°, and a push over the
 step's corner that leaves the box upright on the platform. The replay
 reproduces all 5 calls to 0.0 mm.
@@ -121,7 +146,7 @@ whether such outcomes should count is an open question.
 ### Lower friction
 
 The same lift task with the disk–box friction lowered in both the planner and
-the simulator:
+the simulator (with the ±20 cm push range):
 
 40 lifting instances each, budget 192 calls, the same code throughout:
 
@@ -134,8 +159,9 @@ the simulator:
 Paired on the same starts (exact McNemar): 0.35 against 0.1, 15 instances
 are solved only at 0.35 and 1 only at 0.1 (p ≈ 0.0005); 0.35 against 0.2,
 4 against 1 (p ≈ 0.38). Lowering the friction to 0.2 costs little; at 0.1 the
-lift often fails. (The same code lifts 39 of 40 at μ = 0.35 where the
-evening's run, before tonight's fixes, lifted 37.)
+lift often fails. (At μ = 0.35 this run lifts 39 of 40, where the evening's
+run lifted 37; that run used the stock push range and earlier code, so the
+difference is not due to the fixes alone.)
 
 At μ = 0.1 the failures are not budget: the search runs out of moves, most
 of them at the pivot, where the release onto the platform needs more friction
@@ -158,7 +184,8 @@ default). Two findings came out of building it:
   push can move the box. On 63 logged pushes it predicts failure with
   precision 0.88 and recall 0.79, and it flags pushes the holding test offers
   but that cannot move the box at all (a disk on the top face trying to drag
-  it 182 mm). Behind a flag, off.
+  it 182 mm). Since November 10 this check is on by default (Aykut's decision),
+  with a paired run against the same instances under way.
 
 The literature (from sampling and scoring, as in Posa's group, to exact contact
 regions for grasps, to convex relaxations) is collected in the parametric
