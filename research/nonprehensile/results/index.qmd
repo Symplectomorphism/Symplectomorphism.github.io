@@ -1,10 +1,14 @@
 ---
 title: "Results"
-subtitle: "The planner's motions on the step scene: the November 9 change to elliptic contacts, the redesign's first solutions, the CMGMP baseline, and the earlier runs on pyramidal contacts."
+subtitle: "The planner's motions on the step scene: the November 9 change to elliptic contacts, the redesigned search's teacher results (lift 37/40, lower 40/40), the paired comparison with CMGMP, and the earlier runs on pyramidal contacts."
 resources:
   - media/*.mp4
   - media/cmgmp/*.mp4
-  - media/d23/*.mp4
+  - media/d23/v_linear_F1-lower-s0-00003.mp4
+  - media/d23/v_linear_F1-lower-s0-00014.mp4
+  - media/d23/lift_00002_solved.mp4
+  - media/d23/lift_00016_solved.mp4
+  - media/d23/lift_s1_00002_learned_ranker.mp4
 ---
 
 The newest results come first: [November 9](#nov9), on elliptic friction
@@ -42,12 +46,13 @@ not match is labelled **DIVERGED** below.
 
 ## November 9: elliptic contacts, the redesign, and CMGMP {#nov9}
 
-Three things happened on November 9. The simulator's friction model turned
-out to be wrong for a box at rest, and was changed. A redesigned search
-([Search](../planar-build/search.qmd#redesign)) solved its first lowering
-tasks. And the CMGMP baseline was re-run on the new contacts. Tonight's work
-fixed the lift's pivot; the redesign's full teacher run is starting now, so
-its numbers are **pending**.
+Four things happened on November 9. The simulator's friction model turned
+out to be wrong for a box at rest, and was changed. The CMGMP baseline was
+re-run on the new contacts. The lift's pivot was fixed. And the redesigned
+search ([Search](../planar-build/search.qmd#redesign)) ran on 40 lifting and
+40 lowering instances: it **lifts 37 of 40 and lowers 40 of 40**, and, paired
+with CMGMP on the same starts, lifts more within 30 minutes while CMGMP is
+faster at short budgets ([results below](#d23-results)).
 
 ### The simulator, not the gate, was wrong
 
@@ -87,10 +92,8 @@ planning attempts per start). An earlier grading of the same lift run used a
 looser rule (the box only partly over the platform: 3 / 14 / 20) and is
 superseded.
 
-**Not yet a comparison.** Our planner has not run on these 50 starts. The
-paired comparison (same starts, same goal test and grading, matched
-wall-clock budget, McNemar's test) runs after the redesign's teacher run.
-**Results pending.**
+The paired comparison with our planner on these same starts is
+[below](#paired).
 
 ### How CMGMP lifts
 
@@ -124,10 +127,112 @@ for a moment after the roll.
 **CMGMP, lift instance 18, seed 63 (15 s).** Passes, on the 64th seed: the
 same route, found late.
 
-### The redesign's first solutions: lowering, with a known issue
+### The redesigned search: lift 37 of 40, lower 40 of 40 {#d23-results}
 
-In the redesign's smoke test (three instances, a check of the code, not a
-result) the search solved both lowering instances in 13 calls each. Each
+The redesigned search ran tonight on 40 random lifting and 40 random lowering
+instances, on elliptic contacts, with everything as decided: the gate at the
+controller's friction, the most robust disk placement (5 candidates), box
+transport and release edits, a search ordered by the value estimate V₀
+(η = 1 + h/g), **no learned ranker** (every admissible edit equally likely),
+and no retries. A call budget caps the search: the number of times the local
+solver Λ may be run.
+
+| Task (40 instances) | budget | solved | 95% CI | Λ calls per solve, median (range) | wall time per solve, median |
+|---|---|---|---|---|---|
+| lower | 64 | **40** | 91–100% | 10 (6–13) | 396 s |
+| lift | 192 | **37** | 80–97% | 88 (52–148) | 572 s |
+| lift | 64 | 6 | 7–29% | 52 (52–64) | 390 s |
+
+On every solve the per-run check of the call bound (the paper's Theorem C)
+holds. The three unsolved lifts at budget 192 ran out of things to try (the
+search tree was exhausted), not out of budget.
+
+**How the search lifts.** Every one of the 37 solutions has the same core:
+
+```text
+{m_x, g, s} ⇒ {m_x, g_v, s_v}   pivot: the box tips onto its floor corner against the step corner
+{m_x, s_v, g_v} → {t}            release: the box tips onto its +x face on the platform
+{t} → {m_z, t}                   make: the disk goes to the box's −z face
+{m_z, t} → box on its +z face    release: the box rolls once more and rests fully on the platform
+```
+
+Before the core, most solutions first push the box flush against the riser.
+This is not the route we had planned (the disk going round the box's corner
+onto its top, a transfer that still fails); the search found a way that lets
+the box go twice instead. CMGMP's lifts also roll the box onto its +x face;
+ours adds a second roll. Transport was tried 27 times and is in no solution.
+
+<video src="media/d23/lift_00002_solved.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Redesign, lift instance 2: SOLVED (52 calls in the search, 4 on the
+solution; 19 s).** Pivot, release onto the platform, make on −z, release. The
+replay reproduces all 4 logged calls exactly (0.0 mm).
+
+<video src="media/d23/lift_00016_solved.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Redesign, lift instance 16: SOLVED (88 calls, 7 on the solution; 31 s).**
+The disk first pushes the box to the riser (make, release, make), then the
+same four-edit core.
+
+**Why budget 64 lifts only 6.** The run at 64 calls makes exactly the same
+calls as the run at 192, just cut off: 33 of its 34 unsolved instances had
+already reached {t}, one make and one release from the finish. Without a
+learned ranker every edit is equally likely, so a node's priority falls by a
+factor of about 7 per level, and the value estimate shifts it by at most
+about 2.5. The search therefore tries every shallower branch before the
+platform node, four edits deep. That is a ranking problem, which is what the
+learned ranker is for.
+
+**How the search lowers.** Every solution is one release off the platform,
+half of them after making the disk's contact on the box's +x face. No
+transports. The release still throws the box (known issue, below).
+
+### Paired with CMGMP {#paired}
+
+The same 25 test starts per task for both planners, the same goal test (the
+box at rest; for the lift, fully on the platform), one CPU core each, wall
+clock. A start counts within a budget if it was solved within that time.
+Exact McNemar test on the starts where the planners disagree.
+
+| | 60 s | 300 s | 1,800 s (30 min) |
+|---|---|---|---|
+| **lift**, ours (budget 192) | 0 | 0 | **24** of 25 |
+| **lift**, CMGMP | 1 | 5 | 15 of 25 |
+| lift, McNemar p | 1.0 | 0.06 | **0.012** (ours only 10, CMGMP only 1) |
+| **lower**, ours | 0 | 12 | **25** of 25 |
+| **lower**, CMGMP | 14 | **21** | 24 of 25 |
+| lower, McNemar p | < 0.001 | **0.004** | 1.0 |
+
+Plainly: **CMGMP is faster at short budgets; ours solves more lifts at 30
+minutes.** Our wall time includes loading compiled code on one pinned core
+and is dominated by simulating each call (median 396 s per lowering, 572 s
+per lift); neither planner was tuned for speed. One scene, 25 starts per
+task.
+
+### A first learned ranker
+
+A value network V₁ and a ranker π were trained on tonight's lowering run and
+the 64-call lifting run (the solutions relabeled in hindsight). On 11 held-out
+instances V₁ predicts the remaining Λ calls with a mean error of 0.19 calls
+(the graph's hop count: 0.63; V₀: 0.77), and π puts its top choice on the
+solution's edit 97% of the time (uniform: 24%).
+
+Used in the search (95% learned, 5% uniform, so no edit is ever ruled out), on
+**3 lifting instances from a seed the training never saw**, at budget 64:
+the learned ranker solves **3 of 3** (in 44, 53 and 43 calls), the uniform
+ranker none. Three instances are a small sample; it shows the mechanism, not
+a rate. V₁ itself does not yet order the search.
+
+<video src="media/d23/lift_s1_00002_learned_ranker.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Learned ranker, unseen lift instance (seed 1, instance 2): SOLVED in 43
+calls (26 s).** The uniform ranker does not solve it within 64. The replay
+reproduces the log exactly.
+
+### The redesign's first lowering solutions, with a known issue
+
+In the redesign's smoke test (three instances, a check of the code, before
+the full run above) the search solved both lowering instances in 13 calls each. Each
 solution is two calls: make the disk's contact on the box's +x face, then a
 **release**: the disk pushes the box off the platform and lets it fall to the
 floor. Both replays reproduce the logged calls exactly.
@@ -167,21 +272,26 @@ Two fixes, both decided by Aykut tonight:
 1. **The gate uses the controller's friction, 0.35**, at the disk. The
    hard break that follows the pivot stays legal.
 2. **The disk goes to the most robust placement.** The gate is re-checked
-   exactly at several placements along the face (5 or 9; being finalized),
+   exactly at 5 placements along the face,
    and the one with the largest margin wins. This is an interim rule: in the
-   long run a learned pivot skill chooses its own placement (three seeds are
-   training now).
+   long run a learned pivot skill chooses its own placement (a first one is
+   trained; compared below).
 
 With both, lift instance 2's pivot passes into exactly {m_x, g_v, s_v}, with
 the disk 44 mm *above* the face's middle, and the search went on to a release
 onto the platform. A side finding: the exact gate passes at every disk height
 on that face, but the controller succeeds only from about 10 mm below the
 middle upward, so low on the face the gate is no test of what the controller
-can do. Checking 9 placements costs about 3× per search node (13.5 → 40.5 s).
+can do. Checking 5 placements costs about 5.6× the gate at a node where
+the disk touches the box.
 
-**Pending:** the redesign's full teacher run (lift and lower, elliptic
-contacts), launching tonight; then the paired comparison with CMGMP and the
-learned value's retraining.
+The full run [above](#d23-results) uses this fix: every lift solution
+passes the pivot. On 353 held-out pivot states the quasi-static realizer with
+the robust placement passes 348, a learned pivot skill 337, and the two
+together all 353.
+
+**Still pending:** V₁ in the search's ordering, and Aykut's quasi-static
+route test (releases off, transport aimed at every next edit).
 
 ## Earlier runs on pyramidal contacts (superseded) {#pyramidal}
 
