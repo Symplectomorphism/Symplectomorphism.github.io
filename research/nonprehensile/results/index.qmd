@@ -1,6 +1,6 @@
 ---
 title: "Results"
-subtitle: "The planner's motions on the step scene: the November 9 change to elliptic contacts, the redesigned search's teacher results (lift 37/40, lower 40/40), the paired comparison with CMGMP, and the earlier runs on pyramidal contacts."
+subtitle: "The planner's motions on the step scene: the end-to-end task overnight (floor to x = 25 cm on the platform, 6 of 8), the learned ranker against uniform (40 vs 3 of 40), lower friction; the November 9 change to elliptic contacts, the redesigned search's teacher results (lift 37/40, lower 40/40), the paired comparison with CMGMP, and the earlier runs on pyramidal contacts."
 resources:
   - media/*.mp4
   - media/cmgmp/*.mp4
@@ -9,9 +9,13 @@ resources:
   - media/d23/lift_00002_solved.mp4
   - media/d23/lift_00016_solved.mp4
   - media/d23/lift_s1_00002_learned_ranker.mp4
+  - media/d23/liftto_00000_solved.mp4
+  - media/d23/liftto_00002_solved.mp4
+  - media/d23/qs_00000_topple.mp4
 ---
 
-The newest results come first: [November 9](#nov9), on elliptic friction
+The newest results come first: [the night of November 9–10](#nov10), when the
+search did the whole task end to end, then [November 9](#nov9), on elliptic friction
 contacts. The [sections after it](#pyramidal) are the November 8–9 runs on
 MuJoCo's pyramidal contacts, kept for the record and marked as superseded.
 
@@ -43,6 +47,126 @@ not match is labelled **DIVERGED** below.
 - **Cards.** A short hold after each segment, then the strict test's verdict
   (SOLVED, or FAILED with the clause that failed).
 :::
+
+## Night of November 9–10: end to end {#nov10}
+
+Overnight the search did the whole task: **lift the box onto the platform and
+push it to a set place there**. The task (`lift_to`) asks for the box's centre
+at x = 0.25 ± 0.01 m on the platform, at rest. On 8 instances the redesign
+solves **6** (Wilson 95%: 41–93%), all by the same route:
+
+push to the riser → make s → **pivot** → **release** onto {t} → disk to the
+box's side face → **push** → **push** to the window.
+
+<video src="media/d23/liftto_00000_solved.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**lift_to, instance 0: SOLVED in 180 calls**, 7 on the path, every call a
+success; the box ends at x = 0.243 m. The replay reproduces all 7 calls to
+0.0 mm.
+
+<video src="media/d23/liftto_00002_solved.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**lift_to, instance 2: SOLVED in 196 calls.** One call on the path (a release
+the realizer did not finish) still pushed the box 108 mm along the platform;
+the search kept that outcome and finished with a push to x = 0.240 m.
+
+### What made the platform pushes work
+
+All evening, every push along the platform was refused before the disk
+moved: "the target is not in the disk's run along the contacted feature". The
+cause was the disk's placement, not the mechanics. The relaxed gate put the
+disk **0.8 mm past the end** of the stretch of face the controller recognises.
+The fix (decided by Aykut): for a push, the disk goes to the most robust of
+5 placements inside that stretch, as it already did for contact changes. In
+the replays, two pushes that had moved the box 0 mm then moved it 48.6 mm and
+47.2 mm.
+
+### Where the two misses stop
+
+The solved instances end at x = 0.240–0.245 m, the **near edge** of the
+window. A push toward the goal aims at the nearest of the goal poses, which
+are spread across the window, so it aims at the edge, x = 0.24, and the
+realizer stops a few millimetres short of its aim. Once the box is within
+10 mm of a goal pose no further push counts as progress, so one instance
+stalled at x = 0.2374, just outside. Aiming the last push at the window's
+centre (a flag, off by default) solves that instance (ends at x = 0.247) and
+keeps the others solved; the eighth instance fails for another reason (its
+long pushes came too late in the budget). With the flag, 7 of 8.
+
+### A quasi-static lift, and a caveat
+
+With releases switched off, the search must keep the box held at every
+instant. It solved lift instance 0 that way through the pivot and two held
+tilt-up pushes (5° → 63°), with the box finally resting on the step's corner.
+But its **last** call, a transfer that the realizer did not complete, ended
+with the box toppling onto the platform and being dragged about 0.8 m by the
+disk, which was flung off. That end is at rest and on the platform, so the
+search accepted it. It is a solve by the rules, not a quasi-static one, and
+whether such outcomes should count is an open question.
+
+<video src="media/d23/qs_00000_topple.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+### Lower friction
+
+The same lift task with the disk–box friction lowered in both the planner and
+the simulator:
+
+40 lifting instances each, budget 192 calls, the same code throughout:
+
+| Disk–box friction μ | Lifts solved | Wilson 95% | Median calls |
+|---|---|---|---|
+| 0.35 (the default) | **39 of 40** | 87–100% | 109 |
+| 0.2 | **36 of 40** | 77–96% | 92 |
+| 0.1 | **25 of 40** | 47–76% | 100 |
+
+Paired on the same starts (exact McNemar): 0.35 against 0.1, 15 instances
+are solved only at 0.35 and 1 only at 0.1 (p ≈ 0.0005); 0.35 against 0.2,
+4 against 1 (p ≈ 0.38). Lowering the friction to 0.2 costs little; at 0.1 the
+lift often fails. (The same code lifts 39 of 40 at μ = 0.35 where the
+evening's run, before tonight's fixes, lifted 37.)
+
+At μ = 0.1 the failures are not budget: the search runs out of moves, most
+of them at the pivot, where the release onto the platform needs more friction
+than there is.
+
+### Where to put the disk on a face
+
+The 5-placement rule is a stopgap. For a disk on a box face, the moment
+couples to the disk's position s only through s·F_n, and with τ = s·F_n
+(exact, since F_n ≥ 0) the set of positions where the box is held is an
+interval that two linear programs find. The margin is quasi-concave in s, so
+the best placement is found exactly. This rule is now in the code (off by
+default). Two findings came out of building it:
+
+- When the box needs the disk to stand, the realizer keeps the disk where it
+  already is on the box, so no placement rule, sampled or exact, is carried
+  out there (errors up to 34 mm).
+- The same lifting applied to **pushing** (support friction at its limit, no
+  tipping, the disk sticking) gives the interval of positions from which a
+  push can move the box. On 63 logged pushes it predicts failure with
+  precision 0.88 and recall 0.79, and it flags pushes the holding test offers
+  but that cannot move the box at all (a disk on the top face trying to drag
+  it 182 mm). Behind a flag, off.
+
+The literature (from sampling and scoring, as in Posa's group, to exact contact
+regions for grasps, to convex relaxations) is collected in the parametric
+certification review.
+
+### The learned ranker, against a uniform ranker on the same starts
+
+The ranker π trained yesterday evening, on **40 lifting instances from a seed
+the training never saw**, at budget 64, paired with a uniform ranker on the
+same 40 starts and the same code:
+
+| Ranker | Lifts solved | Wilson 95% | Median calls |
+|---|---|---|---|
+| Learned π | **40 of 40** | 91–100% | 47.5 |
+| Uniform | **3 of 40** | 3–20% | 52 |
+
+The 37 instances solved only by the learned ranker against none the other way
+give an exact McNemar p ≈ 1.5 × 10⁻¹¹. One caveat: π was trained with the
+older, looser lift goal (part of the box over the platform); every solve above
+is graded with the full rule, and the training data is now built with it.
 
 ## November 9: elliptic contacts, the redesign, and CMGMP {#nov9}
 
