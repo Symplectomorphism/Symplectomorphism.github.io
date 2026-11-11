@@ -96,7 +96,7 @@ ax.scatter(deg[~sup[uniq]], np.clip(gm[uniq][~sup[uniq]], -1, 1), s=22, facecolo
            linewidths=1.0, label="sweep pose, not held", zorder=3)
 ax.scatter(deg[sup[uniq]], np.clip(gm[uniq][sup[uniq]], -1, 1), s=22, color=BLUE, label="sweep pose, held", zorder=6)
 ax.scatter([30], [curve[np.argmin(abs(tilts - 30))]], s=60, color=RED, zorder=4)
-ax.annotate("χ₀ = 30°: refused at the pose", (30, curve[np.argmin(abs(tilts - 30))]), xytext=(21, 0.55),
+ax.annotate("χ₀ = 30°: refused at the pose", (30, curve[np.argmin(abs(tilts - 30))]), xytext=(24, 0.3),
             fontsize=8, color=INK, arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
 ax.scatter([math.degrees(chi[2])], [float(r["margin"])], s=140, facecolors="none", edgecolors=INK, linewidths=1.5, zorder=5)
 ax.annotate(f"χ_t (nearest held): {math.degrees(chi[2]):.0f}°", (math.degrees(chi[2]), float(r["margin"])),
@@ -110,7 +110,7 @@ ax.set_ylim(-1.05, 1.05)
 ax.tick_params(labelsize=8, colors=MUTED)
 for spine in ax.spines.values():
     spine.set_color(GRID)
-ax.legend(fontsize=7.5, frameon=False, loc="lower right")
+ax.legend(fontsize=7.5, frameon=False, loc="upper left")
 fig.tight_layout()
 fig.savefig(OUT / "step3_sweep.svg", bbox_inches="tight")
 

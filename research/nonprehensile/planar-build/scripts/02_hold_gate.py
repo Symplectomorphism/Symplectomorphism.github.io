@@ -90,8 +90,8 @@ ax.annotate("disk at mid-face, 30°: refused", (0, 30), xytext=(6, 77.5), fontsi
 ax.plot([-40], [30], "D", mfc="none", mec=INK, ms=7, mew=1.4)
 ax.annotate("disk low, 30°: refused\n(motors too weak)", (-40, 30), xytext=(-25, 14), fontsize=8, color=INK,
             arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
-ax.plot([-40], [45], "s", mfc="none", mec=INK, ms=8, mew=1.4)
-ax.annotate("test pose (disk 40 mm low, 45°): admitted", (-40, 45), xytext=(-60, 77.5), fontsize=8, color=INK,
+ax.plot([0], [60], "s", mfc="none", mec=INK, ms=8, mew=1.4)
+ax.annotate("disk at mid-face, 60°: admitted", (0, 60), xytext=(-60, 77.5), fontsize=8, color=INK,
             arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8))
 ax.set_ylim(degs[0] - 1, 82)
 ax.set_xlabel("disk height on −x_B from the face center (mm; negative = toward the floor)", fontsize=9, color=INK)
