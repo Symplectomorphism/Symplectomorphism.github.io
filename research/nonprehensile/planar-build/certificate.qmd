@@ -99,10 +99,58 @@ checked dual). On 153 tilts it agrees with a 2,001-point search to
 | 70° | +42.6 | 0.593 | +17.7 … +60.5 | held |
 | 74° | +60.5 | 0.138 | +54.0 … +60.5 | none held |
 
+## Sliding changes what "held" means
+
+The hold test asks whether *some* forces inside the friction cones balance
+gravity. That is enough for a box at rest, but not along a motion. Under
+Coulomb's law a contact that **slides** carries exactly one force, on the
+edge of its friction cone opposite the slip; only a contact that **sticks**
+may use its whole cone. On the step, the box's floor corner and its face on
+the step corner must slide whenever the box tilts, and the disk, which
+cannot rotate, slides along the face unless it moves down at exactly the
+rate that cancels the slip.
+
+So a plan is not just a path of poses: it is a **stick–slip plan**, a path
+through poses cut into segments at pauses, saying which contacts stick and
+which slide (and which way) on each segment. It is indexed by the path, not
+by time: a quasi-static motion can run a segment at any speed.
+
+**Theorem S** (paper §IX, full proof in its appendix): if an edge has a
+*certified* stick–slip plan (on boxes covering the plan, the contacts stay
+the same, the hold is certified with the forces Coulomb's law leaves for
+each segment, nothing overlaps, and the disk stays in its workspace), then
+a motion consistent with rigid bodies, Coulomb friction and quasi-static
+balance carries the edge out, from every start in a tube around the plan.
+Together with the earlier result that the gate never refuses a realizable
+edge, the certified gate accepts only edges that can be carried out.
+
+![A certified stick–slip plan for break(m<sub>x</sub>), with the certificate's forces (arrows, units of mg; friction cones shaded) and slips (dashed). From (a) to (c) the box tilts and the disk slides up its face, so every contact carries the one force Coulomb's law leaves. At (c) the floor and step corners hold the box alone; from (c) to (d) the disk withdraws. The whole tube of 0.25° × 0.5 mm around the plan is certified.](media/cert_stick_slip_plan.svg){.lightbox}
+
+## The indirect lift
+
+The strategy we want the planner to find on its own, from the scene alone,
+is the **indirect lift**: tip the box onto the step corner until it rests on
+its two corners, let the disk walk round to the box's raised underside, then
+lift the corner and roll the box onto the platform. The box is held at every
+instant; no throw or release is needed.
+
+![The indirect lift, each panel at a pose where the gate (float32) holds the formation and the recognizer (float32) reads it exactly.](media/cert_indirect_chain.svg){.lightbox}
+
+Its first step, break(m<sub>x</sub>) from a 30° tilt with the disk 40 mm
+low, is certified end to end (the figure above); the remaining steps (the
+disk walking round, the lift, the roll and the final push) are being
+certified the same way.
+
 ## What is next
 
-Transports (certifying the hold along a push instead of at sampled poses,
-which also removes the fixed transport range) are being built; then the
-certified placement goes into the search in place of the five points.
+- Certify the rest of the indirect lift, and wire the certified gate and
+  placement into the search, so that the planner finds the indirect lift
+  routinely without hints.
+- Execute certified stick–slip plans in simulation: a tracker that slides
+  the disk where the plan says slide and keeps it sticking where it says
+  stick.
+- Friction: the planner, the certificate and the simulator should use the
+  same disk friction (or a band covering it).
+
 The details, derivations and all runs are in the technical report,
 Chapter 15.
