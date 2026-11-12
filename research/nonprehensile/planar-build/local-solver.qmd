@@ -6,7 +6,19 @@ aliases:
   - 03-local-solver.html
 ---
 
-::: {.callout-note title="Result (steps 3b–3c): the quasi-static realizer follows the chain; one class of breaks remains"}
+::: {.callout-note title="Current configuration"}
+**Disk friction is a declared band, μ<sub>disk</sub> ∈ [0.3, 0.5]**, which
+stands in for a real disk on a real box until hardware is measured. The
+simulator runs at 0.3 by default (0.4 or 0.5 with `CMG_DISK_FRICTION`).
+The gate and the tracker use 0.3, the band's lower end, as the disk's
+sticking cone, so no plan counts on friction above it. Λ<sub>qs</sub>'s four
+options described [below](#lambda-qs-options) are on by default.
+**Open problem:** Λ<sub>qs</sub> plans positions only, so the disk slides
+down the box's face in break(m<sub>x</sub>), which is fatal at μ = 0.3
+([diagnosis](#qs-slip)).
+:::
+
+::: {.callout-note collapse="true" title="Earlier result (steps 3b–3c, at the old frictions 0.99 / 0.35)"}
 The mode-scheduled realizer **Λ<sub>qs</sub>** realizes **23 of 24** chain
 edits from canonical and perturbed starts (GPU), including the pivot that no
 MPPI cost realized; MPPI-E realizes 15. **Receding-horizon re-planning does
@@ -45,12 +57,57 @@ in MuJoCo:
   σ′ with σ′ holding; a constraining edit ends at χ<sub>tr</sub> projected
   onto σ′ and pressed 2 mm past the closure; transport moves up to 0.05
   toward the goal;
-- **feed-forward:** a quasi-static force at each knot (nonnegative least
-  squares over the gate's friction-cone rays);
+- **feed-forward:** the minimum-norm holding force at each knot
+  (nonnegative least squares over the gate's friction-cone rays): the least
+  squeeze that holds the box there. The box moves because the reference
+  moves, not because of the feed-forward;
 - **tracking:** while the disk touches, a PD force along the box's free
-  directions, mapped through the contact and kept inside the disk's friction
-  cone (μ = 0.35, below the simulator's 0.99, so the contact sticks) and the
-  ±1 N motor box; otherwise PD on the planned disk positions.
+  directions, mapped through the contact and kept inside the disk's sticking
+  cone (μ = 0.3, the band's lower end) and the ±1 N motor box; otherwise PD
+  on the planned disk positions.
+
+### Options, on by default {#lambda-qs-options}
+
+- **`roll_pivot`:** a constraining edit whose only environment contact is a
+  point (the roll s<sub>v</sub> → t, the box on the step corner) is planned
+  as a rotation about that point, the motion its sticking contacts allow,
+  with the disk following without slip.
+- **`ff0_hold`:** when a call starts with the disk already pressing on the
+  box, the feed-forward starts from the holding force instead of ramping up
+  from zero, so the box does not lose support at the start.
+- **`settle_ext`:** after the planned horizon, keep tracking the last knot
+  until the box is at rest, for at most one more plan length.
+- **`qs_plan_check`:** before executing, every knot of the motion that
+  keeps σ must be held by σ under the gate's own hold test; otherwise the
+  call is refused (`plan_unheld`) instead of executed.
+
+Replayed on 227 logged calls at five frictions across the band (gate and
+tracker 0.3), the three roll options raise the successes from 168–187 to
+203–209. The rolls gain in 98 of 125 cells and lose in none.
+`qs_plan_check` changes only 8 roll calls, which it refuses at every μ: they
+start from breaks below about 60° and are not held in their last 5–10°. The
+search is then steered to the branch whose roll is held at every knot.
+
+### Positions only: the disk slides {#qs-slip}
+
+Λ<sub>qs</sub>'s plan fixes positions only: the disk stays at a fixed place
+on the box's face. The disk cannot rotate, so on a turning face that
+"fixed place" is a slide at R·θ̇. The plan's force model is the gate's hold
+test at each knot, which keeps **both** edges of the disk's friction cone:
+a sequence of static holds, not a motion under Coulomb's law. Where a
+contact slides, Coulomb's law leaves it only the cone's edge opposite the
+slip.
+
+Measured in break(m<sub>x</sub>), the disk slides down the face at its
+friction limit at every μ: 16.6, 11.9 and 9.4 mm at μ = 0.3, 0.4 and 0.5.
+At 0.3 this is fatal. The floor corner, which the plan has sliding, sticks.
+
+The gate stays at the hold level (a relaxation of Coulomb realizability, so
+it never refuses a realizable edge). The fix belongs in the realizer: its
+plans are to become **stick–slip plans** in which each contact sticks or
+slides on each segment, the kinematics and the force program agree, and
+the feed-forward is the least squeeze inside those cones (see
+[Certifying a whole box](certificate.qmd#sliding-changes-what-held-means)).
 
 ## A learned skill for the hard breaks {#learned-skill}
 
@@ -154,6 +211,9 @@ random.
   day, this page said they ran out of budget).
 
 ## Re-planning and failure diagnostics (step 3c) {#step-3c}
+
+*Measured at the old frictions (simulator 0.99, tracker 0.35), before the
+friction band.*
 
 **Re-planning (RH*k*).** Every *k* steps (20, 40, 80: every 0.2, 0.4, 0.8 s)
 the plan is rebuilt from the current simulated state and its first segment
@@ -322,6 +382,9 @@ that hold the box on a corner with more disk friction than the tracker
 uses.
 
 ## The friction match (step 3d) {#step-3d}
+
+*Superseded by the friction band [0.3, 0.5] (see the note at the top). Kept
+for the record: these measurements used the old simulator friction 0.99.*
 
 Decided Nov 8 (compendium, Decision 15): give the gate and the plan the
 disk–box friction the tracker uses (0.35) instead of the simulator's 0.99,

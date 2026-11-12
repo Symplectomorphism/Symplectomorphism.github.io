@@ -1,0 +1,120 @@
+---
+title: "The planner runs the indirect lift from rest"
+subtitle: "Given only the indirect lift's formation sequence, the search chooses the transition poses, the disk placements and the motions, and realizes the lift in MuJoCo at disk friction 0.4 and 0.5. At 0.3 it does not."
+resources:
+  - media/indirect/planner_chain_mu0.4.mp4
+  - media/indirect/planner_chain_mu0.5.mp4
+---
+
+## The setup
+
+The **indirect lift** tips the box onto the step corner, lets the disk walk
+round to the box's raised underside, then lifts the box off the floor and
+rolls it onto the platform. Its formation sequence is
+
+{g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>,
+g<sub>v</sub>, s<sub>v</sub>} → {g<sub>v</sub>, s<sub>v</sub>} →
+{m<sub>z</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>,
+s<sub>v</sub>} → {m<sub>z</sub>, t} → (transport) goal.
+
+The last four edits of this chain and its closing transport have certified
+stick–slip plans for every disk friction μ ∈ [0.3, 0.5]
+([Certifying a whole box](../planar-build/certificate.qmd#the-indirect-lift)).
+That plan was designed by hand and then proved. On this page the planner
+runs the chain itself.
+
+**The hint.** The search gets only the formation sequence above. At a node
+whose formation is the chain's k-th, the only edits it may try are those
+into the (k+1)-th formation, plus transports that stay in the k-th. At a
+node off the chain, nothing is legal.
+
+**What the planner chooses.** Everything else is the production search's:
+the transition poses (the gate's sweep), the disk placements (the robust
+placement rule), the motions (Λ<sub>qs</sub> in MuJoCo, with its default
+options; see [the local solver](../planar-build/local-solver.qmd#lambda-qs)),
+the transport targets, and the order of the calls (a uniform ranker). The
+box starts at rest on the floor, with the disk's centre 10 cm from the
+box's. The budget is 64 calls.
+
+**Configuration.** `CMG_DISK_FRICTION` sets the simulator's disk friction μ.
+The gate and the tracker use 0.3, the band's lower end, and no other option
+is set. The task is `lift`: the box must end fully on the platform and at
+rest.
+
+## Results
+
+| Simulator μ | Solved | Calls | Calls on the path | Box at the end |
+|---|---|---|---|---|
+| 0.3 | no (exhausted) | 10 | — | — |
+| 0.4 | **yes** | 18 | 12 | on the platform, x = 78 mm, 90° |
+| 0.5 | **yes** | 16 | 12 | on the platform, x = 77 mm, 90° |
+
+At μ = 0.4 and 0.5 the solution takes the same route. Every call is
+quasi-static (Λ<sub>qs</sub>), with no learned skill and no release:
+
+1. make(m<sub>x</sub>): the disk reaches the box's −x face.
+2. A push to the riser, then make(s).
+3. The pivot, {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>,
+   s<sub>v</sub>}. The disk is placed 46 mm above the face's centre, so the
+   push topples the box onto the step corner.
+4. Two transports tilt the box to about 43°.
+5. break(m<sub>x</sub>): the box turns on its two corners to 63°, and the
+   disk lets go.
+6. make(m<sub>z</sub>) on the raised underside, then break(g<sub>v</sub>)
+   at 63.5°: the box leaves the floor, held by the disk and the step
+   corner.
+7. The roll s<sub>v</sub> → t, from 66° to 90°, onto the platform.
+8. Two pushes on the platform to the goal.
+
+The roll comes from the 63° branch, and it is certified (edge E3). The
+certificate that proves the hand-designed lift's roll, run on the
+planner's roll from this branch, holds for every μ ∈ [0.3, 0.5]. A roll
+that starts from a break below about 60° is not held in its last 5–10°.
+Λ<sub>qs</sub> refuses to execute such plans (`qs_plan_check`), which
+steers the search to the 63° branch.
+
+The searches also tried calls off the path. At μ = 0.4,
+break(m<sub>x</sub>) from 20° reached 49°, and break(g<sub>v</sub>) from
+there failed departure. At μ = 0.5, break(m<sub>x</sub>) from 20° failed
+the sequence clause.
+
+**At μ = 0.3 the search does not solve the task.** break(m<sub>x</sub>)
+succeeds at 49.8°, but break(g<sub>v</sub>) then fails departure from 49.2°,
+and break(m<sub>x</sub>) at 63.6° fails persistence. The search is
+exhausted after 10 calls. The cause is in the realizer: Λ<sub>qs</sub> plans
+positions only, so the disk slides down the face at its friction limit
+during break(m<sub>x</sub>)
+([diagnosis](../planar-build/local-solver.qmd#qs-slip)).
+
+The formation sequence is still a hint. The target is a search that finds
+the indirect lift from the scene alone.
+
+## Videos
+
+Each clip replays the solution's calls in MJX from the logged start states
+and draws them; the note "How to read a clip" on [Results](index.qmd) explains the overlay.
+Each replay is checked against the search's log.
+
+<video src="media/indirect/planner_chain_mu0.4.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Simulator μ = 0.4.** The 12 calls on the solution path, from rest to the
+goal. The replay reproduces all 12 calls (end states within 0.0 mm and 0.00°). The clip is 50 s long.
+
+<video src="media/indirect/planner_chain_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Simulator μ = 0.5.** The same route; the replay reproduces all 12 calls.
+
+## Reproduce
+
+Run from `cmg/` on branch `phase1/planar` (commit `3afdebf`). The chain
+script `scripts/step4/chain_search/run_chain.py` is in the working tree and
+not yet committed.
+
+```text
+CMG_DISK_FRICTION=0.4 CMG_MAPGUARD=50000 JAX_PLATFORMS=cpu PYTHONPATH=src \
+    .venv314/bin/python scripts/step4/chain_search/run_chain.py OUT --budget 64
+CMG_DISK_FRICTION=0.4 JAX_PLATFORMS=cpu PYTHONPATH=src \
+    .venv314/bin/python scripts/step4/videos/render_d23.py OUT --ids F1-lift-s0-00000 --out VIDEO
+```
+
+Each search takes about 13 minutes in one CPU process.
