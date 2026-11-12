@@ -345,8 +345,14 @@ a failure the tests found:
 
 Every answer is then checked independently, with elementwise products (no
 reduced-precision TF32 on GPUs): a witness by its residual, a certificate
-by its signs, an exit by its weights. A failed exit check sets that exit to
-0, so a solver error can shrink the margin but not enlarge it.
+by its signs, an exit by its weights. The gate's margin is a certified lower
+bound: each exit's witness is checked by a residual bound with float32 rounding
+accounted for, and the margin is the least of those bounds, so a solver error
+can shrink the margin but not enlarge it. "Held" is certified only by a witness
+with margin at least γ<sub>min</sub>, "not held" only by a Farkas certificate;
+anything else is uncertain. (Until November 11 a failed exit check set that
+exit to 0 and a refusal was then called certified; on 10<sup>6</sup> pivot
+poses that made 5 false refusals, none since.)
 
 **Benchmark, before force limits** (record at commit `e29d96f`; 1,000 random
 cases and 416 within 2 mm of disk height of the boundary; HiGHS reference;
@@ -368,14 +374,16 @@ $d = 6$, up to 128 generators, 1,024 cases), nothing hangs, nothing is
 certified wrongly, 763 of 768 random and 255 of 256 near-boundary cases
 are right, and the rest are "uncertain" (safe) except one false acceptance
 0.1% outside the boundary. The uncertain cases come from float32 rounding
-over the longer pivot sequences; the cure, rebuilding the tableau from the
-final basis (*reinversion*), is planned for the 3D build.
+over the longer pivot sequences; the cure would be rebuilding the tableau
+from the final basis (*reinversion*). The 3D build is frozen; the project is
+planar.
 
 ## 14. How the gate uses them
 
 - **The gate** is LP-1 and LP-2 with the motor rows, on the edit's
   less-constrained end, at χ₀ and at the transition sweep's poses
-  ([the hold gate](hold-gate.qmd#sweep)). It accepts at margin ≥ 0.
+  ([the hold gate](hold-gate.qmd#sweep)). It accepts when the certified
+  margin is at least γ<sub>min</sub> = 10<sup>−5</sup>.
 - **The margin** is set inclusion with the ℓ₁ ball; a scene can pass its
   own polytope $D$.
 - **The exact test** (§4–6) stays as a cone-only cross-check.
