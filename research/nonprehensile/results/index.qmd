@@ -1,6 +1,6 @@
 ---
 title: "Results"
-subtitle: "The planner's motions on the step scene: the end-to-end task overnight (floor to x = 25 cm on the platform, 15 of 16 with the goal push aimed at the window's centre, the default since Nov 10; 13 aimed at its edge; both with a temporary ±20 cm push range, without which the task fails), the learned ranker against uniform (40 vs 3 of 40), lower friction; the November 9 change to elliptic contacts, the redesigned search's teacher results (lift 37/40, lower 40/40), the paired comparison with CMGMP, and the earlier runs on pyramidal contacts."
+subtitle: "The planner's motions on the step scene. Newest: the planner runs the indirect lift from rest under the declared disk-friction band. Below it, the earlier runs, each labelled with the configuration it was measured at: the end-to-end task and the learned ranker (Nov 9–10), the redesigned search and the paired comparison with CMGMP on elliptic contacts (Nov 9), and the pyramidal-contact runs before the redesign."
 resources:
   - media/*.mp4
   - media/cmgmp/*.mp4
@@ -21,10 +21,25 @@ lift quasi-statically in MuJoCo at disk friction 0.4 and 0.5, and not at
 0.3. See [The planner runs the indirect lift from rest](indirect-lift.qmd).
 :::
 
-Below, the newest results come first: [the night of November 9–10](#nov10), when the
+::: {.callout-warning title="The runs below this box predate the current configuration"}
+Every run on this page outside [the indirect lift](indirect-lift.qmd) was
+measured with the simulator's disk–box friction at **0.99** and the gate and
+tracker at **0.35** (the gate at the simulator's 0.99 before the evening of
+Nov 9), before the
+declared band μ<sub>disk</sub> ∈ [0.3, 0.5] with the gate and tracker at 0.3;
+with **release edits on** except in the quasi-static lift (releases are now off: their rules were dropped as
+hand rules, and a principled release is a proposal); with Λ<sub>qs</sub> before
+its current default options; and without the workspace and dynamic-event rules
+of the paper's search, and at the friction above, unless a section says so.
+Most lifts below let the box drop onto the platform; the current target is the indirect lift, held at every
+instant. The rerun at the band's ends with every rule on is pending. These
+results are the record of those configurations, not the current planner's.
+:::
+
+Below the newest result come [the night of November 9–10](#nov10), when the
 search did the whole task end to end, then [November 9](#nov9), on elliptic friction
-contacts. The [sections after it](#pyramidal) are the November 8–9 runs on
-MuJoCo's pyramidal contacts, kept for the record and marked as superseded.
+contacts. [The last section](#pyramidal) summarizes the November 8–9 runs on
+MuJoCo's pyramidal contacts, before the redesign.
 
 Each clip replays calls that the planner actually made in its teacher runs
 (branch `phase1/planar`). No motion here was staged for the
@@ -60,7 +75,8 @@ not match is labelled **DIVERGED** below.
 ::: {.callout-warning title="These runs used a temporary ±20 cm push range"}
 The end-to-end, lower-friction and quasi-static runs in this section ran
 with the transport's push range widened from the stock ±5 cm to **±20 cm**, a
-temporary setting until the parametric push certificate (below) is built. A
+temporary setting; it is not a direction, and the parametric certificate
+(below) is to replace it. A
 single push could then move the box up to 200 mm. This was not stated here
 before (it was set outside the recorded run options). The teacher runs, the
 learned-ranker comparison and the November 9 results below use the stock
@@ -155,13 +171,14 @@ reached through a dynamic event (a topple). Under these rules this instance 0
 ### Lower friction
 
 The same lift task with the disk–box friction lowered in both the planner and
-the simulator (with the ±20 cm push range):
+the simulator (with the ±20 cm push range and releases on; before the friction
+band, whose lower end 0.3 is now what the gate and tracker use):
 
 40 lifting instances each, budget 192 calls, the same code throughout:
 
 | Disk–box friction μ | Lifts solved | Wilson 95% | Median calls |
 |---|---|---|---|
-| 0.35 (the default) | **39 of 40** | 87–100% | 109 |
+| 0.35 (the gate's value then) | **39 of 40** | 87–100% | 109 |
 | 0.2 | **36 of 40** | 77–96% | 92 |
 | 0.1 | **25 of 40** | 47–76% | 100 |
 
@@ -182,8 +199,9 @@ The 5-placement rule is a stopgap. For a disk on a box face, the moment
 couples to the disk's position s only through s·F_n, and with τ = s·F_n
 (exact, since F_n ≥ 0) the set of positions where the box is held is an
 interval that two linear programs find. The margin is quasi-concave in s, so
-the best placement is found exactly. This rule is now in the code (off by
-default). Two findings came out of building it:
+the best placement is found exactly. This rule is in the code (off by
+default; the certified placement on [Certifying a whole box](../planar-build/certificate.qmd#certified-placement)
+is its interval-certified version). Two findings came out of building it:
 
 - When the box needs the disk to stand, the realizer keeps the disk where it
   already is on the box, so no placement rule, sampled or exact, is carried
@@ -193,8 +211,8 @@ default). Two findings came out of building it:
   push can move the box. On 63 logged pushes it predicts failure with
   precision 0.88 and recall 0.79, and it flags pushes the holding test offers
   but that cannot move the box at all (a disk on the top face trying to drag
-  it 182 mm). Since November 10 this check is on by default (Aykut's decision),
-  with a paired run against the same instances under way.
+  it 182 mm). Since November 10 this check is on by default (Aykut's decision);
+  the paired run planned for it did not run.
 
 The literature (from sampling and scoring, as in Posa's group, to exact contact
 regions for grasps, to convex relaxations) is collected in the parametric
@@ -212,9 +230,11 @@ same 40 starts and the same code:
 | Uniform | **3 of 40** | 3–20% | 52 |
 
 The 37 instances solved only by the learned ranker against none the other way
-give an exact McNemar p ≈ 1.5 × 10⁻¹¹. One caveat: π was trained with the
-older, looser lift goal (part of the box over the platform); every solve above
-is graded with the full rule, and the training data is now built with it.
+give an exact McNemar p ≈ 1.5 × 10⁻¹¹. Two caveats: π was trained with the
+older, looser lift goal (part of the box over the platform; every solve above
+is graded with the full rule), and on solves that are mostly releases and
+falls. With releases off, π and V₁ are to be retrained on held solves once the
+search produces them.
 
 ## November 9: elliptic contacts, the redesign, and CMGMP {#nov9}
 
@@ -331,9 +351,9 @@ search tree was exhausted), not out of budget.
 ```
 
 Before the core, most solutions first push the box flush against the riser.
-This is not the route we had planned (the disk going round the box's corner
-onto its top, a transfer that still fails); the search found a way that lets
-the box go twice instead. CMGMP's lifts also roll the box onto its +x face;
+The search found a way that lets the box go twice; it did not find the
+held route, the indirect lift, which is now the target (with releases off,
+these solutions are no longer available to the search). CMGMP's lifts also roll the box onto its +x face;
 ours adds a second roll. Transport was tried 27 times and is in no solution.
 
 <video src="media/d23/lift_00002_solved.mp4" controls muted playsinline preload="metadata" width="100%"></video>
@@ -419,7 +439,9 @@ The release's push does not set the box down; it throws it. In instance 14
 the box leaves at 1.46 m/s and lands 0.54 m past the predicted landing; in
 instance 3, 0.19 m past. Both still end at rest inside the goal, so both
 count. Releases also end in the same pose whatever formation they were asked
-for. This is a property of the release's scripted push, not yet fixed.
+for. This was a property of the release's scripted push. Releases are now
+off, and the release path as built is superseded by the principled-release
+proposal (R1–R3).
 :::
 
 <video src="media/d23/v_linear_F1-lower-s0-00014.mp4" controls muted playsinline preload="metadata" width="100%"></video>
@@ -445,7 +467,8 @@ pivot had passed only because the disk slipped up the face.
 Two fixes, both decided by Aykut tonight:
 
 1. **The gate uses the controller's friction, 0.35**, at the disk. The
-   hard break that follows the pivot stays legal.
+   hard break that follows the pivot stays legal. *(Superseded on Nov 11 by
+   the friction band: the gate and the tracker use 0.3.)*
 2. **The disk goes to the most robust placement.** The gate is re-checked
    exactly at 5 placements along the face,
    and the one with the largest margin wins. This is an interim rule: in the
@@ -469,173 +492,50 @@ together all 353.
 [the night of November 9–10](#nov10)). V₁ and the ranker were retrained on
 the full lift goal on Nov 10 (V₁'s error on lift-goal pairs 1.03 → 0.33 calls;
 the ranker's top-1 on lift steps 0.93 → 0.98); V₁ enters the order behind a
-flag, and a paired rerun decides it.
+flag. The paired rerun of these networks was dropped: they were trained on
+solves that are mostly releases and falls, and are to be retrained on held
+solves.
 
 ## Earlier runs on pyramidal contacts (superseded) {#pyramidal}
 
-::: {.callout-important}
-## Superseded
+Before the redesign and before elliptic contacts (Nov 8–9: simulator disk
+friction 0.99, the gate at the simulator's friction, MuJoCo's pyramidal cones,
+under which held boxes creep), the teacher search solved the sub-goals almost
+always (119 of 120), lifted only with two learned skills (Λ<sub>qs</sub> tips
+the box onto the step corner, a learned break skill flips it onto its side
+against the corner, a learned roll skill sets it down: 5 of 10, 7 of 10 with a
+tie rule for the success test, since shelved), and lowered none (0 of 40: the
+only edit off the platform, a knife-edge transfer onto the step corner,
+failed in 52 of 52 calls). Its lift goal accepted a box straddling the step
+edge. These runs are not continued.
 
-Everything below was run on MuJoCo's pyramidal friction cones, under which
-held boxes creep (see [above](#nov9)), and with the search as it was before
-the redesign. These runs are not being continued; they are kept as the
-record of what the old pipeline did.
-:::
-
-## The tie rule (`transfer_ties`)
-
-::: {.callout-note}
-**Shelved on November 9 (decision).** The rule is off and kept only as a variant of the local
-solver. The redesign (Decision 23) replaced the final roll with a *release*, judged on coming to rest
-in the target formation or the goal, so the tie problem below no longer arises. None of the
-November 9 lift solutions uses it. A code review also found the implementation broader than
-described: it counted *every* sample of a transfer call as untied, not only those near the
-hand-over. This section is kept as a record of the pyramidal-contact runs.
-:::
-
-The strict success test asks that an edit go from σ to σ′ with at most 40
-"in-between" samples. In a **transfer** (one contact handing over to a
-related one, such as the box's edge on the step corner becoming its face
-on the platform), both contacts sit inside the recognizer's tolerance band
-for a moment. Those samples are **ties**, and the current test counts them as
-"in-between". The rule (proposed then, shelved since) read a tied sample during a transfer as σ or σ′. The final dwell must still
-be tie-free.
-
-Clips that depend on the rule carry an orange **TIE RULE** badge. That
-dependence is fragile. Both lift runs made the *same* final rolls, bit for
-bit. On the cluster, the run without the rule rejected them and the run
-with it accepted them. On this workstation's CPU, the re-runs of two of
-those rolls pass even without the rule. Whether a roll needs the rule depends
-on where one or two tied samples fall around the 40-sample limit. So the
-badge says **TIE RULE (cluster)** when it rests on the cluster's verdicts.
-
-## Lift: floor to platform
-
-The box starts on the floor and has to end on the platform. The plan is the
-same every time:
-
-1. Λ_qs pushes the box against the riser and tips it onto the step corner,
-   reaching the pivot.
-2. The learned break skill lifts the box off the floor.
-3. The learned roll skill sets it down on the platform.
-
-::: {.callout-warning}
-## What "on the platform" means here
-
-The lift's goal test asks for the box to be flat, at platform height, and
-partly over the platform (`cmg/teacher/scenes.py`, `goal_test`). Every
-solved lift ends with the box **straddling the step edge**: its centre is
-within about 1 cm of the corner, mostly over the floor side, and the disk
-presses on its top. It probably would not stay there without the disk. This
-is an open issue: a stricter goal, or a push-into-place (transport) edit at
-the end.
-:::
-
-### Solved without the tie rule
-
-<video src="media/lift_solved_00002.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Lift, instance 2 (3 calls, 24 s).** Λ_qs tips the box onto the step
-corner. The learned break skill flips it about 70° in 0.2 s onto its side
-against the corner, and the learned roll skill sets it down. Every call
-passes the strict test without the tie rule.
-
-<video src="media/lift_solved_00007.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Lift, instance 7 (6 calls, 44 s).** The disk first moves around the box's
-top corner and back to its −x face. Then come the same tip, break and roll.
-
-### Solved only with the tie rule
-
-<video src="media/lift_tierule_00003.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Lift, instance 3 (4 calls, 33 s) · TIE RULE (cluster).** On the cluster,
-the run without the rule rejected the final roll on the sequence clause, and
-the run with it accepted the same roll. The re-run here passes either way.
-
-<video src="media/lift_tierule_00008.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Lift, instance 8 (4 calls, 33 s) · TIE RULE (cluster).** The same
-situation as instance 3.
-
-<video src="media/lift_roll_fail_ties_off.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**The roll rejected without the tie rule (lift instance 9, call 71; 9 s) ·
-TIE RULE.** This one needs the rule on both machines. The box lands within
-0.1 s. Then a tied sample 0.46 s later, while its face still touches the
-step corner, stretches the transition window to 44 samples against a limit
-of 40. Without the rule the strict test rejects the roll; with it, the test
-accepts it.
-
-## The learned break skill against the quasi-static realizer
-
+::: {.callout-note collapse="true" title="Three clips from those runs"}
 <video src="media/break_rl_vs_qs.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
 **break(g_v) from one start (lift instance 2, call 9; 9 s).** Top: the
 learned skill Λ_RL lifts the floor corner off and holds the box on the step
-corner. The strict test passes. Bottom: Λ_qs from the same state only tilts
-the box further on its floor corner and never lets go of the floor. The
-departure, dwell and sequence clauses fail. On the 84 break(g_v) states the
-teacher's search reached, Λ_qs succeeds on none and the learned skill on
-all 84. The bottom panel is a comparison run made for this video, not a
-logged call.
+corner. Bottom: Λ_qs from the same state only tilts the box further on its
+floor corner. On the 84 break(g_v) states that search reached, Λ_qs succeeded
+on none and the learned skill on all 84. The bottom panel is a comparison run
+made for this video, not a logged call.
 
-## Sub-goals
+<video src="media/lift_solved_00002.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-The three short tasks the teacher run solves almost always (119 of 120).
-
-<video src="media/sub_contact_00000.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Disk on the box's −x face (1 call, 9 s).** make(m_x) brings the disk
-down onto the face it will push.
-
-<video src="media/sub_flush_00001.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Box flush against the riser (2 calls, 17 s).** make(m_x), then make(s)
-pushes the box against the riser.
-
-<video src="media/sub_pivot_00003.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Pivot (2 calls, 17 s).** make(m_x), then one compound edit tips the box
-onto its far bottom corner with its +x face leaning on the step corner. That
-is the pivot formation {g_v, s_v}.
-
-## Open: lowering the box off the platform
-
-The planner solves 0 of 40 lowering tasks. The CMGMP baseline lowered 19
-of 25 (pyramidal contacts, 60 s per start; [now 24 of 25](#nov9) in 1,800 s
-on elliptic contacts). The only way off the platform in our graph is a **knife-edge transfer**:
-the box's bottom moves from the platform onto the step corner. It was tried in
-the 11 instances whose box started 0.6–32.8 mm from the edge; farther away
-nothing brings the box to the edge. Λ_qs fails it every time (52 of 52 calls).
-These are the two ways it fails.
-
-<video src="media/lower_knife_edge_fail.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**Lower, instance 14, call 13 (9 s).** The disk slides across the box's
-top while the box barely moves (0.4 mm). It never reaches the step corner,
-so the dwell and sequence clauses fail.
+**Lift, instance 2 (3 calls, 24 s).** Λ_qs tips the box onto the step corner,
+the learned break skill flips it about 70° in 0.2 s onto its side against the
+corner, and the learned roll skill sets it down, straddling the step edge.
 
 <video src="media/lower_knife_edge_fall.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
 **Lower, instance 3, call 7 (12 s) · DIVERGED.** Pushed from the side, the
-box tips over the step edge and falls to the floor. On the cluster, 6 of the
-52 such calls ended with the box down, all six inside the lowering goal, in 3
-of the 40 instances (3, 14 and 27). The task's goal is met, but the edit
-asked for a different formation, so the strict test rejects it. The redesign
-decided on Nov 9 keeps such outcomes ([Search](../planar-build/search.qmd#redesign)). The re-run's
-end pose matches the log within 7.3 mm, but a different clause fails first
-(persistence here, dwell in the log), so the clip is labelled as diverged.
+box tips over the step edge and falls to the floor, inside the lowering goal;
+the edit asked for another formation, so the strict test rejected it. Such
+outcomes led to the redesign's outcome children. The re-run's end pose matches
+the log within 7.3 mm, but a different clause fails first, so the clip is
+labelled as diverged.
 
-## Where these come from
-
-- **Script:** `cmg/scripts/step4/videos/render.py` in `c-gnn` (commit
-  `4b5194b`). `replay off|on` re-runs the logged calls, and `render` draws
-  the clips. Its `manifest.json` lists every segment, whether its re-run
-  matched the log, and the strict test's verdict with and without the tie
-  rule.
-- **Runs:** the teacher runs `t-full` (sub-goals and lowering), `t-lift-roll`
-  (lift, tie rule off) and `t-lift-roll-ties` (lift, tie rule on). The tasks
-  and numbers are on [Search and ranking](../planar-build/search.qmd).
+Script: `cmg/scripts/step4/videos/render.py` (commit `4b5194b`); runs `t-full`,
+`t-lift-roll` and `t-lift-roll-ties`.
+:::
 
 [← Planar build](../planar-build/index.qmd)
