@@ -35,8 +35,9 @@ A set of elementary changes on different templates is an edge when:
 - they all relax or all constrain (Xiao and Ji's containment between
   formations, Def. 9);
 - the result is valid;
-- every smaller nonempty subset of the changes gives an **invalid**
-  formation.
+- no smaller nonempty subset of the changes gives a formation realized
+  within ρ = 25 mm of the transition pose (the **local** rule, Decision 14:
+  the question is asked where the change happens).
 
 A single valid change is always an edge. A **compound** edge is a set of
 changes that cannot be made one at a time. Moving the disk from −x<sub>B</sub>
@@ -50,24 +51,31 @@ On the step every compound edge is the **pivot** or its reverse:
 
 Tipping the box on its corner lifts its side off the riser at the same
 instant. Both one-at-a-time intermediates, {m<sub>x</sub>, g<sub>v</sub>, s}
-and {m<sub>x</sub>, g, s<sub>v</sub>}, are excluded. The pivot appears in 64
-contexts (the other contacts of the formation), so there are 128 compound
-edges, some of them in contexts no pose realizes, because the validity
-stand-in is only pairwise ([Issues](issues.qmd#validity)). The
-implementation enumerates compound edges of up to three changes; a search
-up to four finds no others on the step.
+and {m<sub>x</sub>, g, s<sub>v</sub>}, are invalid (a box tilted on its corner
+is not flush on the riser, and conversely). Under the local rule the step has
+16 change sets: the pivot in the box's four orientations in the corner, in
+both directions, and eight *rocking* moves, in which a box flush in the
+floor–riser corner turns onto its far bottom vertex on the floor and its near
+bottom vertex on the riser, and back. In the marking graph they give 92
+compound edges. (The earlier global rule, "every proper subset is invalid
+anywhere", admitted 136 on the valid formations, 40 of them joining formations
+realized 85–184 mm apart, which no single motion connects.)
 
 ## The marking graph
 
-The **marking graph** has the valid formations as vertices and the edits as
-edges: 37,203 vertices on the step. Checked exhaustively in the test suite:
+The **marking graph** W has the valid, recognizable formations as vertices
+and the edits as edges. A single change is an edge only if its two ends are
+realized within ρ = 25 mm of each other at some transition pose, so W is a
+neighbour graph in Xiao and Ji's sense (112 single changes whose ends lie
+21–403 mm apart are dropped). On the step W has **328 vertices and 2,490
+directed edges** (2,398 single, 92 compound), a mean out-degree of 7.6.
+Checked exhaustively:
 
-- every edge lands on a valid formation and has its reverse;
-- the graph is connected;
-- with at most k changes per edge, the graph distance between σ and σ′
-  lies between |σ △ σ′|/(2k) and |σ △ σ′| (the symmetric difference);
-- a brute force over sets of two or three single steps finds exactly the
-  implemented compound edges.
+- every edge has its reverse;
+- W is connected, and with at most k changes per edge the graph distance
+  between σ and σ′ is at least |σ △ σ′|/(2k) (the symmetric difference) and,
+  measured over all 107,584 ordered pairs, at most |σ △ σ′| + 2: a dropped
+  transfer can force a detour of two edges.
 
 ## The step chain
 
@@ -78,7 +86,11 @@ With the disk free at the start, a plan for the step is the walk
 
 that is: make m<sub>x</sub>, make s, the pivot, break g<sub>v</sub>,
 transfer s<sub>v</sub> → t, break m<sub>x</sub>, make m<sub>z</sub>, and
-transport.
+transport. This is the *direct* route, which lifts the floor corner with the
+disk on −x<sub>B</sub>. The paper's running chain is the *indirect lift*, in
+which the disk lets go after the pivot and lifts the box from its raised
+underside, holding it at every instant
+([Certifying a whole box](certificate.qmd#the-indirect-lift)).
 
 ![The box near the step corner, labeled by the recognizer. Left: resting on the corner alone, {s<sub>v</sub>}. Middle: landed with +x<sub>B</sub> on the platform and overhanging the corner. v<sub>S</sub> is the end of the platform edge the box rests on, so the box's contact with v<sub>S</sub> is not principal, and the formation is {t}. Right: clear of the corner, still {t}.](media/xj_landing.svg){.lightbox}
 
@@ -101,7 +113,8 @@ JAX_PLATFORMS=cpu PYTHONPATH=tests .venv314/bin/python -m pytest -q tests/test_p
 JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_xiao_ji.py <out dir>
 ```
 
-`03_xiao_ji.py` prints the counts on this page (templates, containment
-pairs, valid formations, compound edges).
+`03_xiao_ji.py` prints the template and containment counts; it predates
+validity from geometry. The counts of valid formations and edges come from the
+validity builder, `reports/supporting_docs/validity/` in `c-gnn`.
 
 [← Contact states](contact-states.qmd) · [The hold gate →](hold-gate.qmd)
