@@ -22,53 +22,56 @@ planner is expected to invent contacts that do not exist yet?**
 
 ::: {.research-paper}
 
-**Presentation**
-
-[Planning Through Contact →](planning-through-contact.html) — an illustrated
-walkthrough of the construction: the contact catalog, the bit-vector state, the
-three actions, the local solver, the two feasibility gates, and where a learned
-ranker enters. Roughly twenty slides, figure-first, with speaker notes.
-
-**Code walkthrough**
-
-[Code Walkthrough →](code-walkthrough/index.qmd) — the reference
-implementation run one layer at a time, from the scene file to the search loop:
-commands, recorded outputs, and exercises with solutions.
-
 **Planar build**
 
-[Planar Build →](planar-build/index.qmd) — the planar step scene by topic:
-contact states, edits, the hold gate, the local solver and the search, with
-figures, an interactive viewer, and the open issues and their resolutions.
+[Planar Build →](planar-build/index.qmd) — the current construction on the
+planar step scene, by topic: contact states, edits, the hold gate and its
+certificates, the local solver and the search, with figures, an interactive
+viewer, and the open issues and their resolutions.
 
 **Results**
 
 [Results →](results/index.qmd): videos of the planner's motions on the step
-scene (solved lifts, the learned skills, the proposed tie rule, and the
-open lowering failures).
+scene, newest first: the indirect lift run by the planner from rest under the
+declared disk-friction band, then the earlier runs, each labelled with the
+configuration it was measured at.
+
+**Archived**
+
+[Planning Through Contact →](planning-through-contact.html), the slide deck of
+September 2026, and the [Code Walkthrough →](code-walkthrough/index.qmd) of
+`cmg` at `phase1/dev` `7d2d343` (November 4) describe the construction and the
+code before the planar build. Both are kept as a record; where they differ
+from the planar build pages, the planar build is current.
 
 :::
 
-The construction has five pieces and nothing more:
+The construction has five pieces:
 
-- **Features.** Every body carries a finite, named inventory of contactable
-  patches, fixed by geometry before planning starts.
-- **Templates.** A candidate contact is one named feature pair together with a
-  signed gap. The gap is a function of configuration alone, so it is defined
-  whether or not the pair currently touches.
-- **State.** The discrete state is a bit vector over the catalog of candidate
-  contacts — which contacts the controller is committed to holding — carried
-  alongside the continuous pose.
-- **Actions.** Start holding a contact, stop holding one, or hold the set and
-  drive toward the goal. Each action flips at most one bit.
-- **Realization.** A short-horizon optimizer is handed one action compiled into
-  a cost, and either returns a trajectory segment or rejects the action.
+- **Formations.** Every body carries a finite, named inventory of features
+  (edges and convex vertices). A candidate contact (a *template*) is a pair of
+  features on two bodies with a signed gap, defined whether or not the pair
+  touches. A *formation* is the set of templates in principal contact, in the
+  sense of Xiao and Ji, recognized from a pose with small tolerances; it is
+  the discrete state, carried alongside the continuous pose.
+- **Edits.** Neighbouring formations differ by making, breaking or
+  transferring one contact; several change at once only when no single change
+  is possible (the pivot). A transport moves the object without changing
+  contacts.
+- **The hold gate.** Before an edit is tried, a linear program checks that
+  the contacts that persist through it can hold the object against gravity,
+  within the manipulator's actuator limits, at a pose where the change can
+  happen. In its idealized form it never discards a realizable edit, and an
+  interval version certifies the hold over whole regions of poses.
+- **Realization.** A local solver, a quasi-static realizer that plans on the
+  edit's known contacts and tracks the plan in simulation, either realizes the
+  edit or reports why it failed.
+- **Search.** A search over edits, ordered by a ranker and a value estimate,
+  counts the expensive solver calls, with the number of calls bounded by the
+  ranker's probabilities.
 
-Two cheap tests run before that optimizer is ever called: a contact too far away
-cannot be closed in one horizon, and the contacts that survive an action must
-already hold the object against gravity. The second of these is what forbids a
-manipulator from letting go mid-topple, and admits the same release once the
-object has landed.
+The hold gate is what forbids a manipulator from letting go mid-topple, and
+admits the same release once the object rests on other contacts.
 
 ## Why unmade contacts matter
 
@@ -79,19 +82,21 @@ about contacts a robot already has. Neither can express *go and establish
 contact with that edge*, because the contact is not in the state until it
 exists.
 
-Carrying unmade contacts in the discrete state is the one structural difference,
-and everything else in the construction follows from it.
+Here every contact the geometry allows is a named template with a gap defined
+before it touches, so *make that contact* is an edge of the graph from the
+start. That is the one structural difference, and everything else in the
+construction follows from it.
 
 ## Status
 
-The construction is specified and the software architecture is laid out. The
-measurement is the number of local-solver calls needed to reach the goal,
-compared against a greedy geometric baseline, against an exhaustive teacher, and
-against a planner that performs no discrete search at all.
-
-The experiment that decides whether a learned action ordering is worth anything
-on this task family has not yet been run, and is deliberately scheduled before
-any network is trained.
+On a proof-of-concept task, lifting a box onto a step with a disk too weak
+to carry it, the search lifts and lowers the box on random instances, and
+the lift in which the box is held at every instant, the *indirect lift*, is
+certified edit by edit for every disk friction in a declared band. Given only
+that lift's formation sequence, the planner realizes it in simulation from
+rest; finding it from the scene alone is the current target. The
+[planar build](planar-build/index.qmd) pages give the details, and
+[Issues and resolutions](planar-build/issues.qmd) the open work.
 
 ::: {.research-next}
 
