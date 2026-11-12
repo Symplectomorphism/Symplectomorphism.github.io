@@ -1,32 +1,42 @@
 ---
 title: "Search and ranking"
-subtitle: "Planned (step 4): a search over edits ordered by a learned ranker, measured in calls to the local solver."
+subtitle: "A search over edits ordered by a ranker and a value estimate, measured in calls to the local solver."
 ---
 
-::: {.callout-note title="Partly built"}
-The plan was agreed on Nov 7, 2026. Since then the teacher search has run
-(Nov 8–9) and the CMGMP baseline has been evaluated; the ranker is not
-trained yet, and a redesign of the search, decided on Nov 9, is being
-implemented ([below](#redesign)).
+::: {.callout-note title="Status"}
+Built and run. The redesigned search (Decision 23, [below](#redesign)) is
+implemented; its runner options (outcome children, box transports, releases)
+are off by default and are set by the runs reported here. Release edits are
+off: the release rules were dropped as hand rules, and a principled release is
+a proposal. Every run on this page used the simulator's disk friction 0.99 (and
+the gate's 0.35 from Nov 9), before the friction band μ<sub>disk</sub> ∈
+[0.3, 0.5]; the rerun at the band's ends with every rule of the paper's search
+on is pending. Given the indirect lift's formation sequence the search
+realizes it ([Results](../results/indirect-lift.qmd)); it does not yet find
+that lift from the scene alone.
 :::
 
 ## The search
 
 A node is a simulated state, identified by its formation, the disk's
-connected region and the box's pose within a certified radius
-([Node identity](node-identity.qmd)). From a node, the candidates are
+connected region and the box's pose within a 10 mm test radius, merged only
+when the gate's verdicts agree ([Node identity](node-identity.qmd)). From a node, the candidates are
 the edits that pass [the hold gate](hold-gate.qmd); each expansion calls the
 [local solver](local-solver.qmd) Λ, which is the expensive part. The search
-is policy-guided (Levin tree search, or policy-guided heuristic search): a
-ranker gives a probability π to each candidate edit, nodes are expanded in
-order of depth divided by the probability of their path, Λ is charged when
-a node is expanded, and edits the gate rejects get π = 0. For this order,
-Orseau and Lelis bound the number of expansions by depth / probability of
-the solution. The theory note extends the bound to duplicate states (with the
+is policy-guided heuristic search (PHS\*, Orseau and Lelis): a ranker gives
+a probability π to each candidate edit, nodes are expanded in order of a key
+built from their depth, the probability of their path and a heuristic factor
+η from a value estimate, Λ is charged when a node is expanded, and edits the
+gate rejects get π = 0. For this order the number of expansions is bounded
+by the depth and probability of the solution, scaled by η. The theory note extends the bound to duplicate states (with the
 safe duplicate rule and the node key of [Node identity](node-identity.qmd))
 and to a Λ that fails at random (with restarts).
 
 ## The ranker
+
+*The planned architecture (Decision 8). The ranker π and the value V₁ in the
+code are small MLPs for now; the attention ranker comes after the search has
+held solves to train on.*
 
 - **Inputs:** one token per contact template (type, gap, normal,
   contact-set length, whether it is on), one per body, and one for the goal;
@@ -53,61 +63,23 @@ One disk for now. The families come after the redesign below works on the
 step, and a second disk after that (decided Nov 9). Validity is computed from the geometry for each family
 ([Issues](issues.qmd#validity)).
 
-**Teacher search: the first full run (Nov 8–9).** The pipeline generates
-seeded step instances, runs the search with a teacher ranker, and logs every Λ
-call with the gate's verdicts as training data for the ranker. Its first small
-check solved none; the transfers it failed were real realizer failures (makes
-that never reached the contact, disk transfers planned as a retreat, contacts
-placed at feature ends, hand-overs lingering in a tie), and the fixed realizer
-accepts 51 of the 76 it had failed. The full run (200 instances; the relaxed
-gate, the learned break skill, retries from other nodes of a key):
+::: {.callout-note collapse="true" title="Before the redesign (Nov 8–9, pyramidal contacts, superseded)"}
+The first full teacher run (200 instances; the relaxed gate, the learned
+break skill, retries) solved the three sub-goals almost always (disk on the
+box's side 40/40, box flush on the riser 40/40, the pivot formation 39/40) but
+lifted 0/40 and lowered 0/40; 7,795 Λ calls are logged
+(`cmg/scripts/step4/teacher/results/t-full/merged/`). Two learned skills then
+lifted 5 of 10. Lowering failed because the only edit off the platform, onto
+the step corner, is a balance Λ<sub>qs</sub> could not hold (0/52); six of
+those calls dropped the box into the goal and were rejected for ending in the
+wrong formation, which led to the redesign's outcome children. CMGMP, run then
+on pyramidal contacts at 60 s per start, lifted 6/25 and lowered 19/25. All of
+this is superseded by the elliptic-contact runs and the paired comparison on
+[Results](../results/index.qmd#nov9).
+:::
 
-| Task | Solved | Λ calls per solve |
-|---|---|---|
-| Disk contact on the box's side (sub-goal) | 40/40 | 5.1 |
-| Box flush on the riser (sub-goal) | 40/40 | 17.5 |
-| The pivot formation (sub-goal) | 39/40 | 18.8 |
-| Lift onto the platform | 0/40 | — |
-| Lower to the floor | 0/40 | — |
-
-7,795 Λ calls (4,954 accepted) are recorded as training data
-(`cmg/scripts/step4/teacher/results/t-full/merged/`). Lifting has since been
-solved in 5 of 10 instances with a second learned skill
-([the local solver](local-solver.qmd#learned-skill)). Lowering is open: the
-only edit off the platform, onto the step corner, is a balance Λ<sub>qs</sub>
-can't hold (0/52, tried in the 11 instances whose box started 0.6–32.8 mm
-from the edge), and nothing brings a box farther away to the edge. Six of the
-52 calls dropped the box into the lowering goal, in 3 of the 40 instances, and
-were rejected because they didn't end in the requested formation; the
-redesign keeps such outcomes ([below](#redesign)).
-
-**Baseline: the contact-mode-guided planner (CMGMP).** Built from the authors'
-code without root (in a container on Juno) and patched for the disk's 1 N
-limit. Its plan for lowering, executed in our simulator and graded by the same
-strict test, **succeeds**: the box comes off the platform and rests flat on
-the floor.
-
-**Evaluated on 50 shared test starts** (25 per task; 60 s per start on one
-CPU core, with restarts; settings chosen on 10 separate tuning starts; every
-plan executed in our MJX simulator and graded by the same strict test):
-
-| Task | Plan returned | Strict success | 95% CI | Median time to success |
-|---|---|---|---|---|
-| Lift | 11/25 | **6/25** | 11–43% | 45.2 s |
-| Lower | 25/25 | **19/25** | 57–89% | 39.4 s |
-
-Lift plans are rare, and half of them fail in execution because the box doesn't
-hold the goal; lower plans come easily, but 50 of 71 executions don't hold the
-goal, and retries within the budget give 19/25.
-
-**Not yet a paired comparison.** Our planner lifts 5/10 with the learned
-skills (7/10 with the proposed tie rule) and lowers none, but on different
-instances and with a budget counted in Λ calls. So far the baseline is ahead on
-lowering, ours on lifting. Our lift instances 0–9 happen to be CMGMP's first 10
-lift starts (ours 5/10, or 7/10 with the tie rule; CMGMP 2/10), but under
-different success criteria and budgets, so that is not the comparison either.
-
-**The paired comparison's protocol** (decided Nov 9; run after the redesign):
+**The paired comparison's protocol** (decided Nov 9; run after the redesign,
+results on [Results](../results/index.qmd#paired)):
 the same 50 starts (25 lift, 25 lower); the same goal test and the same strict
 grading of every plan executed in MJX; a matched wall-clock budget per start on
 the same hardware class; no retries in our planner; Wilson intervals and
@@ -155,8 +127,9 @@ The call fails, but the box is now where a short route lifts it without any
 learned skill: move the disk under the box, then push it over the step corner
 ([the video](../results/index.qmd)).
 
-**What changes** (implemented Nov 9 and now the defaults; evaluated on 40
-lift and 40 lower instances, see [the results](../results/index.qmd#d23-results)):
+**What changes** (implemented Nov 9 behind runner options that are off by
+default and set by the runs; evaluated on 40 lift and 40 lower instances, see
+[the results](../results/index.qmd#d23-results)):
 
 - **Outcome children.** A call yields at most one child, labelled by the state
   it actually reaches. The child is accepted if it is the requested state, or
@@ -165,7 +138,9 @@ lift and 40 lower instances, see [the results](../results/index.qmd#d23-results)
   contact state, and **releases**, where the box is let go and comes to rest in
   the next state. Lowering becomes a push toward the platform's edge, then a
   release to the floor. The final roll onto the platform becomes a release
-  too, so the tie rule and the roll skill are shelved.
+  too, so the tie rule and the roll skill are shelved. *Releases are now off:
+  their rules were hand rules and were dropped (Nov 11); a principled release (R1–R3: let go only at a held node, the physically
+  possible outcomes, a statistical release certificate) is a proposal.*
 - **The order of the search** is PHS\* (Orseau and Lelis 2021), with its
   heuristic factor η from a value function, clipped to [1, η<sub>max</sub>]
   (η<sub>max</sub> = 10 to start; 4, 10 and 30 to be measured).
@@ -181,8 +156,8 @@ lift and 40 lower instances, see [the results](../results/index.qmd#d23-results)
   calls per path probability. The approach lasts as long as its path needs.
   The settle clause is off for formation edits and required for releases and
   the final goal state. Retries (2 per node) are for the teacher only; the
-  planner and every reported result use none. The search keeps popping
-  batches, and a batched version of the call bound is being proved.
+  planner and every reported result use none. The search pops nodes in
+  batches; the call bound is proved for batched pops (theory note).
 
 **Since Nov 10** (decided with Aykut, one at a time):
 
@@ -191,8 +166,9 @@ lift and 40 lower instances, see [the results](../results/index.qmd#d23-results)
   15 against 13 of 16 end-to-end instances, paired, no losses.
 - **The push gate** (default): a box move is refused when no disk placement on
   the face can push the box along the planned path (a linear program at five
-  poses). A paired check is running; shortening an unpushable push to its last
-  pushable pose is built behind a flag.
+  poses). The paired check planned for it did not run; shortening an
+  unpushable push to its last pushable pose was built and then dropped (the
+  parametric certificate will give the exact last pushable pose).
 - **Which ends count.** An end with the disk outside its workspace (the
   joint ranges) is invalid; quasi-static runs reject ends reached through a
   dynamic event, and other runs tag and count them.
@@ -202,24 +178,13 @@ lift and 40 lower instances, see [the results](../results/index.qmd#d23-results)
   derived from the merge radius, not chosen; V₁ takes over acceptance once it
   has a certified Lipschitz bound, and an exploration loop is to follow.
 
-**The release route, tested first** (84 starts, the break states the teacher
-search reached; `cmg/scripts/step4/release_test/`, commit `12fc963`):
-
-| | Result |
-|---|---|
-| Λ<sub>qs</sub>'s "failed" break keeps all three contacts | 84/84, tilt about 10° → 67° |
-| The route end to end, Λ<sub>qs</sub> as it was | 2/84 |
-| Why: with the disk away, the box creeps in MJX (about 0.5°/s) while each approach lasted 16.2 s | box slid off the step corner in 80/84 |
-| The route with a short approach: the next two edits reach their states | 84/84 |
-| The release push, stop when the box is fully on the platform: at rest, fully on | **76/84** (82–95%) |
-
-From these: the approach now lasts only as long as its path needs (`3c52753`);
-the release realizer is the push with the "fully on" stop; the box counts as at
-rest within 1 mm and about 15 mrad (MJX shows a small periodic tilt cycle at
-rest, up to 12.5 mrad); simulator settings are being tested for the creep. One
-problem remains: the strict test rejects the step that brings the disk under
-the box (84/84), because the approach path brushes the box. The path is being
-fixed; how the recognizer reads such brushes is queued for a separate
-rethink.
+**The release route, tested first** (84 break states the teacher search
+reached, commit `12fc963`, pyramidal contacts): the "failed" break of
+Λ<sub>qs</sub> keeps all three contacts while tilting the box from about 10° to
+67° in 84/84; with a short approach the next two edits reach their states in
+84/84, and the release push onto the platform ends at rest, fully on, in 76/84.
+The approach now lasts only as long as its path needs (`3c52753`), and the box
+creep seen in that test came from pyramidal cones (gone with elliptic cones,
+Nov 9).
 
 [← Node identity](node-identity.qmd) · [Back to the overview](index.qmd)
