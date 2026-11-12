@@ -528,23 +528,34 @@ ul.task-list li input[type="checkbox"] {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../../research/nonprehensile/results/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text" id="quarto-sidebar-section-4-label">Results</span></a>
+            <button type="button" class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="false" aria-label="Toggle section: Results">
+              <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
+            </button> 
+      </div>
+      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../../../research/nonprehensile/results/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Results</span></a>
+  <a href="../../../research/nonprehensile/results/indirect-lift.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">The planner runs the indirect lift from rest</span></a>
   </div>
 </li>
+      </ul>
+  </li>
       </ul>
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a href="../../../research/wind-esc/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text" id="quarto-sidebar-section-4-label">Wind Turbine Control</span></a>
-            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-controls="quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section: Wind Turbine Control">
+ <span class="menu-text" id="quarto-sidebar-section-5-label">Wind Turbine Control</span></a>
+            <button type="button" class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-controls="quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section: Wind Turbine Control">
               <i class="bi bi-chevron-right ms-2" aria-hidden="true"></i>
             </button> 
       </div>
-      <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-5" aria-labelledby="quarto-sidebar-section-5-label" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../../research/wind-esc/gradient-estimation.html" class="sidebar-item-text sidebar-link">
@@ -782,14 +793,20 @@ $$
 <figcaption>The indirect lift, each panel at a pose where the gate (float32) holds the formation and the recognizer (float32) reads it exactly.</figcaption>
 </figure>
 </div>
-<p>Its first step, break(m<sub>x</sub>) from a 30° tilt with the disk 40 mm low, is certified end to end (the figure above); the remaining steps (the disk walking round, the lift, the roll and the final push) are being certified the same way.</p>
+<p><strong>What is certified.</strong> The last four edits of the indirect lift, break(m<sub>x</sub>), make(m<sub>z</sub>), break(g<sub>v</sub>) and the roll s<sub>v</sub> → t, and the transport that closes it, each have a certified stick–slip plan, so Theorem S applies to them for <strong>every disk friction μ ∈ [0.3, 0.5]</strong>, in a tube of 0.25° × 0.5 mm around the plan. The plan starts at a 30° tilt with the disk 40 mm below the centre of the box’s −x face.</p>
+<p><strong>What is not.</strong> The first three edits, make(m<sub>x</sub>), make(s) and the pivot, and the tilt from the pivot’s end to 30°, have no certified plan.</p>
+<p>The animation below moves the box and the disk through the plan’s poses (it is a plan, not a simulation). Each frame is labelled with the formation the float32 recognizer reads there, and with whether that segment is certified.</p>
+<video src="media/plan_animation_from_rest.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><em>The indirect lift from the box at rest. The prefix (approach, push to the riser, the pivot to 30°) is marked “NOT yet certified”; from 30° on, every segment is certified for every μ<sub>disk</sub> ∈ [0.3, 0.5]. The caption under the box says which contacts stick and which slide on the current segment.</em></p>
+<p>The planner’s own run of this chain in simulation is on <a href="../../../research/nonprehensile/results/indirect-lift.html">The planner runs the indirect lift from rest</a>.</p>
 </section>
 <section id="what-is-next" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-next">What is next</h2>
 <ul>
-<li>Certify the rest of the indirect lift, and wire the certified gate and placement into the search, so that the planner finds the indirect lift routinely without hints.</li>
-<li>Execute certified stick–slip plans in simulation: a tracker that slides the disk where the plan says slide and keeps it sticking where it says stick.</li>
-<li>Friction: the planner, the certificate and the simulator should use the same disk friction (or a band covering it).</li>
+<li><strong>Stick–slip plans inside the realizer.</strong> The gate stays at the hold level (it certifies that <em>some</em> forces hold the box, a relaxation of Coulomb realizability, so it never refuses a realizable edge). The realizer Λ<sub>qs</sub> is to plan stick–slip plans: on each segment each contact sticks or slides, the kinematics and the force program agree, and the feed-forward is the least squeeze inside those cones. See <a href="../../../research/nonprehensile/planar-build/local-solver.html#lambda-qs">the local solver</a> for why its present plans fall short.</li>
+<li><strong>A polynomial certificate for large regions.</strong> With c = cos θ and s = sin θ on c² + s² = 1, the hold program’s data are polynomials of degree at most 3. A polynomial witness with a sum-of-squares positivity proof certifies “held” over a whole region, and a polynomial Farkas multiplier certifies “not held”, without splitting into boxes. It also covers disk placements on a box corner, which the box certificate does not (the corner’s normal turns with the placement). First prototype: the pivot, one parameter.</li>
+<li><strong>An online tube certificate.</strong> Along Λ<sub>qs</sub>’s receding horizon, certify the tube of the next segment from the measured state before executing it, and otherwise shorten it, re-plan or refuse. This extends the realizer’s check from the plan’s knots to whole segments.</li>
 </ul>
 <p>The details, derivations and all runs are in the technical report, Chapter 15.</p>
 
