@@ -6,114 +6,76 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-10, against `phase1/planar` at `04ebdfd` in
+**Last checked:** 2026-11-12, against `phase1/planar` at `e7321b9` in
 `Symplectomorphism/c-gnn`. The full records are in the discussion
 compendium (`reports/supporting_docs/discussion-compendium/`); commits are on that branch.
 
 ## Open
 
 ::: {.callout-important collapse="true"}
-## The end-to-end task needs a temporary ±20 cm push range (open until the push certificate; Nov 10)
-The lift to a set place, the friction runs and the quasi-static test ran with
-each box move's range widened from 5 to 20 cm, set by an environment variable
-and not recorded in the runs (now every run records it). At the stock range
-the lift to a set place solves 0 of 10: every 20 cm slide takes four or five
-pushes, each with its own approach. The fix decided for this is the parametric
-push certificate: certify the hold along the whole push instead of on a grid.
-[Results](../results/index.qmd).
+## The realizer plans held poses, not stick–slip plans; at μ = 0.3 the disk slides (open, Nov 12)
+Λ<sub>qs</sub> plans positions only and models forces as the gate's hold test
+at each knot (both edges of every cone): a sequence of static holds, Theorem
+B's level. In break(m<sub>x</sub>) the disk slides down the box's face at its
+friction limit at every μ (16.6, 11.9, 9.4 mm at 0.3, 0.4, 0.5), fatal at 0.3.
+Decided: the gate stays at the hold level; the realizer's plans become
+stick–slip plans (per segment each contact sticks or slides, kinematics and
+forces agree, the feed-forward the least squeeze inside those cones). The
+stick–slip executor exists as scripts and runs the certified indirect lift in
+MuJoCo at μ = 0.3 and 0.5. [The local solver](local-solver.qmd#qs-slip).
 :::
 
 ::: {.callout-important collapse="true"}
-## Pushes stop 3–5 mm short (open; a fix is being measured, Nov 10)
-The tracker's feed-forward comes from a quasi-static plan without sliding
-friction, so while the box slides only the feedback term pushes against
-friction, and the box lags about 3.9 mm behind. A sliding make was patched by
-moving its end past closure (`slide_lag`); the fix decided Nov 10 models the
-sliding friction in the plan instead, so makes and pushes both end on target.
-It is being checked on replays of logged calls before it becomes the default.
+## The search does not find the indirect lift by itself (open; the target)
+The indirect lift, held at every instant, is the paper's running chain; its
+last four edits and closing transport are certified over μ ∈ [0.3, 0.5].
+Given only its formation sequence, the planner realizes it from rest at
+μ = 0.4 and 0.5, not at 0.3 (the slide above). From the scene alone it does
+not find it yet: the bottleneck is the realizer (above) and then exploration
+and a value that orders the search (learning and exploration below). The gate's
+earlier refusal of the disk's transfer round the box's corner was a bug in the
+relaxed gate, fixed by H1 (`relax_untouched`).
+[Results](../results/indirect-lift.qmd).
 :::
 
 ::: {.callout-important collapse="true"}
-## The search does not find the corner-transfer lift route (open, Nov 10)
-The route that moves the disk around the box's corner onto its top face, with
-the box held on the step corner, is likely the more robust lift and may be the
-only one on a taller step. The search does not find it today. Diagnosed the
-same day: the working route goes round the box's lower −x corner (disk to the
-corner, then onto the −z face, break the floor contact, set the box down). It
-breaks at the **realizer** on the first transfer (2 of 36 logged calls succeed;
-6 of 6 at 55–65° tilt when the transfer keeps the box where it is), at the
-**gate**, which credits the disk at the corner with no supporting force and so
-asks the box to stand alone (tilt ≥ 45°), at the **last leg** (setting the box
-down, 0 of 3), and in the **ordering** (the value estimate is flat along the
-route, so the release wins). The target poses are fine. On a taller step the
-box stands alone only between 45° and about 57°, and a release needs a harder
-throw, so the held route becomes the natural one once the gate credits the
-disk's support at the corner. A scene with a taller step will test that the
-pipeline discovers it.
-:::
-
-[]{#node-identity-evidence}
-
-::: {.callout-important collapse="true"}
-## Lowering the box off the platform (solved by the redesign: 40 of 40)
-With the redesign (a push toward the edge, then a release) the teacher lowers
-40 of 40 instances (91–100%); paired with CMGMP at 1,800 s, 25 against 24 of
-25. Before the redesign: the full teacher run solved no lowering task (0/40). The only edit off the
-platform moves the box onto the step corner, a balance Λ<sub>qs</sub> can't
-hold (0/52). It was tried only in the 11 instances whose box started 0.6–32.8 mm
-from the edge, and nothing brings a box farther away to the edge first. Six of
-the 52 calls dropped the box into the lowering goal (3 of 40 instances) and
-were rejected for not ending in the requested state. Decided (the redesign):
-push the box toward the edge, then release it to the floor, and keep outcomes
-like those six. The CMGMP baseline solves lowering in our simulator on 19 of 25
-test starts (it lifts 6 of 25). [Search](search.qmd#redesign).
-:::
-
-::: {.callout-important collapse="true"}
-## Still open after the Nov 9 decisions
-The approach path brushes the box, so the strict test rejects the step that
-brings the disk under it (84/84 in the release test): the path is being fixed,
-and how the recognizer reads such brushes is queued for a separate rethink.
-The box crept in MJX when nothing held it (about 0.5°/s); the creep came from
-pyramidal friction cones and is gone with elliptic cones (Nov 9). The release
-gate is implemented in its energy form.
-[Search](search.qmd#redesign).
-:::
-
-::: {.callout-tip collapse="true"}
-## Decided Nov 9: the redesign (implemented; results on [the results page](../results/index.qmd#nov10))
-The settle clause is off for formation edits (reported separately) and
-required for releases and the final goal state. The tie rule and the roll skill
-are shelved (off, kept as a variant of Λ). Lowering: a push toward the edge,
-then a release. Retries from other nodes of a key are for the teacher only; the
-planner and every reported result use none. The search gets outcome children,
-box moves within a contact state and releases as actions, and PHS\* ordered by
-a value (one learned V₁: expected Λ calls to the goal). The 125 mm gap screen
-is dropped. [Search](search.qmd#redesign).
-:::
-
-[]{#hard-breaks}
-
-::: {.callout-important collapse="true"}
-## The hard break(g<sub>v</sub>): solved by a learned skill and used by the search (resolved Nov 9)
-The quasi-static realizers fail it because the box's corners slide. A learned
-SAC skill solves the family (18/18 hard, 150/150 held-out) and, retrained on the
-range the search reaches, all 84 break states the search actually met; the
-search calls it whenever it applies. Lifting now succeeds in 5 of 10 instances
-with a second skill for the roll onto the platform. The settle clause,
-decided Nov 9: off for formation edits such as this break. Since the redesign
-no call reaches the skill: lifts go pivot, then a release onto the platform,
-and on elliptic contacts Λ<sub>qs</sub> realizes 3 of the 6 hard starts itself.
-Whether the skill stays in the method or becomes an ablation is open (Nov 10).
-[The local solver](local-solver.qmd#learned-skill).
-:::
-
-::: {.callout-tip collapse="true"}
-## Transfers failed under the realizer; the gates missed the disk's clearance (resolved Nov 8–9)
-The teacher's failed transfers and disk makes were real realizer failures, now
-fixed: transfers 0/76 → 51/76, disk makes 35/43. The per-pose and sampled
-gates now check that the disk clears the environment (per-pose admits 1,059 →
-907 on 214 nodes).
+## The open work, in order (the compendium's board, Nov 11–12)
+1. **Parametric certificate of the support LP.** Certify a hold along a whole
+   path, not at sampled poses: the transport gate (it replaces the grid and the
+   temporary ±20 cm push range the end-to-end runs needed; at the stock ±5 cm
+   range the lift to a set place solved 0 of 10), the lazy target query (an
+   exclusion certificate) and the realizer (held between plan knots). Queued
+   with it: a polynomial (sum-of-squares) certificate for large regions and an
+   online tube certificate of the next segment in Λ<sub>qs</sub>'s receding
+   horizon.
+2. **H2, certified execution** (the measured bottleneck): plan knots held
+   throughout, admissible end knots, a tracking bound, the free-approach
+   window; the pushes that stop 3–5 mm short (`slide_lag` stays until then).
+3. **H3, a judge that measures "held"**: the hold margin along the trajectory
+   instead of the 6 mm kinetic-energy threshold for dynamic events.
+4. **A3, the uncertainty model**: ε by a 95/95 bound, the μ band's
+   robustness, ε<sub>pen</sub>.
+5. **Gate decisions (Aykut)**: the target threshold (R4); when an edit must
+   close locally; the lazy query's exclusion certificate; a gate whose
+   necessity needs no Lipschitz or covering hypothesis (refuse only where the
+   interval certificate proves "not held").
+6. **A value that only orders** (H4): lexicographic value, edge lengths from
+   measured calls, the η<sub>max</sub> sweep; a derived replacement for the
+   progress threshold δ = 10 mm, which rests on the declared merge radius.
+7. **Learning and exploration**, after held solves exist: π mixing, Go-Explore
+   restarts, V₁ with a certified Lipschitz bound, the attention ranker,
+   retrained on held solves.
+8. **Releases R1–R3**: a proposal; releases are off until then.
+9. **Discovery and scenes**: a taller step (H = a/2), the scene families, then
+   a second disk.
+10. **The headline rerun** at the band's ends (μ = 0.3 and 0.5), with every
+    rule of the paper's search on (the reported runs had the workspace and
+    dynamic-event rules off; an audit of their solves found no end either rule
+    rejects).
+11. **The RL skills**: retraining over μ ~ U[0.3, 0.5] is in progress (tests
+    pinned to 0.99 until it lands); whether the break skill stays in the method
+    or becomes an ablation is Aykut's call, as is the recognizer rethink.
+12. **Housekeeping**: JAX loops (the gate takes 20–35 s per call on GPU).
 :::
 
 []{#eps-pen}
@@ -131,38 +93,13 @@ today's 257. Since step 3b ε<sub>pen</sub> = 5 mm (257 ties); 2–3 mm
 but need the controller retuned first. [Contact states](contact-states.qmd#the-recognizer).
 :::
 
-::: {.callout-warning collapse="true"}
-## The search: success flag ignored, requested formation stored, breaks unchecked, no goal
-Angelo's `Search` accepts when the requested contacts are in band, ignoring
-the solver's success flag; a node stores the requested formation, not the
-one reached (28 of 30 nodes in a 12-round run); a break is accepted without
-checking that the contact left (6 of 7); there is no goal test, goal input
-or budget. Fix: wiring Λ's shared success test into the search, then the
-goal-directed search of step 4. Walkthrough [8](../code-walkthrough/08-search.qmd).
-**Nov 8, fix in progress (`7939366`, Decision 18):** a call counts only if Λ
-succeeds and the recognizer returns exactly the requested formation; the
-child stores the recognized formation; the approach must stay in σ. Moves to
-Resolved when the full test runs pass.
-:::
-
-::: {.callout-warning collapse="true"}
-## The hold tests are float32
-The gate agrees with a float64 reference on 1,000 of 1,000 random cases and
-on every near-boundary case 0.33 mm or more from the boundary. Its only
-misses are acceptances with margin 0 (at most 2·10<sup>−7</sup>) at the
-boundary pose itself. A positive acceptance threshold would refuse them
-(choice 4 above). [The hold gate](hold-gate.qmd#accuracy).
-:::
-
-::: {.callout-warning collapse="true"}
-## The LP gate in 3D needs reinversion
+::: {.callout-note collapse="true"}
+## The 3D hold LP needs reinversion (frozen with 3D)
 Float32 rounding builds up in linrax's dense tableau over the long pivot
 sequences of 3D cones: about 1% of supported 3D cases end "uncertain"
-(rejected, never certified wrongly). On the GPU the 3D test sees 4
-uncertain of 64 against its budget of 2, so
-`test_3d_cones_finish_and_never_mislead` fails there; it passes on the
-CPU. Fix: rebuild the tableau from the final basis and continue, with the
-3D build. [Background](support-tutorial.qmd).
+(rejected, never certified wrongly), and `test_3d_cones_finish_and_never_mislead`
+fails on the GPU. The cure is rebuilding the tableau from the final basis. The
+project is planar; 3D is frozen. [Background](support-tutorial.qmd).
 :::
 
 ::: {.callout-note collapse="true"}
@@ -179,11 +116,85 @@ CPU. Fix: rebuild the tableau from the final basis and continue, with the
   graph; superseded by attention over templates.
 - **`tests/test_local_solver.py`** reads `gradient_warm_start`, which MPPI no
   longer has. For a fix-up PR to Angelo.
-- **The paper's pending results:** step-3 choices and results, the scene
-  families and the ranker are marked *pending* in the rewritten paper.
 :::
 
 ## Resolved
+
+::: {.callout-tip collapse="true"}
+## Decided Nov 11–12: friction band, certified margin, the realizer's defaults
+- **Disk friction is a declared band**, μ<sub>disk</sub> ∈ [0.3, 0.5], one
+  model everywhere (the simulator's 0.99 was a model-file number, not a
+  measurement; the gate and tracker had used 0.35). The simulator runs at 0.3
+  (0.5 with `CMG_DISK_FRICTION`); the gate and the tracker use 0.3.
+- **The gate's margin is a certified bound.** A float32 exit program that
+  failed its check had counted as exit 0 and made the refusal "certified";
+  now "held" needs a witness and "not held" a Farkas certificate, else
+  uncertain. On 10<sup>6</sup> pivot poses, 5 false refusals became 0.
+- **The gate stays at the hold level**; stick or slip belongs to the
+  realizer's plan.
+- **The support clause matches the theory**: σ̄ must hold before the
+  transition, σ̲ from it on.
+- **Transfers close as makes do** (`transfer_close_local` on): χ<sub>tr</sub>
+  is where the added contact touches.
+- **Λ<sub>qs</sub>'s feed-forward is the minimum-norm holding force.** The Nov 11
+  "moving force" (`ff_push`) was retracted: every force the hold LP admits is an
+  equilibrium force, so none moves the box; the box moves because the
+  reference moves.
+- **Λ<sub>qs</sub>'s options `roll_pivot`, `ff0_hold`, `settle_ext` and
+  `qs_plan_check` are the default**; `ff_push`, `ff_interior`, `fn_preload`,
+  `cone_proj` and `sequence_count` were removed (kept on branch
+  `night/roll-2026-11-11`).
+- **H1 merged** (the corner refusal of the relaxed gate fixed, admissible poses,
+  the held component and lazy targets); its flags 1–4 off by default, the
+  transfer closing rule on. **Certified placement** is in the code behind
+  `chi_t_rule="certified"` (off); the **stick–slip executor** is in scripts.
+- **The RL skills are retrained over the band** (decided; in progress).
+:::
+
+::: {.callout-tip collapse="true"}
+## Lowering the box off the platform (solved by the redesign with releases on)
+With the redesign (a push toward the edge, then a release) the teacher lowered
+40 of 40 instances; paired with CMGMP at 1,800 s, 25 against 24 of 25 (simulator
+disk friction 0.99, gate 0.35). Releases are now off pending a principled
+release (R1–R3), so in the current configuration lowering waits for it. Before
+the redesign no lowering was solved (0/40): the only edit off the platform was
+a balance Λ<sub>qs</sub> could not hold. [Search](search.qmd#redesign).
+:::
+
+::: {.callout-tip collapse="true"}
+## Decided Nov 9: the redesign (results on [the results page](../results/index.qmd#nov10))
+The settle clause is off for formation edits (reported separately) and
+required for releases and the final goal state. The tie rule and the roll skill
+are shelved (off, kept as a variant of Λ). Lowering: a push toward the edge,
+then a release (releases are now off, above). Retries from other nodes of a
+key are for the teacher only; the planner and every reported result use none.
+The search gets outcome children, box moves within a contact state and releases
+as actions, and PHS\* ordered by a value. The 125 mm gap screen is dropped.
+The creep of a box at rest in MJX came from pyramidal friction cones and is
+gone with elliptic cones. [Search](search.qmd#redesign).
+:::
+
+::: {.callout-tip collapse="true"}
+## The search's defects at `phase1/dev` (fixed Nov 8, Decision 18)
+Angelo's `Search` accepted when the requested contacts were in band, ignoring
+the solver's success flag; a node stored the requested formation, not the one
+reached; a break was accepted without checking that the contact left; there
+was no goal test, goal input or budget. Now a call counts only if Λ succeeds
+and the recognizer returns exactly the requested formation, the child stores
+the recognized formation, and the search has goals and a call budget.
+Walkthrough [8](../code-walkthrough/08-search.qmd) (archived) shows the old
+behaviour.
+:::
+
+::: {.callout-tip collapse="true"}
+## The hold tests are float32 (resolved: γ<sub>min</sub> and the certified margin)
+The gate agreed with a float64 reference on 1,000 of 1,000 random cases and on
+every near-boundary case 0.33 mm or more from the boundary; its only misses
+were acceptances with margin 0 (at most 2·10<sup>−7</sup>) at the boundary
+pose itself. The acceptance threshold γ<sub>min</sub> = 10<sup>−5</sup> removes
+them, and since Nov 11 the margin is a certified lower bound.
+[The hold gate](hold-gate.qmd#accuracy).
+:::
 
 []{#friction-mismatch}
 
@@ -197,14 +208,29 @@ the per-pose and sampled gates: Λ accepts 0.36 of its calls (0.27, 0.26), and
 cost. [Node identity](node-identity.qmd).
 :::
 
+[]{#hard-breaks}
+
 ::: {.callout-tip collapse="true"}
-## The hard break(g<sub>v</sub>) is solved by a learned skill (Nov 8, `9e7211f`)
-SAC trained from scratch in the MJX simulator solves 18/18 hard and 150/150
-held-out starts under the strict test (settle clause off; settle-on
-re-evaluation in progress), where Λ<sub>qs</sub> and MPPI solve almost none.
-The search will dispatch the hard break to it when it applies (being wired
-in).
+## The hard break(g<sub>v</sub>): a learned skill (Nov 8–9, `9e7211f`); measured at disk friction 0.99
+The quasi-static realizers failed it because the box's corners slide. SAC
+trained from scratch in the MJX simulator solves 18/18 hard and 150/150
+held-out starts under the strict test (settle clause off), and, retrained on
+the range the pre-redesign search reached, all 84 break states that search
+met. The runner dispatches break(g<sub>v</sub>) to it by default inside its
+validated range, but in the redesigned search's runs no call reached it (lifts
+went through the pivot and releases; on elliptic contacts Λ<sub>qs</sub>
+realizes 3 of the 6 hard starts itself). Every skill was trained at the
+simulator's old disk friction 0.99; retraining over the band is in progress.
+Whether the skill stays in the method or becomes an ablation is open.
 [The local solver](local-solver.qmd#learned-skill).
+:::
+
+::: {.callout-tip collapse="true"}
+## Transfers failed under the realizer; the gates missed the disk's clearance (resolved Nov 8–9)
+The teacher's failed transfers and disk makes were real realizer failures, now
+fixed: transfers 0/76 → 51/76, disk makes 35/43. The per-pose and sampled
+gates now check that the disk clears the environment (per-pose admits 1,059 →
+907 on 214 nodes).
 :::
 
 ::: {.callout-tip collapse="true"}
@@ -242,7 +268,8 @@ is snapped. Explained with worked examples on [Node identity](node-identity.qmd)
 
 ::: {.callout-note collapse="true"}
 ## Step 3d choices decided; the sweep is now adaptive (Nov 8, Decision 16, `84b7ab2`)
-The friction cap stays unset. The sweep's resolution was measured on 1,797
+The friction cap stayed unset (superseded the next day by the gate's disk
+friction 0.35, and on Nov 11 by the friction band, gate at 0.3). The sweep's resolution was measured on 1,797
 candidates against a dense reference: at the simulator's friction every
 grid agrees; at μ = 0.35 the old 5-point grid refuses one realizable break,
 9 points and the new adaptive grid (64 poses on the free directions, two
