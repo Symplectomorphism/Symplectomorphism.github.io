@@ -42,8 +42,11 @@ passes one **success test**, shared by every realizer:
 - **dwell:** the recognized formation equals σ′ for the last samples, with
   no tie;
 - **overlap:** no gap below −ε<sub>pen</sub>;
-- the manipulator's time limit, support while the disk lets go, and progress
-  toward the goal for transport.
+- **support while the disk lets go:** at every sample the box is held by
+  the formation present, which is σ̄ (the more-constrained end) before the
+  transition, while the dropped disk contact is still on, and σ̲ (the kept
+  contacts) from the transition on, as in the definition of a transition;
+- the manipulator's time limit, and progress toward the goal for transport.
 
 ## The mode-scheduled realizer Λ<sub>qs</sub> (step 3b) {#lambda-qs}
 
@@ -111,6 +114,17 @@ the feed-forward is the least squeeze inside those cones (see
 
 ## A learned skill for the hard breaks {#learned-skill}
 
+::: {.callout-note title="Status of the learned skills"}
+Every result in this section was measured with the simulator's disk friction
+at 0.99, before the friction band. Retraining every skill with the disk
+friction drawn per environment from U[0.3, 0.5] (the policy not observing μ)
+is decided and in progress; until it lands, the four RL-skill tests are pinned
+to 0.99. The runner dispatches break(g<sub>v</sub>) to the break skill by
+default inside its validated range, but in the redesigned search's runs no
+call reached it. Whether the skill stays in the method or becomes an ablation
+is open.
+:::
+
 The hard break(g<sub>v</sub>) starts fail for every planner so far because
 the box's corners slide: the maneuver needs timing or momentum that a
 quasi-static plan can't provide. So a controller for this one maneuver is
@@ -158,8 +172,8 @@ and the policy tips the box to about 72° in 0.25 s and then holds the new
 contact state in a small limit cycle (about ±2° at 4 Hz), which the strict test
 accepts because its settle clause is off; the settle-on numbers will decide
 that clause's default. The skill exists as Λ<sub>RL</sub> (`cmg/rl/skill.py`):
-the search will call it for the hard break whenever the start is within its
-training range, and Λ<sub>qs</sub> otherwise (being wired in). It carries an
+the runner dispatches the hard break to it whenever the start is within its
+validated range, and to Λ<sub>qs</sub> otherwise. It carries an
 empirical success rate with a confidence interval, outside the gate's
 quasi-static certificate; the call bound treats it as a solver that succeeds at
 random.
@@ -207,8 +221,7 @@ random.
   not for lack of calls: they stop after 34–47 of 256 calls with nothing left to
   try. Their boxes start 137–148 mm from the riser, beyond the 125 mm gap screen
   (Near) that a make must pass, so pushing the box to the riser is never tried.
-  Near is being dropped as a filter (decided Nov 9; corrected here the same
-  day, this page said they ran out of budget).
+  Near was dropped as a filter (Nov 9).
 
 ## Re-planning and failure diagnostics (step 3c) {#step-3c}
 
@@ -477,7 +490,11 @@ gate cost about one node's.
 
 ## The compiled cost (step 3, MPPI)
 
-The first Λ is MPPI, a sampling-based model-predictive controller running
+*MPPI is the baseline realizer since Λ<sub>qs</sub> was chosen (Nov 7). This
+section and the next were measured in step 3, with the simulator's disk
+friction at 0.99 and MuJoCo's pyramidal cones.*
+
+The first Λ was MPPI, a sampling-based model-predictive controller running
 the MuJoCo simulation. The paper's compiled cost is dimensionless: band,
 leave and overlap terms on the gaps, a control term, and a terminal barrier
 on the destination formation. It extends to Xiao and Ji's edits through the
@@ -560,7 +577,7 @@ The recognizer's overlap tolerance was 10 mm at step 3; since step 3b it is
 5 mm (provisional).
 Ties on the 4,000 jittered demo poses, with ε<sub>pen</sub> replaced:
 
-| ε<sub>pen</sub> | 1.5 mm | 2 mm | 3 mm | 4 mm | 5 mm | 10 mm (today) |
+| ε<sub>pen</sub> | 1.5 mm | 2 mm | 3 mm | 4 mm | 5 mm (now) | 10 mm (step 1) |
 |---|---|---|---|---|---|---|
 | Tied poses | 25 | 44 | 98 | 168 | 257 | 475 |
 
