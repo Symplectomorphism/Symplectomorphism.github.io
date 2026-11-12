@@ -195,6 +195,7 @@ wdm plots [CSV] [--config TOML] [--out DIR] [--format {pdf,png,svg} ...]
 Fits the model once and writes every figure for the latest episode into one folder:
 
 - `trajectory`: readings, the smoothed trend, and its band
+- `attempts`: every diet attempt's weigh-ins as change since its first, aligned on day 0
 - `composition`: fat and lean mass with bands
 - `plan`: the plan as `wdm plan` would make it, after the trend so far
 - `adherence`: each finished day's energy and macronutrients eaten (dots) against the prescription from the plans log (line), with a 10% band and the latest values labeled, and the running total of energy eaten above or below plan
