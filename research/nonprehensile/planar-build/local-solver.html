@@ -711,7 +711,7 @@ $$
 </div>
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>The mode-scheduled realizer <strong>Λ<sub>qs</sub></strong> realizes <strong>23 of 24</strong> chain edits from canonical and perturbed starts (GPU), including the pivot that no MPPI cost realized; MPPI-E realizes 15. <strong>Receding-horizon re-planning does not raise success</strong> (22–23 of 24) but halves the tracking deviation at a 0.2 s interval. Every remaining failure is a <strong>break(g<sub>v</sub>) whose quasi-static hold needs more disk friction than the tracker uses</strong>: the gate and the plan count on μ = 0.99 at the disk, the tracker on 0.35. Choices for Aykut: <a href="../../../research/nonprehensile/planar-build/issues.html#step3c-choices">Issues</a>.</p>
+<p>The mode-scheduled realizer <strong>Λ<sub>qs</sub></strong> realizes <strong>23 of 24</strong> chain edits from canonical and perturbed starts (GPU), including the pivot that no MPPI cost realized; MPPI-E realizes 15. <strong>Receding-horizon re-planning does not raise success</strong> (22–23 of 24) but halves the tracking deviation at a 0.2 s interval. Every remaining failure is a <strong>break(g<sub>v</sub>) whose quasi-static hold needs more disk friction than the tracker uses</strong>: the gate and the plan count on μ = 0.99 at the disk, the tracker on 0.35. The step-3c choices were decided on Nov 8 (<a href="../../../research/nonprehensile/planar-build/issues.html#step3c-choices">Issues</a>).</p>
 </div>
 </div>
 </div>
@@ -723,7 +723,8 @@ $$
 <li><strong>departure:</strong> a contact dropped outright ends above ε<sub>on</sub>;</li>
 <li><strong>dwell:</strong> the recognized formation equals σ′ for the last samples, with no tie;</li>
 <li><strong>overlap:</strong> no gap below −ε<sub>pen</sub>;</li>
-<li>the manipulator’s time limit, support while the disk lets go, and progress toward the goal for transport.</li>
+<li><strong>support while the disk lets go:</strong> at every sample the box is held by the formation present, which is σ̄ (the more-constrained end) before the transition, while the dropped disk contact is still on, and σ̲ (the kept contacts) from the transition on, as in the definition of a transition;</li>
+<li>the manipulator’s time limit, and progress toward the goal for transport.</li>
 </ul>
 </section>
 <section id="lambda-qs" class="level2">
@@ -753,6 +754,19 @@ $$
 </section>
 <section id="learned-skill" class="level2">
 <h2 class="anchored" data-anchor-id="learned-skill">A learned skill for the hard breaks</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Status of the learned skills
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Every result in this section was measured with the simulator’s disk friction at 0.99, before the friction band. Retraining every skill with the disk friction drawn per environment from U[0.3, 0.5] (the policy not observing μ) is decided and in progress; until it lands, the four RL-skill tests are pinned to 0.99. The runner dispatches break(g<sub>v</sub>) to the break skill by default inside its validated range, but in the redesigned search’s runs no call reached it. Whether the skill stays in the method or becomes an ablation is open.</p>
+</div>
+</div>
 <p>The hard break(g<sub>v</sub>) starts fail for every planner so far because the box’s corners slide: the maneuver needs timing or momentum that a quasi-static plan can’t provide. So a controller for this one maneuver is being <em>learned</em>, in the same MJX simulator the rest of the system uses:</p>
 <ul>
 <li><strong>Two algorithms, two variants:</strong> proximal policy optimization (PPO) and soft actor-critic (SAC), from Brax, each trained as a <strong>residual</strong> correction on top of Λ<sub>qs</sub>’s commands and <strong>from scratch</strong>.</li>
@@ -810,7 +824,7 @@ $$
 </tr>
 </tbody>
 </table>
-<p>SAC gives the same result with stiffer contacts, so it isn’t exploiting soft contacts; every hard start was solved, so the feasibility search wasn’t needed. Learning from scratch beats the residual because Λ<sub>qs</sub>’s commands are a poor starting point here (they fail 79 of 80 grid starts). PPO learned nothing under the same tuning budget. Two caveats: SAC is unstable (two of three seeds collapse after peaking, so the best checkpoint is kept), and the policy tips the box to about 72° in 0.25 s and then holds the new contact state in a small limit cycle (about ±2° at 4 Hz), which the strict test accepts because its settle clause is off; the settle-on numbers will decide that clause’s default. The skill exists as Λ<sub>RL</sub> (<code>cmg/rl/skill.py</code>): the search will call it for the hard break whenever the start is within its training range, and Λ<sub>qs</sub> otherwise (being wired in). It carries an empirical success rate with a confidence interval, outside the gate’s quasi-static certificate; the call bound treats it as a solver that succeeds at random.</p>
+<p>SAC gives the same result with stiffer contacts, so it isn’t exploiting soft contacts; every hard start was solved, so the feasibility search wasn’t needed. Learning from scratch beats the residual because Λ<sub>qs</sub>’s commands are a poor starting point here (they fail 79 of 80 grid starts). PPO learned nothing under the same tuning budget. Two caveats: SAC is unstable (two of three seeds collapse after peaking, so the best checkpoint is kept), and the policy tips the box to about 72° in 0.25 s and then holds the new contact state in a small limit cycle (about ±2° at 4 Hz), which the strict test accepts because its settle clause is off; the settle-on numbers will decide that clause’s default. The skill exists as Λ<sub>RL</sub> (<code>cmg/rl/skill.py</code>): the runner dispatches the hard break to it whenever the start is within its validated range, and to Λ<sub>qs</sub> otherwise. It carries an empirical success rate with a confidence interval, outside the gate’s quasi-static certificate; the call bound treats it as a solver that succeeds at random.</p>
 <p><strong>Overnight Nov 8–9: from the break to a solved lift.</strong></p>
 <ul>
 <li><p><strong>Settle clause (decided Nov 9).</strong> With the clause on at 10⁻³ the policy fails; SAC retrained with a settling term passes 4/18 and 32/150 (10/18 and 93/150 with stiffer contacts). But Λ<sub>qs</sub>’s own chain edits also pass only 2 of 7 at that tolerance (6 of 7 with it off), so turning it on would redefine success for the whole system. Decided: off for formation edits (its effect reported separately), required for releases and the final goal state.</p></li>
@@ -854,7 +868,7 @@ $$
 </tbody>
 </table>
 <p>The failures “as now” are tied samples during the hand-over from corner to face lasting longer than the success window. The proposed tie rule (<code>transfer_ties</code>, tied samples count toward either formation during a transfer) is a change to the success test. A realizer-side alternative, aiming the roll a few degrees past flush, gets 13/16 with the same rule and 0/16 without it. <strong>Decided Nov 9:</strong> the tie rule and the roll skill are shelved (off, kept as a variant of Λ); in the redesign the roll onto the platform becomes a <em>release</em> edit judged by the box coming to rest (<a href="../../../research/nonprehensile/planar-build/search.html#redesign">Search</a>).</p></li>
-<li><p><strong>Lift, end to end.</strong> On 10 lift instances, the search with both skills solves <strong>5</strong> (125 Λ calls per solve), and <strong>7</strong> with the proposed tie rule (72 calls per solve); before, none. The same 3 instances fail both ways, and not for lack of calls: they stop after 34–47 of 256 calls with nothing left to try. Their boxes start 137–148 mm from the riser, beyond the 125 mm gap screen (Near) that a make must pass, so pushing the box to the riser is never tried. Near is being dropped as a filter (decided Nov 9; corrected here the same day, this page said they ran out of budget).</p></li>
+<li><p><strong>Lift, end to end.</strong> On 10 lift instances, the search with both skills solves <strong>5</strong> (125 Λ calls per solve), and <strong>7</strong> with the proposed tie rule (72 calls per solve); before, none. The same 3 instances fail both ways, and not for lack of calls: they stop after 34–47 of 256 calls with nothing left to try. Their boxes start 137–148 mm from the riser, beyond the 125 mm gap screen (Near) that a make must pass, so pushing the box to the riser is never tried. Near was dropped as a filter (Nov 9).</p></li>
 </ul>
 </section>
 <section id="step-3c" class="level2">
@@ -992,7 +1006,7 @@ $$
 </table>
 <p>GPU (RTX 5080). * One transport run fails on a single sample whose gap has the wrong sign (−96 mm for +96 mm; <a href="../../../research/nonprehensile/planar-build/issues.html#gap-sign">issue</a>); without it RH80 is 23 of 24.</p>
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -1001,7 +1015,7 @@ $$
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <table class="caption-top table">
 <colgroup>
@@ -1262,7 +1276,7 @@ $$
 <p><strong>F1 and F2.</strong> No consistent effect: on the GPU they cost a transfer(s<sub>v</sub> → t) start (the full equilibrium force at the first step overshoots the soft contact), on the CPU they gain a break(g<sub>v</sub>) start with re-planning. F1 cannot help the remaining failures: the corner does not follow the planned lift at all.</p>
 <p><strong>Re-planning before the fix</strong> realized 1–2 hard starts per variant (all with the disk 20 mm low) while failing the chain’s constraining edits: its compressed, faster phase II lifted the corner where the quasi-static schedule does not. That points at quasi-dynamic motion for these breaks, after the friction question.</p>
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -1271,7 +1285,7 @@ $$
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Each figure: box tilt planned and executed with the deviation; the edit’s gaps; contact normal forces (MuJoCo replay) and the planned disk force; friction-cone ratios; motor commands and limits; slip speeds and the box’s kinetic energy; the one-line diagnosis at the bottom.</p>
 <div class="quarto-figure quarto-figure-center">
@@ -1507,7 +1521,8 @@ $$
 </section>
 <section id="the-compiled-cost-step-3-mppi" class="level2">
 <h2 class="anchored" data-anchor-id="the-compiled-cost-step-3-mppi">The compiled cost (step 3, MPPI)</h2>
-<p>The first Λ is MPPI, a sampling-based model-predictive controller running the MuJoCo simulation. The paper’s compiled cost is dimensionless: band, leave and overlap terms on the gaps, a control term, and a terminal barrier on the destination formation. It extends to Xiao and Ji’s edits through the point-contact view:</p>
+<p><em>MPPI is the baseline realizer since Λ<sub>qs</sub> was chosen (Nov 7). This section and the next were measured in step 3, with the simulator’s disk friction at 0.99 and MuJoCo’s pyramidal cones.</em></p>
+<p>The first Λ was MPPI, a sampling-based model-predictive controller running the MuJoCo simulation. The paper’s compiled cost is dimensionless: band, leave and overlap terms on the gaps, a control term, and a terminal barrier on the destination formation. It extends to Xiao and Ji’s edits through the point-contact view:</p>
 <ul>
 <li><strong>a transfer</strong> keeps the contained contact and moves the <em>released end</em>: for g → g<sub>v</sub> the other bottom corner lifts until the tilt passes 2θ<sub>e</sub>; for the disk going round a box corner, the contact point slides past the vertex; a constraining transfer (s<sub>v</sub> → t) lays the edge flat;</li>
 <li><strong>a compound edge</strong> adds up its parts;</li>
@@ -1622,6 +1637,15 @@ $$
 <h2 class="anchored" data-anchor-id="εpen-and-ties">ε<sub>pen</sub> and ties</h2>
 <p>The recognizer’s overlap tolerance was 10 mm at step 3; since step 3b it is 5 mm (provisional). Ties on the 4,000 jittered demo poses, with ε<sub>pen</sub> replaced:</p>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>ε<sub>pen</sub></th>
@@ -1629,8 +1653,8 @@ $$
 <th>2 mm</th>
 <th>3 mm</th>
 <th>4 mm</th>
-<th>5 mm</th>
-<th>10 mm (today)</th>
+<th>5 mm (now)</th>
+<th>10 mm (step 1)</th>
 </tr>
 </thead>
 <tbody>

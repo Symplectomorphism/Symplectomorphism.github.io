@@ -1035,7 +1035,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 <li>the pivot tolerance is <span class="math inline">\(10^{-4}\)</span> (at linrax’s <span class="math inline">\(10^{-6}\)</span> it pivoted on noise: 19 wrong answers on 600 random LPs, none at <span class="math inline">\(10^{-4}\)</span>);</li>
 <li>exits are capped at <span class="math inline">\(T = 10\)</span>, not <span class="math inline">\(10^3\)</span> (the large cap’s coefficient fell to the pivot threshold and produced negative weights).</li>
 </ol>
-<p>Every answer is then checked independently, with elementwise products (no reduced-precision TF32 on GPUs): a witness by its residual, a certificate by its signs, an exit by its weights. A failed exit check sets that exit to 0, so a solver error can shrink the margin but not enlarge it.</p>
+<p>Every answer is then checked independently, with elementwise products (no reduced-precision TF32 on GPUs): a witness by its residual, a certificate by its signs, an exit by its weights. The gate’s margin is a certified lower bound: each exit’s witness is checked by a residual bound with float32 rounding accounted for, and the margin is the least of those bounds, so a solver error can shrink the margin but not enlarge it. “Held” is certified only by a witness with margin at least γ<sub>min</sub>, “not held” only by a Farkas certificate; anything else is uncertain. (Until November 11 a failed exit check set that exit to 0 and a refusal was then called certified; on 10<sup>6</sup> pivot poses that made 5 false refusals, none since.)</p>
 <p><strong>Benchmark, before force limits</strong> (record at commit <code>e29d96f</code>; 1,000 random cases and 416 within 2 mm of disk height of the boundary; HiGHS reference; float32):</p>
 <table class="caption-top table">
 <colgroup>
@@ -1068,12 +1068,12 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 </tbody>
 </table>
 <p>Both get all 1,000 random cases right; every other disagreement is a pose reported uncertain and rejected (the safe direction), where a witness needs weights of 60–190 times the box’s weight, beyond what float32 can check. The gate’s own benchmark, with motor limits, is on <a href="../../../research/nonprehensile/planar-build/hold-gate.html#accuracy">the hold gate</a>.</p>
-<p><strong>In 3D.</strong> On a cube touched by up to four contacts (8-edge pyramids, <span class="math inline">\(d = 6\)</span>, up to 128 generators, 1,024 cases), nothing hangs, nothing is certified wrongly, 763 of 768 random and 255 of 256 near-boundary cases are right, and the rest are “uncertain” (safe) except one false acceptance 0.1% outside the boundary. The uncertain cases come from float32 rounding over the longer pivot sequences; the cure, rebuilding the tableau from the final basis (<em>reinversion</em>), is planned for the 3D build.</p>
+<p><strong>In 3D.</strong> On a cube touched by up to four contacts (8-edge pyramids, <span class="math inline">\(d = 6\)</span>, up to 128 generators, 1,024 cases), nothing hangs, nothing is certified wrongly, 763 of 768 random and 255 of 256 near-boundary cases are right, and the rest are “uncertain” (safe) except one false acceptance 0.1% outside the boundary. The uncertain cases come from float32 rounding over the longer pivot sequences; the cure would be rebuilding the tableau from the final basis (<em>reinversion</em>). The 3D build is frozen; the project is planar.</p>
 </section>
 <section id="how-the-gate-uses-them" class="level2">
 <h2 class="anchored" data-anchor-id="how-the-gate-uses-them">14. How the gate uses them</h2>
 <ul>
-<li><strong>The gate</strong> is LP-1 and LP-2 with the motor rows, on the edit’s less-constrained end, at χ₀ and at the transition sweep’s poses (<a href="../../../research/nonprehensile/planar-build/hold-gate.html#sweep">the hold gate</a>). It accepts at margin ≥ 0.</li>
+<li><strong>The gate</strong> is LP-1 and LP-2 with the motor rows, on the edit’s less-constrained end, at χ₀ and at the transition sweep’s poses (<a href="../../../research/nonprehensile/planar-build/hold-gate.html#sweep">the hold gate</a>). It accepts when the certified margin is at least γ<sub>min</sub> = 10<sup>−5</sup>.</li>
 <li><strong>The margin</strong> is set inclusion with the ℓ₁ ball; a scene can pass its own polytope <span class="math inline">\(D\)</span>.</li>
 <li><strong>The exact test</strong> (§4–6) stays as a cone-only cross-check.</li>
 </ul>

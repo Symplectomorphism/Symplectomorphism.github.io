@@ -671,6 +671,19 @@ $$
 </header>
 
 
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Archived: the pre-redesign code
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This walkthrough documents <code>cmg</code> as it was on branch <code>phase1/dev</code> at commit <code>7d2d343</code> (published November 4, 2026), before the planar build and the redesign of the search. It is kept as a record and is not updated: the scene, the catalog, the hold test, the candidate edits, the solver and the search it describes have all been replaced. The current code is on branch <code>phase1/planar</code>; see <a href="../../../research/nonprehensile/planar-build/index.html">Planar Build</a>.</p>
+</div>
+</div>
 <p>The running example is data, not code. <code>src/cmg/scene/families/step.yaml</code> says what the planner knows: bodies, which set each belongs to, their geometry, the features that may touch, and the tolerances. <code>step.xml</code> (the file it references) is what MuJoCo simulates. <code>SceneSpec.from_yaml</code> validates the YAML and derives everything it leaves out. Nothing in <code>geometry/</code> or <code>catalog/</code> may name this scene.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> walkthrough/01_scene.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
@@ -795,25 +808,6 @@ start_qpos: [-0.1, 0.0625, 0.0, -0.2, 0.0625]</code></pre>
 <h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
 <p><strong>1.1</strong> Predict the number of templates for <code>step-rich.yaml</code> (the same scene with the eight box vertices added), then check it.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>Solution
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-1" class="callout-1-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>The box has 6 + 8 = 14 features and every other body 1, so 1·14 + 3·(14·1) = 56.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"from cmg.catalog.templates import Catalog; print(len(Catalog.from_yaml('src/cmg/scene/families/step-rich.yaml')))"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>prints <code>56</code> (after the warnings).</p>
-</div>
-</div>
-</div>
-<p><strong>1.2</strong> Why is <code>mjx_body_ids</code> equal to <code>[2, 1, 6, 3, 4]</code>, and what would happen if two entries were swapped?</p>
-<div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
@@ -825,11 +819,13 @@ start_qpos: [-0.1, 0.0625, 0.0, -0.2, 0.0625]</code></pre>
 </div>
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>MuJoCo numbers bodies in XML order with <code>world</code> = 0: box 1, manip 2, S 3, P 4, target 5, L 6. The scene order is M, B, L, S, P, so the map is [2, 1, 6, 3, 4]. <code>target</code> (the translucent goal box) is not a scene body. <code>ExecutionWorld.pose</code> uses this list to pick pose rows, so swapping two entries would silently assign one body’s pose to another and every gap would be wrong. The loader only checks that each index is in range.</p>
+<p>The box has 6 + 8 = 14 features and every other body 1, so 1·14 + 3·(14·1) = 56.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"from cmg.catalog.templates import Catalog; print(len(Catalog.from_yaml('src/cmg/scene/families/step-rich.yaml')))"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>prints <code>56</code> (after the warnings).</p>
 </div>
 </div>
 </div>
-<p><strong>1.3</strong> Which numbers in <code>step.xml</code> and <code>step.yaml</code> set the step height, and what would you change for the paper’s earlier value h = 3a/8?</p>
+<p><strong>1.2</strong> Why is <code>mjx_body_ids</code> equal to <code>[2, 1, 6, 3, 4]</code>, and what would happen if two entries were swapped?</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -841,6 +837,23 @@ start_qpos: [-0.1, 0.0625, 0.0, -0.2, 0.0625]</code></pre>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
 <div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>MuJoCo numbers bodies in XML order with <code>world</code> = 0: box 1, manip 2, S 3, P 4, target 5, L 6. The scene order is M, B, L, S, P, so the map is [2, 1, 6, 3, 4]. <code>target</code> (the translucent goal box) is not a scene body. <code>ExecutionWorld.pose</code> uses this list to pick pose rows, so swapping two entries would silently assign one body’s pose to another and every gap would be wrong. The loader only checks that each index is in range.</p>
+</div>
+</div>
+</div>
+<p><strong>1.3</strong> Which numbers in <code>step.xml</code> and <code>step.yaml</code> set the step height, and what would you change for the paper’s earlier value h = 3a/8?</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>The platform body <code>P</code> sits at <code>pos="1.0 0 0.03125"</code> (z = h). The riser geom <code>S</code> has half-height <code>size="0.015625 ..."</code> (h/2) and its body sits at z = 0.015625 (h/2). The goal box <code>target</code> sits at z = 0.09375 = h + a/2. In <code>step.yaml</code>, <code>S</code> has <code>params: [0.015625, 0.25]</code>.</p>
 <p>For h = 3a/8 = 0.046875: <code>P</code> z → 0.046875; <code>S</code> half-height and body z → 0.0234375; <code>target</code> z → 0.109375; and <code>S</code> <code>params</code> in the YAML → [0.0234375, 0.25]. The YAML and the XML must agree, and nothing checks that they do.</p>

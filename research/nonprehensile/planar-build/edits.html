@@ -722,28 +722,26 @@ $$
 <ul>
 <li>they all relax or all constrain (Xiao and Ji’s containment between formations, Def. 9);</li>
 <li>the result is valid;</li>
-<li>every smaller nonempty subset of the changes gives an <strong>invalid</strong> formation.</li>
+<li>no smaller nonempty subset of the changes gives a formation realized within ρ = 25 mm of the transition pose (the <strong>local</strong> rule, Decision 14: the question is asked where the change happens).</li>
 </ul>
 <p>A single valid change is always an edge. A <strong>compound</strong> edge is a set of changes that cannot be made one at a time. Moving the disk from −x<sub>B</sub> to −z<sub>B</sub> is not one edge: breaking m<sub>x</sub> first leaves a valid formation. The disk goes round the box corner in two transfers, through its contact with the vertex.</p>
-<p>On the step every compound edge is the <strong>pivot</strong> or its reverse:</p>
+<p>The compound edge that matters on the step is the <strong>pivot</strong>:</p>
 <p>{m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>}.</p>
-<p>Tipping the box on its corner lifts its side off the riser at the same instant. Both one-at-a-time intermediates, {m<sub>x</sub>, g<sub>v</sub>, s} and {m<sub>x</sub>, g, s<sub>v</sub>}, are excluded. The pivot appears in 64 contexts (the other contacts of the formation), so there are 128 compound edges, some of them in contexts no pose realizes, because the validity stand-in is only pairwise (<a href="../../../research/nonprehensile/planar-build/issues.html#validity">Issues</a>). The implementation enumerates compound edges of up to three changes; a search up to four finds no others on the step.</p>
+<p>Tipping the box on its corner lifts its side off the riser at the same instant. Both one-at-a-time intermediates, {m<sub>x</sub>, g<sub>v</sub>, s} and {m<sub>x</sub>, g, s<sub>v</sub>}, are invalid (a box tilted on its corner is not flush on the riser, and conversely). Under the local rule the step has 16 change sets: the pivot in the box’s four orientations in the corner, in both directions, and eight <em>rocking</em> moves, in which a box flush in the floor–riser corner turns onto its far bottom vertex on the floor and its near bottom vertex on the riser, and back. In the marking graph they give 92 compound edges. (The earlier global rule, “every proper subset is invalid anywhere”, admitted 136 on the valid formations, 40 of them joining formations realized 85–184 mm apart, which no single motion connects.)</p>
 </section>
 <section id="the-marking-graph" class="level2">
 <h2 class="anchored" data-anchor-id="the-marking-graph">The marking graph</h2>
-<p>The <strong>marking graph</strong> has the valid formations as vertices and the edits as edges: 37,203 vertices on the step. Checked exhaustively in the test suite:</p>
+<p>The <strong>marking graph</strong> W has the valid, recognizable formations as vertices and the edits as edges. A single change is an edge only if its two ends are realized within ρ = 25 mm of each other at some transition pose, so W is a neighbour graph in Xiao and Ji’s sense (112 single changes whose ends lie 21–403 mm apart are dropped). On the step W has <strong>328 vertices and 2,490 directed edges</strong> (2,398 single, 92 compound), a mean out-degree of 7.6. Checked exhaustively:</p>
 <ul>
-<li>every edge lands on a valid formation and has its reverse;</li>
-<li>the graph is connected;</li>
-<li>with at most k changes per edge, the graph distance between σ and σ′ lies between |σ △ σ′|/(2k) and |σ △ σ′| (the symmetric difference);</li>
-<li>a brute force over sets of two or three single steps finds exactly the implemented compound edges.</li>
+<li>every edge has its reverse;</li>
+<li>W is connected, and with at most k changes per edge the graph distance between σ and σ′ is at least |σ △ σ′|/(2k) (the symmetric difference) and, measured over all 107,584 ordered pairs, at most |σ △ σ′| + 2: a dropped transfer can force a detour of two edges.</li>
 </ul>
 </section>
 <section id="the-step-chain" class="level2">
 <h2 class="anchored" data-anchor-id="the-step-chain">The step chain</h2>
 <p>With the disk free at the start, a plan for the step is the walk</p>
 <p>{g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>x</sub>, s<sub>v</sub>} → {m<sub>x</sub>, t} → {t} → {m<sub>z</sub>, t} → transport,</p>
-<p>that is: make m<sub>x</sub>, make s, the pivot, break g<sub>v</sub>, transfer s<sub>v</sub> → t, break m<sub>x</sub>, make m<sub>z</sub>, and transport.</p>
+<p>that is: make m<sub>x</sub>, make s, the pivot, break g<sub>v</sub>, transfer s<sub>v</sub> → t, break m<sub>x</sub>, make m<sub>z</sub>, and transport. This is the <em>direct</em> route, which lifts the floor corner with the disk on −x<sub>B</sub>. The paper’s running chain is the <em>indirect lift</em>, in which the disk lets go after the pivot and lifts the box from its raised underside, holding it at every instant (<a href="../../../research/nonprehensile/planar-build/certificate.html#the-indirect-lift">Certifying a whole box</a>).</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><a href="media/xj_landing.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="The box near the step corner, labeled by the recognizer. Left: resting on the corner alone, {sv}. Middle: landed with +xB on the platform and overhanging the corner. vS is the end of the platform edge the box rests on, so the box’s contact with vS is not principal, and the formation is {t}. Right: clear of the corner, still {t}."><img src="media/xj_landing.svg" class="img-fluid figure-img" alt="The box near the step corner, labeled by the recognizer. Left: resting on the corner alone, {sv}. Middle: landed with +xB on the platform and overhanging the corner. vS is the end of the platform edge the box rests on, so the box’s contact with vS is not principal, and the formation is {t}. Right: clear of the corner, still {t}."></a></p>
@@ -758,7 +756,7 @@ $$
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/repos/research/c-gnn <span class="kw">&amp;&amp;</span> <span class="fu">git</span> switch phase1/planar <span class="kw">&amp;&amp;</span> <span class="fu">git</span> pull <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> cmg</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">JAX_PLATFORMS</span><span class="op">=</span>cpu <span class="va">PYTHONPATH</span><span class="op">=</span>tests <span class="ex">.venv314/bin/python</span> <span class="at">-m</span> pytest <span class="at">-q</span> tests/test_planar_step2.py</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="va">JAX_PLATFORMS</span><span class="op">=</span>cpu <span class="ex">.venv314/bin/python</span> <span class="op">&lt;</span>website<span class="op">&gt;</span>/research/nonprehensile/planar-build/scripts/03_xiao_ji.py <span class="op">&lt;</span>out dir<span class="op">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>03_xiao_ji.py</code> prints the counts on this page (templates, containment pairs, valid formations, compound edges).</p>
+<p><code>03_xiao_ji.py</code> prints the template and containment counts; it predates validity from geometry. The counts of valid formations and edges come from the validity builder, <code>reports/supporting_docs/validity/</code> in <code>c-gnn</code>.</p>
 <p><a href="../../../research/nonprehensile/planar-build/contact-states.html">← Contact states</a> · <a href="../../../research/nonprehensile/planar-build/hold-gate.html">The hold gate →</a></p>
 
 

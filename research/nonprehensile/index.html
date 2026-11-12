@@ -650,34 +650,31 @@ $$
 <section id="planning-through-contact" class="level2">
 <h2 class="anchored" data-anchor-id="planning-through-contact">Planning through contact</h2>
 <div class="research-paper">
-<p><strong>Presentation</strong></p>
-<p><a href="planning-through-contact.html">Planning Through Contact →</a> — an illustrated walkthrough of the construction: the contact catalog, the bit-vector state, the three actions, the local solver, the two feasibility gates, and where a learned ranker enters. Roughly twenty slides, figure-first, with speaker notes.</p>
-<p><strong>Code walkthrough</strong></p>
-<p><a href="../../research/nonprehensile/code-walkthrough/index.html">Code Walkthrough →</a> — the reference implementation run one layer at a time, from the scene file to the search loop: commands, recorded outputs, and exercises with solutions.</p>
 <p><strong>Planar build</strong></p>
-<p><a href="../../research/nonprehensile/planar-build/index.html">Planar Build →</a> — the planar step scene by topic: contact states, edits, the hold gate, the local solver and the search, with figures, an interactive viewer, and the open issues and their resolutions.</p>
+<p><a href="../../research/nonprehensile/planar-build/index.html">Planar Build →</a> — the current construction on the planar step scene, by topic: contact states, edits, the hold gate and its certificates, the local solver and the search, with figures, an interactive viewer, and the open issues and their resolutions.</p>
 <p><strong>Results</strong></p>
-<p><a href="../../research/nonprehensile/results/index.html">Results →</a>: videos of the planner’s motions on the step scene (solved lifts, the learned skills, the proposed tie rule, and the open lowering failures).</p>
+<p><a href="../../research/nonprehensile/results/index.html">Results →</a>: videos of the planner’s motions on the step scene, newest first: the indirect lift run by the planner from rest under the declared disk-friction band, then the earlier runs, each labelled with the configuration it was measured at.</p>
+<p><strong>Archived</strong></p>
+<p><a href="planning-through-contact.html">Planning Through Contact →</a>, the slide deck of September 2026, and the <a href="../../research/nonprehensile/code-walkthrough/index.html">Code Walkthrough →</a> of <code>cmg</code> at <code>phase1/dev</code> <code>7d2d343</code> (November 4) describe the construction and the code before the planar build. Both are kept as a record; where they differ from the planar build pages, the planar build is current.</p>
 </div>
-<p>The construction has five pieces and nothing more:</p>
+<p>The construction has five pieces:</p>
 <ul>
-<li><strong>Features.</strong> Every body carries a finite, named inventory of contactable patches, fixed by geometry before planning starts.</li>
-<li><strong>Templates.</strong> A candidate contact is one named feature pair together with a signed gap. The gap is a function of configuration alone, so it is defined whether or not the pair currently touches.</li>
-<li><strong>State.</strong> The discrete state is a bit vector over the catalog of candidate contacts — which contacts the controller is committed to holding — carried alongside the continuous pose.</li>
-<li><strong>Actions.</strong> Start holding a contact, stop holding one, or hold the set and drive toward the goal. Each action flips at most one bit.</li>
-<li><strong>Realization.</strong> A short-horizon optimizer is handed one action compiled into a cost, and either returns a trajectory segment or rejects the action.</li>
+<li><strong>Formations.</strong> Every body carries a finite, named inventory of features (edges and convex vertices). A candidate contact (a <em>template</em>) is a pair of features on two bodies with a signed gap, defined whether or not the pair touches. A <em>formation</em> is the set of templates in principal contact, in the sense of Xiao and Ji, recognized from a pose with small tolerances; it is the discrete state, carried alongside the continuous pose.</li>
+<li><strong>Edits.</strong> Neighbouring formations differ by making, breaking or transferring one contact; several change at once only when no single change is possible (the pivot). A transport moves the object without changing contacts.</li>
+<li><strong>The hold gate.</strong> Before an edit is tried, a linear program checks that the contacts that persist through it can hold the object against gravity, within the manipulator’s actuator limits, at a pose where the change can happen. In its idealized form it never discards a realizable edit, and an interval version certifies the hold over whole regions of poses.</li>
+<li><strong>Realization.</strong> A local solver, a quasi-static realizer that plans on the edit’s known contacts and tracks the plan in simulation, either realizes the edit or reports why it failed.</li>
+<li><strong>Search.</strong> A search over edits, ordered by a ranker and a value estimate, counts the expensive solver calls, with the number of calls bounded by the ranker’s probabilities.</li>
 </ul>
-<p>Two cheap tests run before that optimizer is ever called: a contact too far away cannot be closed in one horizon, and the contacts that survive an action must already hold the object against gravity. The second of these is what forbids a manipulator from letting go mid-topple, and admits the same release once the object has landed.</p>
+<p>The hold gate is what forbids a manipulator from letting go mid-topple, and admits the same release once the object rests on other contacts.</p>
 </section>
 <section id="why-unmade-contacts-matter" class="level2">
 <h2 class="anchored" data-anchor-id="why-unmade-contacts-matter">Why unmade contacts matter</h2>
 <p>Complementarity-based planners enumerate velocity modes over the contacts that collision detection has already found, and graphs of convex sets place modes on vertices that must be enumerated in advance. Both are effective for reasoning about contacts a robot already has. Neither can express <em>go and establish contact with that edge</em>, because the contact is not in the state until it exists.</p>
-<p>Carrying unmade contacts in the discrete state is the one structural difference, and everything else in the construction follows from it.</p>
+<p>Here every contact the geometry allows is a named template with a gap defined before it touches, so <em>make that contact</em> is an edge of the graph from the start. That is the one structural difference, and everything else in the construction follows from it.</p>
 </section>
 <section id="status" class="level2">
 <h2 class="anchored" data-anchor-id="status">Status</h2>
-<p>The construction is specified and the software architecture is laid out. The measurement is the number of local-solver calls needed to reach the goal, compared against a greedy geometric baseline, against an exhaustive teacher, and against a planner that performs no discrete search at all.</p>
-<p>The experiment that decides whether a learned action ordering is worth anything on this task family has not yet been run, and is deliberately scheduled before any network is trained.</p>
+<p>On a proof-of-concept task, lifting a box onto a step with a disk too weak to carry it, the search lifts and lowers the box on random instances, and the lift in which the box is held at every instant, the <em>indirect lift</em>, is certified edit by edit for every disk friction in a declared band. Given only that lift’s formation sequence, the planner realizes it in simulation from rest; finding it from the scene alone is the current target. The <a href="../../research/nonprehensile/planar-build/index.html">planar build</a> pages give the details, and <a href="../../research/nonprehensile/planar-build/issues.html">Issues and resolutions</a> the open work.</p>
 <div class="research-next">
 <p><a href="../../research/robotics_and_control.html">Robotics and control →</a> · <a href="../../research/robotics_and_control.html#dynamic-manipulation">Dynamic manipulation →</a> · <a href="../../publications/index.html">All publications →</a></p>
 </div>

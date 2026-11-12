@@ -670,6 +670,19 @@ $$
 </header>
 
 
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Warning</span>Archived: the pre-redesign code
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This walkthrough documents <code>cmg</code> as it was on branch <code>phase1/dev</code> at commit <code>7d2d343</code> (published November 4, 2026), before the planar build and the redesign of the search. It is kept as a record and is not updated: the scene, the catalog, the hold test, the candidate edits, the solver and the search it describes have all been replaced. The current code is on branch <code>phase1/planar</code>; see <a href="../../../research/nonprehensile/planar-build/index.html">Planar Build</a>.</p>
+</div>
+</div>
 <p>The local solver Λ receives a state, the current formation σ and a destination σ′, and returns a trajectory and a success flag. The default realizer is MPPI (<code>solver/mppi.py</code>). For each physics step it samples perturbed control sequences, simulates each one with MJX, weights them by exp(−cost / temperature), averages them, and applies the first control. The cost rewards closing the gaps of templates being made, keeping the gaps of kept templates in band, opening the gaps of templates being broken, and it penalizes penetration and effort. This step realizes one make from the start pose: the disk onto the box’s back face, the paper’s m_x.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> walkthrough/07_mppi.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
@@ -777,7 +790,7 @@ search would accept (destination bits in band at the end): True</code></pre>
 <h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
 <p><strong>7.1</strong> Which clauses of the success test fail here, and which pass?</p>
 <div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -786,7 +799,7 @@ search would accept (destination bits in band at the end): True</code></pre>
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>The test at the end of <code>__call__</code> requires finite states and controls, no gap below −ε_pen at any step, every destination bit below ε_on from step 19 (the deadline) onward, broken bits at least R apart from step 19 onward, and dwell drift at most <code>dwell_tolerance</code>. To see the destination clause, append to <code>07_mppi.py</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>deadline <span class="op">=</span> gaps[solver.horizon <span class="op">-</span> <span class="dv">1</span>:]</span>
@@ -809,23 +822,6 @@ B:xn-L:boundary [0.0021 0.0021 0.0018 0.0015 0.0012 0.0009 0.0006 0.0004 0.0003 
 </div>
 <p><strong>7.2</strong> Run the same make with the lighter settings used in step 8 (<code>n_samples: 64</code>, <code>maxiters: 2</code>). Is it accepted?</p>
 <div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>Solution
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>No.&nbsp;Step 8’s first batch tries exactly this edit from the same root with those settings, and the search rejects it: at the final state, not every destination bit is in band. Fewer samples and iterations make the controller weaker; the first call is also cheaper to compile. To try it here, copy step 8’s <code>SolverConfig(...)</code> construction into <code>07_mppi.py</code> in place of <code>SolverConfig.from_yaml</code>.</p>
-</div>
-</div>
-</div>
-<p><strong>7.3</strong> How many MJX steps does one call simulate? Relate the count to the 37 s.</p>
-<div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
@@ -836,6 +832,23 @@ B:xn-L:boundary [0.0021 0.0021 0.0018 0.0015 0.0012 0.0009 0.0006 0.0004 0.0003 
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
 <div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>No.&nbsp;Step 8’s first batch tries exactly this edit from the same root with those settings, and the search rejects it: at the final state, not every destination bit is in band. Fewer samples and iterations make the controller weaker; the first call is also cheaper to compile. To try it here, copy step 8’s <code>SolverConfig(...)</code> construction into <code>07_mppi.py</code> in place of <code>SolverConfig.from_yaml</code>.</p>
+</div>
+</div>
+</div>
+<p><strong>7.3</strong> How many MJX steps does one call simulate? Relate the count to the 37 s.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>Solution
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>The loop runs 30 executed steps. With <code>control_hold: 3</code>, it replans at steps 0, 3, …, 27: 10 times. Each replan runs <code>maxiters</code> = 5 updates, each update simulates <code>n_samples</code> = 256 rollouts, and each rollout is <code>planning_horizon</code> = 20 + 10 = 30 steps long. That is 10 × 5 × 256 × 30 = 384,000 rollout steps, plus the 30 executed steps, or about 0.1 ms per MJX step on the CPU. The search runs <code>batch_size</code> such calls at once through <code>vmap</code> (step 8), so solver cost dominates everything else. Counting solver calls is the cost measure the paper uses.</p>
 </div>
