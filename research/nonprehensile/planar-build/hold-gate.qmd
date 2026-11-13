@@ -100,16 +100,6 @@ pose handed to the solver as χ<sub>tr</sub> is the nearest accepted pose with
 margin at least γ<sub>tr</sub> = 0.1, so the solver aims at a pose held with
 room to spare; failing that, the accepted pose of largest margin.
 
-![break(g<sub>v</sub>) with the disk 40 mm below the face center: the gate along the tilt and an earlier 5-point sweep from χ₀ = 30°. *Computed in step 3 with the disk's friction at the simulator's 0.99 and the 5-point grid; not recomputed at the gate's 0.3.*](media/step3_sweep.svg){.lightbox}
-
-For example, from χ₀ = 30° with the disk 40 mm low, at the disk friction of
-the time (0.99), the margin at χ₀ is −0.31: refused at the pose. The sweep's
-two free directions give 118 poses, 83 recognized and 57 held; χ<sub>tr</sub>
-is at 45.2° with the disk 48 mm low (margin 0.20), and the gate accepts,
-handing the solver a target 15° further over. At the gate's later disk
-friction 0.35 the chain's own break(g<sub>v</sub>) from 45° no longer holds at
-χ₀ and passes through the sweep; neither number was recomputed at 0.3.
-
 The sweep moves the disk as well as the box: it can accept at a pose with the
 disk elsewhere on the face than at χ₀.
 
@@ -119,80 +109,26 @@ motion could realize (Theorem B); the sampled gate keeps this only under stated
 hypotheses (a Lipschitz margin and a grid that covers the region, above a
 margin band that depends on the covering distance).
 
-## The pivot needs the disk low {#pivot}
+## Accuracy {#accuracy}
 
-![Whether {m<sub>x</sub>, s<sub>v</sub>} (the disk and the step corner) holds the box tipped onto the corner: the gate for break(g<sub>v</sub>) over tilt and disk height, grid 2° × 3 mm. Blue: held, with the margin; red: not held, by how much; black: the boundary. Blank: the box is not in the formation there.](media/step2_pivot_margin.svg){.lightbox}
+The gate's LPs are checked against an independently coded float64 LP
+(SciPy's HiGHS) with the same motor limits, and its certified margin against
+the interval certificate: on 10<sup>6</sup> pivot poses it admits nothing that
+cannot hold and refuses nothing that can
+([Certifying a whole box](certificate.qmd)). The acceptance threshold
+γ<sub>min</sub> = 10<sup>−5</sup> sits just above float32 rounding: at a pose
+exactly on the support boundary the float32 margin is at most
+2·10<sup>−7</sup>, so such a pose is not accepted.
 
-After the pivot, breaking g<sub>v</sub> leaves the disk and the step corner
-to hold the box. *The map and the numbers below were computed with the disk's
-friction at 0.35, the gate's value before the friction band; the gate now uses
-0.3, and they were not recomputed.* On a finer grid (0.5° × 1.5 mm) they hold:
-
-| Disk on −x<sub>B</sub> | Tilts held |
-|---|---|
-| 40 mm or more below the face center | never |
-| 30 mm below the face center | 45.0°–51.5° |
-| 15 mm below the face center | 49.5°–61.5° |
-| At the face center | 54.0°–66.5° |
-
-Never below 44.5° or above 74.5°; never at 30°; at 45° only with the disk
-30–32 mm below the face center; at 60° from 18 mm below to 18 mm above it.
-At 30° the motors are too weak wherever the disk pushes: without motor
-limits the disk could hold the box there anywhere from the bottom of the
-face to 3 mm below its center. An independent float64 model of the same
-hold, certified over boxes of poses, gives the same band (44.4°–74.4°), so
-these are facts about the physics and the motors, not about the test. Without motor limits more than four times as many poses
-would hold (716 against 158 of the 1,599 grid poses).
-
-## Accuracy and speed {#accuracy}
-
-*Measured in step 3, before the certified margin (Nov 11).* Checked against a
-float64 LP (SciPy's HiGHS) with the same motor limits, coded independently: 1,000 random cases, and 208 near the support boundary
-(16 sweeps of disk height on the pivot, bisected to the boundary).
-
-| Gate (float32) | Random | Near the boundary | ms per 256 poses, CPU / GPU |
-|---|---|---|---|
-| **LP with motor limits (the gate)** | **1,000 of 1,000** | **199 / 202 of 208** (CPU / GPU) | **14.7 / 3.4** |
-| LP, no limits | 1,000 | 386 / 383 of 416 | 8.5 / 2.5 |
-| Exact cone test, no limits (cross-check) | 1,000 | 390 / 389 of 416 | 5.0 / 1.6 |
-
-The gate made no false rejection there. Every miss is the bisected boundary
-pose itself: the gate's margin there is 0 (at most 2·10<sup>−7</sup>) while
-HiGHS says "just not". At 0.33 mm or more from the boundary the two always
-agree. The acceptance threshold γ<sub>min</sub> = 10<sup>−5</sup>, now the
-default, removes these misses. Against the box certificate on 10<sup>6</sup>
-pivot poses, the certified margin admits nothing that cannot hold and refuses
-nothing that can ([Certifying a whole box](certificate.qmd)).
-
-## Does the gate prune? (checkpoint 1) {#checkpoint-1}
-
-*Measured in step 3 (Nov 7), with the disk's friction at the simulator's 0.99,
-the 5-point sweep and the gap screen Near (since dropped); not recomputed.*
-Among candidate edits that are edges and whose new contacts are within
-reach, the share H rejected:
-
-| Nodes | Candidates | Rejected at χ₀ only | Rejected with the sweep |
-|---|---|---|---|
-| The chain's 9 starts | 179 | 18.4% | 14.5% |
-| 205 demo nodes | 3,112 | 22.8% | 22.7% |
-
-By type on the demo nodes, H rejects 75% of breaks (211 of 280) and 74% of
-transfers (444 of 597), but only 47 of 2,022 makes: a make's
-less-constrained end is the current formation, which already holds. H
-prunes the edits that drop or shrink support, which are the ones that need
-it.
+A make's less-constrained end is the current formation, which already holds,
+so the gate rarely refuses a make; it prunes the breaks and transfers, the
+edits that drop or shrink support.
 
 ## Reproduce
 
 ```bash
 cd ~/repos/research/c-gnn && git switch phase1/planar && git pull && cd cmg
 JAX_PLATFORMS=cpu PYTHONPATH=tests .venv314/bin/python -m pytest -q tests/test_planar_step2.py tests/test_step3.py
-JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/02_hold_gate.py <out dir>   # pivot map
-JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_figures.py <out dir>     # sweep figure and table
-JAX_PLATFORMS=cpu .venv314/bin/python <website>/research/nonprehensile/planar-build/scripts/03_checkpoints.py <out dir>  # checkpoint 1
 ```
-
-The fine-grid pivot numbers come from
-`reports/contact-mode-graphs/scripts/pivot/pivot_numbers.py` in `c-gnn`.
 
 [← Edits](edits.qmd) · [Background: deciding support](support-tutorial.qmd) · [The local solver →](local-solver.qmd)

@@ -4,12 +4,10 @@ subtitle: "Planning nonprehensile manipulation through contact, in the plane: wh
 lightbox: true
 ---
 
-The [code walkthrough](../code-walkthrough/index.qmd) studies `cmg` as Angelo
-left it on `phase1/dev`. This section describes the planar (x–z) version of
-the box-over-a-step problem built on top of it, on the branch
-`phase1/planar` of `Symplectomorphism/c-gnn`. The pages are organized by
-topic and describe the current state; how each part got there is collected
-on [Issues and resolutions](issues.qmd).
+This section describes the planar (x–z) version of the box-over-a-step
+problem, built in `cmg` on the branch `phase1/planar` of
+`Symplectomorphism/c-gnn`. The pages are organized by topic and describe the
+current state; the open work is on [Issues](issues.qmd).
 
 ## The problem
 
@@ -38,21 +36,24 @@ in which order, and then find a motion for each change.
    box of poses or disk placements at once.
 4. **[The local solver](local-solver.qmd).** A realizer (Λ) tries to
    realize each edit that passes the gate in simulation.
-5. **[Search and ranking](search.qmd).** A search over edits, ordered by a
-   ranker and a value estimate, so that few expensive Λ calls are needed.
+5. **[Node identity](node-identity.qmd) and [search](search.qmd).** A
+   search over edits, ordered by a ranker and a value estimate, so that few
+   expensive Λ calls are needed.
 
 ## Where things stand
 
 | Part | What | Status |
 |---|---|---|
-| [Contact states](contact-states.qmd) | planar scene, principal contacts, recognizer | Built (Xiao–Ji construction, Nov 7) |
+| [Contact states](contact-states.qmd) | planar scene, principal contacts, recognizer | Built (Xiao–Ji construction) |
 | [Edits](edits.qmd), [the hold gate](hold-gate.qmd) | validity from geometry, transfers, compound edges; the LP gate with motor limits, the transition sweep and a certified margin; makes and transfers close the added contact | Built; the gate certifies holds only (Theorem B's level) |
 | [Certifying a whole box](certificate.qmd) | interval certificates over boxes of poses; stick–slip plans and Theorem S; the indirect lift's last four edits and closing transport certified over the friction band | Built; certified placement in the code behind a flag (off) |
-| [The local solver](local-solver.qmd) | the success test, the quasi-static realizer Λ<sub>qs</sub> with its four default options; learned skills for the hard break (trained at disk friction 0.99; retraining over the band in progress) | Built; Λ<sub>qs</sub>'s plans are sequences of held poses, and stick–slip plans in the realizer are next |
-| [Search](search.qmd) | node identity, the redesigned search (Decision 23), value and ranker | Built and run; the search does not yet find the indirect lift by itself |
+| [The local solver](local-solver.qmd) | the success test, the quasi-static realizer Λ<sub>qs</sub> with its six default options; a stick–slip variant (off) | Built; Λ<sub>qs</sub> realizes every edit of the indirect lift; its plans are sequences of held poses |
+| [Node identity](node-identity.qmd), [search](search.qmd) | node keys and merging; PHS\* with outcome children and box transports; the value 𝒱₀ | Built and run; given the indirect lift's formation sequence it realizes the lift; finding the sequence unhinted is open |
 
 The current configuration: disk–box friction is a declared band
-μ<sub>disk</sub> ∈ [0.3, 0.5]; the gate and the tracker use 0.3
+μ<sub>disk</sub> ∈ [0.3, 0.5]; the gate and the tracker use 0.3; every edit
+is realized by Λ<sub>qs</sub> with its default options; release edits and the
+learned skills are in the code but off
 ([the local solver](local-solver.qmd)). The indirect lift's last four edits
 and its closing transport are certified for every μ in the band
 ([Certifying a whole box](certificate.qmd#the-indirect-lift)). Given only the
@@ -61,5 +62,4 @@ lift's formation sequence, the planner runs it from rest in simulation at
 ([The planner runs the indirect lift from rest](../results/index.qmd)).
 
 Videos of the planner's motions are on [Results](../results/index.qmd).
-Open decisions and known defects are on [Issues and resolutions](issues.qmd),
-at the top.
+Open work and known defects are on [Issues](issues.qmd).

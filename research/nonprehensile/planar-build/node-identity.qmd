@@ -43,7 +43,7 @@ contact state as a formation together with one connected region of the poses
 that realize it. Within that region, any pose can be reached from any other
 without changing contacts, so the pose inside it doesn't matter. No grid,
 no resolution parameter. This is the principled object, and the construction
-we adopted (Decision 9).
+we adopted.
 
 **3. Our key: collapse what we drive, keep what we don't.** Xiao and Ji
 assume the object is *driven*: in their assembly setting a robot holds it and
@@ -87,51 +87,26 @@ all four the formation is the same: the box's bottom face on the floor,
 The grid splits the first three rows into several nodes, which only costs
 repeated calls. The Xiao–Ji contact state merges the last row, situations with
 different futures, which can lose the solution. Our key with the relaxed
-gate, now the default, gets all four right. (The per-pose column comes from the
+gate, the default, gets all four right. (The per-pose column comes from the
 script; the relaxed column's row 1 is checked by the test
-`test_relaxed_verdicts_and_keys_ignore_the_disk_position` and by the search
-benchmark below.)
+`test_relaxed_verdicts_and_keys_ignore_the_disk_position`.)
 
-Row 1 was a gap between the decision and the code. The decision
-collapses the disk's position, but the code currently evaluates the gate at
-each node's own disk position, and a different disk position can change a
-verdict (for example, which contacts are near enough to make). So the merge
-test kept the two states apart.
-
-**The fix (Decision 21, now the default): ask the gate the right question.** A node's
-verdict should be "is there *some* disk position in its region from which
-the box can be held through this edit?" That's computed as a relaxation in
-the same hold LP: the disk's contact becomes a contact that may slide along
-the reachable stretch of the face it will touch (a sliding contact on a
-straight face can push like either of the stretch's two endpoints), so it's
-one LP of the same size. It never rejects an edit some disk position could
-realize, which is the gate's guarantee, and Λ decides where the disk
-actually goes. A sampled version (the gate at six disk spots) also closes the
-gap and was measured: 39% more accepted calls, admitted edits realized just
-as often, but twice the time and not guaranteed. The relaxed version's
-theory is done: on a single straight stretch the two endpoint contacts are
-*exact*, not just a relaxation (their forces add up to one force at their
-centre of pressure), and around a corner they are exact unless the arc is very
-wide; the gate's guarantee carries over, and its verdicts depend on the node's
-identity alone. The suggested disk position is re-checked with the exact gate
-before Λ uses it.
-
-**Measured, and adopted.** In short searches from the chain's starts:
-
-| | Per-pose gate | Sampled (6 disk spots) | **Relaxed (default)** |
-|---|---|---|---|
-| Seconds per gate evaluation | 3.45 | 21.1 | **4.40** |
-| Λ's acceptance per call | 0.27 | 0.26 | **0.36** |
-| Merged nodes | 9 | 13 | **18** |
-| Strict successes over 370 spread-out start–edit pairs | 45 | 60 | **119** |
-
-With the relaxed gate, 72 of the disk-free pairs succeed (24 sampled, 9
-per-pose) and 47 with the disk on the box (36). On 214 nodes it admits every
-edit the other two admit, with one exception that turned out to be *their*
-bug: on one formation they admit making disk contact with the disk inside the
-platform, because their sweep never checks the disk's clearance from the
-environment (fixed Nov 8, `f975f2e`). The exact re-check at the suggested disk position
-fails on 1 of 246 admitted edits. Two implementation details differ from the
+Row 1 is why the gate is **relaxed** (the default). A node's verdict is "is
+there *some* disk position in its region from which the box can be held
+through this edit?" A different disk position can change a per-pose verdict
+(for example, which contacts are near enough to make), so a gate evaluated at
+each node's own disk position would keep the two states apart. The relaxed
+gate is computed in the same hold LP: the disk's contact becomes a contact
+that may slide along the reachable stretch of the face it will touch (a
+sliding contact on a straight face can push like either of the stretch's two
+endpoints), so it's one LP of the same size. It never rejects an edit some
+disk position could realize, which is the gate's guarantee, and Λ decides
+where the disk actually goes. On a single straight stretch the two endpoint
+contacts are *exact*, not just a relaxation (their forces add up to one force
+at their centre of pressure), and around a corner they are exact unless the
+arc is very wide; the gate's guarantee carries over, and its verdicts depend
+on the node's identity alone. The suggested disk position is re-checked with
+the exact gate before Λ uses it. Two implementation details differ from the
 theory note: the sweep still moves the disk along its contact, and the
 reachable stretch is computed once at the starting pose.
 
@@ -165,45 +140,35 @@ gate's share of search time from 71% to 21% (1,170 → 414 s).
 ## When a duplicate is dropped
 
 A new child whose key is already taken is dropped only if a node already
-made with that key has a path probability π at least as large (Decision 13,
-the "safe" rule). Otherwise it is made as a new node. Dropping by first
+made with that key has a path probability π at least as large (the "safe"
+rule). Otherwise it is made as a new node. Dropping by first
 arrival instead breaks the call bound by an unbounded factor (it approaches d
 when the dropped node is d calls deep); re-parenting the old node to the new,
 more probable path breaks it too.
 
-## What changed in the search because of this
+## What this means for the search
 
-- **Children are labeled by what was reached.** A Λ call counts only if it
-  succeeds and the recognizer returns exactly the requested formation; the
-  child gets the recognized formation (before, the search stored the formation
-  it had asked for).
+- **Children are labeled by what was reached.** A child gets the formation
+  the recognizer reads at the end of its Λ call, never the requested one; the
+  call succeeds only if the two are equal (the search's outcome children also
+  keep ends that make progress, [Search](search.qmd)).
 - **Moving within a node is part of an edit.** Under these keys, a pure
   repositioning step always lands on its parent's key and would always be
   dropped. So the disk's motion to the edit's transition pose is the first part
   of the edit's own Λ call, not a separate search step.
-- **The gate is evaluated per key** and cached (Decision 18), with the local
+- **The gate is evaluated per key** and cached, with the local
   sweep as a refinement at the node's actual pose: 71% → 21% of search time.
 
 ## What the measurements show
 
-- **Connected regions.** Of the 328 formations (after the graph changes of
-  Decision 19), 305 are one connected region and 23 split, 3 of them stably;
+- **Connected regions.** Of the 328 formations of the neighbor graph, 305
+  are one connected region and 23 split, 3 of them stably;
   none of the formations without a disk–box contact splits, and each of the
   chain's eight formations is one region.
 - **The box is not carried across its region.** When the disk pushes the box
   within a formation, it reached the target in 0 of 6, 0 of 6 and 2 of 6 trials
   on the chain's three disk-contact formations. This is the evidence for
   keeping the box's pose in the key.
-- **Moving the disk first helps where the disk is free.** Each edit's Λ
-  call now begins by moving the disk within its region to where the edit
-  starts, with the box fixed and the contacts held. Over 370 start–edit pairs
-  spread across the chain's formations, strict successes (exactly the target
-  formation, the contacts held throughout) rose from 45 to 60. With the disk
-  free, the gate admits 119 pairs instead of 51 and 24 succeed instead of 9;
-  with the disk on the box nothing changes (36 successes), because those
-  starts would need the box moved, which only pushing does. So the call
-  bound's main hypothesis, that the next edit works from every state of a
-  node, holds only in part.
 
 ## Check yourself
 
