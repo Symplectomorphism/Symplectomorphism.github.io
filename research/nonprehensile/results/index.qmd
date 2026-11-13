@@ -1,6 +1,6 @@
 ---
 title: "Results"
-subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 26 of 34, with half the calls, after two rounds of a learned value V₁ and ranker π."
+subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 33 of 34 held-out searches, with a learned value V₁ and ranker π."
 aliases:
   - indirect-lift.html
 resources:
@@ -34,38 +34,59 @@ start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11,
 never used for training), at the band's two ends μ = 0.3 and 0.5: 34
 searches, each up to 192 calls.
 
-| Ordering | μ = 0.3 | μ = 0.5 | All | Calls to solve (mean) |
+| Ordering | μ = 0.3 | μ = 0.5 | All | Calls to solve (mean / median) |
 |---|---|---|---|---|
-| V₀ (hand-built value) + uniform ranker | 9 / 17 | 8 / 17 | **17 / 34** (50%) | 154 |
-| V₁ + learned ranker π, round 0 | 11 / 17 | 12 / 17 | **23 / 34** (68%) | 142 |
-| V₁ + learned ranker π, round 1 | 13 / 17 | 13 / 17 | **26 / 34** (76%) | 89 |
+| V₁ + learned ranker π (round 1), V₀ with measured edge lengths | 17 / 17 | 16 / 17 | **33 / 34** (97%) | 86 / 91 |
 
-Every solve is the indirect lift (one holds the box by its lower corner
-instead of its underside). After round 1 the learned pair solves every
-instance V₀ solves and 9 more (exact McNemar p = 0.004), and where both solve
-it needs half the calls (77 against 154, fewer in all 17). Of the 8 searches
-it does not solve, 7 run out of actions to try under every ordering (6 of
-them within 17–56 calls): a limit of which actions exist, not of their order. With 64 calls neither solves any of the 18 it was run on:
-the search reaches {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°,
-where the roll is not held throughout and Λ<sub>qs</sub> refuses it; the
-longer searches find how to tilt the box further first (a re-grip: break
-m<sub>z</sub> to 63°, make m<sub>z</sub>).
+Every solve is held and is the indirect lift (five, all at μ = 0.5, hold the
+box by its lower corner instead of its underside); solutions are 6–14 calls
+long. The canonical start at μ = 0.3 takes 86 calls, 11 on the path. The one
+failure (seed 11, start 8, μ = 0.5) runs out of actions to try after 125
+calls.
 
-With V₀'s edge lengths measured from the search's own calls (a transfer
-succeeds 46% of the time, a break 69%) instead of equal, the hand-built
-ordering solves the same 17 searches, and the round-1 V₁ and π, not
-retrained, solve **28 of 34** (14 / 17 at each μ; two more than with equal
-lengths, none fewer).
+**The configuration** (the defaults of `master`):
+
+- transition poses must be admissible: no disk target buried in the box;
+- transports aim inside their target sets by δ = 10 mm (the δ-erosion);
+- the box's rotation range is ±180° (a ±90° joint stop could carry load);
+- unhinted search, dynamic outcomes rejected, 192 calls;
+- V₁ and π of round 1, V₀ with edge lengths measured from logged calls.
 
 **V₀** is the weighted graph distance to the goal plus a pose term
-([how it is built](../planar-build/search.qmd#v0)), here built for the
-current gate with every edit weighted equally. **V₁ and π** are learned by
-fitted value iteration and the LTS loss from unhinted searches on other
-starts (F1 seeds 20–22, never the test set). Round 0 learns from 80 searches
-of 64 calls, none of which reached the goal (it learns from the states they
-did reach); round 1 adds 48 searches of 192 calls run with round 0's V₁ and
-π, 32 of which reached the goal. V₁ enters only the search's order;
-acceptance stays with V₀.
+([how it is built](../planar-build/search.qmd#v0)); its edge lengths come from
+the calls of round 0's training searches (a transfer succeeds 46% of the time, a
+break 69%).
+**V₁ and π** are learned by fitted value iteration and the LTS loss from
+unhinted searches on other starts (F1 seeds 20–22, never the test set), in two
+rounds: 80 searches of 64 calls, then 48 of 192 calls run with round 0's V₁ and
+π. V₁ enters only the search's order; acceptance stays with V₀.
+
+::: {.callout-note collapse="true"}
+## Previous configuration (±90° rotation stop, admissible poses off)
+
+Measured on the same 34 searches with the box's rotation stopped at ±90°, no
+admissibility filter on transition poses and, unless stated, no δ-erosion. V₀
+alone and round 0 were not re-measured in the configuration above.
+
+| Ordering | Erosion | All | Calls to solve (mean) |
+|---|---|---|---|
+| V₀ + uniform ranker | no | 17 / 34 | 154 |
+| V₁ + π, round 0 | no | 23 / 34 | 142 |
+| V₁ + π, round 1 | no | 26 / 34 | 89 |
+| V₁ + π, round 1, V₀ measured lengths | no | 28 / 34 | 88 |
+| V₀ + uniform ranker | yes | 26 / 34 | 139 |
+| V₁ + π, round 1 | yes | 33 / 34 | 87 |
+
+In both settings the learned pair solves every search V₀ solves and more
+(exact McNemar p = 0.004 without erosion, 0.016 with it), with 42–50% fewer
+calls where both solve. Without erosion, of the 8 searches round 1 left
+unsolved, 7 ran out of actions to try; with 64 calls none of 18 was solved: the
+search reached {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°, where
+Λ<sub>qs</sub> refuses the roll, and the longer searches found a re-grip
+(break m<sub>z</sub> to 63°, make m<sub>z</sub>).
+:::
+
+The clips below are from runs of the previous configuration.
 
 <video src="media/unhinted/v1it1_mu0.3_canon.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
@@ -87,15 +108,15 @@ another machine; float32 differs slightly between processors).
 
 ## With the formation sequence given
 
-Given the indirect lift's sequence as a hint (at a node in the chain's k-th
-formation only edits into the (k+1)-th and transports), the same planner with
-the V₀ above solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its
-search at μ = 0.3 and 0.4: the branch that would succeed depends on where a
-push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from
-43.8° it does not), and the hint leaves no other way. With V₀'s edge lengths
-measured from the unhinted search's own calls (a transfer succeeds 46% of the
-time, a break 69%), the hinted search solves at μ = 0.3, 0.4 and 0.5 (15, 13
-and 15 calls), on the routes of the paper.
+In the previous configuration, given the indirect lift's sequence as a hint
+(at a node in the chain's k-th formation only edits into the (k+1)-th and
+transports), the planner with V₀ with equal edge lengths and the uniform ranker
+solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its search at μ =
+0.3 and 0.4: the branch that would succeed depends on where a push ends to
+within a degree (break m<sub>x</sub> from 43.1° succeeds, from 43.8° it does
+not), and the hint leaves no other way. With V₀'s measured edge lengths, the
+hinted search solves at μ = 0.3, 0.4 and 0.5 (15, 13 and 15 calls), on the
+routes of the paper.
 
 <video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
@@ -119,26 +140,30 @@ and 15 calls), on the routes of the paper.
   scene and the goal alone, on starts the learned parts never saw.
 - **One scene, one task.** The step and the box; other scenes (the families)
   are not run.
-- **Budget.** Half the searches fail within 192 calls with V₀, a quarter
-  after two rounds of V₁ and π; most failures run out of actions to try.
+- **Budget.** One of 34 searches fails within 192 calls; it runs out of
+  actions to try.
 - **The realizer.** Λ<sub>qs</sub> plans held poses, not stick–slip plans
   ([the local solver](../planar-build/local-solver.qmd#qs-slip)).
 
 ## Configuration and reproduction
 
-Branch `master`, commit `19bd7a9` (a call Λ<sub>qs</sub> refuses after
-its approach returns the approach's motion, so a box that falls during it is
-seen as dynamic). V₀: `cmg/scripts/step4/value/results/v0_it0`. Results,
-models and summaries: `cmg/scripts/step4/chain_search/results/night_2026-11-13`.
+Branch `master`, commit `7964069` (the searches ran at `1fef4b0`, whose only
+difference is an approach option that is off). V₀:
+`cmg/scripts/step4/value/results/v0_it1`. V₁ and π:
+`cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1`.
 Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand
 memory mappings, so they do not run on the clusters (65,530 per process).
+From `cmg/`:
 
 ```text
 CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=0 JAX_PLATFORMS=cpu PYTHONPATH=src .venv314/bin/python \
     scripts/step4/chain_search/run_chain.py OUT --no-hint --dynamic-outcomes reject --budget 192 \
-    --v0 scripts/step4/value/results/v0_it0/v0_it0.json --seed 11 --index 12
-#   add --v1 MODEL --learned-pi MODEL for the learned ordering
-#   (MODEL: scripts/step4/chain_search/results/night_2026-11-13/model_v1pi)
+    --v0 scripts/step4/value/results/v0_it1/v0_it1.json \
+    --v1 scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1 \
+    --learned-pi scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1 \
+    --seed 11 --index 12
+#   without --seed/--index: the canonical start; CMG_DISK_FRICTION=0.5: the band's other end
+#   admissible transition poses and the delta-erosion are on by default
 ```
 
 [← Planar build](../planar-build/index.qmd)
