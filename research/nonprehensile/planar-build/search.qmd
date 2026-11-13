@@ -48,7 +48,8 @@ fails at random (with restarts), and to nodes popped in batches.
   clipped to [1, η<sub>max</sub>], η<sub>max</sub> = 10. The ranker is uniform
   over the legal edits for now.
 - **The value.** 𝒱₀: the distance to the goal in the edit graph plus the
-  box's distance to a fixed set of poses where the next edit passes the gate.
+  box's distance to a fixed set of poses where the next edit passes the gate
+  ([How 𝒱₀ is built](#v0)).
   To follow: a learned value V₁, the expected number of Λ calls to the goal,
   trained by expert iteration with exploration on every logged call, failures
   included (a call that succeeds with probability p costs about 1/p calls);
@@ -62,6 +63,79 @@ fails at random (with restarts), and to nodes popped in batches.
   result use no retries. The approach to an edit lasts as long as its path
   needs. The settle clause of the success test is off for formation edits and
   required for the final goal state.
+
+## How 𝒱₀ is built {#v0}
+
+𝒱₀ is not learned and not computed during the search. It is computed once per
+scene and per gate, before any search, and stored as tables; at a node the
+search only looks values up.
+
+**The value.** For a node with formation σ and box pose q = (p, θ):
+
+<div style="text-align:center">
+𝒱₀ = w · d(σ) + min over ω in N(σ) of min( d<sub>B</sub>(q, T<sub>ω</sub>), D<sub>cap</sub> )
+</div>
+
+- **d(σ), the graph term:** the length of a shortest path from σ to a goal
+  formation in the graph of the search's edits (the edges of the contact-state
+  graph W, plus the release edges when the search offers releases; a box
+  move within σ is not an edge). An edge's length is the expected number of
+  Λ calls its kind of edit takes, so d is in calls.
+- **N(σ):** the first edits of those shortest paths.
+- **T<sub>ω</sub>, the target poses:** a fixed set of sampled box poses of σ
+  at which the gate admits the edit ω with margin at least γ<sub>tr</sub> = 0.1.
+- **d<sub>B</sub>(q, q′) = |p − p′| + ℓ |θ − θ′|**, ℓ = a/2 = 62.5 mm: the
+  box-pose distance of [Node identity](node-identity.qmd), an angle counted
+  as the arc a corner of the box travels.
+- **D<sub>cap</sub> = 0.25 m** caps the pose term, and **w = 2 D<sub>cap</sub> =
+  0.5 m per call** converts calls into metres. Because w > D<sub>cap</sub>, one
+  call less always outweighs any difference of pose: formations first, poses
+  only within a formation.
+- A goal state has 𝒱₀ = 0; in a goal formation the pose term is the distance
+  to the sampled goal poses; a formation with no route to the goal gets the
+  largest value, w (d<sub>max</sub> + 1) + D<sub>cap</sub>.
+
+**The edge lengths are an input.** One number per kind of edit (make, break,
+transfer, compound, release): 1/p̂ calls, where p̂ = (s + 1)/(n + 2) is the
+realizer's success rate of that kind of edit, estimated from a table of
+logged calls of the realizer in the configuration the search runs (s of n
+logged calls accepted). A kind of edit with no logged call gets p̂ = 1/2, a
+length of 2 calls. If each call succeeded independently with probability p̂,
+1/p̂ would be the expected number of calls until one succeeds.
+
+**Four stages.**
+
+| Stage | What it computes | Cost on the step |
+|---|---|---|
+| Sample | 1,500 configurations of each of the 328 valid formations: random poses projected onto the formation's contacts, kept only if the recognizer reads exactly that formation, nothing penetrates and the disk is clear | split across processes |
+| Graph | the formations the box can be held in (by the gate's statics) at some sample; the edges between them; their lengths; the goal formations and goal poses of each task; d by Dijkstra; N(σ) | minutes, one process |
+| Gate | T<sub>ω</sub>: each formation's samples thinned to one per 5 mm cell (and at most 120), the search's relaxed gate at each; one evaluation decides every edit at that pose | about 17,000 gate evaluations, a few CPU-hours, split across processes |
+| Merge | one table file per scene | seconds |
+
+The tables belong to the gate that computed them: when the gate changes,
+they must be rebuilt.
+
+**How the search uses it.**
+
+1. **Order.** The heuristic factor η = clip(1 + h/g, 1, η<sub>max</sub>), with
+   g = ν + 1 the calls on the path including this one and h the calls left:
+   d(σ′) for an edit into σ′, 𝒱₀/w for a box move.
+2. **Progress.** A call that ends neither in its requested formation nor at the
+   goal is kept if the box comes to rest with 𝒱₀ at least δ = 10 mm lower (a box
+   move is also kept when it ends within δ of its target).
+3. **Box-move targets.** A box move within σ aims at the target poses of every
+   edit out of σ (not only the shortest route's next one), leaving out targets
+   already within δ; in a goal formation it aims at the goal window's centre. No
+   target, no box move.
+
+**What 𝒱₀ cannot know.** It knows where the *gate* admits an edit, not where
+the *local solver* succeeds. On the indirect lift the gate admits break(m<sub>x</sub>)
+from a tilt of about 20°, but the breaks that lead on to the lift leave the box
+at 54°–63°, and a break from about 20° ends near 50°, from where the next break
+fails. To 𝒱₀ these are the same edit with the same length: lengths are per kind
+of edit, not per pose. That is what the learned value V₁ is for: the expected
+number of calls to the goal from the state itself, fitted to logged calls,
+failures included.
 
 ## The ranker
 
