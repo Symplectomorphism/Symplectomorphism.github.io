@@ -1,81 +1,83 @@
 ---
 title: "Results"
-subtitle: "The planner lifts the box onto the step quasi-statically from rest, at every disk friction μ ∈ {0.3, 0.4, 0.5} of the declared band, given the indirect lift's formation sequence."
+subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 23 of 34 with a learned value V₁ and ranker π."
 aliases:
   - indirect-lift.html
 resources:
-  - media/indirect/planner_chain_AB_mu0.3.mp4
-  - media/indirect/planner_chain_AB_mu0.4.mp4
-  - media/indirect/planner_chain_AB_mu0.5.mp4
+  - media/unhinted/unhinted_mu0.3_s11_12.mp4
+  - media/unhinted/unhinted_mu0.5_s11_10.mp4
+  - media/indirect/hinted_v0it0_mu0.5.mp4
 ---
 
 ## The task
 
-The box starts at rest on the floor, the disk's centre 10 cm from the box's.
-The box must end fully on the platform, at rest. The **indirect lift** tips
-the box onto the step corner, lets the disk walk round to the box's raised
-underside, lifts the box off the floor and rolls it onto the platform; the
-box is held at every instant. Its formation sequence is
+The box starts at rest on the floor and must end fully on the platform, at
+rest. The disk alone cannot carry it. The **indirect lift** tips the box onto
+the step corner, lets the disk walk round to the box's raised underside,
+lifts the box off the floor and rolls it onto the platform, the box held at
+every instant:
 
 {g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>,
 g<sub>v</sub>, s<sub>v</sub>} → {g<sub>v</sub>, s<sub>v</sub>} →
 {m<sub>z</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>,
 s<sub>v</sub>} → {m<sub>z</sub>, t} → (transport) goal.
 
-**The hint.** The search is given this sequence and nothing else: at a node
-in the chain's k-th formation it may try only edits into the (k+1)-th, plus
-transports inside the k-th. **The planner chooses** the transition poses
-(the gate's sweep), the disk placements, the motions (the quasi-static
-realizer Λ<sub>qs</sub> in MuJoCo), the transport targets and the order of
-the calls. Finding the indirect lift *without* the hint is the open problem
-([Issues](../planar-build/issues.qmd)).
+## The planner finds it from the scene alone
 
-## Result
+The search is given the scene and the goal, nothing else: every edit the gate
+admits except releases, transports toward the gate's targets, and outcome
+children (a call's child is the state it reached). Every dynamic outcome is
+rejected, so every solve is **held**. The motions are the quasi-static
+realizer Λ<sub>qs</sub> in MuJoCo. The test set is held out: the canonical
+start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11,
+never used for training), at the band's two ends μ = 0.3 and 0.5: 34
+searches, each up to 192 calls.
 
-| Disk friction μ | Solved | Calls | On the path | Box at the end | Search time |
-|---|---|---|---|---|---|
-| 0.3 | **yes** | 16 | 12 | on the platform, x = 78 mm, 90° | 20 min |
-| 0.4 | **yes** | 13 | 11 | on the platform, x = 74 mm, 90° | 13 min |
-| 0.5 | **yes** | 17 | 12 | on the platform, x = 74 mm, 90° | 10 min |
+| Ordering | μ = 0.3 | μ = 0.5 | All | Calls to solve (mean) |
+|---|---|---|---|---|
+| V₀ (hand-built value) + uniform ranker | 9 / 17 | 8 / 17 | **17 / 34** (50%) | 154 |
+| V₁ (learned value) + learned ranker π | 11 / 17 | 12 / 17 | **23 / 34** (68%) | 131 |
 
-Every call is Λ<sub>qs</sub>: no learned skill, no release. The route:
+Every solve is the indirect lift (one of V₁'s 23 holds the box by its lower
+corner instead of its underside). The learned pair solves every instance V₀
+solves and 6 more (exact McNemar p = 0.03); where both solve, it needs fewer
+calls in 15 of 17. With 64 calls neither solves any of the 18 it was run on:
+the search reaches {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°,
+where the roll is not held throughout and Λ<sub>qs</sub> refuses it; the
+longer searches find how to tilt the box further first (a re-grip: break
+m<sub>z</sub> to 63°, make m<sub>z</sub>).
 
-1. make(m<sub>x</sub>): the disk reaches the box's −x face; a push to the
-   riser; make(s).
-2. The pivot {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>,
-   s<sub>v</sub>}: the box topples onto the step corner.
-3. Pushes tilt the box: to 43° at μ = 0.3 and 0.5 (two pushes), to 20° at
-   μ = 0.4 (one).
-4. break(m<sub>x</sub>): the box turns on its two corners, to 63° (μ = 0.3,
-   0.5) or 54° (μ = 0.4), and the disk lets go.
-5. make(m<sub>z</sub>) on the raised underside, then break(g<sub>v</sub>):
-   the box leaves the floor at 66°, 63° and 68.5°, held by the disk and the
-   step corner.
-6. The roll s<sub>v</sub> → t to 90°, onto the platform; two pushes to the
-   goal.
+**V₀** is the weighted graph distance to the goal plus a pose term
+([how it is built](../planar-build/search.qmd#v0)), here built for the
+current gate with every edit weighted equally. **V₁ and π** are learned by
+fitted value iteration and the LTS loss from 80 unhinted searches on other
+starts (F1 seeds 20–22, 64 calls each, none of which reached the goal: they
+learn from the states the searches did reach). V₁ enters only the search's
+order; acceptance stays with V₀.
 
-Calls off the path are the search's other branches: at μ = 0.3 and 0.5 a
-break(m<sub>x</sub>) from 20° reaches 50–52°, and break(g<sub>v</sub>)
-from there fails *departure*; at μ = 0.4 a break(m<sub>x</sub>) from 44°
-fails *persistence*.
+<video src="media/unhinted/unhinted_mu0.3_s11_12.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-## Videos
+**μ = 0.3, V₀**, 11 calls on the path (150 in the search): the pivot, a push to
+20°, break m<sub>x</sub> to 51°, make m<sub>z</sub>; the re-grip to 63°;
+break g<sub>v</sub>, the roll onto the platform, two pushes. The replay
+reproduces all 11 calls.
 
-Each clip replays the solution path's calls in MJX from the logged start
-states. Every replay reproduces every call (end states within 0.00 mm and
-0.00°).
+<video src="media/unhinted/unhinted_mu0.5_s11_10.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-<video src="media/indirect/planner_chain_AB_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+**μ = 0.5, V₀**, 10 calls on the path (163 in the search). The replay
+reproduces 8 of 10 calls exactly; two end 2.6 mm off (the search ran on
+another machine; float32 differs slightly between processors).
 
-**μ = 0.3.** 12 calls, 50 s.
+## With the formation sequence given
 
-<video src="media/indirect/planner_chain_AB_mu0.4.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+Given the indirect lift's sequence as a hint (at a node in the chain's k-th
+formation only edits into the (k+1)-th and transports), the same planner with
+the same V₀ solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its
+search at μ = 0.3 and 0.4 (10–11 calls): the branch that would succeed
+depends on where a push ends to within a degree (break m<sub>x</sub> from
+43.1° succeeds, from 43.8° it does not), and the hint leaves no other way.
 
-**μ = 0.4.** 11 calls, 46 s.
-
-<video src="media/indirect/planner_chain_AB_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
-
-**μ = 0.5.** 12 calls, 49 s.
+<video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
 ::: {.callout-note collapse="true"}
 ## How to read a clip
@@ -83,48 +85,40 @@ states. Every replay reproduces every call (end states within 0.00 mm and
 - **View.** From the side, with +x to the **left**, as in the paper. The
   green surface is the platform, the grey one the floor, the blue ball the
   disk. A red stripe marks the face the box rests on at the start.
-- **Top-left box.** μ, the run's options and commit; the current segment
-  *k/n* with its edit and formations (σ → σ′); the formation the recognizer
-  reads right now; and whether the replay matched the log.
-- **Speed.** Stated in the overlay. Λ<sub>qs</sub> calls are about 21 s
-  long and mostly at rest, so they play at 3× while the box rests and in
-  real time while it moves.
-- **Cards.** A short hold after each segment, then the success test's
-  verdict.
+- **Top-left box.** The run; the current segment *k/n* with its edit and
+  formations (σ → σ′); the formation the recognizer reads right now; and
+  whether the replay matched the log.
+- **Speed.** Stated in the overlay. Λ<sub>qs</sub> calls are mostly at rest,
+  so they play at 3× while the box rests and in real time while it moves.
+- **Cards.** A short hold after each segment, then the success test's verdict.
 :::
 
 ## What this shows, and what it does not
 
-- **Held at every friction of the band.** The same planner, with the gate
-  and the tracker at the band's lower end 0.3, lifts the box at μ = 0.3, 0.4
-  and 0.5. The last four edits of this chain and its closing transport are
-  also certified for every μ ∈ [0.3, 0.5]
-  ([Certifying a whole box](../planar-build/certificate.qmd#the-indirect-lift)).
-- **The hint.** The formation sequence is given. From the scene alone the
-  search does not find this lift.
-- **The realizer.** Λ<sub>qs</sub> plans a sequence of held poses, not a
-  stick–slip plan. A stick–slip variant is built (option `stick_slip`, off):
-  replaying 227 logged calls it realizes 9–12 fewer per μ than the default
-  (with its transition search on), and its chain search fails at μ = 0.3 ([The local solver](../planar-build/local-solver.qmd#qs-slip)).
+- **The lift, found and held, at both ends of the friction band**, from the
+  scene and the goal alone, on starts the learned parts never saw.
+- **One scene, one task.** The step and the box; other scenes (the families)
+  are not run.
+- **Budget.** Half the searches fail within 192 calls with V₀, a third with
+  V₁ and π; a few starts exhaust their search early.
+- **The realizer.** Λ<sub>qs</sub> plans held poses, not stick–slip plans
+  ([the local solver](../planar-build/local-solver.qmd#qs-slip)).
 
 ## Configuration and reproduction
 
-Branch `phase1/planar` at commit `0da97ba`, run from `cmg/`. `CMG_DISK_FRICTION`
-sets the simulator's μ; the gate and the tracker use 0.3; Λ<sub>qs</sub> runs
-its default options, including the two path fixes `disk_path_fix` (the disk
-moves evenly along the box's face) and `roll_press_fix` (the roll keeps
-rotating about the step corner). The budget is 64 calls; each search runs in
-one CPU process. Every run records Λ<sub>qs</sub>'s options in its output
-(`qs_options` in `calls.json`). The searches and clips ran at commit
-`f4cffd1`, where the two path fixes were options set on the command line
-(`--qs disk_path_fix=True,roll_press_fix=True`); at `0da97ba` they are the
-defaults, so the commands below need no option.
+Branch `phase1/planar`, commit `19bd7a9` (a call Λ<sub>qs</sub> refuses after
+its approach returns the approach's motion, so a box that falls during it is
+seen as dynamic). V₀: `cmg/scripts/step4/value/results/v0_it0`. Results,
+models and summaries: `cmg/scripts/step4/chain_search/results/night_2026-11-13`.
+Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand
+memory mappings, so they do not run on the clusters (65,530 per process).
 
 ```text
-CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=50000 JAX_PLATFORMS=cpu PYTHONPATH=src \
-    .venv314/bin/python scripts/step4/chain_search/run_chain.py OUT --budget 64
-CMG_DISK_FRICTION=0.3 JAX_PLATFORMS=cpu PYTHONPATH=src \
-    .venv314/bin/python scripts/step4/videos/render_d23.py OUT --ids F1-lift-s0-00000 --out VIDEO
+CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=0 JAX_PLATFORMS=cpu PYTHONPATH=src .venv314/bin/python \
+    scripts/step4/chain_search/run_chain.py OUT --no-hint --dynamic-outcomes reject --budget 192 \
+    --v0 scripts/step4/value/results/v0_it0/v0_it0.json --seed 11 --index 12
+#   add --v1 MODEL --learned-pi MODEL for the learned ordering
+#   (MODEL: scripts/step4/chain_search/results/night_2026-11-13/model_v1pi)
 ```
 
 [← Planar build](../planar-build/index.qmd)
