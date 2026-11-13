@@ -510,8 +510,8 @@ window.MathJax = {
    
   <ul>
   <li><a href="#the-task" id="toc-the-task" class="nav-link active" data-scroll-target="#the-task">The task</a></li>
-  <li><a href="#result" id="toc-result" class="nav-link" data-scroll-target="#result">Result</a></li>
-  <li><a href="#videos" id="toc-videos" class="nav-link" data-scroll-target="#videos">Videos</a></li>
+  <li><a href="#the-planner-finds-it-from-the-scene-alone" id="toc-the-planner-finds-it-from-the-scene-alone" class="nav-link" data-scroll-target="#the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</a></li>
+  <li><a href="#with-the-formation-sequence-given" id="toc-with-the-formation-sequence-given" class="nav-link" data-scroll-target="#with-the-formation-sequence-given">With the formation sequence given</a></li>
   <li><a href="#what-this-shows-and-what-it-does-not" id="toc-what-this-shows-and-what-it-does-not" class="nav-link" data-scroll-target="#what-this-shows-and-what-it-does-not">What this shows, and what it does not</a></li>
   <li><a href="#configuration-and-reproduction" id="toc-configuration-and-reproduction" class="nav-link" data-scroll-target="#configuration-and-reproduction">Configuration and reproduction</a></li>
   </ul>
@@ -547,7 +547,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/results/index.html">Results</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Results</h1>
-<p class="subtitle lead">The planner lifts the box onto the step quasi-statically from rest, at every disk friction μ ∈ {0.3, 0.4, 0.5} of the declared band, given the indirect lift’s formation sequence.</p>
+<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 23 of 34 with a learned value V₁ and ranker π.</p>
 </div>
 
 
@@ -566,81 +566,60 @@ $$
 
 <section id="the-task" class="level2">
 <h2 class="anchored" data-anchor-id="the-task">The task</h2>
-<p>The box starts at rest on the floor, the disk’s centre 10 cm from the box’s. The box must end fully on the platform, at rest. The <strong>indirect lift</strong> tips the box onto the step corner, lets the disk walk round to the box’s raised underside, lifts the box off the floor and rolls it onto the platform; the box is held at every instant. Its formation sequence is</p>
+<p>The box starts at rest on the floor and must end fully on the platform, at rest. The disk alone cannot carry it. The <strong>indirect lift</strong> tips the box onto the step corner, lets the disk walk round to the box’s raised underside, lifts the box off the floor and rolls it onto the platform, the box held at every instant:</p>
 <p>{g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} → {g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>, s<sub>v</sub>} → {m<sub>z</sub>, t} → (transport) goal.</p>
-<p><strong>The hint.</strong> The search is given this sequence and nothing else: at a node in the chain’s k-th formation it may try only edits into the (k+1)-th, plus transports inside the k-th. <strong>The planner chooses</strong> the transition poses (the gate’s sweep), the disk placements, the motions (the quasi-static realizer Λ<sub>qs</sub> in MuJoCo), the transport targets and the order of the calls. Finding the indirect lift <em>without</em> the hint is the open problem (<a href="../../../research/nonprehensile/planar-build/issues.html">Issues</a>).</p>
 </section>
-<section id="result" class="level2">
-<h2 class="anchored" data-anchor-id="result">Result</h2>
+<section id="the-planner-finds-it-from-the-scene-alone" class="level2">
+<h2 class="anchored" data-anchor-id="the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</h2>
+<p>The search is given the scene and the goal, nothing else: every edit the gate admits except releases, transports toward the gate’s targets, and outcome children (a call’s child is the state it reached). Every dynamic outcome is rejected, so every solve is <strong>held</strong>. The motions are the quasi-static realizer Λ<sub>qs</sub> in MuJoCo. The test set is held out: the canonical start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11, never used for training), at the band’s two ends μ = 0.3 and 0.5: 34 searches, each up to 192 calls.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
 </colgroup>
 <thead>
 <tr class="header">
-<th>Disk friction μ</th>
-<th>Solved</th>
-<th>Calls</th>
-<th>On the path</th>
-<th>Box at the end</th>
-<th>Search time</th>
+<th>Ordering</th>
+<th>μ = 0.3</th>
+<th>μ = 0.5</th>
+<th>All</th>
+<th>Calls to solve (mean)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>0.3</td>
-<td><strong>yes</strong></td>
-<td>16</td>
-<td>12</td>
-<td>on the platform, x = 78 mm, 90°</td>
-<td>20 min</td>
+<td>V₀ (hand-built value) + uniform ranker</td>
+<td>9 / 17</td>
+<td>8 / 17</td>
+<td><strong>17 / 34</strong> (50%)</td>
+<td>154</td>
 </tr>
 <tr class="even">
-<td>0.4</td>
-<td><strong>yes</strong></td>
-<td>13</td>
-<td>11</td>
-<td>on the platform, x = 74 mm, 90°</td>
-<td>13 min</td>
-</tr>
-<tr class="odd">
-<td>0.5</td>
-<td><strong>yes</strong></td>
-<td>17</td>
-<td>12</td>
-<td>on the platform, x = 74 mm, 90°</td>
-<td>10 min</td>
+<td>V₁ (learned value) + learned ranker π</td>
+<td>11 / 17</td>
+<td>12 / 17</td>
+<td><strong>23 / 34</strong> (68%)</td>
+<td>131</td>
 </tr>
 </tbody>
 </table>
-<p>Every call is Λ<sub>qs</sub>: no learned skill, no release. The route:</p>
-<ol type="1">
-<li>make(m<sub>x</sub>): the disk reaches the box’s −x face; a push to the riser; make(s).</li>
-<li>The pivot {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>}: the box topples onto the step corner.</li>
-<li>Pushes tilt the box: to 43° at μ = 0.3 and 0.5 (two pushes), to 20° at μ = 0.4 (one).</li>
-<li>break(m<sub>x</sub>): the box turns on its two corners, to 63° (μ = 0.3, 0.5) or 54° (μ = 0.4), and the disk lets go.</li>
-<li>make(m<sub>z</sub>) on the raised underside, then break(g<sub>v</sub>): the box leaves the floor at 66°, 63° and 68.5°, held by the disk and the step corner.</li>
-<li>The roll s<sub>v</sub> → t to 90°, onto the platform; two pushes to the goal.</li>
-</ol>
-<p>Calls off the path are the search’s other branches: at μ = 0.3 and 0.5 a break(m<sub>x</sub>) from 20° reaches 50–52°, and break(g<sub>v</sub>) from there fails <em>departure</em>; at μ = 0.4 a break(m<sub>x</sub>) from 44° fails <em>persistence</em>.</p>
+<p>Every solve is the indirect lift (one of V₁’s 23 holds the box by its lower corner instead of its underside). The learned pair solves every instance V₀ solves and 6 more (exact McNemar p = 0.03); where both solve, it needs fewer calls in 15 of 17. With 64 calls neither solves any of the 18 it was run on: the search reaches {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°, where the roll is not held throughout and Λ<sub>qs</sub> refuses it; the longer searches find how to tilt the box further first (a re-grip: break m<sub>z</sub> to 63°, make m<sub>z</sub>).</p>
+<p><strong>V₀</strong> is the weighted graph distance to the goal plus a pose term (<a href="../../../research/nonprehensile/planar-build/search.html#v0">how it is built</a>), here built for the current gate with every edit weighted equally. <strong>V₁ and π</strong> are learned by fitted value iteration and the LTS loss from 80 unhinted searches on other starts (F1 seeds 20–22, 64 calls each, none of which reached the goal: they learn from the states the searches did reach). V₁ enters only the search’s order; acceptance stays with V₀.</p>
+<video src="media/unhinted/unhinted_mu0.3_s11_12.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>μ = 0.3, V₀</strong>, 11 calls on the path (150 in the search): the pivot, a push to 20°, break m<sub>x</sub> to 51°, make m<sub>z</sub>; the re-grip to 63°; break g<sub>v</sub>, the roll onto the platform, two pushes. The replay reproduces all 11 calls.</p>
+<video src="media/unhinted/unhinted_mu0.5_s11_10.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>μ = 0.5, V₀</strong>, 10 calls on the path (163 in the search). The replay reproduces 8 of 10 calls exactly; two end 2.6 mm off (the search ran on another machine; float32 differs slightly between processors).</p>
 </section>
-<section id="videos" class="level2">
-<h2 class="anchored" data-anchor-id="videos">Videos</h2>
-<p>Each clip replays the solution path’s calls in MJX from the logged start states. Every replay reproduces every call (end states within 0.00 mm and 0.00°).</p>
-<video src="media/indirect/planner_chain_AB_mu0.3.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+<section id="with-the-formation-sequence-given" class="level2">
+<h2 class="anchored" data-anchor-id="with-the-formation-sequence-given">With the formation sequence given</h2>
+<p>Given the indirect lift’s sequence as a hint (at a node in the chain’s k-th formation only edits into the (k+1)-th and transports), the same planner with the same V₀ solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its search at μ = 0.3 and 0.4 (10–11 calls): the branch that would succeed depends on where a push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from 43.8° it does not), and the hint leaves no other way.</p>
+<video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
-<p><strong>μ = 0.3.</strong> 12 calls, 50 s.</p>
-<video src="media/indirect/planner_chain_AB_mu0.4.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
-</video>
-<p><strong>μ = 0.4.</strong> 11 calls, 46 s.</p>
-<video src="media/indirect/planner_chain_AB_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
-</video>
-<p><strong>μ = 0.5.</strong> 12 calls, 49 s.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -655,8 +634,8 @@ $$
 <div class="callout-body-container callout-body">
 <ul>
 <li><strong>View.</strong> From the side, with +x to the <strong>left</strong>, as in the paper. The green surface is the platform, the grey one the floor, the blue ball the disk. A red stripe marks the face the box rests on at the start.</li>
-<li><strong>Top-left box.</strong> μ, the run’s options and commit; the current segment <em>k/n</em> with its edit and formations (σ → σ′); the formation the recognizer reads right now; and whether the replay matched the log.</li>
-<li><strong>Speed.</strong> Stated in the overlay. Λ<sub>qs</sub> calls are about 21 s long and mostly at rest, so they play at 3× while the box rests and in real time while it moves.</li>
+<li><strong>Top-left box.</strong> The run; the current segment <em>k/n</em> with its edit and formations (σ → σ′); the formation the recognizer reads right now; and whether the replay matched the log.</li>
+<li><strong>Speed.</strong> Stated in the overlay. Λ<sub>qs</sub> calls are mostly at rest, so they play at 3× while the box rests and in real time while it moves.</li>
 <li><strong>Cards.</strong> A short hold after each segment, then the success test’s verdict.</li>
 </ul>
 </div>
@@ -666,18 +645,20 @@ $$
 <section id="what-this-shows-and-what-it-does-not" class="level2">
 <h2 class="anchored" data-anchor-id="what-this-shows-and-what-it-does-not">What this shows, and what it does not</h2>
 <ul>
-<li><strong>Held at every friction of the band.</strong> The same planner, with the gate and the tracker at the band’s lower end 0.3, lifts the box at μ = 0.3, 0.4 and 0.5. The last four edits of this chain and its closing transport are also certified for every μ ∈ [0.3, 0.5] (<a href="../../../research/nonprehensile/planar-build/certificate.html#the-indirect-lift">Certifying a whole box</a>).</li>
-<li><strong>The hint.</strong> The formation sequence is given. From the scene alone the search does not find this lift.</li>
-<li><strong>The realizer.</strong> Λ<sub>qs</sub> plans a sequence of held poses, not a stick–slip plan. A stick–slip variant is built (option <code>stick_slip</code>, off): replaying 227 logged calls it realizes 9–12 fewer per μ than the default (with its transition search on), and its chain search fails at μ = 0.3 (<a href="../../../research/nonprehensile/planar-build/local-solver.html#qs-slip">The local solver</a>).</li>
+<li><strong>The lift, found and held, at both ends of the friction band</strong>, from the scene and the goal alone, on starts the learned parts never saw.</li>
+<li><strong>One scene, one task.</strong> The step and the box; other scenes (the families) are not run.</li>
+<li><strong>Budget.</strong> Half the searches fail within 192 calls with V₀, a third with V₁ and π; a few starts exhaust their search early.</li>
+<li><strong>The realizer.</strong> Λ<sub>qs</sub> plans held poses, not stick–slip plans (<a href="../../../research/nonprehensile/planar-build/local-solver.html#qs-slip">the local solver</a>).</li>
 </ul>
 </section>
 <section id="configuration-and-reproduction" class="level2">
 <h2 class="anchored" data-anchor-id="configuration-and-reproduction">Configuration and reproduction</h2>
-<p>Branch <code>phase1/planar</code> at commit <code>0da97ba</code>, run from <code>cmg/</code>. <code>CMG_DISK_FRICTION</code> sets the simulator’s μ; the gate and the tracker use 0.3; Λ<sub>qs</sub> runs its default options, including the two path fixes <code>disk_path_fix</code> (the disk moves evenly along the box’s face) and <code>roll_press_fix</code> (the roll keeps rotating about the step corner). The budget is 64 calls; each search runs in one CPU process. Every run records Λ<sub>qs</sub>’s options in its output (<code>qs_options</code> in <code>calls.json</code>). The searches and clips ran at commit <code>f4cffd1</code>, where the two path fixes were options set on the command line (<code>--qs disk_path_fix=True,roll_press_fix=True</code>); at <code>0da97ba</code> they are the defaults, so the commands below need no option.</p>
-<pre class="text"><code>CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=50000 JAX_PLATFORMS=cpu PYTHONPATH=src \
-    .venv314/bin/python scripts/step4/chain_search/run_chain.py OUT --budget 64
-CMG_DISK_FRICTION=0.3 JAX_PLATFORMS=cpu PYTHONPATH=src \
-    .venv314/bin/python scripts/step4/videos/render_d23.py OUT --ids F1-lift-s0-00000 --out VIDEO</code></pre>
+<p>Branch <code>phase1/planar</code>, commit <code>19bd7a9</code> (a call Λ<sub>qs</sub> refuses after its approach returns the approach’s motion, so a box that falls during it is seen as dynamic). V₀: <code>cmg/scripts/step4/value/results/v0_it0</code>. Results, models and summaries: <code>cmg/scripts/step4/chain_search/results/night_2026-11-13</code>. Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand memory mappings, so they do not run on the clusters (65,530 per process).</p>
+<pre class="text"><code>CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=0 JAX_PLATFORMS=cpu PYTHONPATH=src .venv314/bin/python \
+    scripts/step4/chain_search/run_chain.py OUT --no-hint --dynamic-outcomes reject --budget 192 \
+    --v0 scripts/step4/value/results/v0_it0/v0_it0.json --seed 11 --index 12
+#   add --v1 MODEL --learned-pi MODEL for the learned ordering
+#   (MODEL: scripts/step4/chain_search/results/night_2026-11-13/model_v1pi)</code></pre>
 <p><a href="../../../research/nonprehensile/planar-build/index.html">← Planar build</a></p>
 
 
