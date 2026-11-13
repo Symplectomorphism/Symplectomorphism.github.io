@@ -6,7 +6,7 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-12, against `master` at `0978a9a` in
+**Last checked:** 2026-11-13, against `master` at `65ddaf5` in
 `Symplectomorphism/c-gnn`. The full records are in the discussion
 compendium (`reports/supporting_docs/discussion-compendium/`).
 
@@ -16,32 +16,42 @@ compendium (`reports/supporting_docs/discussion-compendium/`).
 ## Finding the indirect lift routinely (open; the target)
 The indirect lift, held at every instant, is the paper's running chain; its
 last four edits and closing transport are certified over μ ∈ [0.3, 0.5].
-From the scene alone, the planner finds the held indirect lift in 17 of 34 held-out searches with V₀ and 26 of 34 after two rounds of a learned V₁ and ranker π (192 calls each; [Results](../results/index.qmd)). Open: the other half (a third) of the searches; with 64 calls none
-solves, because the roll from the tilts first reached is refused; and the
-next rounds of V₁ and π (training searches that reach the goal, exploration).
+From the scene alone, the planner finds the held indirect lift in 17 of 34 held-out searches with V₀ and 26 of 34 after two rounds of a learned V₁ and ranker π (192 calls each; [Results](../results/index.qmd)).
+With pushes aimed inside their targets (the δ-erosion below), the same 34
+searches in that configuration solve 26 (V₀) and 33 (V₁+π); they are being
+re-measured under the current configuration. Open: the searches that still
+fail; with 64 calls none solves, because the roll from the tilts first
+reached is refused; and the next rounds of V₁ and π (training searches that
+reach the goal, exploration).
 Given the formation sequence as a hint, the same planner solves only at
 μ = 0.5: the hint removes the other routes.
 :::
 
 ::: {.callout-important collapse="true"}
-## Near-future: the disk's motion keeps the box held; re-placing the disk on a face
-**1. The disk's motion keeps the box held.** Every disk motion, the approach
-included, must keep the box held under the gate's test, including the disk's
-own contact force. The approach checks only that the box stands without the
-disk at its start pose; a box supported with margin 0.037 fell while the disk
-slid round a corner in light contact (it is caught: a refused call returns the
-approach's motion, which the dynamic test rejects).
+## Near-future: the disk's motion keeps the box held; pushes aimed inside their targets
+**1. The disk's motion keeps the box held (#23).** Every disk motion, the
+approach included, must keep the box held under the gate's test, including
+the disk's own contact force. The diagnosed fall had a transition pose 16 mm
+inside the box: the approach drove the disk's reference into it and the
+disk's PD pressed harder and harder. Part 1 is on by default: transition
+poses must be admissible, so no disk target is buried in the box. On the 34
+held-out searches falls drop by 17–23% and the solves are unchanged. Part B
+is built and being measured: the approach covers the whole run to its target,
+the hold test runs along that path with the disk's predicted force as an
+external load, and a failing approach is refused before anything moves.
 
-**2. Re-placing the disk on the same face whenever needed.** Most searches that
-fail start with the disk pressed 3–10 mm above the face's centre: the gate
-offers no push toward the riser, and no action moves the disk along the face
-first, so the search runs out of actions.
+**2. Pushes aimed inside their targets (#24).** The failing searches did not
+need the disk re-placed on its face; its height plays no part. They end in a
+dead band about 23–35 mm from the riser, where neither make(s) nor a push is
+offered: a push counted as reaching its target when it ended within δ of the
+target set's far edge. Fixed by the **δ-erosion of transport targets**, on by
+default: pushes aim inside the target set by δ. Measured on the 34 held-out
+searches in the previous configuration: V₀ 17 → 26 of 34, V₁+π 26 → 33 of 34.
+It is being re-measured under the current configuration.
 
-**3. The stuttering motion while the disk pushes and tilts the box.** In the
-clips the tilt proceeds in jerks. The cause is open: successive pushes, each
-required to make progress δ = 10 mm and ending at rest; Λ<sub>qs</sub>'s
-knot-to-knot tracking of held poses; or the renderer's speed switching
-between rest (3×) and motion (1×). A replay against true time separates them.
+**3. A dynamic realizer (#34).** The architecture is adopted: a certified
+tube per edit carries the claim and a fixed-mode MPC tracks inside it.
+[The dynamic realizer](dynamic-realizer.qmd).
 :::
 
 ::: {.callout-important collapse="true"}
@@ -53,7 +63,11 @@ default) the unhinted search finds the indirect lift ([Results](../results/index
 The gate stays at the hold level. A stick–slip variant of the realizer is
 built (`stick_slip`, off): it realizes 9–12 fewer of 227 replayed calls per μ
 and its chain search fails at 0.3, so it stays off.
-[The local solver](local-solver.qmd#qs-slip).
+[The local solver](local-solver.qmd#qs-slip). No executed motion is
+certified: Λ<sub>qs</sub> tracks within 8.1° and 17 mm at 95/95, against a
+certificate resolution of 0.25° × 0.5 mm. The replacement, a realizer that
+plans the motion with its contact dynamics, is on
+[The dynamic realizer](dynamic-realizer.qmd).
 :::
 
 ::: {.callout-important collapse="true"}
@@ -71,9 +85,11 @@ and its chain search fails at 0.3, so it stays off.
    (held between plan knots). Queued with it: a polynomial (sum-of-squares)
    certificate for large regions and an online tube certificate of the next
    segment of Λ<sub>qs</sub>'s plan.
-4. **H2, certified execution**: plan knots held throughout, admissible end
-   knots, a tracking bound, the free-approach window; the pushes that stop
-   3–5 mm short (`slide_lag` stays until then).
+4. **Certified execution**: [the dynamic realizer](dynamic-realizer.qmd)
+   (the A-tracker, then the B-tube, then the A3 check), with H2's items:
+   plan knots held throughout, admissible end knots, a tracking bound, the
+   free-approach window; the pushes that stop 3–5 mm short (`slide_lag`
+   stays until then).
 5. **H3, a judge that measures "held"**: the hold margin along the trajectory
    instead of the 6 mm kinetic-energy threshold for dynamic events.
 6. **A3, the uncertainty model**: ε by a 95/95 bound, the μ band's
@@ -87,7 +103,8 @@ and its chain search fails at 0.3, so it stays off.
    until then.
 9. **Scenes**: a taller step (H = a/2), the scene families, then a second
    disk.
-10. **Housekeeping**: JAX loops (the gate takes 20–35 s per call on GPU).
+10. **Housekeeping**: JAX loops (the gate takes 20–35 s per call on GPU);
+    the clusters' memory-map limit (below).
 :::
 
 []{#eps-pen}
@@ -105,6 +122,10 @@ keep penetration under 0.22 mm but need the controller retuned first.
 
 ::: {.callout-note collapse="true"}
 ## Smaller open items
+- **Lift searches exceed the clusters' memory-map limit (#27)** of 65,530
+  maps per process. One cut leaves results bit-identical and lowers the peak
+  from about 100k to 79k maps, still above the limit; an HPC ticket to raise
+  the limit is open.
 - **Label flicker near θ<sub>e</sub>** along a trajectory. Fix: hysteresis
   with thresholds from a noise model, in the execution monitor.
 - **GPU runs are not repeatable between processes** by default. Workaround:
@@ -120,6 +141,28 @@ keep penetration under 0.22 mm but need the controller retuned first.
 :::
 
 ## Decisions behind the current design
+
+::: {.callout-tip collapse="true"}
+## Settled: the stuttering motion, replays across processors, the box's rotation range
+- **The stuttering motion (#25, closed).** The renderer's playback is fixed:
+  one continuous timeline, with no frozen holds between calls. The chatter
+  during the pivot is a MuJoCo sliding-contact artifact: above a slip speed
+  v\*(N) a loaded sliding contact floats to zero penetration, drops out for a
+  step and the box bounces. v\* is calibrated per contact pair, and its slope
+  follows from the contact parameters (`solref`, `solimp`). Timing the plan
+  below v\* needs a Coulomb force solution, and Λ<sub>qs</sub>'s hand-built
+  disk path has none on the steep pivots, so the fix moves to
+  [the dynamic realizer](dynamic-realizer.qmd), which chooses the disk's path
+  with its forces.
+- **Replays across processors (#28, closed).** Every run records its build
+  (processor, instruction set, libraries, XLA settings) and its code commit.
+  A replay on the same build must reproduce the run bit for bit; on another
+  processor the difference is reported, not judged. Measured on 80 stratified
+  calls: 80 of 80 bit-identical on one machine, 0 of 80 across a Ryzen and an
+  i5, and 2 of 80 flip between success and failure.
+- **The box's rotation range is ±180°.** The rotation joint was limited to
+  ±90°, and that stop acted as a hidden support; it is relaxed to ±180°.
+:::
 
 ::: {.callout-tip collapse="true"}
 ## The construction, the gate, the realizer and the search

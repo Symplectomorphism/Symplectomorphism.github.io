@@ -1,0 +1,134 @@
+---
+title: "The dynamic realizer"
+subtitle: "The plan to replace the held-pose realizer Λ<sub>qs</sub> with one that plans the motion with its contact dynamics and certifies what is executed."
+---
+
+::: {.callout-note title="Status"}
+A plan. The architecture and its staging are adopted; none of it is built
+yet. The last section describes a direction under evaluation, not a decision.
+The full design is Chapter 16 of the technical report.
+:::
+
+## Why
+
+Λ<sub>qs</sub> ([the local solver](local-solver.qmd)) plans a sequence of
+held poses and tracks them with a PD on the disk and a static feed-forward.
+The motion between the knots is left to the simulator. Four measured
+problems come back to that.
+
+- **No executed motion is certified.** The certificates
+  ([Certifying a whole box](certificate.qmd)) cover plans and poses.
+  Λ<sub>qs</sub>'s measured tracking is 8.1° in tilt and 17 mm in position
+  (95/95), against the certificate's resolution of 0.25° × 0.5 mm. Nothing
+  connects the certified plans to the executed motion, and the certified
+  regions are narrow: the pivot holds the box only between 46° and 74° of
+  tilt.
+- **The chatter.** While the box pivots on the disk, the step corner and the
+  floor, both environment contacts slide. In MuJoCo a loaded sliding contact
+  floats: its penetration falls with the slip speed and reaches zero at
+  v\*(N), about 8.8·N mm/s at the floor and 4.5·N mm/s at the step corner
+  (N in newtons). The contact then drops out for a step while still loaded,
+  the box falls about 1 mm and bounces, every 0.2–0.3 s. Keeping the slip
+  below v\*(N) needs the Coulomb forces of the motion, and Λ<sub>qs</sub>'s
+  hand-built disk path has no quasi-static Coulomb solution on the steep
+  pivots. The imposed path, not the physics, is what has no solution.
+- **The disk's own force.** The gate's hold test leaves out the disk's force.
+  In one diagnosed call the approach drove the disk's reference 16 mm into
+  the box; the hold margin with the disk's measured force turned negative
+  while the gate's stayed positive, and the box rolled over the step corner.
+- **Knife-edge outcomes across processors.** Replays on one machine are
+  bit-exact. Across two processors none of 80 stratified calls is, and 2 of
+  80 flip between success and failure. The sensitive calls are near-critical:
+  a tip-off moment shifted by a few steps, a disk sliding at its sticking
+  limit, a landing at 90°. A realizer whose outcome hangs on such events
+  cannot give a stable verdict.
+
+## The architecture
+
+The search still calls the realizer once per edit. The new realizer has a
+certified part that carries the claim and an online part that does the
+tracking.
+
+- **The B-tube: a certified tube per edit.** Offline, the edit's motion is
+  planned in the formation's reduced coordinates (on the pivot: the box's
+  tilt and the disk's offset along the face), together with a feedback law
+  and a tube around the plan inside which the planned contact modes provably
+  hold. The ingredients:
+  - **contact modes fixed by the formation and the plan**: the formation
+    says which contacts are closed, the plan's kinematics say whether each
+    one sticks or slides; nothing is chosen online;
+  - **Coulomb forces**: a sliding contact's force lies on the edge of its
+    cone that opposes the slip; the disk's path is chosen together with its
+    forces, not imposed;
+  - **slip below v\*(N)**: every loaded sliding contact's slip stays below a
+    declared fraction of v\*(N), with v\* calibrated per contact pair from
+    the simulator's own contact model;
+  - **robust over μ<sub>disk</sub> ∈ [0.3, 0.5]**, with the interval
+    machinery of [the box certificate](certificate.qmd);
+  - **MJX's deviations as bounded disturbances**: the measured penetration,
+    the sliding float, the per-step residual against the rigid model and the
+    disk's placement error enter the tube as bounded disturbances.
+
+  The proposed tube method is interval reachability, with contraction as the
+  fallback. The target is a theorem that extends Theorem S from certified
+  plans to executed motion; it is a draft.
+- **The A-tracker, inside the tube.** A fixed-mode MPC: at every step it
+  linearizes the contact dynamics about the measured state and the
+  reference. Because the modes are fixed, each solve is a convex quadratic
+  program. Its horizon runs across edit boundaries, so the motion does not
+  stop between edits, and its reference forces are the Coulomb solution, so
+  the disk's force is planned with the box's balance.
+- **A shield between them.** The executed command is the tube's certified law
+  plus the A-tracker's deviation from it, clipped to a budget. Whatever the
+  tracker proposes is a bounded input deviation, which the tube already
+  covers.
+- **A sampling-MPC baseline**: sampling MPC in MJX over the formation chain,
+  compared with the A-tracker, beside Λ<sub>qs</sub> (the incumbent) and an
+  end-to-end RL baseline.
+- **Learning only as a clipped residual inside the tube.** A learned residual
+  on the A-tracker is clipped so that it is one more bounded disturbance; the
+  tube then keeps the planned modes for every policy that respects the clip,
+  a mode-preserving shield. Learning never carries the certificate. RL
+  rollouts may also warm-start the offline plan, which is certified
+  independently.
+
+## The staging
+
+1. **The design note**: Chapter 16 of the technical report.
+2. **A, the A-tracker**, beside Λ<sub>qs</sub> and without the clip. Its
+   tracking width at 95/95 is measured on the replayed calls against the
+   certified regions, then on the 34 held-out searches. That width tells the
+   B-tube how much it must absorb.
+3. **B, the B-tube**: the offline plan with robust statics, the interval
+   tube, the certified law, composition across edits and the shield; first
+   on the certified indirect lift.
+4. **The A3 check**: executed MJX motions against their tubes, with the
+   disturbance bounds measured at 95/95.
+
+The largest risk is the tube's width: it must fit inside the certified
+margins for every friction in the band, and the indirect lift's thinnest
+certified margin is 0.0029.
+
+## Under consideration: certificates on the graph
+
+::: {.callout-warning title="A direction being evaluated, not a decision"}
+- **A certified funnel graph.** Each edge of the contact-formation graph
+  would be a certified dynamic transition: a tube and a feedback law that
+  take every state of the edge's entry set into the next edge's entry set,
+  for every μ<sub>disk</sub> in the band. The search would compose such
+  funnels, so a returned plan would be certified as executed, and edges would
+  no longer need to hold the box at every instant: motions that use momentum
+  would become plannable.
+- **Learned certificates, exactly verified.** A graph network over the
+  contact graph would propose the ingredients of a certificate (the tube's
+  shape, feedback gains, a statics margin); an exact interval verifier
+  accepts or refuses them, and its counterexamples return to training.
+  Soundness would come from the verifier alone.
+
+The literature survey finds both parts new as a combination, not as ideas:
+certified funnels through contact-mode switches exist, with fixed friction
+and without object–environment formation changes, and learner–verifier loops
+exist, without contact-mode or friction certificates.
+:::
+
+[Back to the overview](index.qmd)
