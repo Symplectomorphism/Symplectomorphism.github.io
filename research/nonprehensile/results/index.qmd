@@ -1,9 +1,10 @@
 ---
 title: "Results"
-subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 23 of 34 with a learned value V₁ and ranker π."
+subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 26 of 34, with half the calls, after two rounds of a learned value V₁ and ranker π."
 aliases:
   - indirect-lift.html
 resources:
+  - media/unhinted/v1it1_mu0.3_canon.mp4
   - media/unhinted/unhinted_mu0.3_s11_12.mp4
   - media/unhinted/unhinted_mu0.5_s11_10.mp4
   - media/indirect/hinted_v0it0_mu0.5.mp4
@@ -36,12 +37,14 @@ searches, each up to 192 calls.
 | Ordering | μ = 0.3 | μ = 0.5 | All | Calls to solve (mean) |
 |---|---|---|---|---|
 | V₀ (hand-built value) + uniform ranker | 9 / 17 | 8 / 17 | **17 / 34** (50%) | 154 |
-| V₁ (learned value) + learned ranker π | 11 / 17 | 12 / 17 | **23 / 34** (68%) | 131 |
+| V₁ + learned ranker π, round 0 | 11 / 17 | 12 / 17 | **23 / 34** (68%) | 142 |
+| V₁ + learned ranker π, round 1 | 13 / 17 | 13 / 17 | **26 / 34** (76%) | 89 |
 
-Every solve is the indirect lift (one of V₁'s 23 holds the box by its lower
-corner instead of its underside). The learned pair solves every instance V₀
-solves and 6 more (exact McNemar p = 0.03); where both solve, it needs fewer
-calls in 15 of 17. With 64 calls neither solves any of the 18 it was run on:
+Every solve is the indirect lift (one holds the box by its lower corner
+instead of its underside). After round 1 the learned pair solves every
+instance V₀ solves and 9 more (exact McNemar p = 0.004), and where both solve
+it needs half the calls (77 against 154, fewer in all 17). Of the 8 starts it
+does not solve, 4 run out of options within 17–44 calls under every ordering. With 64 calls neither solves any of the 18 it was run on:
 the search reaches {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°,
 where the roll is not held throughout and Λ<sub>qs</sub> refuses it; the
 longer searches find how to tilt the box further first (a re-grip: break
@@ -50,10 +53,17 @@ m<sub>z</sub> to 63°, make m<sub>z</sub>).
 **V₀** is the weighted graph distance to the goal plus a pose term
 ([how it is built](../planar-build/search.qmd#v0)), here built for the
 current gate with every edit weighted equally. **V₁ and π** are learned by
-fitted value iteration and the LTS loss from 80 unhinted searches on other
-starts (F1 seeds 20–22, 64 calls each, none of which reached the goal: they
-learn from the states the searches did reach). V₁ enters only the search's
-order; acceptance stays with V₀.
+fitted value iteration and the LTS loss from unhinted searches on other
+starts (F1 seeds 20–22, never the test set). Round 0 learns from 80 searches
+of 64 calls, none of which reached the goal (it learns from the states they
+did reach); round 1 adds 48 searches of 192 calls run with round 0's V₁ and
+π, 32 of which reached the goal. V₁ enters only the search's order;
+acceptance stays with V₀.
+
+<video src="media/unhinted/v1it1_mu0.3_canon.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**The canonical start, μ = 0.3, round 1**: 12 calls on the path, 94 in the
+search; the replay reproduces all 12.
 
 <video src="media/unhinted/unhinted_mu0.3_s11_12.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
@@ -72,10 +82,13 @@ another machine; float32 differs slightly between processors).
 
 Given the indirect lift's sequence as a hint (at a node in the chain's k-th
 formation only edits into the (k+1)-th and transports), the same planner with
-the same V₀ solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its
-search at μ = 0.3 and 0.4 (10–11 calls): the branch that would succeed
-depends on where a push ends to within a degree (break m<sub>x</sub> from
-43.1° succeeds, from 43.8° it does not), and the hint leaves no other way.
+the V₀ above solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its
+search at μ = 0.3 and 0.4: the branch that would succeed depends on where a
+push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from
+43.8° it does not), and the hint leaves no other way. With V₀'s edge lengths
+measured from the unhinted search's own calls (a transfer succeeds 46% of the
+time, a break 69%), the hinted search solves at μ = 0.3, 0.4 and 0.5 (15, 13
+and 15 calls), on the routes of the paper.
 
 <video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
@@ -99,8 +112,8 @@ depends on where a push ends to within a degree (break m<sub>x</sub> from
   scene and the goal alone, on starts the learned parts never saw.
 - **One scene, one task.** The step and the box; other scenes (the families)
   are not run.
-- **Budget.** Half the searches fail within 192 calls with V₀, a third with
-  V₁ and π; a few starts exhaust their search early.
+- **Budget.** Half the searches fail within 192 calls with V₀, a quarter
+  after two rounds of V₁ and π; four starts exhaust their search early.
 - **The realizer.** Λ<sub>qs</sub> plans held poses, not stick–slip plans
   ([the local solver](../planar-build/local-solver.qmd#qs-slip)).
 
