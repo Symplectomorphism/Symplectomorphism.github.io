@@ -571,11 +571,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       </div>
       <ul id="quarto-sidebar-section-4" aria-labelledby="quarto-sidebar-section-4-label" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="../../../research/nonprehensile/results/indirect-lift.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">The planner runs the indirect lift from rest</span></a>
-  </div>
-</li>
+ <span class="menu-text">research/nonprehensile/results/indirect-lift.qmd</span>
+  </li>
       </ul>
   </li>
       </ul>
@@ -623,7 +620,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#lambda-qs" id="toc-lambda-qs" class="nav-link" data-scroll-target="#lambda-qs">The mode-scheduled realizer Λ<sub>qs</sub> (step 3b)</a>
   <ul class="collapse">
   <li><a href="#lambda-qs-options" id="toc-lambda-qs-options" class="nav-link" data-scroll-target="#lambda-qs-options">Options, on by default</a></li>
-  <li><a href="#qs-slip" id="toc-qs-slip" class="nav-link" data-scroll-target="#qs-slip">Positions only: the disk slides</a></li>
+  <li><a href="#qs-slip" id="toc-qs-slip" class="nav-link" data-scroll-target="#qs-slip">Held poses, not stick–slip plans</a></li>
   </ul></li>
   <li><a href="#learned-skill" id="toc-learned-skill" class="nav-link" data-scroll-target="#learned-skill">A learned skill for the hard breaks</a></li>
   <li><a href="#step-3c" id="toc-step-3c" class="nav-link" data-scroll-target="#step-3c">Re-planning and failure diagnostics (step 3c)</a>
@@ -696,7 +693,7 @@ $$
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Disk friction is a declared band, μ<sub>disk</sub> ∈ [0.3, 0.5]</strong>, which stands in for a real disk on a real box until hardware is measured. The simulator runs at 0.3 by default (0.4 or 0.5 with <code>CMG_DISK_FRICTION</code>). The gate and the tracker use 0.3, the band’s lower end, as the disk’s sticking cone, so no plan counts on friction above it. Λ<sub>qs</sub>’s four options described <a href="#lambda-qs-options">below</a> are on by default. <strong>Open problem:</strong> Λ<sub>qs</sub> plans positions only, so the disk slides down the box’s face in break(m<sub>x</sub>), which is fatal at μ = 0.3 (<a href="#qs-slip">diagnosis</a>).</p>
+<p><strong>Disk friction is a declared band, μ<sub>disk</sub> ∈ [0.3, 0.5]</strong>, which stands in for a real disk on a real box until hardware is measured. The simulator runs at 0.3 by default (0.4 or 0.5 with <code>CMG_DISK_FRICTION</code>). The gate and the tracker use 0.3, the band’s lower end, as the disk’s sticking cone, so no plan counts on friction above it. Λ<sub>qs</sub>’s six options described <a href="#lambda-qs-options">below</a> are on by default. With them, the planner runs the indirect lift from rest at μ = 0.3, 0.4 and 0.5 (<a href="../../../research/nonprehensile/results/index.html">Results</a>). Λ<sub>qs</sub> plans held poses, not stick–slip plans; a stick–slip variant is built and left off (<a href="#qs-slip">below</a>).</p>
 </div>
 </div>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -742,14 +739,17 @@ $$
 <li><strong><code>ff0_hold</code>:</strong> when a call starts with the disk already pressing on the box, the feed-forward starts from the holding force instead of ramping up from zero, so the box does not lose support at the start.</li>
 <li><strong><code>settle_ext</code>:</strong> after the planned horizon, keep tracking the last knot until the box is at rest, for at most one more plan length.</li>
 <li><strong><code>qs_plan_check</code>:</strong> before executing, every knot of the motion that keeps σ must be held by σ under the gate’s own hold test; otherwise the call is refused (<code>plan_unheld</code>) instead of executed.</li>
+<li><strong><code>disk_path_fix</code>:</strong> the disk’s place on the box’s face moves evenly from knot to knot. Without it the plan kept the disk in place and moved it in a phase’s last segment: a jump of 40–93 mm in edits and 10–73 mm in 69 of 237 transports.</li>
+<li><strong><code>roll_press_fix</code>:</strong> the roll’s press continues the rotation about the step corner V instead of pressing along a chord, so the planned slide over V is 0.02 mm instead of 25.6 mm.</li>
 </ul>
-<p>Replayed on 227 logged calls at five frictions across the band (gate and tracker 0.3), the three roll options raise the successes from 168–187 to 203–209. The rolls gain in 98 of 125 cells and lose in none. <code>qs_plan_check</code> changes only 8 roll calls, which it refuses at every μ: they start from breaks below about 60° and are not held in their last 5–10°. The search is then steered to the branch whose roll is held at every knot.</p>
+<p>Every run records Λ<sub>qs</sub>’s options at their values (<code>ModeScheduledSolver.options()</code>; the teacher’s instance rows and the chain search’s <code>calls.json</code>).</p>
+<p>Replayed on 227 logged calls at five frictions across the band (gate and tracker 0.3), the three roll options raise the successes from 168–187 to 203–209. The rolls gain in 98 of 125 cells and lose in none. On the same 227 calls, with every option above on except the two path fixes, adding <code>disk_path_fix</code> and <code>roll_press_fix</code> changes the successes at μ = 0.3, 0.35, 0.4, 0.45, 0.5 from 195, 201, 198, 197, 193 to 203, 203, 198, 200, 199 (noise ±3), and plans with a disk jump over 10 mm from 73–74 to 0. <code>qs_plan_check</code> changes only 8 roll calls, which it refuses at every μ: they start from breaks below about 60° and are not held in their last 5–10°. The search is then steered to the branch whose roll is held at every knot.</p>
 </section>
 <section id="qs-slip" class="level3">
-<h3 class="anchored" data-anchor-id="qs-slip">Positions only: the disk slides</h3>
-<p>Λ<sub>qs</sub>’s plan fixes positions only: the disk stays at a fixed place on the box’s face. The disk cannot rotate, so on a turning face that “fixed place” is a slide at R·θ̇. The plan’s force model is the gate’s hold test at each knot, which keeps <strong>both</strong> edges of the disk’s friction cone: a sequence of static holds, not a motion under Coulomb’s law. Where a contact slides, Coulomb’s law leaves it only the cone’s edge opposite the slip.</p>
-<p>Measured in break(m<sub>x</sub>), the disk slides down the face at its friction limit at every μ: 16.6, 11.9 and 9.4 mm at μ = 0.3, 0.4 and 0.5. At 0.3 this is fatal. The floor corner, which the plan has sliding, sticks.</p>
-<p>The gate stays at the hold level (a relaxation of Coulomb realizability, so it never refuses a realizable edge). The fix belongs in the realizer: its plans are to become <strong>stick–slip plans</strong> in which each contact sticks or slides on each segment, the kinematics and the force program agree, and the feed-forward is the least squeeze inside those cones (see <a href="../../../research/nonprehensile/planar-build/certificate.html#sliding-changes-what-held-means">Certifying a whole box</a>).</p>
+<h3 class="anchored" data-anchor-id="qs-slip">Held poses, not stick–slip plans</h3>
+<p>Λ<sub>qs</sub>’s plan fixes positions only: the disk keeps its planned place on the box’s face. The disk cannot rotate, so on a turning face that place is a slide at R·θ̇. The plan’s force model is the gate’s hold test at each knot, which keeps <strong>both</strong> edges of the disk’s friction cone: a sequence of static holds, not a motion under Coulomb’s law. Where a contact slides, Coulomb’s law leaves it only the cone’s edge opposite the slip.</p>
+<p>With the path fixes off, the disk slid down the face in break(m<sub>x</sub>) at its friction limit (16.6, 11.9 and 9.4 mm at μ = 0.3, 0.4 and 0.5), and the chain search failed at 0.3. That plan also moved the disk along the face in one jump at the phase’s end (93 mm in break(m<sub>x</sub>)); <code>disk_path_fix</code> spreads it over the phase, and with both path fixes on the chain search solves at μ = 0.3, 0.4 and 0.5 (<a href="../../../research/nonprehensile/results/index.html">Results</a>).</p>
+<p>The gate stays at the hold level (a relaxation of Coulomb realizability, so it never refuses a realizable edge). <strong>A stick–slip variant</strong> of the realizer is built (<code>stick_slip</code>, off by default): each contact sticks or slides on each segment, the kinematics and the force program agree, and the feed-forward is the least squeeze inside those cones (see <a href="../../../research/nonprehensile/planar-build/certificate.html#sliding-changes-what-held-means">Certifying a whole box</a>). Its transition search (<code>ss_transition_search</code>) takes an earlier transition pose of the plan’s own first phase when the gate’s pose has no feasible stick–slip plan. On the 227 replayed calls it realizes 187–192 per μ against the default’s 198–203, and its chain search solves at μ = 0.4 and 0.5 but not at 0.3, where break(g<sub>v</sub>)’s transition pose is the node itself. It stays off.</p>
 </section>
 </section>
 <section id="learned-skill" class="level2">
