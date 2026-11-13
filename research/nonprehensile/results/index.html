@@ -547,7 +547,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/results/index.html">Results</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Results</h1>
-<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 23 of 34 with a learned value V₁ and ranker π.</p>
+<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 17 of 34 held-out searches with the hand-built value V₀, and in 26 of 34, with half the calls, after two rounds of a learned value V₁ and ranker π.</p>
 </div>
 
 
@@ -598,16 +598,26 @@ $$
 <td>154</td>
 </tr>
 <tr class="even">
-<td>V₁ (learned value) + learned ranker π</td>
+<td>V₁ + learned ranker π, round 0</td>
 <td>11 / 17</td>
 <td>12 / 17</td>
 <td><strong>23 / 34</strong> (68%)</td>
-<td>131</td>
+<td>142</td>
+</tr>
+<tr class="odd">
+<td>V₁ + learned ranker π, round 1</td>
+<td>13 / 17</td>
+<td>13 / 17</td>
+<td><strong>26 / 34</strong> (76%)</td>
+<td>89</td>
 </tr>
 </tbody>
 </table>
-<p>Every solve is the indirect lift (one of V₁’s 23 holds the box by its lower corner instead of its underside). The learned pair solves every instance V₀ solves and 6 more (exact McNemar p = 0.03); where both solve, it needs fewer calls in 15 of 17. With 64 calls neither solves any of the 18 it was run on: the search reaches {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°, where the roll is not held throughout and Λ<sub>qs</sub> refuses it; the longer searches find how to tilt the box further first (a re-grip: break m<sub>z</sub> to 63°, make m<sub>z</sub>).</p>
-<p><strong>V₀</strong> is the weighted graph distance to the goal plus a pose term (<a href="../../../research/nonprehensile/planar-build/search.html#v0">how it is built</a>), here built for the current gate with every edit weighted equally. <strong>V₁ and π</strong> are learned by fitted value iteration and the LTS loss from 80 unhinted searches on other starts (F1 seeds 20–22, 64 calls each, none of which reached the goal: they learn from the states the searches did reach). V₁ enters only the search’s order; acceptance stays with V₀.</p>
+<p>Every solve is the indirect lift (one holds the box by its lower corner instead of its underside). After round 1 the learned pair solves every instance V₀ solves and 9 more (exact McNemar p = 0.004), and where both solve it needs half the calls (77 against 154, fewer in all 17). Of the 8 starts it does not solve, 4 run out of options within 17–44 calls under every ordering. With 64 calls neither solves any of the 18 it was run on: the search reaches {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°, where the roll is not held throughout and Λ<sub>qs</sub> refuses it; the longer searches find how to tilt the box further first (a re-grip: break m<sub>z</sub> to 63°, make m<sub>z</sub>).</p>
+<p><strong>V₀</strong> is the weighted graph distance to the goal plus a pose term (<a href="../../../research/nonprehensile/planar-build/search.html#v0">how it is built</a>), here built for the current gate with every edit weighted equally. <strong>V₁ and π</strong> are learned by fitted value iteration and the LTS loss from unhinted searches on other starts (F1 seeds 20–22, never the test set). Round 0 learns from 80 searches of 64 calls, none of which reached the goal (it learns from the states they did reach); round 1 adds 48 searches of 192 calls run with round 0’s V₁ and π, 32 of which reached the goal. V₁ enters only the search’s order; acceptance stays with V₀.</p>
+<video src="media/unhinted/v1it1_mu0.3_canon.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>The canonical start, μ = 0.3, round 1</strong>: 12 calls on the path, 94 in the search; the replay reproduces all 12.</p>
 <video src="media/unhinted/unhinted_mu0.3_s11_12.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
 <p><strong>μ = 0.3, V₀</strong>, 11 calls on the path (150 in the search): the pivot, a push to 20°, break m<sub>x</sub> to 51°, make m<sub>z</sub>; the re-grip to 63°; break g<sub>v</sub>, the roll onto the platform, two pushes. The replay reproduces all 11 calls.</p>
@@ -617,7 +627,7 @@ $$
 </section>
 <section id="with-the-formation-sequence-given" class="level2">
 <h2 class="anchored" data-anchor-id="with-the-formation-sequence-given">With the formation sequence given</h2>
-<p>Given the indirect lift’s sequence as a hint (at a node in the chain’s k-th formation only edits into the (k+1)-th and transports), the same planner with the same V₀ solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its search at μ = 0.3 and 0.4 (10–11 calls): the branch that would succeed depends on where a push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from 43.8° it does not), and the hint leaves no other way.</p>
+<p>Given the indirect lift’s sequence as a hint (at a node in the chain’s k-th formation only edits into the (k+1)-th and transports), the same planner with the V₀ above solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its search at μ = 0.3 and 0.4: the branch that would succeed depends on where a push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from 43.8° it does not), and the hint leaves no other way. With V₀’s edge lengths measured from the unhinted search’s own calls (a transfer succeeds 46% of the time, a break 69%), the hinted search solves at μ = 0.3, 0.4 and 0.5 (15, 13 and 15 calls), on the routes of the paper.</p>
 <video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -647,7 +657,7 @@ $$
 <ul>
 <li><strong>The lift, found and held, at both ends of the friction band</strong>, from the scene and the goal alone, on starts the learned parts never saw.</li>
 <li><strong>One scene, one task.</strong> The step and the box; other scenes (the families) are not run.</li>
-<li><strong>Budget.</strong> Half the searches fail within 192 calls with V₀, a third with V₁ and π; a few starts exhaust their search early.</li>
+<li><strong>Budget.</strong> Half the searches fail within 192 calls with V₀, a quarter after two rounds of V₁ and π; four starts exhaust their search early.</li>
 <li><strong>The realizer.</strong> Λ<sub>qs</sub> plans held poses, not stick–slip plans (<a href="../../../research/nonprehensile/planar-build/local-solver.html#qs-slip">the local solver</a>).</li>
 </ul>
 </section>
