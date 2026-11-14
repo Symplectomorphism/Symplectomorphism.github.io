@@ -516,7 +516,10 @@ window.MathJax = {
    
   <ul>
   <li><a href="#the-task" id="toc-the-task" class="nav-link active" data-scroll-target="#the-task">The task</a></li>
-  <li><a href="#the-planner-finds-it-from-the-scene-alone" id="toc-the-planner-finds-it-from-the-scene-alone" class="nav-link" data-scroll-target="#the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</a></li>
+  <li><a href="#the-planner-finds-it-from-the-scene-alone" id="toc-the-planner-finds-it-from-the-scene-alone" class="nav-link" data-scroll-target="#the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</a>
+  <ul class="collapse">
+  <li><a href="#clips" id="toc-clips" class="nav-link" data-scroll-target="#clips">Clips</a></li>
+  </ul></li>
   <li><a href="#with-the-formation-sequence-given" id="toc-with-the-formation-sequence-given" class="nav-link" data-scroll-target="#with-the-formation-sequence-given">With the formation sequence given</a></li>
   <li><a href="#what-this-shows-and-what-it-does-not" id="toc-what-this-shows-and-what-it-does-not" class="nav-link" data-scroll-target="#what-this-shows-and-what-it-does-not">What this shows, and what it does not</a></li>
   <li><a href="#configuration-and-reproduction" id="toc-configuration-and-reproduction" class="nav-link" data-scroll-target="#configuration-and-reproduction">Configuration and reproduction</a></li>
@@ -553,7 +556,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/results/index.html">Results</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Results</h1>
-<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 192 of 200 held-out searches (96%), with a learned value V₁ and ranker π.</p>
+<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 193 of 200 held-out searches (96.5%), with a learned value V₁ and ranker π.</p>
 </div>
 
 
@@ -598,22 +601,23 @@ $$
 <tbody>
 <tr class="odd">
 <td>100 random starts (F1 seed 13)</td>
-<td>96 / 100</td>
-<td>96 / 100</td>
-<td><strong>192 / 200</strong> (96%; 92–98%)</td>
+<td>94 / 100</td>
+<td>99 / 100</td>
+<td><strong>193 / 200</strong> (96.5%; 93–98%)</td>
 <td>89 / 91</td>
 </tr>
 <tr class="even">
 <td>Original: canonical + 16 (F1 seed 11)</td>
-<td>17 / 17</td>
 <td>16 / 17</td>
+<td>17 / 17</td>
 <td><strong>33 / 34</strong> (97%; 85–99%)</td>
-<td>86 / 91</td>
+<td>88 / 91</td>
 </tr>
 </tbody>
 </table>
-<p>Every solve is held and is the indirect lift; some hold the box by its lower corner instead of its underside (24 of the 192, five of the 33). Of the 8 failures among the 200, 7 run out of actions to try and one reaches the 192-call budget. The canonical start at μ = 0.3 takes 86 calls, 11 on the path. The original set’s one failure (seed 11, start 8, μ = 0.5) runs out of actions to try after 125 calls.</p>
-<p><strong>Round 2 of V₁ and π</strong>, trained on 408 searches (seeds 20–29), ranks better offline (V₁’s Spearman correlation 0.87 → 0.93, π’s top-1 84% → 94%) but solves exactly the same searches as round 1: 192 of 200 and 33 of 34 on the same machines (exact McNemar p = 1), with 88 calls to solve against 89. The remaining failures are exhausted candidate sets, not ordering failures: on these starts, ordering is saturated.</p>
+<p>Every solve is held and is the indirect lift; some hold the box by its lower corner instead of its underside (16 of the 193, one of the 33). Of the 7 failures among the 200, 6 run out of actions to try and one reaches the 192-call budget. The canonical start takes 86 calls at μ = 0.3 (11 on the path) and 94 at μ = 0.5 (12). The original set’s one failure (seed 11, start 14, μ = 0.3) reaches the budget.</p>
+<p><strong>With the simulator corrected.</strong> These searches run with MuJoCo’s EULERDAMP flag disabled, so MJX integrates the solved acceleration. With it on, MJX integrated a force sum that an unconverged contact solve could turn into a kick of a box at rest. On the same machines, the earlier runs solved 192 of 200 and 33 of 34: 8 earlier failures are now solved and 7 earlier solves are not (exact McNemar p = 1). Replayed call by call, three of the earlier failures come from such a kick (one of them the first push, which flipped the box upside down), two earlier solves relied on the box’s creep at rest failing a call, and the others part at falls that end differently or at float-level differences that grow along the search.</p>
+<p><strong>Round 2 of V₁ and π</strong>, trained on 408 searches (seeds 20–29), ranks better offline (V₁’s Spearman correlation 0.87 → 0.93, π’s top-1 84% → 94%) but solved exactly the same searches as round 1 with EULERDAMP on: 192 of 200 and 33 of 34 on the same machines (exact McNemar p = 1), with 88 calls to solve against 89 (not re-measured with EULERDAMP off). The failures were exhausted candidate sets, not ordering failures: on these starts, ordering is saturated.</p>
 <p><strong>The configuration</strong> (the defaults of <code>master</code>):</p>
 <ul>
 <li>transition poses must be admissible: no disk target buried in the box;</li>
@@ -621,6 +625,7 @@ $$
 <li>the box’s rotation range is ±180° (a ±90° joint stop could carry load);</li>
 <li>each approach is checked by the gate’s hold test with the disk’s own force, and refused before the disk moves if it would tip the box (the same 33 are solved with the same calls without it);</li>
 <li>unhinted search, dynamic outcomes rejected, 192 calls;</li>
+<li>EULERDAMP disabled: MJX integrates the solved acceleration;</li>
 <li>V₁ and π of round 1, V₀ with edge lengths measured from logged calls.</li>
 </ul>
 <p><strong>V₀</strong> is the weighted graph distance to the goal plus a pose term (<a href="../../../research/nonprehensile/planar-build/search.html#v0">how it is built</a>); its edge lengths come from the calls of round 0’s training searches (a transfer succeeds 46% of the time, a break 69%). <strong>V₁ and π</strong> are learned by fitted value iteration and the LTS loss from unhinted searches on other starts (F1 seeds 20–22, never the test set), in two rounds: 80 searches of 64 calls, then 48 of 192 calls run with round 0’s V₁ and π. V₁ enters only the search’s order; acceptance stays with V₀.</p>
@@ -636,7 +641,7 @@ $$
 </div>
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
-<p>Measured on the same 34 searches with the box’s rotation stopped at ±90°, no admissibility filter on transition poses and, unless stated, no δ-erosion. V₀ alone and round 0 were not re-measured in the configuration above.</p>
+<p>Measured on the same 34 searches with the box’s rotation stopped at ±90°, no admissibility filter on transition poses, EULERDAMP on and, unless stated, no δ-erosion. V₀ alone and round 0 were not re-measured in the configuration above.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -689,22 +694,9 @@ $$
 </div>
 </div>
 </div>
-<p>The clips below are from runs of the previous configuration.</p>
-<video src="media/unhinted/v1it1_mu0.3_canon.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
-</video>
-<p><strong>The canonical start, μ = 0.3, round 1</strong>: 12 calls on the path, 94 in the search; the replay reproduces all 12.</p>
-<video src="media/unhinted/unhinted_mu0.3_s11_12.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
-</video>
-<p><strong>μ = 0.3, V₀</strong>, 11 calls on the path (150 in the search): the pivot, a push to 20°, break m<sub>x</sub> to 51°, make m<sub>z</sub>; the re-grip to 63°; break g<sub>v</sub>, the roll onto the platform, two pushes. The replay reproduces all 11 calls.</p>
-<video src="media/unhinted/unhinted_mu0.5_s11_10.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
-</video>
-<p><strong>μ = 0.5, V₀</strong>, 10 calls on the path (163 in the search). The replay reproduces 8 of 10 calls exactly; two end 2.6 mm off (the search ran on another machine; float32 differs slightly between processors).</p>
-</section>
-<section id="with-the-formation-sequence-given" class="level2">
-<h2 class="anchored" data-anchor-id="with-the-formation-sequence-given">With the formation sequence given</h2>
-<p>In the previous configuration, given the indirect lift’s sequence as a hint (at a node in the chain’s k-th formation only edits into the (k+1)-th and transports), the planner with V₀ with equal edge lengths and the uniform ranker solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its search at μ = 0.3 and 0.4: the branch that would succeed depends on where a push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from 43.8° it does not), and the hint leaves no other way. With V₀’s measured edge lengths, the hinted search solves at μ = 0.3, 0.4 and 0.5 (15, 13 and 15 calls), on the routes of the paper.</p>
-<video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
-</video>
+<section id="clips" class="level3">
+<h3 class="anchored" data-anchor-id="clips">Clips</h3>
+<p>Each clip replays the search’s solution call by call on the processor that ran the search (AMD EPYC 9334), and every call reproduces the log bit for bit.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -719,26 +711,45 @@ $$
 <div class="callout-body-container callout-body">
 <ul>
 <li><strong>View.</strong> From the side, with +x to the <strong>left</strong>, as in the paper. The green surface is the platform, the grey one the floor, the blue ball the disk. A red stripe marks the face the box rests on at the start.</li>
-<li><strong>Top-left box.</strong> The run; the current segment <em>k/n</em> with its edit and formations (σ → σ′); the formation the recognizer reads right now; and whether the replay matched the log.</li>
-<li><strong>Speed.</strong> Stated in the overlay. Λ<sub>qs</sub> calls are mostly at rest, so they play at 3× while the box rests and in real time while it moves.</li>
-<li><strong>Cards.</strong> A short hold after each segment, then the success test’s verdict.</li>
+<li><strong>Caption bar.</strong> The run; the current edit <em>k/n</em> with its formations (σ → σ′); the call’s outcome and the state it reached; the phase; the formation the recognizer reads right now; and whether the replay matched the log.</li>
+<li><strong>Speed.</strong> The badge at the top left states it. The path plays as one motion: in real time while the box or the disk moves, easing to 3× while both rest. A call’s outcome stays on screen while the next call plays.</li>
+<li><strong>Card.</strong> The last frame carries the search’s summary.</li>
 </ul>
 </div>
 </div>
 </div>
+<video src="media/noeulerdamp/canon_mu0.3.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>The canonical start, μ = 0.3</strong>: 11 calls on the path, 86 in the search.</p>
+<video src="media/noeulerdamp/canon_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>The canonical start, μ = 0.5</strong>: 12 calls on the path, 94 in the search, under the box’s underside, with a re-grip.</p>
+<video src="media/noeulerdamp/s13_04_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>A typical held-out start (seed 13, start 4), μ = 0.5</strong>: the most common route, 12 calls on the path and 91 in the search, both the median.</p>
+<video src="media/noeulerdamp/s13_55_mu0.3_lower_corner.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
+<p><strong>The lower-corner variant (seed 13, start 55), μ = 0.3</strong>: the disk holds the box by its lower corner, then rolls it onto the platform; 8 calls on the path, 59 in the search.</p>
+</section>
+</section>
+<section id="with-the-formation-sequence-given" class="level2">
+<h2 class="anchored" data-anchor-id="with-the-formation-sequence-given">With the formation sequence given</h2>
+<p>In the previous configuration (with EULERDAMP on), given the indirect lift’s sequence as a hint (at a node in the chain’s k-th formation only edits into the (k+1)-th and transports), the planner with V₀ with equal edge lengths and the uniform ranker solves at μ = 0.5 (15 calls, 12 on the path) and exhausts its search at μ = 0.3 and 0.4: the branch that would succeed depends on where a push ends to within a degree (break m<sub>x</sub> from 43.1° succeeds, from 43.8° it does not), and the hint leaves no other way. With V₀’s measured edge lengths, the hinted search solves at μ = 0.3, 0.4 and 0.5 (15, 13 and 15 calls), on the routes of the paper. The clip below is from that configuration and an earlier renderer, which holds each call’s last frame.</p>
+<video src="media/indirect/hinted_v0it0_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</video>
 </section>
 <section id="what-this-shows-and-what-it-does-not" class="level2">
 <h2 class="anchored" data-anchor-id="what-this-shows-and-what-it-does-not">What this shows, and what it does not</h2>
 <ul>
 <li><strong>The lift, found and held, at both ends of the friction band</strong>, from the scene and the goal alone, on starts the learned parts never saw.</li>
 <li><strong>One scene, one task.</strong> The step and the box; other scenes (the families) are not run.</li>
-<li><strong>Budget.</strong> 8 of 200 searches (and 1 of 34) fail within 192 calls; all but one run out of actions to try.</li>
+<li><strong>Budget.</strong> 7 of 200 searches (and 1 of 34) fail within 192 calls; 6 of the 8 run out of actions to try.</li>
 <li><strong>The realizer.</strong> Λ<sub>qs</sub> plans held poses, not stick–slip plans (<a href="../../../research/nonprehensile/planar-build/local-solver.html#qs-slip">the local solver</a>).</li>
 </ul>
 </section>
 <section id="configuration-and-reproduction" class="level2">
 <h2 class="anchored" data-anchor-id="configuration-and-reproduction">Configuration and reproduction</h2>
-<p>Branch <code>master</code>, commit <code>7964069</code> (the searches ran at <code>1fef4b0</code>, whose only difference is an approach option that is off; the 200 searches ran at <code>7fb1171</code>, whose <code>cmg/src</code> is the same). V₀: <code>cmg/scripts/step4/value/results/v0_it1</code>. V₁ and π: <code>cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1</code>. Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand memory mappings (<code>CMG_MAPGUARD</code> must allow them). The 200 searches ran on Juno’s compute nodes (AMD EPYC 9334, 262,144 mappings per process). From <code>cmg/</code>:</p>
+<p>The searches ran at c-gnn commit <code>1917e2e</code> (<code>master</code> with EULERDAMP disabled in the scene files), on Juno’s compute nodes; results and the comparison with the earlier runs: <code>cmg/scripts/step4/chain_search/results/noeulerdamp</code>. V₀: <code>cmg/scripts/step4/value/results/v0_it1</code>. V₁ and π: <code>cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1</code>. Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand memory mappings (<code>CMG_MAPGUARD</code> must allow them). All 234 searches ran on Juno’s compute nodes (AMD EPYC 9334, 262,144 mappings per process). From <code>cmg/</code>:</p>
 <pre class="text"><code>CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=0 JAX_PLATFORMS=cpu PYTHONPATH=src .venv314/bin/python \
     scripts/step4/chain_search/run_chain.py OUT --no-hint --dynamic-outcomes reject --budget 192 \
     --v0 scripts/step4/value/results/v0_it1/v0_it1.json \
