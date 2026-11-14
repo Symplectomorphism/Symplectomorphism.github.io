@@ -1,6 +1,6 @@
 ---
 title: "Results"
-subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 33 of 34 held-out searches, with a learned value V₁ and ranker π."
+subtitle: "From the scene alone, the planner finds the indirect lift — the box held at every instant — in 192 of 200 held-out searches (96%), with a learned value V₁ and ranker π."
 aliases:
   - indirect-lift.html
 resources:
@@ -29,20 +29,31 @@ The search is given the scene and the goal, nothing else: every edit the gate
 admits except releases, transports toward the gate's targets, and outcome
 children (a call's child is the state it reached). Every dynamic outcome is
 rejected, so every solve is **held**. The motions are the quasi-static
-realizer Λ<sub>qs</sub> in MuJoCo. The test set is held out: the canonical
-start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11,
-never used for training), at the band's two ends μ = 0.3 and 0.5: 34
-searches, each up to 192 calls.
+realizer Λ<sub>qs</sub> in MuJoCo. Both test sets are held out (never used
+for training) and run at the band's two ends μ = 0.3 and 0.5, each search up
+to 192 calls: 100 random lift starts (F1 seed 13), 200 searches; and the
+original test set, the canonical start (the disk 10 cm from the box) and 16
+random lift starts (F1 seed 11), 34 searches. The ordering is V₁ + the learned
+ranker π (round 1), with V₀'s measured edge lengths.
 
-| Ordering | μ = 0.3 | μ = 0.5 | All | Calls to solve (mean / median) |
+| Held-out set | μ = 0.3 | μ = 0.5 | All (Wilson 95%) | Calls to solve (mean / median) |
 |---|---|---|---|---|
-| V₁ + learned ranker π (round 1), V₀ with measured edge lengths | 17 / 17 | 16 / 17 | **33 / 34** (97%) | 86 / 91 |
+| 100 random starts (F1 seed 13) | 96 / 100 | 96 / 100 | **192 / 200** (96%; 92–98%) | 89 / 91 |
+| Original: canonical + 16 (F1 seed 11) | 17 / 17 | 16 / 17 | **33 / 34** (97%; 85–99%) | 86 / 91 |
 
-Every solve is held and is the indirect lift (five, all at μ = 0.5, hold the
-box by its lower corner instead of its underside); solutions are 6–14 calls
-long. The canonical start at μ = 0.3 takes 86 calls, 11 on the path. The one
-failure (seed 11, start 8, μ = 0.5) runs out of actions to try after 125
-calls.
+Every solve is held and is the indirect lift; some hold the box by its lower
+corner instead of its underside (24 of the 192, five of the 33). Of the 8
+failures among the 200, 7 run out of actions to try and one reaches the
+192-call budget. The canonical start at μ = 0.3 takes 86 calls, 11 on the
+path. The original set's one failure (seed 11, start 8, μ = 0.5) runs out of
+actions to try after 125 calls.
+
+**Round 2 of V₁ and π**, trained on 408 searches (seeds 20–29), ranks better
+offline (V₁'s Spearman correlation 0.87 → 0.93, π's top-1 84% → 94%) but
+solves exactly the same searches as round 1: 192 of 200 and 33 of 34 on the
+same machines (exact McNemar p = 1), with 88 calls to solve against 89. The
+remaining failures are exhausted candidate sets, not ordering failures: on
+these starts, ordering is saturated.
 
 **The configuration** (the defaults of `master`):
 
@@ -142,19 +153,21 @@ routes of the paper.
   scene and the goal alone, on starts the learned parts never saw.
 - **One scene, one task.** The step and the box; other scenes (the families)
   are not run.
-- **Budget.** One of 34 searches fails within 192 calls; it runs out of
-  actions to try.
+- **Budget.** 8 of 200 searches (and 1 of 34) fail within 192 calls; all
+  but one run out of actions to try.
 - **The realizer.** Λ<sub>qs</sub> plans held poses, not stick–slip plans
   ([the local solver](../planar-build/local-solver.qmd#qs-slip)).
 
 ## Configuration and reproduction
 
 Branch `master`, commit `7964069` (the searches ran at `1fef4b0`, whose only
-difference is an approach option that is off). V₀:
+difference is an approach option that is off; the 200 searches ran at
+`7fb1171`, whose `cmg/src` is the same). V₀:
 `cmg/scripts/step4/value/results/v0_it1`. V₁ and π:
 `cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1`.
 Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand
-memory mappings, so they do not run on the clusters (65,530 per process).
+memory mappings (`CMG_MAPGUARD` must allow them). The 200 searches ran on
+Juno's compute nodes (AMD EPYC 9334, 262,144 mappings per process).
 From `cmg/`:
 
 ```text
