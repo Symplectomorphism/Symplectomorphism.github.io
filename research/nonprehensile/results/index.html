@@ -553,7 +553,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/results/index.html">Results</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Results</h1>
-<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 33 of 34 held-out searches, with a learned value V₁ and ranker π.</p>
+<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 192 of 200 held-out searches (96%), with a learned value V₁ and ranker π.</p>
 </div>
 
 
@@ -577,7 +577,7 @@ $$
 </section>
 <section id="the-planner-finds-it-from-the-scene-alone" class="level2">
 <h2 class="anchored" data-anchor-id="the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</h2>
-<p>The search is given the scene and the goal, nothing else: every edit the gate admits except releases, transports toward the gate’s targets, and outcome children (a call’s child is the state it reached). Every dynamic outcome is rejected, so every solve is <strong>held</strong>. The motions are the quasi-static realizer Λ<sub>qs</sub> in MuJoCo. The test set is held out: the canonical start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11, never used for training), at the band’s two ends μ = 0.3 and 0.5: 34 searches, each up to 192 calls.</p>
+<p>The search is given the scene and the goal, nothing else: every edit the gate admits except releases, transports toward the gate’s targets, and outcome children (a call’s child is the state it reached). Every dynamic outcome is rejected, so every solve is <strong>held</strong>. The motions are the quasi-static realizer Λ<sub>qs</sub> in MuJoCo. Both test sets are held out (never used for training) and run at the band’s two ends μ = 0.3 and 0.5, each search up to 192 calls: 100 random lift starts (F1 seed 13), 200 searches; and the original test set, the canonical start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11), 34 searches. The ordering is V₁ + the learned ranker π (round 1), with V₀’s measured edge lengths.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 20%">
@@ -588,24 +588,32 @@ $$
 </colgroup>
 <thead>
 <tr class="header">
-<th>Ordering</th>
+<th>Held-out set</th>
 <th>μ = 0.3</th>
 <th>μ = 0.5</th>
-<th>All</th>
+<th>All (Wilson 95%)</th>
 <th>Calls to solve (mean / median)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>V₁ + learned ranker π (round 1), V₀ with measured edge lengths</td>
+<td>100 random starts (F1 seed 13)</td>
+<td>96 / 100</td>
+<td>96 / 100</td>
+<td><strong>192 / 200</strong> (96%; 92–98%)</td>
+<td>89 / 91</td>
+</tr>
+<tr class="even">
+<td>Original: canonical + 16 (F1 seed 11)</td>
 <td>17 / 17</td>
 <td>16 / 17</td>
-<td><strong>33 / 34</strong> (97%)</td>
+<td><strong>33 / 34</strong> (97%; 85–99%)</td>
 <td>86 / 91</td>
 </tr>
 </tbody>
 </table>
-<p>Every solve is held and is the indirect lift (five, all at μ = 0.5, hold the box by its lower corner instead of its underside); solutions are 6–14 calls long. The canonical start at μ = 0.3 takes 86 calls, 11 on the path. The one failure (seed 11, start 8, μ = 0.5) runs out of actions to try after 125 calls.</p>
+<p>Every solve is held and is the indirect lift; some hold the box by its lower corner instead of its underside (24 of the 192, five of the 33). Of the 8 failures among the 200, 7 run out of actions to try and one reaches the 192-call budget. The canonical start at μ = 0.3 takes 86 calls, 11 on the path. The original set’s one failure (seed 11, start 8, μ = 0.5) runs out of actions to try after 125 calls.</p>
+<p><strong>Round 2 of V₁ and π</strong>, trained on 408 searches (seeds 20–29), ranks better offline (V₁’s Spearman correlation 0.87 → 0.93, π’s top-1 84% → 94%) but solves exactly the same searches as round 1: 192 of 200 and 33 of 34 on the same machines (exact McNemar p = 1), with 88 calls to solve against 89. The remaining failures are exhausted candidate sets, not ordering failures: on these starts, ordering is saturated.</p>
 <p><strong>The configuration</strong> (the defaults of <code>master</code>):</p>
 <ul>
 <li>transition poses must be admissible: no disk target buried in the box;</li>
@@ -724,13 +732,13 @@ $$
 <ul>
 <li><strong>The lift, found and held, at both ends of the friction band</strong>, from the scene and the goal alone, on starts the learned parts never saw.</li>
 <li><strong>One scene, one task.</strong> The step and the box; other scenes (the families) are not run.</li>
-<li><strong>Budget.</strong> One of 34 searches fails within 192 calls; it runs out of actions to try.</li>
+<li><strong>Budget.</strong> 8 of 200 searches (and 1 of 34) fail within 192 calls; all but one run out of actions to try.</li>
 <li><strong>The realizer.</strong> Λ<sub>qs</sub> plans held poses, not stick–slip plans (<a href="../../../research/nonprehensile/planar-build/local-solver.html#qs-slip">the local solver</a>).</li>
 </ul>
 </section>
 <section id="configuration-and-reproduction" class="level2">
 <h2 class="anchored" data-anchor-id="configuration-and-reproduction">Configuration and reproduction</h2>
-<p>Branch <code>master</code>, commit <code>7964069</code> (the searches ran at <code>1fef4b0</code>, whose only difference is an approach option that is off). V₀: <code>cmg/scripts/step4/value/results/v0_it1</code>. V₁ and π: <code>cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1</code>. Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand memory mappings, so they do not run on the clusters (65,530 per process). From <code>cmg/</code>:</p>
+<p>Branch <code>master</code>, commit <code>7964069</code> (the searches ran at <code>1fef4b0</code>, whose only difference is an approach option that is off; the 200 searches ran at <code>7fb1171</code>, whose <code>cmg/src</code> is the same). V₀: <code>cmg/scripts/step4/value/results/v0_it1</code>. V₁ and π: <code>cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1</code>. Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand memory mappings (<code>CMG_MAPGUARD</code> must allow them). The 200 searches ran on Juno’s compute nodes (AMD EPYC 9334, 262,144 mappings per process). From <code>cmg/</code>:</p>
 <pre class="text"><code>CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=0 JAX_PLATFORMS=cpu PYTHONPATH=src .venv314/bin/python \
     scripts/step4/chain_search/run_chain.py OUT --no-hint --dynamic-outcomes reject --budget 192 \
     --v0 scripts/step4/value/results/v0_it1/v0_it1.json \
