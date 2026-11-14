@@ -556,7 +556,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/results/index.html">Results</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Results</h1>
-<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 193 of 200 held-out searches (96.5%), with a learned value V₁ and ranker π.</p>
+<p class="subtitle lead">From the scene alone, the planner finds the indirect lift — the box held at every instant — in 197 of 200 held-out searches (98.5%) and in all 34 of the original test set, with a learned value V₁ and ranker π.</p>
 </div>
 
 
@@ -580,7 +580,7 @@ $$
 </section>
 <section id="the-planner-finds-it-from-the-scene-alone" class="level2">
 <h2 class="anchored" data-anchor-id="the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</h2>
-<p>The search is given the scene and the goal, nothing else: every edit the gate admits except releases, transports toward the gate’s targets, and outcome children (a call’s child is the state it reached). Every dynamic outcome is rejected, so every solve is <strong>held</strong>. The motions are the quasi-static realizer Λ<sub>qs</sub> in MuJoCo. Both test sets are held out (never used for training) and run at the band’s two ends μ = 0.3 and 0.5, each search up to 192 calls: 100 random lift starts (F1 seed 13), 200 searches; and the original test set, the canonical start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11), 34 searches. The ordering is V₁ + the learned ranker π (round 1), with V₀’s measured edge lengths.</p>
+<p>The search is given the scene and the goal, nothing else: every edit the gate admits except releases, transports toward the gate’s targets, and outcome children (a call’s child is the state it reached). Each edit that places the disk is offered at every placement along the face whose transition pose is a distinct node under the search’s own rule for identifying nodes. Every dynamic outcome is rejected, so every solve is <strong>held</strong>. The motions are the quasi-static realizer Λ<sub>qs</sub> in MuJoCo. Both test sets are held out (never used for training) and run at the band’s two ends μ = 0.3 and 0.5, each search up to 192 calls: 100 random lift starts (F1 seed 13), 200 searches; and the original test set, the canonical start (the disk 10 cm from the box) and 16 random lift starts (F1 seed 11), 34 searches. The ordering is V₁ (round 2) and the learned ranker π, trained on searches that offer every distinct placement, with V₀’s measured edge lengths.</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 20%">
@@ -601,23 +601,24 @@ $$
 <tbody>
 <tr class="odd">
 <td>100 random starts (F1 seed 13)</td>
-<td>94 / 100</td>
 <td>99 / 100</td>
-<td><strong>193 / 200</strong> (96.5%; 93–98%)</td>
-<td>89 / 91</td>
+<td>98 / 100</td>
+<td><strong>197 / 200</strong> (98.5%; 95.7–99.5%)</td>
+<td>82 / 83</td>
 </tr>
 <tr class="even">
 <td>Original: canonical + 16 (F1 seed 11)</td>
-<td>16 / 17</td>
 <td>17 / 17</td>
-<td><strong>33 / 34</strong> (97%; 85–99%)</td>
-<td>88 / 91</td>
+<td>17 / 17</td>
+<td><strong>34 / 34</strong> (100%; 90–100%)</td>
+<td>80 / 83</td>
 </tr>
 </tbody>
 </table>
-<p>Every solve is held and is the indirect lift; some hold the box by its lower corner instead of its underside (16 of the 193, one of the 33). Of the 7 failures among the 200, 6 run out of actions to try and one reaches the 192-call budget. The canonical start takes 86 calls at μ = 0.3 (11 on the path) and 94 at μ = 0.5 (12). The original set’s one failure (seed 11, start 14, μ = 0.3) reaches the budget.</p>
+<p>Every solve is held and is the indirect lift; 19 of the 197 hold the box by its lower corner instead of its underside. Of the 3 failures among the 200, two reach the 192-call budget and one runs out of actions to try. The canonical start takes 86 calls at both μ (11 on the path).</p>
+<p><strong>Every distinct placement against one placement per edit.</strong> With the edit offered only at the placement of largest margin, the same search (round 1 or round 2 of V₁ and π) solves 193 of 200 (94 and 99) and 33 of 34. Paired on the same machines, offering every distinct placement solves 6 searches of the 200 that one placement does not and loses 2 (exact McNemar p = 0.29), and solves 1 more of the 34 with none lost (p = 1): neither difference is significant at this sample size. Where both solve, it needs 81 calls against 88 on average. The 7 searches it gains each pass through break s<sub>v</sub> at a further placement, a call that keeps the formation, tilts the box further and is kept as a progress child; the 2 it loses reach the budget.</p>
 <p><strong>With the simulator corrected.</strong> These searches run with MuJoCo’s EULERDAMP flag disabled, so MJX integrates the solved acceleration. With it on, MJX integrated a force sum that an unconverged contact solve could turn into a kick of a box at rest. On the same machines, the earlier runs solved 192 of 200 and 33 of 34: 8 earlier failures are now solved and 7 earlier solves are not (exact McNemar p = 1). Replayed call by call, three of the earlier failures come from such a kick (one of them the first push, which flipped the box upside down), two earlier solves relied on the box’s creep at rest failing a call, and the others part at falls that end differently or at float-level differences that grow along the search.</p>
-<p><strong>Round 2 of V₁ and π</strong>, trained on 408 searches (seeds 20–29), ranks better offline (V₁’s Spearman correlation 0.87 → 0.93, π’s top-1 84% → 94%) but solves exactly the same searches as round 1: 193 of 200 and 33 of 34 on the same machines (exact McNemar p = 1), with 88 calls to solve against 89, never more. Its 7 failures among the 200 are exhausted candidate sets, not ordering failures: on these starts, ordering is saturated. (With EULERDAMP on, the same held: 192 and 192 of 200.)</p>
+<p><strong>Round 2 of V₁ and π</strong>, trained on 408 searches (seeds 20–29), ranks better offline (V₁’s Spearman correlation 0.87 → 0.93, π’s top-1 84% → 94%) but solves exactly the same searches as round 1: 193 of 200 and 33 of 34 on the same machines (exact McNemar p = 1), with 88 calls to solve against 89, never more, with one placement per edit. Its 7 failures among the 200 are exhausted candidate sets, not ordering failures. (With EULERDAMP on, the same held: 192 and 192 of 200.) With every distinct placement offered, round 2’s 280 searches were run again (273 solved) and π retrained on the same 408; V₁ is round 2’s.</p>
 <p><strong>The configuration</strong> (the defaults of <code>master</code>):</p>
 <ul>
 <li>transition poses must be admissible: no disk target buried in the box;</li>
@@ -626,7 +627,8 @@ $$
 <li>each approach is checked by the gate’s hold test with the disk’s own force, and refused before the disk moves if it would tip the box (the same 33 are solved with the same calls without it);</li>
 <li>unhinted search, dynamic outcomes rejected, 192 calls;</li>
 <li>EULERDAMP disabled: MJX integrates the solved acceleration;</li>
-<li>V₁ and π of round 1, V₀ with edge lengths measured from logged calls.</li>
+<li>each disk-placed edit offered at every placement with a distinct transition pose;</li>
+<li>V₁ of round 2 and π retrained with every distinct placement offered, V₀ with edge lengths measured from logged calls.</li>
 </ul>
 <p><strong>V₀</strong> is the weighted graph distance to the goal plus a pose term (<a href="../../../research/nonprehensile/planar-build/search.html#v0">how it is built</a>); its edge lengths come from the calls of round 0’s training searches (a transfer succeeds 46% of the time, a break 69%). <strong>V₁ and π</strong> are learned by fitted value iteration and the LTS loss from unhinted searches on other starts (F1 seeds 20–22, never the test set), in two rounds: 80 searches of 64 calls, then 48 of 192 calls run with round 0’s V₁ and π. V₁ enters only the search’s order; acceptance stays with V₀.</p>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -696,7 +698,7 @@ $$
 </div>
 <section id="clips" class="level3">
 <h3 class="anchored" data-anchor-id="clips">Clips</h3>
-<p>Each clip replays the search’s solution call by call on the processor that ran the search (AMD EPYC 9334), and every call reproduces the log bit for bit.</p>
+<p>Each clip replays the search’s solution call by call on the processor that ran the search (AMD EPYC 9334), and every call reproduces the log bit for bit. The clips come from the searches with one placement per edit and round 1’s V₁ and π.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
