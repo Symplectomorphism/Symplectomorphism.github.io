@@ -4,10 +4,10 @@ subtitle: "From the scene alone, the planner finds the indirect lift — the box
 aliases:
   - indirect-lift.html
 resources:
-  - media/noeulerdamp/canon_mu0.3.mp4
-  - media/noeulerdamp/canon_mu0.5.mp4
-  - media/noeulerdamp/s13_04_mu0.5.mp4
-  - media/noeulerdamp/s13_55_mu0.3_lower_corner.mp4
+  - media/placement/canon_mu0.3.mp4
+  - media/placement/canon_mu0.5.mp4
+  - media/placement/s13_01_mu0.3.mp4
+  - media/placement/s13_37_mu0.3_lower_corner.mp4
   - media/indirect/hinted_v0it0_mu0.5.mp4
 ---
 
@@ -131,8 +131,11 @@ search reached {m<sub>z</sub>, s<sub>v</sub>} with the box at 51–57°, where
 ### Clips
 
 Each clip replays the search's solution call by call on the processor that
-ran the search (AMD EPYC 9334), and every call reproduces the log bit for bit.
-The clips come from the searches with one placement per edit and round 1's V₁ and π.
+ran the search (AMD EPYC 9334), and every call reproduces the log bit for bit
+(43 of 43 calls). The clips come from the searches in the table above: every
+distinct placement offered, with V₁ and π. The typical and lower-corner starts
+are chosen by a script, not by hand: the most common route, then the search
+closest to its median calls on the path and in the search.
 
 ::: {.callout-note collapse="true"}
 ## How to read a clip
@@ -150,25 +153,29 @@ The clips come from the searches with one placement per edit and round 1's V₁ 
 - **Card.** The last frame carries the search's summary.
 :::
 
-<video src="media/noeulerdamp/canon_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+<video src="media/placement/canon_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
 **The canonical start, μ = 0.3**: 11 calls on the path, 86 in the search.
 
-<video src="media/noeulerdamp/canon_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+<video src="media/placement/canon_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-**The canonical start, μ = 0.5**: 12 calls on the path, 94 in the search,
-under the box's underside, with a re-grip.
+**The canonical start, μ = 0.5**: the same route, 11 calls on the path and 86
+in the search; after the pivot, break s<sub>v</sub> at a further placement
+tilts the box to 37° before the next edit.
 
-<video src="media/noeulerdamp/s13_04_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+<video src="media/placement/s13_01_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-**A typical held-out start (seed 13, start 4), μ = 0.5**: the most common
-route, 12 calls on the path and 91 in the search, both the median.
+**A typical held-out start (seed 13, start 1), μ = 0.3**: the most common
+route (59 of the 197 solves), with its median calls: 11 on the path, 83 in the
+search.
 
-<video src="media/noeulerdamp/s13_55_mu0.3_lower_corner.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+<video src="media/placement/s13_37_mu0.3_lower_corner.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-**The lower-corner variant (seed 13, start 55), μ = 0.3**: the disk holds the
-box by its lower corner, then rolls it onto the platform; 8 calls on the path,
-59 in the search.
+**The lower-corner variant (seed 13, start 37), μ = 0.3**: the disk holds the
+box by its lower corner and a transport rolls it onto the platform; 10 calls
+on the path, 75 in the search. In the closing transfer the disk sinks up to
+5.8 mm into the box in MJX's soft contact; every other call stays under about
+2 mm ([issue #52](https://github.com/Symplectomorphism/c-gnn/issues/52)).
 
 ## With the formation sequence given
 
@@ -191,18 +198,21 @@ earlier renderer, which holds each call's last frame.
   scene and the goal alone, on starts the learned parts never saw.
 - **One scene, one task.** The step and the box; other scenes (the families)
   are not run.
-- **Budget.** 7 of 200 searches (and 1 of 34) fail within 192 calls; 6 of
-  the 8 run out of actions to try.
+- **Budget.** 3 of 200 searches (and none of 34) fail within 192 calls: two
+  reach the budget and one runs out of actions to try.
 - **The realizer.** Λ<sub>qs</sub> plans held poses, not stick–slip plans
   ([the local solver](../planar-build/local-solver.qmd#qs-slip)).
 
 ## Configuration and reproduction
 
-The searches ran at c-gnn commit `1917e2e` (`master` with EULERDAMP disabled
-in the scene files), on Juno's compute nodes; results and the comparison with
-the earlier runs: `cmg/scripts/step4/chain_search/results/noeulerdamp`. V₀:
-`cmg/scripts/step4/value/results/v0_it1`. V₁ and π:
-`cmg/scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1`.
+The searches ran at c-gnn snapshot `ecb2d48c` with `--placement-distinct`, on
+Juno's compute nodes; results, the jobs file and the comparison with one
+placement per edit: `cmg/scripts/step4/chain_search/results/placement_distinct`.
+V₀: `cmg/scripts/step4/value/results/v0_it1`. V₁ and π:
+`cmg/scripts/step4/chain_search/results/placement_distinct/model_v1pi_pd`.
+Under the recognizer's containment rule for endpoint-only contacts (`master`
+`3b7954a4`, issue #53) all 234 searches are identical call for call
+(`cmg/scripts/step4/chain_search/results/issue53`).
 Searches run on CPU, one per 3 cores; a search needs about 80–90 thousand
 memory mappings (`CMG_MAPGUARD` must allow them). All 234 searches ran on
 Juno's compute nodes (AMD EPYC 9334, 262,144 mappings per process).
@@ -212,8 +222,9 @@ From `cmg/`:
 CMG_DISK_FRICTION=0.3 CMG_MAPGUARD=0 JAX_PLATFORMS=cpu PYTHONPATH=src .venv314/bin/python \
     scripts/step4/chain_search/run_chain.py OUT --no-hint --dynamic-outcomes reject --budget 192 \
     --v0 scripts/step4/value/results/v0_it1/v0_it1.json \
-    --v1 scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1 \
-    --learned-pi scripts/step4/chain_search/results/night_2026-11-13/model_v1pi_it1 \
+    --v1 scripts/step4/chain_search/results/placement_distinct/model_v1pi_pd \
+    --learned-pi scripts/step4/chain_search/results/placement_distinct/model_v1pi_pd \
+    --placement-distinct \
     --seed 11 --index 12
 #   without --seed/--index: the canonical start; CMG_DISK_FRICTION=0.5: the band's other end
 #   admissible transition poses, the delta-erosion and the approach check are on by default
