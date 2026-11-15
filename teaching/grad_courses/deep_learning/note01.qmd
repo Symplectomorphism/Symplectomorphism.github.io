@@ -6,8 +6,6 @@ resources:
   - assets/notebooks/chapter9_prng.ipynb
   - assets/notebooks/chapter10.ipynb
   - assets/images/The_Cat.jpg
-filters:
-  - shinylive
 ---
 
 ::: {.column-body-right}
@@ -224,108 +222,90 @@ $$
 
 ### Infinitely-Many Extrema
 
-::: {.callout-note}
-Because JAX is not yet compatible with WebAssembly (browser-based Python), this 
-example uses standard Numpy and the analytical gradient formula.
-:::
+The cost $C(\bm{x}) = \tfrac{1}{2}\left(\cos^2 x_0 + \sin^2 x_1\right)$ has
+infinitely many minima. Move the sliders to see where gradient descent ends up
+from different starting points and learning rates. Everything runs in your
+browser.
 
-```{shinylive-python}
-#| standalone: true
-#| viewerHeight: 675
+:::: {.panel-sidebar}
+```{ojs}
+//| echo: false
+viewof gdEta = Inputs.range([0, 2], {value: 0.2, step: 0.05, label: "Learning rate η"})
+viewof gdIters = Inputs.range([1, 100], {value: 20, step: 1, label: "Iterations"})
+viewof gdStart0 = Inputs.range([-6, 6], {value: -5.5, step: 0.1, label: "Start x₀"})
+viewof gdStart1 = Inputs.range([-6, 6], {value: 2, step: 0.1, label: "Start x₁"})
+```
+::::
 
-from shiny import App, render, ui
+:::: {.panel-fill}
+```{ojs}
+//| echo: false
+gdCost = (a, b) => 0.5 * (Math.cos(a) ** 2 + Math.sin(b) ** 2)
+
+gdPath = {
+  // analytical gradient of C
+  const grad = ([a, b]) => [-Math.cos(a) * Math.sin(a), Math.sin(b) * Math.cos(b)];
+  let x = [gdStart0, gdStart1];
+  const path = [{k: 0, x0: x[0], x1: x[1]}];
+  for (let k = 1; k <= gdIters; ++k) {
+    const g = grad(x);
+    x = [x[0] - gdEta * g[0], x[1] - gdEta * g[1]];
+    path.push({k, x0: x[0], x1: x[1]});
+  }
+  return path;
+}
+
+{
+  const L = 2.5 * Math.PI;
+  const end = gdPath[gdPath.length - 1];
+  const fig = Plot.plot({
+    caption: `η = ${gdEta}: ended at (${end.x0.toFixed(3)}, ${end.x1.toFixed(3)}) with C = ${gdCost(end.x0, end.x1).toFixed(4)}. ` +
+             "Black dot: start · red: path · white star: end.",
+    width: 560,
+    aspectRatio: 1,
+    x: {domain: [-L, L], label: "x₀"},
+    y: {domain: [-L, L], label: "x₁"},
+    color: {type: "linear", scheme: "viridis", label: "Cost C(x)"},
+    marks: [
+      Plot.contour({value: gdCost, fill: "value", x1: -L, x2: L, y1: -L, y2: L,
+                    thresholds: 25, pixelSize: 2, fillOpacity: 0.6}),
+      Plot.line(gdPath, {x: "x0", y: "x1", stroke: "red", strokeWidth: 2, clip: true}),
+      Plot.dot(gdPath, {x: "x0", y: "x1", fill: "red", r: 2.5, clip: true}),
+      Plot.dot([gdPath[0]], {x: "x0", y: "x1", fill: "black", r: 6, clip: true}),
+      Plot.dot([end], {x: "x0", y: "x1", symbol: "star", fill: "white", stroke: "black", r: 9, clip: true}),
+      Plot.frame()
+    ]
+  });
+  return html`<div>${fig.legend("color", {marginLeft: 12, width: 300})}${fig}</div>`;
+}
+```
+::::
+
+::: {.callout-note collapse="true"}
+#### The same computation in NumPy
+
+```python
 import numpy as np
-import matplotlib.pyplot as plt
 
-# 1. Define Math Functions (Using NumPy instead of JAX)
-def C(x): 
+def C(x):
     return 0.5 * (np.cos(x[0])**2 + np.sin(x[1])**2)
 
 def grad_C(x):
-    # Analytical gradient derived from C(x)
-    return np.array([
-        -0.5 * 2 * np.cos(x[0]) * np.sin(x[0]), # dx0: -cos*sin
-         0.5 * 2 * np.sin(x[1]) * np.cos(x[1])  # dx1:  sin*cos
-    ])
+    # analytical gradient of C
+    return np.array([-np.cos(x[0]) * np.sin(x[0]),
+                      np.sin(x[1]) * np.cos(x[1])])
 
-# 2. Gradient Descent Logic
 def run_gradient_descent(x0, eta, n_iter=50):
     x = np.array(x0, dtype=np.float64)
     path = [x.copy()]
-    
     for _ in range(n_iter):
-        g = grad_C(x)
-        x = x - eta * g
+        x = x - eta * grad_C(x)
         path.append(x.copy())
-        
     return np.array(path)
 
-# 3. Shiny UI
-app_ui = ui.page_fluid(
-    ui.layout_sidebar(
-        ui.sidebar(
-            ui.h4("Parameters"),
-            ui.input_slider("lr", "Learning Rate (η)", 0.0, 2.0, 0.2, step=0.05),
-            ui.input_slider("n_iter", "Iterations", 1, 100, 20),
-            ui.hr(),
-            ui.h5("Start Position"),
-            ui.input_slider("x0", "X0 (Start)", -6.0, 6.0, -5.5),
-            ui.input_slider("x1", "X1 (Start)", -6.0, 6.0, 2.0),
-            open="always",
-        ),
-        ui.card(
-            ui.output_plot("descent_plot")
-        )
-    )
-)
-
-# 4. Server Logic
-def server(input, output, session):
-    
-    @output
-    @render.plot
-    def descent_plot():
-        # A. Setup Background Contour
-        pi = np.pi
-        xrange = np.linspace(-2.5*pi, 2.5*pi, 100)
-        yrange = np.linspace(-2.5*pi, 2.5*pi, 100)
-        xx, yy = np.meshgrid(xrange, yrange)
-        
-        # Calculate Z for contour using vectorized numpy
-        # Note: We construct input manually for broadcasting
-        Z = 0.5 * (np.cos(xx)**2 + np.sin(yy)**2)
-
-        # B. Run Algorithm based on inputs
-        start_pos = [input.x0(), input.x1()]
-        path = run_gradient_descent(start_pos, input.lr(), input.n_iter())
-
-        # C. Plotting
-        fig, ax = plt.subplots(figsize=(6,6))
-        
-        # Plot Contour
-        c = ax.contourf(xx, yy, Z, levels=25, cmap='viridis', alpha=0.6)
-        plt.colorbar(c, ax=ax, label='Cost C(x)')
-        
-        # Plot Trajectory
-        ax.plot(path[:,0], path[:,1], 'r.-', linewidth=2, markersize=6, label='Gradient Path')
-        ax.plot(path[0,0], path[0,1], 'ko', markersize=9, label='Start')
-        ax.plot(path[-1,0], path[-1,1], 'w*', markersize=12, markeredgecolor='k', label='End')
-
-        # Place text at 5% x, 95% y (Top Left), relative to axes dimensions
-        formula_text = r"$C(x) = \frac{1}{2} (\cos^2(x_0) + \sin^2(x_1))$"
-        ax.text(0.05, 0.95, formula_text, transform=ax.transAxes, 
-                fontsize=14, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.9))
-       
-        ax.set_title(f"Gradient Descent (η = {input.lr()})")
-        ax.set_xlabel('$x_0$')
-        ax.set_ylabel('$x_1$')
-        ax.legend(loc='lower right')
-        
-        return fig
-
-app = App(app_ui, server)
+path = run_gradient_descent([-5.5, 2.0], eta=0.2, n_iter=20)
 ```
+:::
 
 
 ### Least Squares: Closed-Form vs. Gradient Descent
@@ -347,162 +327,156 @@ The Taylor series for $\sin(x)$ is $x - \frac{x^3}{6} + \dots$.
 Therefore, we expect our coefficients to converge near: $a=0, b=1, c=0, d=-\nicefrac{1}{6}$.
 :::
 
-```{shinylive-python}
-#| standalone: true
-#| viewerHeight: 925
+:::: {.panel-sidebar}
+```{ojs}
+//| echo: false
+viewof lsEta = Inputs.range([1e-6, 1e-4], {value: 1e-5, step: 1e-6, label: "Learning rate",
+                                           format: (v) => v.toExponential(1)})
+viewof lsEpochs = Inputs.range([0, 5000], {value: 100, step: 100, label: "Iterations"})
+```
 
-from shiny import App, render, ui, reactive
+```{ojs}
+//| echo: false
+{
+  // round first so tiny negatives do not print as "-0.0000"
+  const fmt = (v) => Number.isFinite(v) ? (Math.round(v * 1e4) / 1e4 + 0).toFixed(4) : "—";
+  const rows = ["a", "b", "c", "d"].map((name, i) =>
+    `<tr><th>${name}</th><td>${fmt(ls.Pc[i])}</td><td>${fmt(lsGD.P[i])}</td></tr>`).join("");
+  return html`<table class="table table-sm" style="font-variant-numeric: tabular-nums;">
+    <thead><tr><th></th><th>Closed form</th><th>Grad. descent</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+```
+::::
+
+:::: {.panel-fill}
+```{ojs}
+//| echo: false
+ls = {
+  // 100 samples of sin(x) on [-pi, pi]; design matrix W = [1, x, x^2, x^3]
+  const n = 100;
+  const x = Array.from({length: n}, (_, i) => -Math.PI + 2 * Math.PI * i / (n - 1));
+  const y = x.map(Math.sin);
+  const W = x.map((t) => [1, t, t * t, t * t * t]);
+
+  // closed form: solve the normal equations (W^T W) P = W^T Y
+  const idx = [0, 1, 2, 3];
+  const A = idx.map((i) => idx.map((j) => d3.sum(W, (w) => w[i] * w[j])));
+  const b = idx.map((i) => d3.sum(W, (w, k) => w[i] * y[k]));
+  for (let c = 0; c < 4; ++c) {                       // Gaussian elimination
+    const p = d3.maxIndex(idx.slice(c), (r) => Math.abs(A[r][c])) + c;
+    [A[c], A[p]] = [A[p], A[c]];
+    [b[c], b[p]] = [b[p], b[c]];
+    for (let r = c + 1; r < 4; ++r) {
+      const f = A[r][c] / A[c][c];
+      for (let k = c; k < 4; ++k) A[r][k] -= f * A[c][k];
+      b[r] -= f * b[c];
+    }
+  }
+  const Pc = [0, 0, 0, 0];
+  for (let r = 3; r >= 0; --r)
+    Pc[r] = (b[r] - d3.sum(idx.slice(r + 1), (k) => A[r][k] * Pc[k])) / A[r][r];
+
+  return {x, y, W, Pc};
+}
+
+// plain sums: d3.sum would silently skip the NaNs of a diverging run
+lsSum = (a, f) => a.reduce((s, v, i) => s + f(v, i), 0)
+
+lsPredict = (P) => ls.W.map((w, k) => ({x: ls.x[k], y: lsSum(w, (wi, i) => wi * P[i])}))
+
+lsGD = {
+  // gradient descent from P = 0:  dE/dP = -2 W^T (Y - W P)
+  const {W, y} = ls;
+  let P = [0, 0, 0, 0];
+  const sse = [];
+  let divergedAt = null;
+  for (let epoch = 0; epoch < lsEpochs; ++epoch) {
+    const r = lsPredict(P).map((d, k) => y[k] - d.y);
+    const e = lsSum(r, (v) => v * v);
+    if (!Number.isFinite(e)) { divergedAt = epoch; break; }
+    sse.push({epoch, sse: e});
+    const g = P.map((_, i) => -2 * lsSum(W, (w, k) => w[i] * r[k]));
+    P = P.map((p, i) => p - lsEta * g[i]);
+  }
+  if (divergedAt !== null) P = P.map(() => NaN);
+  return {P, sse, divergedAt};
+}
+
+{
+  const truth = ls.x.map((x, k) => ({x, y: ls.y[k]}));
+  const closed = lsPredict(ls.Pc);
+  const gd = lsPredict(lsGD.P);
+  const mse = (rows) => d3.mean(rows, (d, k) => (d.y - ls.y[k]) ** 2);
+  const gdMse = mse(gd);
+  const labels = [
+    "True sin(x)",
+    `Closed form (MSE ${mse(closed).toFixed(4)})`,
+    `Gradient descent (MSE ${Number.isFinite(gdMse) ? gdMse.toFixed(4) : "diverged"})`
+  ];
+  return Plot.plot({
+    caption: lsGD.divergedAt === null
+      ? `Polynomial fit after ${lsEpochs} gradient-descent iterations.`
+      : `Gradient descent diverged after ${lsGD.divergedAt} iterations: the learning rate is too large.`,
+    width: 560,
+    height: 360,
+    grid: true,
+    x: {label: "x"},
+    y: {label: "y", domain: [-1.5, 1.5]},
+    color: {domain: labels, range: ["#999999", "steelblue", "red"], legend: true},
+    marks: [
+      Plot.line(truth, {x: "x", y: "y", stroke: () => labels[0], strokeWidth: 5, strokeOpacity: 0.4}),
+      Plot.line(closed, {x: "x", y: "y", stroke: () => labels[1], strokeWidth: 2, strokeDasharray: "6,4"}),
+      Plot.line(gd.filter((d) => Number.isFinite(d.y)), {x: "x", y: "y", stroke: () => labels[2], strokeWidth: 1.5, clip: true})
+    ]
+  });
+}
+
+{
+  const sse = lsGD.sse.filter((d) => Number.isFinite(d.sse) && d.sse > 0);
+  if (sse.length === 0) return html`<p><em>Set at least 100 iterations to see the error curve.</em></p>`;
+  return Plot.plot({
+    caption: "Sum of squared errors over iterations (log scale).",
+    width: 560,
+    height: 280,
+    grid: true,
+    x: {label: "Iteration"},
+    marginLeft: 55,
+    y: {type: "log", label: "SSE", tickFormat: "~g"},
+    marks: [Plot.line(sse, {x: "epoch", y: "sse", stroke: "steelblue"})]
+  });
+}
+```
+::::
+
+::: {.callout-note collapse="true"}
+#### The same computation in NumPy
+
+```python
 import numpy as np
-import matplotlib.pyplot as plt
 
-# 1. Setup Data (Fixed range as per PDF)
-# Generate n points between -pi and pi
 n = 100
 x_data = np.linspace(-np.pi, np.pi, n)
 y_data = np.sin(x_data)
+W = np.column_stack([np.ones_like(x_data), x_data, x_data**2, x_data**3])
 
-# Construct W matrix (Design Matrix) [1, x, x^2, x^3]
-# As defined in the PDF
-W = np.column_stack([
-    np.ones_like(x_data), 
-    x_data, 
-    x_data**2, 
-    x_data**3
-])
+# Closed form: P* = (W^T W)^{-1} W^T Y
+P_closed = np.linalg.solve(W.T @ W, W.T @ y_data)
 
-# 2. Closed Form Solution (The "Best" fit)
-# P* = (W.T @ W)^-1 @ W.T @ Y
-WtW = W.T @ W
-WtY = W.T @ y_data
-P_closed = np.linalg.solve(WtW, WtY) # More stable than inv()
-
-# 3. Gradient Descent Implementation
+# Gradient descent: dE/dP = -2 W^T (Y - W P)
 def run_gd_linear_regression(W, Y, learning_rate, epochs):
-    # Initialize coefficients [a, b, c, d] to zeros
     P = np.zeros(4)
-    
-    # Track error history
     errors = []
-    
-    # Loop
     for _ in range(epochs):
-        # Calculate Prediction: Y_pred = W @ P
-        Y_pred = W @ P
-        
-        # Calculate Error Vector: (Y - Y_pred)
-        error = Y - Y_pred
-        
-        # Calculate Gradient (derived in PDF):
-        # dE/dP = -2 * W.T @ (Y - W @ P)
-        gradient = -2 * W.T @ error
-        
-        # Update Weights: P_new = P_old - eta * gradient
-        P = P - learning_rate * gradient
-        
-        # Store Sum Squared Error
-        sse = np.sum(error**2)
-        errors.append(sse)
-        
+        error = Y - W @ P
+        P = P - learning_rate * (-2 * W.T @ error)
+        errors.append(np.sum(error**2))
     return P, errors
 
-# 4. Shiny UI
-app_ui = ui.page_fluid(
-    ui.layout_sidebar(
-        ui.sidebar(
-            ui.h4("Hyperparameters"),
-            
-            # Note: Polynomial features grow large (x^3 approx 27). 
-            # Gradients are huge, so Learning Rate must be tiny.
-            ui.input_slider("lr", "Learning Rate", 0.000001, 0.0001, 0.00001, step=0.000001, sep=""),
-            ui.input_slider("epochs", "Iterations", 0, 5000, 100, step=100),
-            
-            ui.hr(),
-            ui.h5("Coefficients (a,b,c,d)"),
-            ui.output_text_verbatim("coeff_display"),
-            
-            ui.hr(),
-            ui.input_action_button("reset", "Reset / Re-run"),
-            open="always",
-        ),
-        ui.card(
-            ui.output_plot("main_plot")
-        )
-    )
-)
-
-# 5. Server Logic
-def server(input, output, session):
-    
-    @reactive.Calc
-    def perform_gd():
-        # Re-run when button is clicked or inputs change
-        input.reset() 
-        
-        lr = input.lr()
-        epochs = input.epochs()
-        
-        P_gd, error_history = run_gd_linear_regression(W, y_data, lr, epochs)
-        return P_gd, error_history
-
-    @output
-    @render.text
-    def coeff_display():
-        P_gd, _ = perform_gd()
-        
-        # Format for display
-        return (
-            f"--- Closed Form ---\n"
-            f"a: {P_closed[0]:.4f}\n"
-            f"b: {P_closed[1]:.4f}\n"
-            f"c: {P_closed[2]:.4f}\n"
-            f"d: {P_closed[3]:.4f}\n\n"
-            f"--- Gradient Descent ---\n"
-            f"a: {P_gd[0]:.4f}\n"
-            f"b: {P_gd[1]:.4f}\n"
-            f"c: {P_gd[2]:.4f}\n"
-            f"d: {P_gd[3]:.4f}"
-        )
-
-    @output
-    @render.plot
-    def main_plot():
-        P_gd, error_history = perform_gd()
-        
-        # Generate Predictions
-        y_pred_closed = W @ P_closed
-        y_pred_gd = W @ P_gd
-        
-        # Error metrics
-        mse_closed = np.mean((y_data - y_pred_closed)**2)
-        mse_gd = np.mean((y_data - y_pred_gd)**2)
-
-        # Plotting
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 10))
-        
-        # Plot 1: Curve Fitting
-        ax1.plot(x_data, y_data, 'k-', alpha=0.3, linewidth=4, label='True sin(x)')
-        ax1.plot(x_data, y_pred_closed, 'b--', linewidth=2, label=f'Closed Form (MSE: {mse_closed:.4f})')
-        ax1.plot(x_data, y_pred_gd, 'r-', label=f'Gradient Descent (MSE: {mse_gd:.4f})')
-        
-        ax1.set_title(f"Polynomial Fit (Iter: {input.epochs()})")
-        ax1.set_xlabel("x")
-        ax1.set_ylabel("y")
-        ax1.legend()
-        ax1.grid(True, alpha=0.3)
-        
-        # Plot 2: Error Curve
-        if len(error_history) > 0:
-            ax2.plot(error_history)
-            ax2.set_title("Sum Squared Error over Iterations")
-            ax2.set_xlabel("Epoch")
-            ax2.set_ylabel("Error (SSE)")
-            ax2.set_yscale('log') # Log scale helps visualize convergence
-            ax2.grid(True, alpha=0.3)
-        
-        return fig
-
-app = App(app_ui, server)
+P_gd, errors = run_gd_linear_regression(W, y_data, 1e-5, 100)
 ```
+:::
 
 ## JAX Resources 
 
