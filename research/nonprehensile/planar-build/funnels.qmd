@@ -1,0 +1,117 @@
+---
+title: "Certified funnels"
+subtitle: "Each edge of the contact-formation graph becomes a certified transition: every state of its entry set, for every disk friction in the band, reaches the next edge's entry set. Chained, the edges certify a plan as executed, including motions that use momentum."
+---
+
+## The idea
+
+The [hold gate](hold-gate.qmd) and the [box certificate](certificate.qmd)
+certify that the box *can be held* at every pose along a plan. A **funnel**
+certifies the motion itself:
+
+- **Entry set.** A box of states the edge may start from: pose, velocity,
+  contact offsets, and μ<sub>disk</sub> ∈ [0.3, 0.5].
+- **Law and tube.** A feedback law and a tube around its nominal motion.
+- **Certificate.** For every state in the entry set and every friction in
+  the band, the motion stays in the tube, the contact forces stay inside
+  their cones and above a derived floor, the motor stays in its box, and the
+  edge ends inside the next edge's entry set.
+- **Check.** The certified edge is executed in MJX from measured states, and
+  the measured coverage is reported at 95/95.
+
+Edges whose sets compose this way form a chain that is certified end to end.
+The box no longer has to be held at every instant, so rolls, landings in
+motion and coasting become plannable edges.
+
+## Track C: a chain with a landing in motion
+
+The chain tips the box, pivots it on the step corner, breaks and remakes
+contact, rolls it over the corner, pushes it so that it lands on the platform
+in motion, and transports it to the goal.
+
+| Piece | Certified | MJX from real entry states |
+|---|---|---|
+| Tip (held departure) | yes | — |
+| Pivot to 59.00° (law switch at 23°) | yes | 932 / 932 |
+| Stop at 59.00° | yes, with the derived force floor | 768 / 768 |
+| Gentle break, then make(m<sub>z</sub>) pressing along the inward normal | yes | 300 / 300 |
+| Break(g<sub>v</sub>) delivering the box to the roll | yes | 687 / 687 |
+| Roll over the corner | being re-certified from the 62° junction | pending |
+| Push and landing in motion | follows the roll | pending |
+| Transport to the goal | follows the landing | pending |
+
+The roll is re-searched because the junction at 62° failed: a jump from the
+break's 1°/s to the roll's 8°/s violates the sticking cone at the hand-off.
+The re-search includes ramped speed profiles. The best certified candidates
+so far keep 1°/s through the junction.
+
+## The landing impact is measured, not certified
+
+Every piece above is certified by **interval arithmetic**. Each quantity is
+carried as a range guaranteed to contain its true value, the state box is
+pushed through the dynamics step by step, and each condition is checked
+over the whole box at once.
+
+That fails over the few steps around the landing impact. The reason is the
+**wrapping effect**. Intervals store only axis-aligned boxes. Each step
+shears and rotates the set, and re-wrapping it in a box adds empty corners
+that compound.
+
+A line segment rotated by 45° shows it. The smallest box around the
+rotated segment is a square, so the width grows by √2. After 8 such
+rotations the box is 16 times wider, while the true set is still a segment.
+At impact the velocities flip and couple strongly to where the box hit.
+The box grows until nothing can be proved, and splitting it would need
+about 10<sup>10</sup> pieces.
+
+The impact window is therefore stated **by measurement**: every MJX landing
+ends at rest in the target formation, reported at 95/95.
+
+## A set-based route: zonotopes
+
+The remedy is to certify a **set shape** that a step maps without
+re-wrapping. A zonotope is
+
+  **c + G · [−1, 1]<sup>k</sup>**,
+
+a centre plus a linear image of a cube.
+
+- **A linear step maps it exactly.** It just multiplies G. A nonlinear step
+  is linearized, its Jacobian multiplies G, and only the small remainder is
+  boxed. In validated integration this is Lohner's method, the first-order
+  Taylor form.
+- **Checks stay cheap.** The minimum of a linear quantity a·x over the
+  zonotope is a·c − Σ|a·G|. Force floors and friction cones cost about what
+  they cost on boxes.
+- **General polytopes don't scale.** In the ~12-dimensional state at impact,
+  their face and vertex counts grow exponentially, and a nonlinear map does
+  not map a polytope to a polytope.
+- **The hard part is the contact switch.** At impact, part of the set is
+  already in contact and part is not. The set has to be split along the
+  contact guard and each part followed in its own mode. A **hybrid
+  zonotope**, a union of constrained zonotopes indexed by binary factors,
+  represents exactly such a mode-branched set
+  ([Bird, Pangborn, Jain and Koeln, *Automatica* 2023](https://arxiv.org/abs/2106.14831);
+  for nonlinear steps,
+  [Siefert et al., ACC 2023](https://arxiv.org/abs/2210.09902)).
+
+**First test.** One impact branch and one sub-box, with the first-order form
+intersected with the interval box at each step. The volume of the reached set
+shrank by 2<sup>12</sup> relative to interval propagation, against a bar of
+2<sup>10</sup> set beforehand. The rocking after impact is excluded where
+intervals cannot exclude it. The steps before impact gain little, and the
+other branches and the rest of the landing set are untested.
+
+::: {.callout-note title="If the zonotope route works"}
+If zonotopes certify the impact window over the whole landing set, the
+landing becomes a certified link, and set-based certificates for
+contact-rich funnels deserve to be pursued well beyond this chain.
+
+Justin Koeln and Justin Ruths at UT Dallas work on exactly these set
+representations: hybrid zonotopes for reachability of mixed logical
+dynamical systems, and the zonoLAB toolbox
+([arXiv 2310.15426](https://arxiv.org/abs/2310.15426)). That line would be a
+natural collaboration.
+:::
+
+[Back to the overview](index.qmd)
