@@ -2,6 +2,9 @@
 title: "Background: interval arithmetic"
 subtitle: "How a computer can prove a statement about every state in a box at once, why the answers come out loose, and why loose is acceptable while wrong never is."
 lightbox: true
+bibliography: background.bib
+csl: ../../../ieee.csl
+link-citations: true
 ---
 
 **Who this is for.** You know control and dynamics, but not validated
@@ -33,11 +36,10 @@ reached.
 **interval** and call a vector of intervals a **box**. Replace every
 operation in a formula by its interval version, and round every endpoint
 *outward* (down for lower ends, up for upper ends) so floating-point
-rounding cannot cut off a true value. The result, the formula's **natural
+rounding cannot cut off a true value [@moore2009introduction]. The result, the formula's **natural
 interval extension**, contains the formula's value at every point of the
 box. The proof is induction over the formula: each interval operation
-contains every result of the real operation on its arguments. This
-*inclusion property* is all a certificate needs.
+contains every result of the real operation on its arguments. This *inclusion property* is all a certificate needs [@moore2009introduction; @neumaier1990interval].
 
 ## 2. How a certificate uses it
 
@@ -60,7 +62,7 @@ the limit, the answer is "don't know", and the box is split.
 
 ![Certifying x·y ≥ 0.3 on [0.5, 1]² by bisection. Each number is the interval lower bound of x·y on that piece; green pieces are certified. The corner piece never certifies, because x·y really does drop to 0.25 at (0.5, 0.5): the property is false there, and no amount of splitting will prove it. Drawn by `scripts/bg_certification_figures.py`.](media/bg_bisection.svg){.lightbox}
 
-This is **bisection**: keep splitting the boxes that straddle until each
+This is **bisection** [@jaulin2001applied]: keep splitting the boxes that straddle until each
 piece is either certified or small enough to give up on. A refused piece is
 not a proof that the property fails. Here it does fail, at $(0.5,0.5)$,
 which is why splitting never closes it.
@@ -95,7 +97,8 @@ the result. The **mean-value form** repairs most of it inside one formula:
 $f(x)\in f(\hat x)+[\nabla f]([x])\cdot([x]-\hat x)$, the value at the box's
 centre $\hat x$ plus an interval gradient times the offsets. For
 $f(x)=x-x$ the gradient is $1-1=0$ exactly, so the mean-value form returns
-$[0,0]$.
+$[0,0]$ [@neumaier1990interval].
+
 
 ### Wrapping
 
@@ -103,7 +106,7 @@ $[0,0]$.
 usually *not* a box: it is rotated or sheared. The next step only accepts a
 box, so the set is replaced by the smallest box around it, its **interval
 hull**. The hull adds corners that the true set does not have, the next step
-maps those corners too, and the extra width compounds.
+maps those corners too, and the extra width compounds [@kuhn1998rigorously; @nedialkov1999validated].
 
 **Check it by hand.** Rotate the square $[-1,1]^2$ by $45^\circ$. Its corners
 land on the axes at distance $\sqrt2$, so its hull is
@@ -128,7 +131,7 @@ splitting. A wrong bound, one that misses a true value, makes the
 certificate a false statement. So every primitive operation has to be
 sound, including the ones a library implements for you.
 
-**A real example.** Our interval engine is the immrax library. An audit of
+**A real example.** Our interval engine is the immrax library [@harapanahalli2024immrax]. An audit of
 its primitives found that `integer_pow` returned $[0,1]$ for $x^0$ on an
 interval containing $0$, where the correct answer is $[1,1]$. That is not
 loose, it is wrong. The fix removed $x^0$ from the affected fit and added
@@ -167,3 +170,17 @@ throws away.
   steps ($\sqrt2$ per step, 16× after 8).
 - **Loose is fine, wrong never is**: every primitive must be sound.
 - Splitting costs $2^d$ per halving; that is why we carry zonotopes.
+
+## Further reading {.unnumbered}
+
+- Moore, Kearfott and Cloud, *Introduction to Interval Analysis* [@moore2009introduction]: the standard first textbook; interval arithmetic, natural extensions, the inclusion property, and interval Newton methods, with exercises.
+- Jaulin, Kieffer, Didrit and Walter, *Applied Interval Analysis* [@jaulin2001applied]: bisection and set inversion in practice, with robotics and control examples close to our use.
+- Neumaier, *Interval Methods for Systems of Equations* [@neumaier1990interval]: the rigorous reference for mean-value forms, centred forms and interval linear systems.
+- Hansen and Walster, *Global Optimization Using Interval Analysis* [@hansen2003global]: branch-and-bound with intervals, the optimization view of "split until decided".
+- Kühn [@kuhn1998rigorously] and Nedialkov, Jackson and Corliss [@nedialkov1999validated]: the wrapping effect in validated integration, and the remedies (zonotopes; Lohner's coordinate frames).
+- Harapanahalli, Jafarpour and Coogan [@harapanahalli2024immrax]: the immrax toolbox our certifier uses, interval analysis inside JAX.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::

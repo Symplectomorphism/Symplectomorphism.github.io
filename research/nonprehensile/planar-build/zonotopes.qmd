@@ -2,6 +2,9 @@
 title: "Background: zonotope propagation"
 subtitle: "A set shape that a step map can carry without re-boxing: what a zonotope is, the handful of operations a certifier needs, why each is sound, and why keeping the shape inside the box pays off later."
 lightbox: true
+bibliography: background.bib
+csl: ../../../ieee.csl
+link-citations: true
 ---
 
 **Before this page:** [interval arithmetic](interval-arithmetic.qmd), and in
@@ -32,7 +35,7 @@ $(1.1,0.9),\ (0.9,1.1),\ (-0.9,-1.1),\ (-1.1,-0.9)$. Its interval hull
 is $[-1.1,1.1]^2$, the same as a full square's.
 
 **The general statement.** A **zonotope** with centre $c\in\R^n$ and
-generator matrix $G=[g_1,\dots,g_m]\in\R^{n\times m}$ is
+generator matrix $G=[g_1,\dots,g_m]\in\R^{n\times m}$ is [@kuhn1998rigorously; @girard2005reachability]
 $$
 \mathcal Z(c,G)=\{\,c+G\xi:\ \xi\in[-1,1]^m\,\}.
 $$
@@ -42,7 +45,7 @@ cases:
 - **A box** is $\mathcal Z(c,\operatorname{diag}(r))$, half-widths $r$ on the
   diagonal. Every interval certificate is already a zonotope certificate.
 - **A parallelepiped** ($m=n$, $G$ invertible) is the set carried by
-  Lohner's method for validated ODE solutions.
+  Lohner's method for validated ODE solutions [@nedialkov1999validated].
 - **A segment** has one generator.
 
 ## 2. Same bounding box is not the same set
@@ -106,7 +109,7 @@ and bounds the rest, $[-0.125,0.125]$, by a **new** symbol:
 $\hat x^2=2.375+1.5\,\epsilon_1+0.125\,\epsilon_2$.
 
 **The general statement.** A vector of affine forms over shared symbols is
-a zonotope: centres form $c$, coefficient columns form $G$. Each
+a zonotope [@defigueiredo2004affine]: centres form $c$, coefficient columns form $G$. Each
 nonlinear operation adds one generator for its error. The zonotope step
 below does the same for a whole step map at once.
 
@@ -156,7 +159,7 @@ barely bigger.
 
 **The general statement.** For $G=[G_1,G_2]$,
 $\mathcal Z(c,G)\subseteq\mathcal Z(c,[G_1,\operatorname{diag}(|G_2|\mathbf 1)])$,
-since $\mathcal Z(0,G_2)$ lies in its own hull. Girard's rule boxes the
+since $\mathcal Z(0,G_2)$ lies in its own hull. Girard's rule [@girard2005reachability] boxes the
 generators that lose least when boxed. Our impact-window trees cap the
 count at 40; on the experiment's sub-box the cap lost nothing in the hull
 against no cap, which reaches 307 generators by step 7.
@@ -194,8 +197,8 @@ hull half-widths are $|G|\mathbf 1=(1.1,1.1)\le1.2$: yes, exactly.
   $c-|G|\mathbf 1\ge l$ and $c+|G|\mathbf 1\le u$.
 - **Zonotope outer: a sufficient linear program.** If
   $G_1=G_2\Gamma$, $c_1-c_2=G_2\beta$ and every row of $[\Gamma,\beta]$ has
-  absolute sum $\le1$, then $\mathcal Z(c_1,G_1)\subseteq\mathcal Z(c_2,G_2)$,
-  because $c_1+G_1\xi=c_2+G_2(\beta+\Gamma\xi)$. The LP's answer is
+    absolute sum $\le1$, then $\mathcal Z(c_1,G_1)\subseteq\mathcal Z(c_2,G_2)$
+  [@sadraddini2019linear], because $c_1+G_1\xi=c_2+G_2(\beta+\Gamma\xi)$. The LP's answer is
   re-verified exactly before it counts. Exact zonotope containment is hard
   in general, so a "no" from the LP does not prove non-containment.
 
@@ -206,10 +209,11 @@ not, and each part follows its own contact mode. A zonotope cut by a
 half-space is no longer a zonotope.
 
 **The general statement.** A **constrained zonotope**
-$\{c+G\xi:\ \xi\in[-1,1]^m,\ A\xi=b\}$ is closed under such cuts. A **hybrid
+$\{c+G\xi:\ \xi\in[-1,1]^m,\ A\xi=b\}$ is closed under such cuts
+[@scott2016constrained]. A **hybrid
 zonotope** adds binary factors $\xi^b\in\{-1,1\}^{n_b}$: a union of
 $2^{n_b}$ constrained zonotopes sharing generators, one per mode branch.
-Checks on them are linear programs per branch. This is the foundation we
+Checks on them are linear programs per branch [@bird2023hybrid]. This is the foundation we
 build on:
 [Bird, Pangborn, Jain and Koeln, *Automatica* 2023](https://doi.org/10.1016/j.automatica.2023.111107),
 [Siefert et al., ACC 2023](https://doi.org/10.23919/ACC55779.2023.10156300),
@@ -272,3 +276,20 @@ MJX, and learned proposals are verified exactly.
 - Checks are **closed form**, $a\cdot c-\|G^\top a\|_1$; containment in a box
   is exact, in a zonotope a sufficient LP whose answer is re-verified.
 - **Mode branches** use constrained and hybrid zonotopes (Koeln et al.).
+
+## Further reading {.unnumbered}
+
+- Girard [@girard2005reachability]: the clearest short introduction to zonotope reachability, including order reduction; start here.
+- Kühn [@kuhn1998rigorously]: zonotopes as the cure for the wrapping effect in rigorous orbit computation.
+- Nedialkov, Jackson and Corliss [@nedialkov1999validated]: survey of validated ODE integration, with Lohner's parallelepiped (QR) method.
+- de Figueiredo and Stolfi [@defigueiredo2004affine]: affine arithmetic, the operation-by-operation view of zonotopes.
+- Scott, Raimondo, Marseglia and Braatz [@scott2016constrained]: constrained zonotopes, exact intersections at the cost of linear programs.
+- Bird, Pangborn, Jain and Koeln [@bird2023hybrid] and Siefert et al. [@siefert2023successor]: hybrid zonotopes for mode-branched sets and their nonlinear successor sets, the foundation we build on; the zonoLAB toolbox [@koeln2023zonolab] implements them.
+- Althoff's CORA [@althoff2015cora] and Kochdumper and Althoff's sparse polynomial zonotopes [@kochdumper2021sparse]: a mature zonotope reachability toolbox, and the higher-order set that keeps nonlinear correlations.
+- Berz and Makino [@berz1998verified]: Taylor models, polynomial enclosures with interval remainders, the higher-order relative of the first-order zonotope step.
+- Sadraddini and Tedrake [@sadraddini2019linear]: linear encodings of polytope and zonotope containment.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
