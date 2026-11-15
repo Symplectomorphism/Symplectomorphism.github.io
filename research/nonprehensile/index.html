@@ -559,7 +559,7 @@ window.MathJax = {
         
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content" tabindex="-1">
+<main class="content page-columns page-full" id="quarto-document-content" tabindex="-1">
 
 <div style="visibility: hidden; position: absolute; top: 0; left: 0; width: 0; height: 0; overflow: hidden;">
 $$
@@ -615,6 +615,752 @@ $$
 </div>
 <p>Pushing, toppling, pivoting, and re-acquiring an object are all cases in which the robot never closes a rigid grasp. The object moves because contacts are made and broken in the right order, and the hard part of the problem is deciding that order. A trajectory optimizer cannot recover from a contact sequence that was wrong to begin with.</p>
 <p>Our work asks a specific question: <strong>what should the discrete object be, if the planner is expected to invent contacts that do not exist yet?</strong></p>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">The method at a glance</h2>
+<p>The whole method is one loop: an offline planner turns the task into a chain of certified edges, and online feedback runs them on the plant. Click a block to zoom in.</p>
+</section>
+</div>
+<div class="column-page-right">
+<!-- System-overview diagram: three zoom levels, inline SVG built by the
+     script below from the TREE data (no external libraries).
+     URL hash: #zoom=<id> opens a block (ids: planner, search, certifier,
+     desired, feedback, plant, perception); &theme=dark|light forces the
+     Quarto colour scheme (for screenshots; not persisted on file://). -->
+<div class="sysmap" id="sysmap">
+  <div class="sysmap-bar">
+    <button type="button" class="sysmap-back" disabled="" aria-label="Zoom out one level">← Back</button>
+    <nav class="sysmap-crumbs" aria-label="Diagram zoom level"></nav>
+    <span class="sysmap-legend" aria-hidden="true">
+      <span class="lg lg-zoom">⊕</span> zooms in
+      <span class="lg lg-planned"></span> planned
+    </span>
+  </div>
+  <div class="sysmap-body">
+    <div class="sysmap-stage">
+      <svg class="sysmap-svg" viewbox="0 0 1000 600" role="group" aria-label="System overview of the method. Click or press Enter on a block to zoom in; Escape zooms out."></svg>
+    </div>
+    <div class="sysmap-panel" role="region" aria-label="Block details" aria-live="polite"></div>
+  </div>
+  <p class="sysmap-hint">Click a block to zoom in and read about it; <kbd>Tab</kbd> moves between blocks, <kbd>Enter</kbd> zooms, <kbd>Esc</kbd> zooms out.</p>
+  <noscript><p>The interactive diagram needs JavaScript. The method: a task (scene and goal) goes to an offline planner, which produces a desired motion (a chain of edges with feedback laws and certified funnels); online, the feedback laws drive the plant, perception closes the loop. See the <a href="planar-build/index.html">Planar Build</a> pages.</p></noscript>
+</div>
+
+<style>
+.sysmap {
+  --sm-accent: var(--site-accent, #175b48);
+  --sm-muted: var(--site-muted, #536059);
+  --sm-surface: var(--site-surface, #fff);
+  --sm-tint: var(--site-tint, #eef2ec);
+  --sm-tint2: var(--site-tint-hover, #e0e9dc);
+  --sm-panel: var(--site-panel, #f1f5f1);
+  --sm-border: var(--site-border, #dce3dd);
+  --sm-planned: var(--site-year, #7b6250);
+  --sm-focus: var(--site-focus, #bd5c28);
+  --sm-bg: var(--bs-body-bg, #fdfdfb);
+  margin: 1.2rem 0 2.2rem;
+}
+.sysmap-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; margin-bottom: .5rem; font-size: .92rem; }
+.sysmap-back { border: 1px solid var(--sm-border); background: var(--sm-surface); color: inherit; border-radius: .35rem; padding: .15rem .65rem; font-size: .9rem; cursor: pointer; }
+.sysmap-back:disabled { opacity: .45; cursor: default; }
+.sysmap-back:focus-visible, .sysmap-crumbs button:focus-visible { outline: 3px solid var(--sm-focus); outline-offset: 2px; }
+.sysmap-crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+.sysmap-crumbs button { border: 0; background: none; color: var(--sm-accent); padding: 0 .1rem; font-size: .92rem; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.sysmap-crumbs .sep { color: var(--sm-muted); }
+.sysmap-crumbs .here { font-weight: 600; }
+.sysmap-legend { margin-left: auto; color: var(--sm-muted); font-size: .85rem; white-space: nowrap; }
+.sysmap-legend .lg-zoom { color: var(--sm-accent); font-size: 1.05rem; }
+.sysmap-legend .lg-planned { display: inline-block; width: 1.6rem; height: .8rem; border: 2px dashed var(--sm-planned); border-radius: .2rem; vertical-align: -1px; margin-left: .7rem; }
+.sysmap-body { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 1.1rem; align-items: start; }
+.sysmap-stage { border: 1px solid var(--sm-border); border-radius: .5rem; background: var(--sm-bg); overflow: hidden; }
+.sysmap-svg { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; color: inherit; user-select: none; -webkit-user-select: none; }
+.sysmap-panel { background: var(--sm-panel); border-left: 3px solid var(--sm-accent); border-radius: .3rem; padding: .9rem 1.05rem; font-size: .93rem; line-height: 1.55; min-height: 12rem; }
+.sysmap-panel h3 { font-size: 1.12rem; margin: 0 0 .35rem; }
+.sysmap-panel p { margin: 0 0 .6rem; }
+.sysmap-panel .chip { display: inline-block; font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; border-radius: 1rem; padding: .05rem .55rem; margin-bottom: .55rem; border: 1px solid var(--sm-accent); color: var(--sm-accent); }
+.sysmap-panel .chip.planned { border: 1px dashed var(--sm-planned); color: var(--sm-planned); }
+.sysmap-panel .more { font-size: .88rem; margin: .2rem 0 0; padding-left: 1.1rem; }
+.sysmap-panel .more li { margin: .1rem 0; }
+.sysmap-panel .zoomhint { font-size: .85rem; color: var(--sm-muted); }
+.sysmap-hint { font-size: .85rem; color: var(--sm-muted); margin: .45rem 0 0; }
+.sysmap kbd { font-size: .78rem; padding: .05rem .3rem; }
+@media (max-width: 900px) {
+  .sysmap-body { grid-template-columns: minmax(0, 1fr); }
+  .sysmap-panel { min-height: 0; }
+  .sysmap-legend { margin-left: 0; }
+}
+/* SVG parts */
+.sysmap-svg text { fill: currentColor; font-family: inherit; }
+.sysmap-svg .sm-box { fill: var(--sm-surface); stroke: var(--sm-muted); stroke-width: 1.6px; vector-effect: non-scaling-stroke; transition: fill .2s; }
+.sysmap-svg .sm-node { cursor: pointer; outline: none; }
+.sysmap-svg .sm-node.zoomable > .sm-box { stroke: var(--sm-accent); stroke-width: 2.2px; }
+.sysmap-svg .sm-node:hover > .sm-box, .sysmap-svg .sm-node.sel > .sm-box { fill: var(--sm-tint2); }
+.sysmap-svg .sm-node:focus-visible > .sm-box { stroke: var(--sm-focus); stroke-width: 3.5px; }
+.sysmap-svg .sm-node.planned > .sm-box { stroke: var(--sm-planned); stroke-dasharray: 7 5; fill: var(--sm-bg); }
+.sysmap-svg .sm-node.planned:hover > .sm-box, .sysmap-svg .sm-node.planned.sel > .sm-box { fill: var(--sm-tint); }
+.sysmap-svg .sm-node.planned .lbl, .sysmap-svg .sm-node.planned .sub { fill: var(--sm-muted); }
+.sysmap-svg .sm-node.open { cursor: default; }
+.sysmap-svg .sm-node.open > .sm-box { fill: var(--sm-bg); stroke: var(--sm-border); }
+.sysmap-svg .sm-face { transition: opacity .3s; }
+.sysmap-svg .sm-node.open > .sm-face { opacity: 0; pointer-events: none; }
+.sysmap-svg .lbl { font-weight: 650; }
+.sysmap-svg .sub { fill: var(--sm-muted); }
+.sysmap-svg .tag rect { fill: var(--sm-planned); }
+.sysmap-svg .tag text { fill: var(--sm-bg); font-weight: 650; letter-spacing: .03em; }
+.sysmap-svg .zbadge circle { fill: var(--sm-surface); stroke: var(--sm-accent); stroke-width: 1.6px; vector-effect: non-scaling-stroke; }
+.sysmap-svg .zbadge path { stroke: var(--sm-accent); stroke-width: 2.4px; vector-effect: non-scaling-stroke; }
+.sysmap-svg .sm-deco { transition: opacity .3s; }
+.sysmap-svg .sm-deco.dim { opacity: 0; }
+.sysmap-svg.notrans, .sysmap-svg.notrans * { transition: none !important; }
+.sysmap-svg .sm-inner { opacity: 0; visibility: hidden; transition: opacity .28s, visibility 0s linear .28s; }
+.sysmap-svg .sm-inner.on { opacity: 1; visibility: visible; transition: opacity .4s; }
+.sysmap-svg .arr { fill: none; stroke: var(--sm-muted); stroke-width: 2.2; }
+.sysmap-svg .arr.planned { stroke: var(--sm-planned); stroke-dasharray: 9 6; }
+.sysmap-svg .ah { fill: var(--sm-muted); }
+.sysmap-svg .ah.planned { fill: var(--sm-planned); }
+.sysmap-svg .alb { fill: var(--sm-muted); paint-order: stroke; stroke: var(--sm-bg); stroke-width: 5px; stroke-linejoin: round; }
+.sysmap-svg .alb.planned { fill: var(--sm-planned); font-style: italic; }
+.sysmap-svg .hdr { fill: var(--sm-accent); font-weight: 650; }
+.sysmap-svg .note { fill: var(--sm-muted); }
+.sysmap-svg .band { fill: var(--sm-tint); }
+.sysmap-svg .bandlbl { fill: var(--sm-muted); font-weight: 650; letter-spacing: .12em; }
+.sysmap-svg .ink { fill: none; stroke: currentColor; stroke-width: 2; }
+.sysmap-svg .ink-soft { fill: none; stroke: var(--sm-muted); stroke-width: 1.6; }
+.sysmap-svg .fill-acc { fill: var(--sm-accent); fill-opacity: .18; stroke: var(--sm-accent); stroke-width: 2; }
+.sysmap-svg .fill-acc2 { fill: var(--sm-accent); fill-opacity: .10; stroke: var(--sm-accent); stroke-width: 1.6; }
+.sysmap-svg .goal { fill: none; stroke: var(--sm-accent); stroke-width: 1.8; stroke-dasharray: 4 3; }
+.sysmap-svg .disk { fill: var(--sm-planned); }
+.sysmap-svg .boxfill { fill: var(--sm-tint2); stroke: currentColor; stroke-width: 1.8; }
+.sysmap-svg .ghost { fill: none; stroke: var(--sm-muted); stroke-width: 1.6; stroke-dasharray: 3 4; }
+.sysmap-svg .tick { stroke: var(--sm-accent); stroke-width: 3; }
+</style>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("sysmap");
+  if (!root) return;
+  var svg = root.querySelector(".sysmap-svg");
+  var panel = root.querySelector(".sysmap-panel");
+  var crumbs = root.querySelector(".sysmap-crumbs");
+  var backBtn = root.querySelector(".sysmap-back");
+  var PB = "planar-build/";
+  var L = {
+    pb: [PB + "index.html", "Planar Build overview"],
+    results: ["results/index.html", "Results"],
+    task: ["results/index.html#the-task", "Results: the task"],
+    issues: [PB + "issues.html", "Issues and open work"],
+    scene: [PB + "contact-states.html#the-scene", "Contact states: the scene"],
+    contact: [PB + "contact-states.html", "Contact states"],
+    recog: [PB + "contact-states.html#the-recognizer", "Contact states: the recognizer"],
+    edits: [PB + "edits.html", "Edits"],
+    gate: [PB + "hold-gate.html", "The hold gate"],
+    sweep: [PB + "hold-gate.html#sweep", "The hold gate: the transition sweep"],
+    support: [PB + "support-tutorial.html", "Background: deciding support"],
+    cert: [PB + "certificate.html", "Certifying a whole box"],
+    certlift: [PB + "certificate.html#the-indirect-lift", "Certifying a whole box: the indirect lift"],
+    solver: [PB + "local-solver.html", "The local solver"],
+    dynreal: [PB + "dynamic-realizer.html", "The dynamic realizer (planned)"],
+    funnels: [PB + "funnels.html", "Certified funnels"],
+    trackc: [PB + "funnels.html#track-c-a-chain-with-a-landing-in-motion", "Certified funnels: track C"],
+    zono: [PB + "zonotopes.html", "Background: zonotope propagation"],
+    zonocheck: [PB + "zonotopes.html#checking-a-condition-one-line-of-arithmetic", "Zonotopes: checking a condition"],
+    zonorec: [PB + "zonotopes.html#what-the-records-show", "Zonotopes: what the records show"],
+    search: [PB + "search.html", "Search and ranking"],
+    searchdesign: [PB + "search.html#design", "Search: actions and acceptance"],
+    nodeid: [PB + "node-identity.html", "Node identity"],
+    /* Background pages (Planar Build). */
+    ia: [PB + "interval-arithmetic.html", "Background: interval arithmetic"],
+    iz: [PB + "intervals-and-zonotopes.html", "Background: intervals and zonotopes"],
+    izkraw: [PB + "intervals-and-zonotopes.html#implicit-contact-solves-interval-newton-krawczyk", "Intervals and zonotopes: interval Newton"],
+    izfree: [PB + "intervals-and-zonotopes.html#free-tightness-intersect-two-sound-bounds", "Intervals and zonotopes: free tightness"],
+    fc: [PB + "funnel-composition.html", "Background: certified funnels and composition"],
+    fcwhat: [PB + "funnel-composition.html#what-a-funnel-is", "Funnels and composition: what a funnel is"],
+    fcutil: [PB + "funnel-composition.html#utilization-how-much-room-is-left", "Funnels and composition: utilization"],
+    fcchoose: [PB + "funnel-composition.html#choosing-a-law-coverage-first-then-utilization", "Funnels and composition: choosing a law"],
+    fccomp: [PB + "funnel-composition.html#composition-on-certified-sets-only", "Funnels and composition: composition"],
+    fc9595: [PB + "funnel-composition.html#measured-quantities-joint-9595-bounds", "Funnels and composition: joint 95/95 bounds"],
+    fce2e: [PB + "funnel-composition.html#execute-end-to-end-not-just-segment-by-segment", "Funnels and composition: end-to-end execution"],
+    tech: [PB + "certification-techniques.html", "Background: techniques that made the chain certify"],
+    techband: [PB + "certification-techniques.html#index-the-tube-by-progress-not-by-time", "Techniques: progress-indexed tubes"],
+    techswitch: [PB + "certification-techniques.html#a-kink-inside-one-formation-the-support-switch-band", "Techniques: the support-switch band"],
+    techreaders: [PB + "certification-techniques.html#one-contact-definition-three-readers", "Techniques: one contact definition, three readers"],
+    techspeed: [PB + "certification-techniques.html#keep-the-speed-continuous-at-a-junction", "Techniques: keep the speed continuous at a junction"]
+  };
+
+  /* ---- The diagram's content.  box = [x, y, w, h] in the parent's 1000 x 600
+     frame; a zoomable block is 5:3, so its children fill the view. ---- */
+  var SCENE =
+    '<line class="ink" x1="58" y1="170" x2="242" y2="170"/>' +
+    '<path class="ink" d="M184,170 V136 H242"/>' +
+    '<rect class="boxfill" x="134" y="139" width="34" height="31"/>' +
+    '<circle class="disk" cx="126" cy="163" r="7"/>' +
+    '<rect class="goal" x="200" y="105" width="34" height="31"/>';
+
+  var TREE = {
+    id: "overview", name: "Overview",
+    d: { title: "The method at a glance",
+      text: ["Offline, a planner turns the task into a plan through contact formations: a chain of edges, each with a feedback law, a nominal motion and a certified funnel. Online, each edge's law drives the plant and hands off to the next at a certified section; perception closes the loop.",
+             "Click a block to zoom in. Blocks drawn dashed, and the dashed arrow, are planned and not built yet."],
+      links: ["pb", "results", "issues"] },
+    decor:
+      '<rect class="band" x="12" y="28" width="976" height="214" rx="14"/>' +
+      '<text class="bandlbl" x="30" y="56" font-size="15">OFFLINE</text>' +
+      '<rect class="band" x="12" y="300" width="976" height="288" rx="14"/>' +
+      '<text class="bandlbl" x="30" y="328" font-size="15">ONLINE</text>',
+    arrows: [
+      { d: "M260,136 H390", t: "scene, goal", x: 325, y: 124 },
+      { d: "M610,136 H740", t: "plan", x: 675, y: 124 },
+      { d: "M850,202 V340", t: "edges, laws,", t2: "funnels", x: 862, y: 266, a: "start" },
+      { d: "M740,406 H610", t: "disk command", x: 675, y: 394 },
+      { d: "M390,406 H260", t: "state", x: 325, y: 394 },
+      { d: "M150,472 V548 H850 V472", t: "state for the laws", x: 500, y: 540 },
+      { d: "M205,340 V272 H455 V202", t: "re-plan (planned)", x: 330, y: 264, planned: true }
+    ],
+    kids: [
+      { id: "task", box: [40, 70, 220, 132], label: ["Task"], sub: ["μ_disk ∈ [0.3, 0.5]"], art: SCENE, face: "top",
+        d: { title: "Task: scene and goal",
+          text: ["A planar box rests on the floor in front of a step with a riser and a platform. A disk “finger” moves the box through contact but is too weak to carry it.",
+                 "The goal is the box on the platform (the lift goal), at rest; the dashed outline in the sketch marks it.",
+                 "The disk friction is uncertain, μ_disk ∈ [0.3, 0.5], and every certificate holds over the whole band."],
+          links: ["scene", "task"] } },
+      { id: "planner", box: [390, 70, 220, 132], label: ["Planner"], sub: ["offline", "plan through formations"],
+        d: { title: "Planner (offline)", chip: "Built · two parts planned",
+          text: ["The planner searches the contact-formation graph for a route from the scene to the goal. A hold gate screens each candidate edit, and a local solver realizes it in simulation.",
+                 "The funnel certifier turns each edge of a chain into a certified transition over the friction band, and chain_check composes them.",
+                 "Planned: a search that composes certified funnels directly, and a GNN that proposes certificates for the verifier to check."],
+          links: ["pb", "search", "funnels"] },
+        decor: '<text class="hdr" x="30" y="44" font-size="26">Planner · offline</text>',
+        arrows: [
+          { d: "M270,146 H390", t: "candidate", t2: "edits", x: 330, y: 122 },
+          { d: "M610,146 H730", t: "edit", x: 670, y: 134 },
+          { d: "M850,212 V270", t: "passes", x: 862, y: 246, a: "start" },
+          { d: "M760,270 V241 H560 V212", t: "outcome child", x: 660, y: 234 },
+          { d: "M200,212 V382 H440 V430", t: "edge specs", x: 320, y: 372 },
+          { d: "M500,212 V430", t: "funnel graph", t2: "(planned)", x: 488, y: 300, a: "end", planned: true },
+          { d: "M270,496 H390", t: "proposal", t2: "(planned)", x: 330, y: 472, planned: true },
+          { d: "M610,496 H730", t: "zonotope", t2: "records", x: 670, y: 472 },
+          { d: "M850,562 V594", t: "certified chain → desired motion", x: 838, y: 588, a: "end" }
+        ],
+        kids: [
+          { id: "graph", box: [30, 80, 240, 132], label: ["Contact-formation", "graph"], sub: ["Xiao–Ji formations", "make · break · transfer"],
+            d: { title: "Contact-formation graph",
+              text: ["Every body carries a finite, named inventory of features (edges and convex vertices). A template pairs two features with a signed gap, defined whether or not they touch.",
+                     "A formation is the set of templates in principal contact, in the sense of Xiao and Ji: the closed contacts. It is the discrete state, carried alongside the pose.",
+                     "Neighbouring formations differ by an edit that makes, breaks or transfers one contact; several change at once only when no single change is possible (the pivot)."],
+              links: ["contact", "edits", "nodeid"] } },
+          { id: "search", box: [390, 80, 220, 132], label: ["Search"], sub: ["PHS* · learned V₁, π", "197 / 200 held-out"],
+            d: { title: "Search",
+              text: ["Policy-guided heuristic search (PHS*, Orseau and Lelis 2021) over edits. A learned ranker π weights the candidate edits, a learned value V₁ sets the heuristic factor, and each expansion is charged one call to the local solver.",
+                     "Every disk-placed edit is offered at each placement with a distinct transition pose.",
+                     "From the scene alone it finds the held indirect lift in 197 of 200 held-out searches (98.5%; Wilson 95% interval 95.7–99.5%) and in 34 of 34 test searches, within 192 calls each."],
+              links: ["search", "nodeid", "results"] },
+            decor: '<text class="hdr" x="30" y="44" font-size="26">Search · PHS*</text>' +
+              '<rect class="ghost" x="400" y="445" width="200" height="74" rx="10"/>' +
+              '<text class="note" x="500" y="478" font-size="19" text-anchor="middle">Λqs call</text>' +
+              '<text class="note" x="500" y="502" font-size="14" text-anchor="middle">(realizer, planner level)</text>',
+            arrows: [
+              { d: "M500,180 V220", t: "key: π, η", x: 512, y: 206, a: "start" },
+              { d: "M255,290 H360", t: "candidates", x: 307, y: 280 },
+              { d: "M500,360 V445", t: "expand", x: 512, y: 408, a: "start" },
+              { d: "M580,445 V400 H845 V350", t: "state reached", x: 722, y: 392 },
+              { d: "M845,230 V198 H600 V220", t: "push", x: 722, y: 190 }
+            ],
+            kids: [
+              { id: "s-vpi", box: [360, 70, 280, 110], label: ["V₁ and π"], sub: ["learned value and ranker"],
+                d: { title: "V₁ and π (learned)",
+                  text: ["V₁ estimates the expected number of solver calls to the goal; π gives each candidate edit a probability. Both are trained by expert iteration on every logged call, failures included.",
+                         "The distance to the goal enters only as shaping and as an input. The gains from V₁ and π are claimed only via ablation."],
+                  links: ["searchdesign", "results"] } },
+              { id: "s-place", box: [30, 230, 225, 120], label: ["Placement-", "distinct edits"], sub: ["one per transition pose"],
+                d: { title: "Placement-distinct edits",
+                  text: ["Every disk-placed edit is offered at each placement with a distinct transition pose, so the search chooses where the disk acts as well as which contact changes.",
+                         "Edits the hold gate rejects get π = 0 and are never expanded."],
+                  links: ["sweep", "results"] } },
+              { id: "s-phs", box: [360, 220, 280, 140], label: ["PHS* nodes", "and calls"], sub: ["budget: 192 calls"],
+                d: { title: "PHS* nodes and calls",
+                  text: ["A node is a formation, the disk's connected region and the box's pose; two nodes merge only when the gate's verdicts agree.",
+                         "Nodes are expanded in order of a key built from their depth, the probability of their path under π, and a heuristic factor η from the value. Each expansion charges one call to the local solver, which is the expensive part.",
+                         "Each search has a budget of 192 calls."],
+                  links: ["search", "nodeid"] } },
+              { id: "s-out", box: [720, 230, 250, 120], label: ["Outcome", "children"], sub: ["labelled by the state reached"],
+                d: { title: "Outcome children",
+                  text: ["A call yields at most one child, labelled by the state it actually reaches.",
+                         "The child is accepted if it is the requested state, or if it lowers the value estimate by at least δ = 10 mm, the merge radius of node identity. A call that ends off-plan can still leave the box where a short route continues."],
+                  links: ["searchdesign", "nodeid"] } },
+              { id: "s-result", box: [30, 420, 300, 150], label: ["197 / 200 held-out"], sub: ["Wilson 95%: 95.7–99.5%", "34 / 34 test searches"],
+                d: { title: "Headline result",
+                  text: ["From the scene and the goal alone, the planner finds the held indirect lift, the box held at every instant, in 197 of 200 held-out searches (98.5%; Wilson 95% interval 95.7–99.5%) and in all 34 of the original test set, with V₁ and π and 192 calls per search."],
+                  links: ["results"] } }
+            ] },
+          { id: "gate", box: [730, 80, 240, 132], label: ["Hold gate"], sub: ["LP + certified boxes", "over pose boxes"],
+            d: { title: "Hold gate",
+              text: ["Before the local solver is called, a linear program checks that the contacts persisting through an edit can hold the box against gravity within the disk's motor limits; a transition sweep finds where the edit can happen.",
+                     "A certified version proves the hold over whole boxes of poses or disk placements, with no sampling. The indirect lift's last four edits and its closing transport are certified over the friction band this way."],
+              links: ["gate", "support", "certlift"] } },
+          { id: "realizer", box: [730, 270, 240, 112], label: ["Realizer Λqs"], sub: ["quasi-static held motions", "tracked in simulation"],
+            d: { title: "Realizer Λqs",
+              text: ["The mode-scheduled quasi-static realizer plans an edit on its known contacts, as a sequence of held poses with the least squeezing force that holds the box, and tracks the plan in MuJoCo.",
+                     "It realizes the edit or reports why it failed; the state it reaches becomes the search's outcome child.",
+                     "A dynamic realizer that plans with the contact dynamics is planned."],
+              links: ["solver", "dynreal"] } },
+          { id: "gnn", box: [30, 430, 240, 132], planned: true, label: ["GNN certificate", "proposer"], sub: ["the verifier decides"],
+            d: { title: "GNN certificate proposer", planned: true,
+              text: ["A graph neural network that proposes certificates for the funnel certifier to check.",
+                     "Soundness comes from the verifier alone: a wrong proposal is refused, never certified. Any gain from the network is claimed only via ablation."],
+              links: ["fc", "issues"] } },
+          { id: "certifier", box: [390, 430, 220, 132], label: ["Funnel certifier"], sub: ["certified transitions", "over μ_disk ∈ [0.3, 0.5]"],
+            d: { title: "Funnel certifier",
+              text: ["Turns an edge into a certified transition: for every state in the entry set and every disk friction in the band, the motion stays in its tube, the contact forces stay in their cones and above a derived floor, the motor stays in its box, and the edge ends inside the section it hands off to.",
+                     "The carried set is a zonotope; interval arithmetic remains the rigorous subroutine underneath. Certificates hold on the rigid model and are checked in MJX."],
+              links: ["funnels", "fc", "zono", "iz"] },
+            decor: '<text class="hdr" x="30" y="44" font-size="26">Funnel certifier</text>' +
+              '<rect class="ghost" x="60" y="298" width="150" height="120" rx="4"/>' +
+              '<path class="fill-acc" d="M78,392 L118,312 L188,306 L192,324 L152,404 L82,410 Z"/>' +
+              '<circle cx="135" cy="358" r="3.5" fill="currentColor"/>' +
+              '<text class="note" x="135" y="444" font-size="14" text-anchor="middle">zonotope ⊂ its box hull</text>' +
+              '<text x="240" y="318" font-size="17" font-weight="650">Carried set: a zonotope</text>' +
+              '<text x="240" y="346" font-size="17">Z = c + G·[−1, 1]ᵏ</text>' +
+              '<text class="note" x="240" y="374" font-size="15">linear parts map it exactly;</text>' +
+              '<text class="note" x="240" y="396" font-size="15">only the remainder is boxed;</text>' +
+              '<text class="note" x="240" y="418" font-size="15">a box is the diagonal case.</text>',
+            arrows: [
+              { d: "M230,145 H265" },
+              { d: "M480,145 H515" },
+              { d: "M725,145 H760" },
+              { d: "M620,270 V210", t: "bands, pieces", x: 632, y: 246, a: "start" },
+              { d: "M865,210 V270", t: "margins", x: 877, y: 246, a: "start" },
+              { d: "M905,390 V440", t: "certified", x: 917, y: 420, a: "start" },
+              { d: "M800,390 V414 H620 V440", t: "check in MJX", x: 708, y: 406 },
+              { d: "M865,550 V592", t: "→ chain_check", x: 853, y: 586, a: "end" }
+            ],
+            kids: [
+              { id: "c-spec", box: [30, 80, 200, 130], label: ["Edge spec"], sub: ["entry set · law", "formation · hand-off"],
+                d: { title: "Edge spec",
+                  text: ["An edge is given by its entry set (pose, velocity, contact offsets, and μ_disk over [0.3, 0.5]), its feedback law with a nominal motion, the formation it keeps, and the section where it hands off to the next edge.",
+                         "In a chain, the entry set is the previous edge's certified exit record."],
+                  links: ["fcwhat", "funnels"] } },
+              { id: "c-step", box: [265, 80, 215, 130], label: ["Step map +", "contact modes"], sub: ["rigid contact dynamics", "formation reading"],
+                d: { title: "Step map and contact modes",
+                  text: ["One step of the rigid contact dynamics under the edge's law maps the set forward; contact-mode reductions decide which contacts stick, slide or open.",
+                         "The recognizer's formation reading checks that the planned formation persists. A template that meets another edge only at endpoints already held by a closed contact reads as contained, that is open (issue #53); the rule applies alike in the recognizer, the reduction and the planner's gate."],
+                  links: ["recog", "techreaders"] } },
+              { id: "c-prop", box: [515, 80, 210, 130], label: ["Set", "propagation"], sub: ["zonotope + interval", "safety net"],
+                d: { title: "Set propagation",
+                  text: ["The carried set is a zonotope c + G·[−1, 1]ᵏ. Linear parts of a step map it exactly; the nonlinear remainder is bounded rigorously with interval arithmetic and appended as generators.",
+                         "Implicit contact solves are enclosed by interval Newton (Krawczyk). The result is intersected with the interval box as a safety net: the intersection of two sound bounds is sound and never looser."],
+                  links: ["zono", "iz", "izkraw", "ia"] } },
+              { id: "c-cond", box: [760, 80, 210, 130], label: ["Conditions"], sub: ["cones · force floor", "motor box · progress"],
+                d: { title: "Conditions",
+                  text: ["Over the whole set, at every step: contact forces inside their friction cones and above the derived contact-force floor, the disk's command inside its motor box, progress forward, and the recognizer reading the planned formation.",
+                         "Over a zonotope, each linear condition is one line of arithmetic (a support function)."],
+                  links: ["zonocheck", "fcwhat"] } },
+              { id: "c-struct", box: [515, 270, 210, 120], label: ["Structure"], sub: ["band tubes · sub-boxes", "switch bands · impact cover"],
+                d: { title: "Structure",
+                  text: ["Tubes are indexed by progress (a tilt, or a position along a transport), not by time, and cut into bands. An entry set that does not certify whole is split into sub-boxes under one law.",
+                         "A support switch inside one formation is certified by a band that takes the union of the two force models. The landing's impact window is certified by a cover of the landing set by zonotope pieces."],
+                  links: ["tech", "techband", "techswitch"] } },
+              { id: "c-verdict", box: [760, 270, 210, 120], label: ["Verdict +", "utilization"], sub: ["higher is safer"],
+                d: { title: "Verdict and utilization",
+                  text: ["Utilization is the smallest remaining margin as a fraction of its capacity: 1 untouched, 0 at the limit. Higher is safer.",
+                         "Among candidate laws, selection is coverage-first over the whole chain, then the largest utilization."],
+                  links: ["fcutil", "fcchoose"] } },
+              { id: "c-mjx", box: [515, 440, 210, 110], label: ["MJX coverage"], sub: ["joint 95/95"],
+                d: { title: "MJX coverage",
+                  text: ["Each certified edge is executed in MJX from measured states, and its coverage is reported at joint 95/95: at least 95% of rollouts inside all bounds at once, with 97.5% confidence per end of the friction band.",
+                         "Measured sets validate coverage only; they carry no logical weight in a composition."],
+                  links: ["fc9595"] } },
+              { id: "c-rec", box: [760, 440, 210, 110], label: ["Records"], sub: ["cmg.zonotope format"],
+                d: { title: "Records",
+                  text: ["Every certified set is exported as a cmg.zonotope record: centre, generators, optional linear constraints, coordinate names and units, a certified flag and the source commit.",
+                         "A box is the diagonal case, so interval and zonotope certificates compose without loss. chain_check consumes these records."],
+                  links: ["zonorec", "fccomp"] } }
+            ] },
+          { id: "chaincheck", box: [730, 430, 240, 132], label: ["Composition"], sub: ["chain_check", "exit ⊆ next entry"],
+            d: { title: "Composition: chain_check",
+              text: ["Two funnels chain when the exit set certified for one edge lies inside the entry set certified for the next.",
+                     "chain_check reads each junction's exported records and passes it only on that containment; a measured set fails as FAIL (measured), a missing record as FAIL (missing), and NaN never passes. A change upstream forces every downstream junction to be re-checked."],
+              links: ["fccomp", "funnels"] } }
+        ] },
+      { id: "desired", box: [740, 70, 220, 132], label: ["Desired motion"], sub: ["edges: law, nominal,", "funnels, hand-offs"],
+        d: { title: "Desired motion",
+          text: ["The plan as a sequence of edges. Each edge carries a feedback law, a nominal motion with a tube around it, and certified entry and exit sets: its funnel.",
+                 "Consecutive edges meet at hand-off sections, where the certified exit of one edge lies inside the certified entry of the next.",
+                 "On the task, the chain is track C: it tips, pivots, rolls and pushes the box onto the platform, then transports it to the lift goal."],
+          links: ["trackc", "fc"] },
+        decor: '<text class="hdr" x="30" y="44" font-size="26">Desired motion: the certified chain (track C)</text>' +
+          '<text class="note" x="105" y="96" font-size="14" text-anchor="middle">start: box at rest</text>' +
+          '<text class="note" x="302" y="96" font-size="14" text-anchor="middle">law switch at 23°</text>' +
+          '<text class="note" x="697" y="408" font-size="14" text-anchor="middle">command jump =</text>' +
+          '<text class="note" x="697" y="425" font-size="14" text-anchor="middle">certified law switch</text>' +
+          '<circle cx="105" cy="342" r="22" class="goal"/><circle cx="105" cy="342" r="6" fill="var(--sm-accent)"/>' +
+          '<text class="note" x="105" y="392" font-size="14" text-anchor="middle">lift goal,</text>' +
+          '<text class="note" x="105" y="409" font-size="14" text-anchor="middle">at rest</text>' +
+          /* two chained funnels */
+          '<path class="fill-acc2" d="M50,458 C130,470 190,492 250,500 L250,532 C190,540 130,562 50,574 Z"/>' +
+          '<path class="fill-acc2" d="M262,494 C330,502 380,508 440,512 L440,524 C380,528 330,534 262,542 Z"/>' +
+          '<line class="tick" x1="256" y1="486" x2="256" y2="550"/>' +
+          '<text class="note" x="50" y="592" font-size="14">certified entry</text>' +
+          '<text class="note" x="256" y="476" font-size="14" text-anchor="middle">hand-off section</text>' +
+          '<text class="note" x="350" y="568" font-size="14" text-anchor="middle">exit ⊆ next entry</text>' +
+          '<text x="500" y="482" font-size="16">Each edge: a feedback law, a nominal motion</text>' +
+          '<text x="500" y="504" font-size="16">with a tube around it, and certified entry and</text>' +
+          '<text x="500" y="526" font-size="16">exit sets (its funnel). At a hand-off section</text>' +
+          '<text x="500" y="548" font-size="16">the certified exit lies inside the next edge\'s</text>' +
+          '<text x="500" y="570" font-size="16">certified entry; the law switches there.</text>',
+        arrows: [
+          { d: "M185,152 H222", tick: [204, 152] },
+          { d: "M383,152 H420", tick: [402, 152] },
+          { d: "M580,152 H617", tick: [599, 152] },
+          { d: "M778,152 H815", tick: [797, 152] },
+          { d: "M895,194 V300", t: "62° junction", x: 883, y: 252, a: "end", tick: [895, 247, 1] },
+          { d: "M815,342 H778", tick: [797, 342] },
+          { d: "M617,342 H580", tick: [599, 342] },
+          { d: "M420,342 H383", tick: [402, 342] },
+          { d: "M222,342 H134" }
+        ],
+        kids: [
+          { id: "e-tip", box: [25, 110, 160, 84], label: ["Tip"],
+            d: { title: "Tip", text: ["The disk tips the box from rest. This held departure hands off to the pivot at a certified section."], links: ["trackc"] } },
+          { id: "e-pivot", box: [222, 110, 160, 84], label: ["Pivot to 59°"],
+            d: { title: "Pivot to 59°", text: ["The box pivots on the step corner to 59°. The law switches at 23° inside the edge, and the switch is certified."], links: ["trackc"] } },
+          { id: "e-stop", box: [420, 110, 160, 84], label: ["Stop at 59°"],
+            d: { title: "Stop at 59°", text: ["The box stops at 59° and is held there by a certified contact force above the derived force floor."], links: ["trackc", "fcwhat"] } },
+          { id: "e-bm", box: [617, 110, 160, 84], label: ["Gentle break", "+ make(m_z)"],
+            d: { title: "Gentle break, then make(m_z)", text: ["A gentle break, then the disk makes contact m_z under the box's bottom face, pressing along the inward normal. The simulator's settle after the make enters the next departure as a measured joint 95/95 region."], links: ["trackc", "fc9595"] } },
+          { id: "e-break", box: [815, 110, 160, 84], label: ["Break(g_v)"],
+            d: { title: "Break(g_v)", text: ["The break delivers the box to the roll. Its certified exit at 62° is the roll's certified entry: the 62° junction."], links: ["trackc", "fccomp"] } },
+          { id: "e-roll", box: [815, 300, 160, 84], label: ["Roll from 62°", "at 1°/s"],
+            d: { title: "Roll from 62° at 1°/s", text: ["The box rolls over the corner from 62° at 1°/s. The speed stays continuous through the junction: a jump to a faster roll violated the sticking cone at the hand-off."], links: ["techspeed", "trackc"] } },
+          { id: "e-push", box: [617, 300, 160, 84], label: ["Push"],
+            d: { title: "Push", text: ["A push sends the box onto the platform. Its magnitude is chosen coverage-first over the chain, then by the largest certified utilization, because a stronger push lands harder.", "The command jump at the hand-off is certified as a law switch."], links: ["fcchoose"] } },
+          { id: "e-land", box: [420, 300, 160, 84], label: ["Landing", "in motion"],
+            d: { title: "Landing in motion", text: ["The box lands on the platform while moving and comes to rest in the formation {m_z, t}. Every MJX landing comes to rest there.", "Its impact window is certified by a zonotope cover of the landing set, which is being computed; until then the landing is validated by measurement."], links: ["funnels", "zono"] } },
+          { id: "e-transport", box: [222, 300, 160, 84], label: ["Transport to", "the lift goal"],
+            d: { title: "Transport to the lift goal", text: ["The disk transports the box along the platform to the lift goal. On the way the flush contact's support switches from the step corner to the box corner inside one formation; a support-switch band certifies the crossing."], links: ["techswitch", "fce2e"] } }
+        ] },
+      { id: "feedback", box: [740, 340, 220, 132], label: ["Feedback"], sub: ["online execution", "switch at hand-offs"],
+        d: { title: "Feedback (online execution)",
+          text: ["Online, the active edge's feedback law commands the disk, and the executor switches to the next edge's law at the certified hand-off section.",
+                 "Rest and stop edges hold the box with a certified force.",
+                 "The whole chain runs as one continuous MJX simulation per rollout; 1536 of 1536 rollouts reach the lift goal."],
+          links: ["fce2e", "funnels"] },
+        decor: '<text class="hdr" x="30" y="44" font-size="26">Feedback · online execution</text>' +
+          '<text class="bandlbl" x="40" y="318" font-size="14">VALIDATION</text>',
+        arrows: [
+          { d: "M290,165 H375", t: "section", x: 332, y: 153 },
+          { d: "M500,230 V262 H165 V230", t: "next edge's law", x: 332, y: 282 },
+          { d: "M625,165 H710", t: "rest edge", x: 667, y: 153 }
+        ],
+        kids: [
+          { id: "f-law", box: [40, 100, 250, 130], label: ["Per-edge laws"], sub: ["the active edge's law", "commands the disk"],
+            d: { title: "Per-edge feedback laws", text: ["Each edge has its own feedback law, certified together with the edge's funnel. The law in force is the active edge's; the plan fixes which law follows which."], links: ["fcwhat", "funnels"] } },
+          { id: "f-switch", box: [375, 100, 250, 130], label: ["Switch at certified", "sections"], sub: ["23°, 62°, the push"],
+            d: { title: "Switching at certified sections", text: ["The executor switches to the next edge's law when the state reaches the certified hand-off section: at 23° in the pivot, at the 62° junction and at the push.", "Because the certified exit lies inside the next certified entry, each law starts from states it has been proved to accept."], links: ["fccomp", "trackc"] } },
+          { id: "f-hold", box: [710, 100, 250, 130], label: ["Holds and stops"], sub: ["certified force at rest"],
+            d: { title: "Certified holds and stops", text: ["Rest and stop edges hold the box with a certified contact force, as in the stop at 59°, whose force has a derived floor."], links: ["trackc", "cert"] } },
+          { id: "f-e2e", box: [40, 330, 920, 140], label: ["End-to-end MJX execution"], sub: ["one continuous simulation per rollout", "1536 / 1536 reach the lift goal"],
+            d: { title: "End-to-end MJX execution", text: ["The whole chain runs as one continuous MJX simulation per rollout, from the box at rest to the goal, so nothing between segments is missed.", "In 1536 of 1536 rollouts the box reaches the lift goal."], links: ["fce2e"] } }
+        ] },
+      { id: "plant", box: [390, 340, 220, 132], label: ["Plant"], sub: ["MuJoCo / MJX today", "robot: planned"],
+        d: { title: "Plant", chip: "Built · robot planned",
+          text: ["Today the plant is a MuJoCo/MJX simulation of the box, the step and the disk, run at both ends of the friction band.",
+                 "A real robot with a real object is planned."],
+          links: ["solver", "results"] },
+        decor: '<text class="hdr" x="30" y="44" font-size="26">Plant</text>' +
+          '<text class="note" x="500" y="430" font-size="16" text-anchor="middle">in: the disk command (from Feedback) · out: the state (to Perception)</text>',
+        kids: [
+          { id: "p-mjx", box: [80, 160, 380, 170], label: ["MuJoCo / MJX"], sub: ["box, step and disk", "both ends of μ_disk"],
+            d: { title: "MuJoCo / MJX simulation", text: ["The box, the step and the disk are simulated in MuJoCo, and batches of rollouts run in MJX, at both ends of the friction band μ_disk ∈ [0.3, 0.5]."], links: ["solver", "results"] } },
+          { id: "p-robot", box: [540, 160, 380, 170], planned: true, label: ["Real robot", "+ object"], sub: ["in place of the simulation"],
+            d: { title: "Real robot and object", planned: true, text: ["A real robot with a real object, in place of the simulation."], links: ["issues"] } }
+        ] },
+      { id: "perception", box: [40, 340, 220, 132], label: ["Perception"], sub: ["simulator state today", "estimator: planned"],
+        d: { title: "Perception", chip: "Built · estimator planned",
+          text: ["Today the feedback laws read the simulator's full state; a state estimator is planned.",
+                 "What the rigid model leaves out (disturbances, contact creep, the settle between the rigid model and the simulator) is measured and enters the certificates as joint 95/95 bounds.",
+                 "Re-planning from the measured state (the dashed arrow back to the planner) is planned."],
+          links: ["fc9595"] },
+        decor: '<text class="hdr" x="30" y="44" font-size="26">Perception</text>',
+        kids: [
+          { id: "q-state", box: [80, 100, 380, 150], label: ["Simulator full state"], sub: ["what the laws read today"],
+            d: { title: "Simulator full state", text: ["Today the feedback laws read the simulator's full state: the box's pose and velocity and the disk's state."], links: ["fce2e"] } },
+          { id: "q-est", box: [540, 100, 380, 150], planned: true, label: ["State estimator"], sub: ["for a real robot"],
+            d: { title: "State estimator", planned: true, text: ["A state estimator, needed once the plant is a real robot and object."], links: ["issues"] } },
+          { id: "q-meas", box: [80, 330, 840, 150], label: ["Measured effects → joint 95/95 bounds"], sub: ["disturbances · contact creep (per contact)", "rigid-vs-simulator settle"],
+            d: { title: "Measured effects", text: ["Disturbances, contact creep (bounded per contact, where it lives) and the settle between the rigid model and the simulator are measured in MJX.", "They enter the certificates as joint 95/95 bounds: one region covering at least 95% of rollouts in all quantities at once, with 97.5% confidence per end of the friction band."], links: ["fc9595"] } }
+        ] }
+    ]
+  };
+  /* TODO: if a background page is renamed, update the L table above. */
+
+  /* ---- index the tree ---- */
+  var NODES = {};
+  function index(n, parent, depth) {
+    NODES[n.id] = n; n.parent = parent; n.depth = depth;
+    (n.kids || []).forEach(function (k) { index(k, n, depth + 1); });
+  }
+  index(TREE, null, 0);
+  function zoomable(n) { return !!(n.kids && n.kids.length); }
+  /* Global rect of a node's box, and the scale of its children's frame. */
+  function frameOf(n) { // transform of n's child frame: [tx, ty, s]
+    if (n === TREE) return [0, 0, 1];
+    var p = frameOf(n.parent), b = n.box;
+    return [p[0] + b[0] * p[2], p[1] + b[1] * p[2], p[2] * b[2] / 1000];
+  }
+  function viewOf(n) {
+    if (n === TREE) return [0, 0, 1000, 600];
+    var p = frameOf(n.parent), b = n.box;
+    var x = p[0] + b[0] * p[2], y = p[1] + b[1] * p[2], w = b[2] * p[2], h = b[3] * p[2];
+    var pad = 0.01;
+    return [x - pad * w, y - pad * h, w * (1 + 2 * pad), h * (1 + 2 * pad)];
+  }
+
+  /* ---- render ---- */
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  var compact = false;
+  function face(n) {
+    var b = n.box, x = b[0], y = b[1], w = b[2], h = b[3], cx = x + w / 2, out = "";
+    var big = compact ? 30 : 24, small = 17, lh = big * 1.18, sh = 21;
+    var lab = n.label || [], sub = compact ? [] : (n.sub || []);
+    if (n.face === "top") {
+      out += '<text class="lbl" x="' + cx + '" y="' + (y + 28) + '" font-size="' + big + '" text-anchor="middle" data-w="' + (w - 18) + '">' + esc(lab[0]) + '</text>';
+      out += n.art || "";
+      if (!compact) sub.forEach(function (s) { out += '<text class="sub" x="' + cx + '" y="' + (y + h - 10) + '" font-size="' + small + '" text-anchor="middle" data-w="' + (w - 18) + '">' + esc(s) + '</text>'; });
+    } else {
+      var total = lab.length * lh + sub.length * sh + (sub.length ? 4 : 0);
+      var ty = y + h / 2 - total / 2 + big * 0.85;
+      lab.forEach(function (s, i) { out += '<text class="lbl" x="' + cx + '" y="' + (ty + i * lh) + '" font-size="' + big + '" text-anchor="middle" data-w="' + (w - 20) + '">' + esc(s) + '</text>'; });
+      var sy = ty + (lab.length - 1) * lh + 4 + sh;
+      sub.forEach(function (s, i) { out += '<text class="sub" x="' + cx + '" y="' + (sy + i * sh) + '" font-size="' + small + '" text-anchor="middle" data-w="' + (w - 20) + '">' + esc(s) + '</text>'; });
+    }
+    if (n.planned) {
+      out += '<g class="tag"><rect x="' + (x + w - 82) + '" y="' + (y - 11) + '" width="74" height="22" rx="11"/>' +
+             '<text x="' + (x + w - 45) + '" y="' + (y + 5) + '" font-size="13" text-anchor="middle">planned</text></g>';
+    }
+    if (zoomable(n)) {
+      var bx = x + w - 17, by = y + 17;
+      out += '<g class="zbadge" aria-hidden="true"><circle cx="' + bx + '" cy="' + by + '" r="10"/>' +
+             '<path d="M' + (bx - 5) + ',' + by + ' H' + (bx + 5) + ' M' + bx + ',' + (by - 5) + ' V' + (by + 5) + '"/></g>';
+    }
+    return out;
+  }
+  function arrowSvg(a) {
+    var cls = a.planned ? " planned" : "";
+    var o = '<path class="arr' + cls + '" d="' + a.d + '" marker-end="url(#sm-ah' + (a.planned ? "p" : "") + ')"/>';
+    if (a.tick) {
+      var tx = a.tick[0], ty = a.tick[1];
+      o += a.tick[2] ? '<line class="tick" x1="' + (tx - 12) + '" y1="' + ty + '" x2="' + (tx + 12) + '" y2="' + ty + '"/>'
+                     : '<line class="tick" x1="' + tx + '" y1="' + (ty - 12) + '" x2="' + tx + '" y2="' + (ty + 12) + '"/>';
+    }
+    if (a.t) {
+      var anc = a.a || "middle";
+      o += '<text class="alb' + cls + '" x="' + a.x + '" y="' + a.y + '" font-size="16" text-anchor="' + anc + '">' + esc(a.t) + '</text>';
+      if (a.t2) o += '<text class="alb' + cls + '" x="' + a.x + '" y="' + (a.y + 18) + '" font-size="16" text-anchor="' + anc + '">' + esc(a.t2) + '</text>';
+    }
+    return o;
+  }
+  function levelSvg(n) { // contents of n's child frame (local 1000 x 600)
+    var o = '<g class="sm-deco" data-of="' + n.id + '">' + (n.decor || "");
+    (n.arrows || []).forEach(function (a) { o += arrowSvg(a); });
+    o += '</g>';
+    (n.kids || []).forEach(function (k) {
+      var b = k.box;
+      var aria = k.d.title + (k.planned || k.d.planned ? " (planned)" : "") + (zoomable(k) ? ": zoom in" : ": show details");
+      o += '<g class="sm-node' + (zoomable(k) ? " zoomable" : "") + (k.planned ? " planned" : "") + '" data-id="' + k.id +
+           '" role="button" tabindex="-1" aria-label="' + esc(aria) + '">' +
+           '<rect class="sm-box" x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + b[3] + '" rx="12"/>' +
+           '<g class="sm-face">' + face(k) + '</g></g>';
+      if (zoomable(k)) {
+        o += '<g class="sm-inner" data-of="' + k.id + '" transform="translate(' + b[0] + ',' + b[1] + ') scale(' + (b[2] / 1000) + ')">' + levelSvg(k) + '</g>';
+      }
+    });
+    return o;
+  }
+  function render() {
+    svg.innerHTML =
+      '<defs><marker id="sm-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">' +
+      '<path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>' +
+      '<marker id="sm-ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">' +
+      '<path class="ah planned" d="M0,0 L10,5 L0,10 z"/></marker></defs>' +
+      '<g class="sm-root">' + levelSvg(TREE) + '</g>';
+    fitText();
+  }
+  function fitText() {
+    svg.querySelectorAll("text[data-w]").forEach(function (t) {
+      var max = +t.getAttribute("data-w"), fs = +t.getAttribute("font-size");
+      var len = 0;
+      try { len = t.getComputedTextLength(); } catch (e) { return; }
+      if (len > max && len > 0) t.setAttribute("font-size", (fs * max / len).toFixed(2));
+    });
+  }
+
+  /* ---- state ---- */
+  var cur = TREE, view = [0, 0, 1000, 600], anim = null, selected = null;
+  function setView(v) { view = v; svg.setAttribute("viewBox", v.map(function (z) { return z.toFixed(3); }).join(" ")); }
+  function animateTo(target, dur, done) {
+    if (anim) cancelAnimationFrame(anim);
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!dur || reduce) { setView(target); if (done) done(); return; }
+    var from = view.slice(), t0 = null;
+    var c0 = [from[0] + from[2] / 2, from[1] + from[3] / 2], c1 = [target[0] + target[2] / 2, target[1] + target[3] / 2];
+    function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var u = Math.min(1, (ts - t0) / dur), e = ease(u);
+      var w = Math.exp(Math.log(from[2]) * (1 - e) + Math.log(target[2]) * e);
+      var h = Math.exp(Math.log(from[3]) * (1 - e) + Math.log(target[3]) * e);
+      var cx = c0[0] + (c1[0] - c0[0]) * e, cy = c0[1] + (c1[1] - c0[1]) * e;
+      setView([cx - w / 2, cy - h / 2, w, h]);
+      if (u < 1) anim = requestAnimationFrame(step); else { anim = null; if (done) done(); }
+    }
+    anim = requestAnimationFrame(step);
+  }
+  function pathTo(n) { var p = []; while (n) { p.unshift(n); n = n.parent; } return p; }
+  function nodeEl(id) { return svg.querySelector('.sm-node[data-id="' + id + '"]'); }
+  function innerEl(id) { return svg.querySelector('.sm-inner[data-of="' + id + '"]'); }
+  function applyClasses(openSet, showInner) {
+    svg.querySelectorAll(".sm-node").forEach(function (el) {
+      var id = el.getAttribute("data-id");
+      el.classList.toggle("open", openSet.indexOf(id) >= 0);
+      el.classList.toggle("sel", selected === id);
+      var n = NODES[id];
+      el.setAttribute("tabindex", n.parent === cur ? "0" : "-1");
+      el.setAttribute("aria-hidden", n.parent === cur ? "false" : "true");
+    });
+    svg.querySelectorAll(".sm-deco").forEach(function (el) {
+      el.classList.toggle("dim", el.getAttribute("data-of") !== cur.id);
+    });
+    svg.querySelectorAll(".sm-inner").forEach(function (el) {
+      var id = el.getAttribute("data-of");
+      el.classList.toggle("on", showInner.indexOf(id) >= 0);
+    });
+  }
+  function ids(list) { return list.map(function (n) { return n.id; }); }
+  function zoomTo(n, opts) {
+    opts = opts || {};
+    var prev = cur;
+    cur = n; selected = null;
+    var path = pathTo(n).slice(1), open = ids(path);
+    var prevOpen = ids(pathTo(prev).slice(1));
+    var dur = opts.instant ? 0 : 650;
+    if (opts.instant) { svg.classList.add("notrans"); setTimeout(function () { svg.classList.remove("notrans"); }, 50); }
+    // collapse first (children of nodes being closed fade out), then move, then open
+    var keep = open.filter(function (id) { return prevOpen.indexOf(id) >= 0; });
+    applyClasses(open, keep);
+    animateTo(viewOf(n), dur, function () { applyClasses(open, open); if (opts.focusId) { var el = nodeEl(opts.focusId); if (el) el.focus({ preventScroll: true }); } });
+    showDetails(n);
+    updateBar();
+    if (!opts.noHash) writeHash();
+  }
+  function showDetails(n) {
+    var d = n.d, planned = n.planned || d.planned;
+    var h = '<h3>' + esc(d.title) + '</h3>';
+    if (planned) h += '<span class="chip planned">Planned</span>';
+    else if (n !== TREE) h += '<span class="chip">' + esc(d.chip || "Built") + '</span>';
+    (d.text || []).forEach(function (p) { h += '<p>' + esc(p) + '</p>'; });
+    if (zoomable(n) && n !== cur) h += '<p class="zoomhint">Press Enter or click the block to zoom in.</p>';
+    if (d.links && d.links.length) {
+      h += '<ul class="more">';
+      d.links.forEach(function (k) { var l = L[k]; if (l) h += '<li><a href="' + l[0] + '">' + esc(l[1]) + '</a></li>'; });
+      h += '</ul>';
+    }
+    panel.innerHTML = h;
+  }
+  function updateBar() {
+    var p = pathTo(cur), h = "";
+    p.forEach(function (n, i) {
+      if (i) h += '<span class="sep" aria-hidden="true">›</span>';
+      h += (n === cur) ? '<span class="here" aria-current="location">' + esc(n.name || n.d.title.split(":")[0].split(" (")[0]) + '</span>'
+                       : '<button type="button" data-id="' + n.id + '">' + esc(n.name || n.d.title.split(":")[0].split(" (")[0]) + '</button>';
+    });
+    crumbs.innerHTML = h;
+    backBtn.disabled = (cur === TREE);
+  }
+  function writeHash() {
+    var url = location.pathname + location.search + (cur === TREE ? "" : "#zoom=" + cur.id);
+    try { history.replaceState(null, "", url); } catch (e) {}
+  }
+  function zoomOut() { if (cur.parent) zoomTo(cur.parent, { focusId: cur.id }); }
+  function activate(id, viaKey) {
+    var n = NODES[id]; if (!n || n === cur) return;
+    if (zoomable(n)) {
+      var firstKid = viaKey && n.kids[0] ? n.kids[0].id : null;
+      zoomTo(n, { focusId: firstKid });
+    } else {
+      selected = id; showDetails(n);
+      svg.querySelectorAll(".sm-node").forEach(function (el) { el.classList.toggle("sel", el.getAttribute("data-id") === id); });
+    }
+  }
+
+  /* ---- events ---- */
+  svg.addEventListener("click", function (e) {
+    var el = e.target.closest(".sm-node"); if (!el) return;
+    var n = NODES[el.getAttribute("data-id")];
+    if (n.parent !== cur) return; // only the current level is live
+    activate(n.id, false);
+  });
+  svg.addEventListener("keydown", function (e) {
+    var el = e.target.closest && e.target.closest(".sm-node");
+    if ((e.key === "Enter" || e.key === " ") && el) { e.preventDefault(); activate(el.getAttribute("data-id"), true); }
+  });
+  svg.addEventListener("focusin", function (e) {
+    var el = e.target.closest && e.target.closest(".sm-node");
+    if (el) { var n = NODES[el.getAttribute("data-id")]; if (n && n.parent === cur) showDetails(n); }
+  });
+  root.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && cur !== TREE) { e.preventDefault(); zoomOut(); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && cur !== TREE && (document.activeElement === document.body || !document.activeElement)) zoomOut();
+  });
+  backBtn.addEventListener("click", zoomOut);
+  crumbs.addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var t = NODES[b.getAttribute("data-id")], f = pathTo(cur).filter(function (n) { return n.parent === t; })[0];
+    zoomTo(t, { focusId: f ? f.id : null });
+  });
+
+  /* ---- URL: #zoom=<id>[&theme=dark|light]; ?theme= also works ---- */
+  function readHash(instant) {
+    var h = (location.hash || "").replace(/^#/, ""), q = location.search.replace(/^\?/, "");
+    var params = {};
+    (q + "&" + h).split("&").forEach(function (kv) { var m = kv.match(/^(zoom|theme|sel)[=-](.+)$/); if (m) params[m[1]] = decodeURIComponent(m[2]); });
+    if (params.theme && typeof window.quartoToggleColorScheme === "function") {
+      var dark = document.body.classList.contains("quarto-dark");
+      if ((params.theme === "dark") !== dark) window.quartoToggleColorScheme();
+    }
+    var n = params.zoom && NODES[params.zoom];
+    if (n && !zoomable(n)) { selected = n.id; n = n.parent; }
+    if (n) {
+      var s = selected;
+      zoomTo(n, { instant: instant, noHash: true });
+      if (s) { selected = s; showDetails(NODES[s]); applyClasses(ids(pathTo(n).slice(1)), ids(pathTo(n).slice(1))); }
+      return true;
+    }
+    if (params.sel && NODES[params.sel]) { activate(params.sel, false); }
+    return false;
+  }
+  window.addEventListener("hashchange", function () {
+    if (/zoom[=-]/.test(location.hash)) readHash(false);
+  });
+
+  function setCompact() {
+    var c = root.clientWidth < 620;
+    if (c !== compact) { compact = c; render(); applyClasses(ids(pathTo(cur).slice(1)), ids(pathTo(cur).slice(1))); setView(viewOf(cur)); }
+  }
+  compact = root.clientWidth < 620;
+  render();
+  setView(viewOf(TREE));
+  applyClasses([], []);
+  showDetails(TREE);
+  updateBar();
+  readHash(true);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { render(); applyClasses(ids(pathTo(cur).slice(1)), ids(pathTo(cur).slice(1))); });
+  window.addEventListener("resize", setCompact);
+})();
+</script>
+</div>
+<div class="research-page">
 <section id="planning-through-contact" class="level2">
 <h2 class="anchored" data-anchor-id="planning-through-contact">Planning through contact</h2>
 <div class="research-paper">

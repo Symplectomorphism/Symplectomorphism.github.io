@@ -61,7 +61,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../../../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -631,6 +651,8 @@ window.Quarto = {
   <li><a href="#solving-it-inside-jax" id="toc-solving-it-inside-jax" class="nav-link" data-scroll-target="#solving-it-inside-jax">13. Solving it inside JAX</a></li>
   <li><a href="#how-the-gate-uses-them" id="toc-how-the-gate-uses-them" class="nav-link" data-scroll-target="#how-the-gate-uses-them">14. How the gate uses them</a></li>
   <li><a href="#check-yourself" id="toc-check-yourself" class="nav-link" data-scroll-target="#check-yourself">Check yourself</a></li>
+  <li><a href="#further-reading" id="toc-further-reading" class="nav-link" data-scroll-target="#further-reading">Further reading</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   <li><a href="#reproduce" id="toc-reproduce" class="nav-link" data-scroll-target="#reproduce">Reproduce</a></li>
   </ul>
 </nav>
@@ -685,7 +707,7 @@ $$
 <p><strong>What this explains.</strong> Before every edit, the <a href="../../../research/nonprehensile/planar-build/hold-gate.html">hold gate</a> asks whether a set of contacts can hold the box against gravity. This page derives the answer from first principles in two stages. First an <strong>exact test</strong> that works in the plane: it turns the question into membership in a cone in three dimensions and decides it with a <em>witness</em>, a <em>certificate</em> and a <em>margin</em>. Then the <strong>linear programs (LPs)</strong> that answer the same question in any dimension, with limits on the manipulator’s force and margins against a set of disturbances. The LPs are the gate today; the exact test is its cross-check. You need Coulomb friction and a little linear algebra. The code is in <code>cmg/src/cmg/physics/planar_hold.py</code> (<code>cone_test</code>) and <code>hold_lp.py</code> on the branch <code>master</code>.</p>
 <section id="the-question" class="level2">
 <h2 class="anchored" data-anchor-id="the-question">1. The question</h2>
-<p>A rigid box rests in the x–z plane on some contacts. Each contact pushes on the box with a force that Coulomb friction confines to a cone. The box is <strong>supported</strong> if some choice of admissible contact forces cancels gravity exactly: the net force <em>and</em> the net moment. That is statics only: no dynamics and no time.</p>
+<p>A rigid box rests in the x–z plane on some contacts. Each contact pushes on the box with a force that Coulomb friction confines to a cone <span class="citation" data-cites="mason2001mechanics"><a href="#ref-mason2001mechanics" role="doc-biblioref">[1]</a></span>. The box is <strong>supported</strong> if some choice of admissible contact forces cancels gravity exactly: the net force <em>and</em> the net moment. That is statics only: no dynamics and no time.</p>
 </section>
 <section id="from-forces-to-one-cone" class="level2">
 <h2 class="anchored" data-anchor-id="from-forces-to-one-cone">2. From forces to one cone</h2>
@@ -777,7 +799,7 @@ w = \Big(r_x,\; r_z,\; \tfrac{(p-c)\times r}{\ell}\Big) \in \R^3,
 <i class="callout-icon"></i>
 </div>
 <div class="callout-body-container">
-<p><strong>Farkas’s lemma (cone form).</strong> <span class="math inline">\(x \notin \operatorname{cone}\{w_i\}\)</span> if and only if some <span class="math inline">\(y\)</span> has <span class="math inline">\(y\cdot w_i \ge 0\)</span> for every <span class="math inline">\(i\)</span> and <span class="math inline">\(y \cdot x &lt; 0\)</span>.</p>
+<p><strong>Farkas’s lemma (cone form)</strong> <span class="citation" data-cites="boyd2004convex"><a href="#ref-boyd2004convex" role="doc-biblioref">[2]</a></span>. <span class="math inline">\(x \notin \operatorname{cone}\{w_i\}\)</span> if and only if some <span class="math inline">\(y\)</span> has <span class="math inline">\(y\cdot w_i \ge 0\)</span> for every <span class="math inline">\(i\)</span> and <span class="math inline">\(y \cdot x &lt; 0\)</span>.</p>
 </div>
 </div>
 </div>
@@ -909,6 +931,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 </section>
 <section id="lp-1-feasibility-with-a-witness-and-a-certificate" class="level2">
 <h2 class="anchored" data-anchor-id="lp-1-feasibility-with-a-witness-and-a-certificate">10. LP-1: feasibility, with a witness and a certificate</h2>
+<p>Linear programs and their duals are covered in <span class="citation" data-cites="boyd2004convex"><a href="#ref-boyd2004convex" role="doc-biblioref">[2]</a></span>.</p>
 <p>“Find <span class="math inline">\(\lambda \ge 0\)</span> with <span class="math inline">\(W\lambda = \text{need}\)</span>” has no solution exactly when the answer is no, and some solvers then report nothing more. Adding slack that pays for any mismatch makes it always solvable: <span class="math display">\[
 \text{LP-1:}\qquad \delta \;=\; \min_{\lambda,\, s^+,\, s^- \,\ge\, 0}\; \mathbf 1^\top s^+ + \mathbf 1^\top s^-
 \quad\text{s.t.}\quad W\lambda + s^+ - s^- = \text{need}.
@@ -1183,6 +1206,32 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 <div class="callout-body-container callout-body">
 <p>The margin is the smallest exit. The disk can only push in +x, so it cannot help resist a disturbance that needs −x force from the contacts; floor friction alone sets <span class="math inline">\(t(-f_x) = 0.2\)</span>. A second disk on the other face would.</p>
 </div>
+</div>
+</div>
+</section>
+<section id="further-reading" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="further-reading">Further reading</h2>
+<ul>
+<li>Mason, <em>Mechanics of Robotic Manipulation</em> <span class="citation" data-cites="mason2001mechanics"><a href="#ref-mason2001mechanics" role="doc-biblioref">[1]</a></span>: friction cones, wrench spaces and quasi-static support, the mechanics this page builds on.</li>
+<li>Boyd and Vandenberghe, <em>Convex Optimization</em> <span class="citation" data-cites="boyd2004convex"><a href="#ref-boyd2004convex" role="doc-biblioref">[2]</a></span>: cones, Farkas-type alternatives, linear programs and duality.</li>
+<li>Gouttefarde, Daney and Merlet <span class="citation" data-cites="gouttefarde2011interval"><a href="#ref-gouttefarde2011interval" role="doc-biblioref">[3]</a></span>: deciding wrench feasibility over whole boxes of poses with intervals, the step from this page to the <a href="../../../research/nonprehensile/planar-build/certificate.html">box certificate</a>.</li>
+<li>Fiedler et al. <span class="citation" data-cites="fiedler2006linear"><a href="#ref-fiedler2006linear" role="doc-biblioref">[4]</a></span>: linear programs with interval data, the theory behind certifying a hold over a box.</li>
+</ul>
+</section>
+<section id="references" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body" data-entry-spacing="0" role="list">
+<div id="ref-mason2001mechanics" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">M. T. Mason, <em>Mechanics of robotic manipulation</em>. Cambridge, MA: MIT Press, 2001. doi: <a href="https://doi.org/10.7551/mitpress/4527.001.0001">10.7551/mitpress/4527.001.0001</a>.</div>
+</div>
+<div id="ref-boyd2004convex" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[2] </div><div class="csl-right-inline">S. Boyd and L. Vandenberghe, <em>Convex optimization</em>. Cambridge University Press, 2004. doi: <a href="https://doi.org/10.1017/CBO9780511804441">10.1017/CBO9780511804441</a>.</div>
+</div>
+<div id="ref-gouttefarde2011interval" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[3] </div><div class="csl-right-inline">M. Gouttefarde, D. Daney, and J.-P. Merlet, <span>“Interval-analysis-based determination of the wrench-feasible workspace of parallel cable-driven robots,”</span> <em>IEEE Transactions on Robotics</em>, vol. 27, no. 1, pp. 1–13, 2011, doi: <a href="https://doi.org/10.1109/TRO.2010.2090064">10.1109/TRO.2010.2090064</a>.</div>
+</div>
+<div id="ref-fiedler2006linear" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[4] </div><div class="csl-right-inline">M. Fiedler, J. Nedoma, J. Ramı́k, J. Rohn, and K. Zimmermann, <em>Linear optimization problems with inexact data</em>. New York: Springer, 2006. doi: <a href="https://doi.org/10.1007/0-387-32698-7">10.1007/0-387-32698-7</a>.</div>
 </div>
 </div>
 </section>
