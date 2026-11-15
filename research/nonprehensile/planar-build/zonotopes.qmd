@@ -1,312 +1,274 @@
 ---
 title: "Background: zonotope propagation"
-subtitle: "Why boxes lose information when a set is pushed through a step map, what a zonotope is, which operations on it are sound and why, and how each check of a certified funnel becomes a check on a zonotope."
+subtitle: "A set shape that a step map can carry without re-boxing: what a zonotope is, the handful of operations a certifier needs, why each is sound, and why keeping the shape inside the box pays off later."
 lightbox: true
 ---
 
-**What this explains.** Every certificate on these pages is a statement
-about a *set* of states: a box of poses on which contacts hold the box, a
-band of a [certified funnel](funnels.qmd), an entry set, an exit set. Today
-the certifier stores all of them as boxes and pushes them through the
-dynamics by interval arithmetic. This page shows the two ways that loses
-information, introduces the zonotope, proves the handful of operations a
-certifier needs, and then maps each condition of our funnels onto those
-operations. You need a little linear algebra and the mean value theorem.
+**Before this page:** [interval arithmetic](interval-arithmetic.qmd), and in
+particular its *wrapping* loss. **After it:** [intervals and zonotopes
+together](intervals-and-zonotopes.qmd), which says exactly which job each
+tool does in our certifier.
 
 **Where this is going.** A zonotope set type is being built into the
-certifier's core, and it is the planned replacement for the interval
-machinery. Boxes are a special case of zonotopes, so the replacement can
-happen one edge at a time. The landing's impact window, where intervals
-fail, is its first client. The set representation for mode-branched sets
-is the hybrid zonotope of Koeln and colleagues, and that line is being
-pursued with them.
+certifier's core as the planned replacement for boxes as the set we carry
+from step to step. The landing's impact window, where boxes fail, is its
+first client, and the migration of the whole chain is in progress. For
+mode-branched sets we build on the hybrid zonotopes of Koeln and
+colleagues, and that line is being pursued with them.
 
-## 1. Intervals, and the two ways they lose
+## 1. What a zonotope is
 
-An **interval** $[x]=[\underline x,\overline x]$ is a closed bounded set of
-reals, and a **box** is a vector of intervals. Interval arithmetic replaces
-each operation by the set of its results, rounded outward:
-$$
-[x]+[y]=[\underline x+\underline y,\ \overline x+\overline y],\qquad
-[x]-[y]=[\underline x-\overline y,\ \overline x-\underline y],
-$$
-and a product takes the least and largest of the four endpoint products.
+**Intuition.** A box says "each coordinate lies in its own range,
+independently". A zonotope says "the state is a centre plus a few
+*directions* of uncertainty, each scaled by its own number in $[-1,1]$".
+Directions can point along the diagonal, so a zonotope can be a thin tilted
+sliver where a box would be a fat square.
 
-**Why it is sound.** Evaluate an expression with every operation replaced
-by its interval version: the result contains the expression's value at
-every point of the box. That is induction over the expression, since each
-interval operation contains every result of the operation on its
-arguments. This *inclusion property* is the whole basis of every interval
-certificate here, however coarse the result is.
+**Check it by hand.** Centre $c=(0,0)$, generators $g_1=(1,1)$ and
+$g_2=(0.1,-0.1)$. The set
+$\{\xi_1 g_1+\xi_2 g_2:\ \xi_1,\xi_2\in[-1,1]\}$ is a thin parallelogram
+along the diagonal. Its corners are $\pm g_1\pm g_2$:
+$(1.1,0.9),\ (0.9,1.1),\ (-0.9,-1.1),\ (-1.1,-0.9)$. Its interval hull
+is $[-1.1,1.1]^2$, the same as a full square's.
 
-**Loss 1: dependency.** Interval arithmetic treats each occurrence of a
-variable as a new, independent variable. For $[x]=[0,1]$,
-$$
-[x]-[x]=[0-1,\ 1-0]=[-1,1],
-$$
-although $x-x=0$ for every $x$. Inside one formula the mean-value form
-(the value at the centre plus an interval gradient times the half-widths)
-removes most of this.
-
-**Loss 2: wrapping.** A step of a dynamical system maps a box to a set that
-is usually *not* a box. The next step only accepts a box, so the image is
-replaced by its **interval hull**, the smallest box around it. The hull
-adds corners the true set does not have, and the next step maps those
-corners too. The loss compounds over the steps.
-
-::: {.callout-tip title="Worked example: a rotation by 45°"}
-Let each step rotate the plane by $45°$ and start from the square
-$[-1,1]^2$. The rotated square has its corners on the axes at distance
-$\sqrt2$, so its interval hull is $[-\sqrt2,\sqrt2]^2$. Rotating a box of
-half-width $h$ and boxing it again gives half-width $\sqrt2\,h$, every
-step. After 8 steps, two full turns, the box is $[-16,16]^2$, while the
-true set is the original square again. The rotation is an isometry; the
-factor 16 in width (256 in area) comes from nothing but the choice to
-store boxes.
-:::
-
-![Eight rotations by 45° of the square [−1, 1]². (a) Re-boxed sets after k = 1, …, 4 steps (blue) and the zonotope, which is the exact set at every step (orange; filled: k = 0). (b) Half-widths on a log scale: the re-boxed interval grows by √2 per step, to 16 after 8 steps; the zonotope's own interval hull alternates between 1 and √2. Drawn by `reports/technical-report/scripts/ch18_wrapping.py`.](media/bg_zonotope_wrapping.png){.lightbox}
-
-Splitting boxes (bisection) fights wrapping only by brute force. In the
-landing's impact window it would need about 10<sup>10</sup> pieces.
-
-## 2. Zonotopes
-
-A **zonotope** has a centre $c\in\R^n$ and a generator matrix
-$G=[g_1,\dots,g_m]\in\R^{n\times m}$:
+**The general statement.** A **zonotope** with centre $c\in\R^n$ and
+generator matrix $G=[g_1,\dots,g_m]\in\R^{n\times m}$ is
 $$
 \mathcal Z(c,G)=\{\,c+G\xi:\ \xi\in[-1,1]^m\,\}.
 $$
-It is a sum of $m$ segments, so it is a centrally symmetric polytope. Three
-special cases:
+It is the sum of $m$ segments, a centrally symmetric polytope. Special
+cases:
 
-- **A box** is $\mathcal Z(c,\operatorname{diag}(r))$ with half-widths $r$.
-  Every interval certificate is already a zonotope certificate with a
-  diagonal $G$.
-- **A parallelepiped** ($m=n$, $G$ invertible) is the set form of Lohner's
-  method for validated ODE solutions, which keeps a rotated coordinate frame
-  from step to step.
-- **A segment** is a zonotope with one generator.
+- **A box** is $\mathcal Z(c,\operatorname{diag}(r))$, half-widths $r$ on the
+  diagonal. Every interval certificate is already a zonotope certificate.
+- **A parallelepiped** ($m=n$, $G$ invertible) is the set carried by
+  Lohner's method for validated ODE solutions.
+- **A segment** has one generator.
 
-### Affine maps and sums are exact
+## 2. Same bounding box is not the same set
 
+**Intuition.** Two sets can have identical interval hulls and still behave
+very differently at the next step. The zonotope remembers *how* the
+coordinates move together; the box has forgotten.
+
+**Check it by hand.** Take the box $[-1.1,1.1]^2$ and the thin zonotope
+above: same hull. Rotate both by $-45^\circ$. The box becomes a diamond
+whose hull has half-widths $1.56\times1.56$. The zonotope's generators
+become $g_1\mapsto(1.41,0)$ and $g_2\mapsto(0,-0.14)$, so its hull has
+half-widths $1.41\times0.14$: eleven times thinner in the second
+coordinate.
+
+![Two sets with the same interval hull (dashed), before and after a rotation by −45°. The box (blue) spreads; the thin zonotope (orange) lands as a flat sliver. Drawn by `scripts/bg_certification_figures.py`.](media/bg_same_hull.svg){.lightbox}
+
+**In our chain.** On the landing's impact window, the zonotope's hull was
+no tighter than a chain-rule enclosure over the first five steps, but its
+*set* was: its projection on (tilt, tilt rate) was smaller than its own
+hull by 0.27, 0.53, 0.79, 1.04 and 1.29 bits after steps 1 to 5. That kept
+correlation is what made the impact step's reached set 14.5 bits (in
+volume) tighter than re-boxing.
+
+## 3. Affine maps are exact
+
+**Intuition.** A linear map sends each direction of uncertainty to a new
+direction. Nothing is lost.
+
+**Check it by hand.** Rotate the square $\mathcal Z(0,I)$ by $45^\circ$:
+the new generators are the columns of the rotation matrix,
+$(0.71,0.71)$ and $(-0.71,0.71)$, and the set is exactly the rotated
+square. After 8 rotations the generators are back to $I$: no growth at all,
+where re-boxing grew 16-fold
+([interval arithmetic §3](interval-arithmetic.qmd)).
+
+![Eight rotations by 45° of the square [−1, 1]². (a) Re-boxed sets after k = 1…4 steps (blue) and the zonotope, exact at every step (orange). (b) The re-boxed half-width grows by √2 per step, to 16 after 8 steps; the zonotope's own interval hull alternates between 1 and √2. Drawn by `reports/technical-report/scripts/ch18_wrapping.py`.](media/bg_zonotope_wrapping.png){.lightbox}
+
+**The general statement.**
 $$
 A\,\mathcal Z(c,G)+b=\mathcal Z(Ac+b,\ AG),\qquad
 \mathcal Z(c_1,G_1)\oplus\mathcal Z(c_2,G_2)=\mathcal Z(c_1+c_2,\ [G_1,G_2]).
 $$
 *Why:* $A(c+G\xi)+b=(Ac+b)+(AG)\xi$ for every $\xi$, and stacking
 $(\xi_1,\xi_2)$ ranges over the bigger cube exactly when each part ranges
-over its own. Nothing is lost. A linear step costs one matrix product, and
-the rotation example is resolved: $R^8\mathcal Z(0,I)=\mathcal Z(0,R^8)=
-\mathcal Z(0,I)$.
+over its own.
 
-### Affine arithmetic is zonotopes, one operation at a time
+## 4. Affine arithmetic is zonotopes, one operation at a time
 
-Affine arithmetic writes each quantity as $\hat x=x_0+\sum_i x_i\epsilon_i$
-with **noise symbols** $\epsilon_i\in[-1,1]$ shared by all quantities. A
-vector of such forms *is* a zonotope: the $x_0$'s are the centre and the
-coefficient columns are the generators. Shared symbols cancel, so
-$\hat x-\hat x=0$ exactly: the dependency loss is gone. A nonlinear
-operation becomes its best affine approximation plus one *new* noise
-symbol that bounds the error. A zonotope step does the same for a whole
-step map at once.
+**Intuition.** Give every source of uncertainty a name, a **noise symbol**
+$\epsilon_i\in[-1,1]$, and write every quantity as a centre plus multiples
+of the shared symbols. Then $x-x$ cancels, because both copies carry the
+*same* symbol.
 
-### Nonlinear steps: linear part plus a remainder
+**Check it by hand.** $x\in[1,2]$ becomes $\hat x=1.5+0.5\,\epsilon_1$.
+Then $\hat x-\hat x=0$, exactly: the dependency loss of
+[interval arithmetic](interval-arithmetic.qmd) is gone. A product is not
+affine: $\hat x\cdot\hat x=2.25+1.5\epsilon_1+0.25\epsilon_1^2$, and
+$0.25\epsilon_1^2\in[0,0.25]$. Affine arithmetic keeps its midpoint, $0.125$,
+and bounds the rest, $[-0.125,0.125]$, by a **new** symbol:
+$\hat x^2=2.375+1.5\,\epsilon_1+0.125\,\epsilon_2$.
 
-Let $f$ be the step map and $X=c+[-r,r]$ the zonotope's interval hull, with
-$r=|G|\,\mathbf 1$ (row sums of $|G|$). Linearize at the centre and append
-the error as new generators.
+**The general statement.** A vector of affine forms over shared symbols is
+a zonotope: centres form $c$, coefficient columns form $G$. Each
+nonlinear operation adds one generator for its error. The zonotope step
+below does the same for a whole step map at once.
 
-**Lagrange form.** If $[H_j]$ bounds the Hessian of $f_j$ on $X$, then
-$$
-f(\mathcal Z(c,G))\subseteq\mathcal Z\big(f(c),\ [\,J_f(c)\,G,\ \operatorname{diag}(e)\,]\big),
-\qquad e_j=\tfrac12\, r^\top\big|[H_j]\big|\,r .
-$$
-*Why:* for $x=c+G\xi$, Taylor's theorem gives
-$f_j(x)=f_j(c)+\nabla f_j(c)\cdot G\xi+\tfrac12\,\delta^\top H_j(\zeta)\,\delta$
-with $\delta=G\xi$, $|\delta|\le r$ and $\zeta$ on the segment from $c$ to
-$x$, inside the convex set $X$. The last term is at most $e_j$.
+## 5. Nonlinear steps: linear part plus a remainder
 
-**Mean-value form.** If $[J]$ bounds the Jacobian on $X$, with midpoint $M$
-and radius $\Delta$, then
-$f(\mathcal Z)\subseteq\mathcal Z(f(c),\,[MG,\ \operatorname{diag}(\Delta r)])$.
+**Intuition.** Linearize the step at the centre, map the generators through
+the Jacobian exactly, and put whatever the linearization misses into a few
+extra generators.
 
-The **Lagrange remainder is quadratic** in the set's size $r$, with the
-Hessian bound as its coefficient. The **mean-value remainder is linear** in
-$r$, with the Jacobian enclosure's radius $\Delta$ as its coefficient, and
-it carries every overestimate of that enclosure; chained over several steps
-those overestimates multiply. In both forms the linear part $JG$ keeps
-every correlation the set had, which is exactly what re-boxing throws away.
-Floating-point rounding is bounded and appended as one more diagonal block.
+**Check it by hand.** Let $f(x)=x^2$ on $\mathcal Z(1.5,[0.5])$, i.e.
+$x\in[1,2]$. At the centre $f(1.5)=2.25$ and $f'(1.5)=3$, so the linear part
+is $2.25+1.5\,\xi$. The second derivative is $2$, so the Lagrange remainder
+is at most $\tfrac12\cdot2\cdot0.5^2=0.25$. The result
+$\mathcal Z(2.25,[1.5,\ 0.25])$ spans $[0.5,4]$ and contains the true range
+$[1,4]$.
 
-### Order reduction
+**The general statement.** Let $X=c+[-r,r]$ be the zonotope's interval hull,
+$r=|G|\mathbf 1$.
 
-Every nonlinear step appends generators, so they have to be capped. Split
-$G=[G_1,G_2]$ and replace the second part by its interval hull:
-$$
-\mathcal Z(c,G)\subseteq\mathcal Z\big(c,\ [\,G_1,\ \operatorname{diag}(|G_2|\,\mathbf 1)\,]\big).
-$$
-*Why:* $\mathcal Z(c,G)=\mathcal Z(c,G_1)\oplus\mathcal Z(0,G_2)$, and the
-second term lies in its interval hull. Girard's rule boxes the generators
-that lose least when boxed, so the loss stays small and controlled.
+- **Lagrange form:** if $[H_j]$ bounds the Hessian of $f_j$ on $X$,
+  $$
+  f(\mathcal Z(c,G))\subseteq\mathcal Z\big(f(c),\ [\,J_f(c)\,G,\ \operatorname{diag}(e)\,]\big),
+  \qquad e_j=\tfrac12\,r^\top\big|[H_j]\big|\,r .
+  $$
+  The remainder is **quadratic** in the set's size.
+- **Mean-value form:** if $[J]$ bounds the Jacobian on $X$ with midpoint $M$
+  and radius $\Delta$,
+  $f(\mathcal Z)\subseteq\mathcal Z(f(c),[MG,\ \operatorname{diag}(\Delta r)])$.
+  The remainder is **linear** in $r$ with coefficient $\Delta$, and it
+  carries every overestimate of the interval Jacobian; chained over steps,
+  those multiply.
 
-### The closed-form check
+*Why both are sound:* Taylor's theorem (Lagrange) or the mean value theorem,
+applied on the segment from $c$ to any point of $X$, which lies in the
+convex set $X$.
 
+## 6. Keeping the generator count bounded
+
+**Intuition.** Each nonlinear step adds generators. Fold the smallest ones
+into a box: a small, controlled loss.
+
+**Check it by hand.** $\mathcal Z(0,[(1,1),(0.02,0.01),(0.01,-0.02)])$: box
+the last two generators. Their interval hull has half-widths
+$(0.03,0.03)$, so the reduced set is
+$\mathcal Z(0,[(1,1),(0.03,0),(0,0.03)])$. It contains the original and is
+barely bigger.
+
+**The general statement.** For $G=[G_1,G_2]$,
+$\mathcal Z(c,G)\subseteq\mathcal Z(c,[G_1,\operatorname{diag}(|G_2|\mathbf 1)])$,
+since $\mathcal Z(0,G_2)$ lies in its own hull. Girard's rule boxes the
+generators that lose least when boxed. Our impact-window trees cap the
+count at 40; on the experiment's sub-box the cap lost nothing in the hull
+against no cap, which reaches 307 generators by step 7.
+
+## 7. Checking a condition: one line of arithmetic
+
+**Intuition.** To find the smallest value of a linear quantity over a
+zonotope, push each $\xi_i$ to whichever end hurts.
+
+**Check it by hand.** On the thin zonotope of §1, the smallest $x+y$ is
+$0-|1+1|-|0.1-0.1|=-2$, and the smallest $x-y$ is
+$0-|1-1|-|0.1+0.1|=-0.2$.
+
+**The general statement.**
 $$
 \min_{x\in\mathcal Z(c,G)} a\cdot x \;=\; a\cdot c-\big\|G^\top a\big\|_1
 \;=\; a\cdot c-\sum_i |a\cdot g_i| .
 $$
-*Why:* $a\cdot(c+G\xi)=a\cdot c+\sum_i(a\cdot g_i)\,\xi_i$ with independent
-$\xi_i\in[-1,1]$, and each term is least at
-$\xi_i=-\operatorname{sign}(a\cdot g_i)$. So "is $a\cdot x\ge b$ on the whole
-set?" is one line of arithmetic, no linear program. A nonlinear quantity
-$q(x)\ge b$ is checked as its linearization plus a remainder:
+A force floor, a friction cone edge or a motor limit is such a check, or
+its linearization plus a remainder:
 $q(c)-\|G^\top\nabla q(c)\|_1-e\ge b$.
 
-### Containment
+## 8. Containment: does one set lie inside another?
 
-- **In a half-space or a box: exact.** $\mathcal Z(c,G)$ lies in
-  $\{a\cdot x\le b\}$ exactly when $a\cdot c+\|G^\top a\|_1\le b$; for a box
-  $[l,u]$ that is $c-|G|\mathbf 1\ge l$ and $c+|G|\mathbf 1\le u$.
-- **In another zonotope: a sufficient linear test.** If
+**Intuition.** Junctions between funnels ask whether one certified set lies
+inside the next ([composition](funnel-composition.qmd)). Against a box this
+is exact; against a zonotope there is a quick sufficient test.
+
+**Check it by hand.** Is the thin zonotope of §1 inside $[-1.2,1.2]^2$? Its
+hull half-widths are $|G|\mathbf 1=(1.1,1.1)\le1.2$: yes, exactly.
+
+**The general statement.**
+
+- **Box outer: exact.** $\mathcal Z(c,G)\subseteq[l,u]$ iff
+  $c-|G|\mathbf 1\ge l$ and $c+|G|\mathbf 1\le u$.
+- **Zonotope outer: a sufficient linear program.** If
   $G_1=G_2\Gamma$, $c_1-c_2=G_2\beta$ and every row of $[\Gamma,\beta]$ has
-  absolute sum at most 1, then $\mathcal Z(c_1,G_1)\subseteq\mathcal
-  Z(c_2,G_2)$, since $c_1+G_1\xi=c_2+G_2(\beta+\Gamma\xi)$ and
-  $|\beta+\Gamma\xi|\le 1$ componentwise. It is one linear program; exact
-  zonotope containment is hard in general.
+  absolute sum $\le1$, then $\mathcal Z(c_1,G_1)\subseteq\mathcal Z(c_2,G_2)$,
+  because $c_1+G_1\xi=c_2+G_2(\beta+\Gamma\xi)$. The LP's answer is
+  re-verified exactly before it counts. Exact zonotope containment is hard
+  in general, so a "no" from the LP does not prove non-containment.
 
-### Constrained and hybrid zonotopes
+## 9. Branches at a contact switch
 
-A contact guard is a half-space (a gap $\phi(x)\le 0$), and a zonotope cut
-by a half-space is no longer a zonotope. A **constrained zonotope**
-$\{c+G\xi:\ \xi\in[-1,1]^m,\ A\xi=b\}$ is closed under such cuts; its checks
-become linear programs. At an impact the set splits into branches, one per
-contact mode. A **hybrid zonotope** adds binary factors
-$\xi^b\in\{-1,1\}^{n_b}$: it is the union of $2^{n_b}$ constrained
-zonotopes with shared generators, carried as one set, and its checks are
-mixed-integer linear programs, one LP per branch when the branches are few.
+**Intuition.** At an impact, part of the set makes contact and part does
+not, and each part follows its own contact mode. A zonotope cut by a
+half-space is no longer a zonotope.
 
-## 3. Applied to our certifier
+**The general statement.** A **constrained zonotope**
+$\{c+G\xi:\ \xi\in[-1,1]^m,\ A\xi=b\}$ is closed under such cuts. A **hybrid
+zonotope** adds binary factors $\xi^b\in\{-1,1\}^{n_b}$: a union of
+$2^{n_b}$ constrained zonotopes sharing generators, one per mode branch.
+Checks on them are linear programs per branch. This is the foundation we
+build on:
+[Bird, Pangborn, Jain and Koeln, *Automatica* 2023](https://doi.org/10.1016/j.automatica.2023.111107),
+[Siefert et al., ACC 2023](https://doi.org/10.23919/ACC55779.2023.10156300),
+[functional decomposition](https://arxiv.org/abs/2304.06827) and the
+[zonoLAB toolbox](https://arxiv.org/abs/2310.15426).
 
-**An edge certificate is set reachability.** An edge of a funnel is the
-closed loop
-$$
-x_{k+1}=f\big(x_k,\ \pi(x_k),\ \theta,\ \sigma_k\big),
-$$
-with $x$ the state along the edge, $\pi$ the feedback law, $\theta$ the
-uncertain parameters and $\sigma_k$ the contact mode. The friction band
-$\mu\in[0.3,0.5]$ becomes **one extra generator** (half-length 0.1 about
-0.4) on a state that never changes; scene parameters and the measured
-disturbances become further generators. The mode is the planned one, and
-the certificate proves Coulomb's law selects it: closed contacts stay
-closed, open ones stay open, normal forces stay positive, sliding forces
-sit on the cone edge opposite the slip.
+**In our chain.** The impact window's census found the binding step to be
+the tail after the make, where the disk may slide during the impact. That
+is wrapping in the data, not branching, so hybrid zonotopes would not help
+there; tighter enclosures would.
 
-**Every condition is a closed-form check.**
+## 10. What the records show
 
-- the **contact-force floor**: each closed contact's normal force at least
-  $N_{\min}$;
-- the **friction cones**: $0.3\,\lambda_n\pm\lambda_t>0$ for a sticking disk,
-  with $\mu\lambda_n$ for sliding contacts linearized (its bilinear part goes
-  into the remainder);
-- the **motor box**: four linear checks on the commanded force;
-- the **reading condition**: each recognizer clause compares a gap, a
-  distance or an angle with its band edge, one scalar check each;
-- progress, slip signs and slip bounds, and the mode's equations staying
-  nonsingular.
+- **First experiment** (chain-rule Jacobians intersected with the box): the
+  make step's reached set $2^{8.8}$–$2^{12.6}$ times tighter in volume, the
+  tail alone looser; the boxes on which post-impact rocking is excluded
+  grew $2^{12}$ in volume. That number is an *exclusion-box* gain, not a
+  reached-set shrinkage.
+- **Zonotope tree, day-1 census** over the whole impact window: every one
+  of 64 probe cells certifies; the projected cover is $2.7\times10^7$
+  pieces (95% band $1.9$–$3.6\times10^7$) against about $2^{36}$ re-boxed.
+- **The cover itself** is running on the current landing set (status in
+  `reports/supporting_docs/landing_motion/zonotope-cover-status.typ`).
 
-**Junctions are containment checks.** A junction composes when the exit set
-*certified* for one edge lies in the entry set *certified* for the next.
-Measured entry sets, joint 95/95 regions of the states MJX actually
-reaches, are subsets of the executed states and are used only to validate
-coverage; composition is established on certified sets. The entry set is a
-design choice: take the previous edge's certified exit and re-verify the
-next funnel's bands from it, and containment holds by construction.
+## 11. Related work
 
-**Boxes are the diagonal case.** A box exit is a valid zonotope entry as it
-stands, and a zonotope exit is checked against a box entry exactly. Interval
-certificates and zonotope certificates therefore compose with **no loss at
-the hand-off**, and edges can move to zonotopes one at a time.
-
-**The impact window is the first client.** Six entry coordinates, five to
-seven steps, an impact with indeterminate impulses and a contact switch:
-everything that makes re-boxing fail. The zonotope carries the state through
-the steps before the impact, splits at the guard into the impact's branches
-(constrained zonotopes, or one hybrid zonotope over all of them), and
-follows each branch to rest.
-
-**Learned proposals, checked exactly.** A certificate's free choices (the
-entry set's generators, which generators order reduction keeps, how the
-guard is split) can come from anywhere, including the graph network that is
-planned to propose certificates per edge. The verifier checks each proposal
-with the lemmas above. A bad proposal can make a certificate fail; it can
-never make a false one pass.
-
-## 4. What the records show so far
-
-One experiment: one impact branch, one $0.02\times0.02$ mm entry sub-box,
-and a first-order form (a chain-rule product of interval Jacobians)
-intersected at every step with the re-boxed set. It is the mean-value form
-above, not yet generator matrices or the Lagrange form.
-
-- **The make step** encloses the reached set 2<sup>8.8</sup>–2<sup>12.6</sup>
-  times tighter in volume than re-boxing.
-- **The steps before the impact** gain little.
-- **The tail step**, alone, is 2<sup>8.7</sup>–2<sup>12.7</sup> times
-  looser: the product of interval Jacobians overestimates the tail's stiff
-  rows. The intersection with the re-boxed set carries it.
-- **The decision number, 2<sup>12</sup>,** is *not* a shrinkage of the
-  reached set. It is the growth, in volume, of the entry boxes on which every
-  rocking class after the impact is excluded: from 2<sup>−4</sup> to
-  2<sup>−2</sup> of the entry box per coordinate, over six coordinates,
-  against a bar of 2<sup>10</sup> set beforehand.
-
-::: {.callout-warning title="Day-1 results: to be added"}
-The first results of the zonotope set type itself (generator matrices, the
-Lagrange remainder, order reduction, guard splitting) on the impact window
-will be added here when they land.
-:::
-
-## 5. Related work
-
-**The foundation.** Hybrid zonotopes
-([Bird, Pangborn, Jain and Koeln, *Automatica* 2023](https://doi.org/10.1016/j.automatica.2023.111107)),
-their nonlinear successor sets
-([Siefert et al., ACC 2023](https://doi.org/10.23919/ACC55779.2023.10156300)),
-functional decomposition
-([Siefert et al., arXiv 2304.06827](https://arxiv.org/abs/2304.06827)) and
-the zonoLAB toolbox
-([Koeln et al., arXiv 2310.15426](https://arxiv.org/abs/2310.15426)) are
-what this route builds on for mode-branched sets; constrained zonotopes
-([Scott et al., *Automatica* 2016](https://doi.org/10.1016/j.automatica.2016.02.036))
-are their continuous part.
-
-**Methods, not the problem.** Zonotopes against the wrapping effect go back
-to [Kühn (*Computing*, 1998)](https://doi.org/10.1007/BF02684450);
-Lohner's method is surveyed by
-[Nedialkov, Jackson and Corliss (1999)](https://doi.org/10.1016/S0096-3003(98)10083-8);
+Zonotopes against the wrapping effect go back to
+[Kühn (1998)](https://doi.org/10.1007/BF02684450); Lohner's method is
+surveyed by [Nedialkov, Jackson and Corliss (1999)](https://doi.org/10.1016/S0096-3003(98)10083-8);
 [Girard (HSCC 2005)](https://doi.org/10.1007/978-3-540-31954-2_19) made
-zonotopes the reachability set for uncertain linear systems and gave the
+zonotopes the reachability set for uncertain linear systems, with the
 order reduction used here; affine arithmetic is
 [de Figueiredo and Stolfi (2004)](https://doi.org/10.1023/B:NUMA.0000049462.70970.b6).
-
-**How this differs from other reachability and funnel work.**
-[CORA](https://doi.org/10.29007/zbkv) and
+[CORA](https://doi.org/10.29007/zbkv),
 [polynomial zonotopes](https://doi.org/10.1145/2461328.2461358),
-[Flow*](https://doi.org/10.1007/978-3-642-39799-8_18) and
-[Taylor models](https://doi.org/10.1023/A:1024467732637), and
-[mixed-monotone](https://doi.org/10.1145/2728606.2728607) and
-[immrax](https://doi.org/10.1016/j.ifacol.2024.07.428) interval embeddings
-compute reachable sets of *given* dynamics and guards.
-[Polytopic trees](https://doi.org/10.1109/ICRA.2019.8793634) with
-[linear containment encodings](https://doi.org/10.1109/CDC40024.2019.9029363),
-[mixed-integer planning through contact](https://doi.org/10.1109/HUMANOIDS.2017.8239534),
+[Flow*](https://doi.org/10.1007/978-3-642-39799-8_18),
+[Taylor models](https://doi.org/10.1023/A:1024467732637) and
+[mixed-monotone](https://doi.org/10.1145/2728606.2728607) /
+[immrax](https://doi.org/10.1016/j.ifacol.2024.07.428) embeddings compute
+reachable sets of given dynamics and guards;
+[polytopic trees](https://doi.org/10.1109/ICRA.2019.8793634),
+[containment encodings](https://doi.org/10.1109/CDC40024.2019.9029363),
+[mixed-integer contact planning](https://doi.org/10.1109/HUMANOIDS.2017.8239534),
 [LQR-trees](https://doi.org/10.1177/0278364910369189) and
 [funnel libraries](https://doi.org/10.1177/0278364917712421) plan with
 funnels or with modes fixed in the model. Here the contact modes are
 decided by Coulomb friction over an uncertain friction band and certified
-along with the funnel; the modes change the object's contacts with its
-environment; the funnels are chained on a contact-formation graph and
-checked against MJX; and learned proposals are verified exactly.
+with the funnel, they change the object's contacts with its environment,
+the funnels are chained on a contact-formation graph and checked against
+MJX, and learned proposals are verified exactly.
 
-[Back to certified funnels](funnels.qmd) · [Back to the overview](index.qmd)
+## What to remember
+
+- A zonotope is a **centre plus generators**; a box is the diagonal case.
+- **Affine maps are exact**: no re-boxing, no wrapping.
+- A nonlinear step is **linear part plus remainder generators** (Lagrange:
+  quadratic; mean-value: linear, inheriting the Jacobian's overestimate).
+- **Same hull is not the same set**: the hidden correlation pays off at
+  later steps.
+- Checks are **closed form**, $a\cdot c-\|G^\top a\|_1$; containment in a box
+  is exact, in a zonotope a sufficient LP whose answer is re-verified.
+- **Mode branches** use constrained and hybrid zonotopes (Koeln et al.).

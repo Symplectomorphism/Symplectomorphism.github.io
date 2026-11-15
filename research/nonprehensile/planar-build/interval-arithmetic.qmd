@@ -1,0 +1,169 @@
+---
+title: "Background: interval arithmetic"
+subtitle: "How a computer can prove a statement about every state in a box at once, why the answers come out loose, and why loose is acceptable while wrong never is."
+lightbox: true
+---
+
+**Who this is for.** You know control and dynamics, but not validated
+numerics. This page explains the oldest tool behind our certificates. Its
+companions are [zonotope propagation](zonotopes.qmd), [intervals and
+zonotopes together](intervals-and-zonotopes.qmd), [certified funnels and
+composition](funnel-composition.qmd) and [the techniques that made the
+chain certify](certification-techniques.qmd).
+
+## 1. The idea: compute with ranges, not numbers
+
+**Intuition.** A simulation answers "what happens from *this* state?". A
+certificate has to answer "what happens from *every* state in this set?".
+Interval arithmetic does that by replacing each number with a range that is
+guaranteed to contain it, and each operation with a rule that turns ranges
+into a range.
+
+**Check it by hand.** If $x\in[1,2]$ and $y\in[3,5]$, then
+
+- $x+y\in[1+3,\ 2+5]=[4,7]$;
+- $x\cdot y\in[\min P,\max P]=[3,10]$, where $P=\{1\cdot3,\ 1\cdot5,\
+  2\cdot3,\ 2\cdot5\}=\{3,5,6,10\}$;
+- $x-y\in[1-5,\ 2-3]=[-4,-1]$ (the smallest minus the largest, and so on).
+
+Every value $x+y$ can actually take lies in $[4,7]$, and both ends are
+reached.
+
+**The general statement.** Write $[x]=[\underline x,\overline x]$ for an
+**interval** and call a vector of intervals a **box**. Replace every
+operation in a formula by its interval version, and round every endpoint
+*outward* (down for lower ends, up for upper ends) so floating-point
+rounding cannot cut off a true value. The result, the formula's **natural
+interval extension**, contains the formula's value at every point of the
+box. The proof is induction over the formula: each interval operation
+contains every result of the real operation on its arguments. This
+*inclusion property* is all a certificate needs.
+
+## 2. How a certificate uses it
+
+**Intuition.** Take a box of starting states, push the whole box through
+one step of the dynamics, and check every safety condition (a contact force
+stays positive, the force stays in its friction cone, the motors stay
+within their limits) on the result. If the condition's range lies entirely
+on the safe side, every state in the box is safe. If the range *straddles*
+the limit, the answer is "don't know", and the box is split.
+
+**Check it by hand.** Is $x\cdot y\ge 0.3$ for every $(x,y)\in[0.5,1]^2$?
+
+- Whole box: $[x][y]=[0.25,\,1]$. The lower end $0.25<0.3$, so the range
+  straddles the limit: no verdict.
+- Split into 4 boxes of width $0.25$. On $[0.75,1]\times[0.5,0.75]$ the
+  lower end is $0.75\cdot0.5=0.375\ge0.3$: certified. Three of the four
+  certify; only $[0.5,0.75]^2$, lower end $0.25$, does not.
+- Split into 16 boxes. Fifteen certify; the corner box $[0.5,0.625]^2$
+  still has lower end $0.25$.
+
+![Certifying x·y ≥ 0.3 on [0.5, 1]² by bisection. Each number is the interval lower bound of x·y on that piece; green pieces are certified. The corner piece never certifies, because x·y really does drop to 0.25 at (0.5, 0.5): the property is false there, and no amount of splitting will prove it. Drawn by `scripts/bg_certification_figures.py`.](media/bg_bisection.svg){.lightbox}
+
+This is **bisection**: keep splitting the boxes that straddle until each
+piece is either certified or small enough to give up on. A refused piece is
+not a proof that the property fails. Here it does fail, at $(0.5,0.5)$,
+which is why splitting never closes it.
+
+**In our chain.** Every funnel band is a box of states, and its certificate
+checks the force floor, the friction cones, the motor box and the
+recognizer's reading over the whole box at once
+([certified funnels](funnel-composition.qmd)). When a check straddles, the
+entry set is split into sub-boxes
+([techniques](certification-techniques.qmd)).
+
+## 3. The two ways interval arithmetic loses
+
+Interval answers are always *sound* (they contain the truth), but they can
+be much wider than the truth. There are two reasons.
+
+### Dependency
+
+**Intuition.** Interval arithmetic forgets that two occurrences of the same
+variable are the same number.
+
+**Check it by hand.** Let $x\in[1,2]$. Then
+$[x]-[x]=[1-2,\ 2-1]=[-1,1]$, although $x-x=0$ for every $x$. Interval
+arithmetic computed $x-y$ for *independent* $x,y\in[1,2]$, the whole box,
+instead of the diagonal $y=x$.
+
+![The dependency loss. Interval arithmetic evaluates x − y over the whole box (blue), where it ranges over [−1, 1]. The true set is the diagonal y = x (orange), where x − x = 0. Drawn by `scripts/bg_certification_figures.py`.](media/bg_dependency.svg){.lightbox}
+
+**The general statement.** The natural extension is exact when every
+variable occurs once in the formula; each repeated occurrence can widen
+the result. The **mean-value form** repairs most of it inside one formula:
+$f(x)\in f(\hat x)+[\nabla f]([x])\cdot([x]-\hat x)$, the value at the box's
+centre $\hat x$ plus an interval gradient times the offsets. For
+$f(x)=x-x$ the gradient is $1-1=0$ exactly, so the mean-value form returns
+$[0,0]$.
+
+### Wrapping
+
+**Intuition.** A step of a dynamical system maps a box to a set that is
+usually *not* a box: it is rotated or sheared. The next step only accepts a
+box, so the set is replaced by the smallest box around it, its **interval
+hull**. The hull adds corners that the true set does not have, the next step
+maps those corners too, and the extra width compounds.
+
+**Check it by hand.** Rotate the square $[-1,1]^2$ by $45^\circ$. Its corners
+land on the axes at distance $\sqrt2$, so its hull is
+$[-\sqrt2,\sqrt2]^2$: the half-width grew by $\sqrt2\approx1.41$. Rotate
+that box by $45^\circ$ and re-box it, and the half-width is $2$. Every step
+multiplies it by $\sqrt2$; after 8 steps, two full turns, the box is
+$[-16,16]^2$, although the true set is the original square again.
+
+![Wrapping under eight 45° rotations. (a) The re-boxed sets after k = 1…4 steps (blue) and the exact set (orange). (b) The re-boxed half-width grows by √2 per step, to 16 after 8 steps. Drawn by `reports/technical-report/scripts/ch18_wrapping.py`.](media/bg_zonotope_wrapping.png){.lightbox}
+
+**The general statement.** If a step maps a box of half-width $h$ by a
+matrix $A$, the re-boxed half-width is $|A|h$ (absolute values entrywise).
+Unless $A$ maps boxes to boxes (a scaled permutation), information is lost
+at every step, and over $N$ steps the loss multiplies. The fix is to carry
+a set shape that a step can map *without* re-boxing: a
+[zonotope](zonotopes.qmd).
+
+## 4. Loose is fine; wrong never is
+
+**Intuition.** A loose bound costs you a refused certificate or more
+splitting. A wrong bound, one that misses a true value, makes the
+certificate a false statement. So every primitive operation has to be
+sound, including the ones a library implements for you.
+
+**A real example.** Our interval engine is the immrax library. An audit of
+its primitives found that `integer_pow` returned $[0,1]$ for $x^0$ on an
+interval containing $0$, where the correct answer is $[1,1]$. That is not
+loose, it is wrong. The fix removed $x^0$ from the affected fit and added
+a guard test that scans every enclosure for immrax's known-bad rules.
+
+**The general statement.** Soundness is checked per primitive (each
+operation's interval result must contain the real result on sampled and
+corner inputs), and rounding is outward. An over-wide result is a cost
+question; an under-wide one is a bug.
+
+## 5. The curse of splitting
+
+**Intuition.** Bisection works, but halving every side of a box in $d$
+dimensions makes $2^d$ pieces. Halving $k$ times makes $2^{dk}$.
+
+**Check it by hand.** In 2-D, two halvings give $4\times4=16$ pieces (the
+figure above). In the 6-D impact window of the landing (tilt, tilt rate,
+the two contact places, an offset, and the friction coefficient), each
+halving of every coordinate multiplies the piece count by $2^6=64$.
+
+**In our chain.** Interval propagation through the landing's impact window
+would need about $10^{10}$ pieces: wrapping makes each piece's bound loose,
+so pieces must be tiny. That is what drove the move to
+[zonotopes](zonotopes.qmd), which keep the correlations that wrapping
+throws away.
+
+## What to remember
+
+- An interval computation **contains** the true value; that, plus outward
+  rounding, is what makes it a proof.
+- A range that straddles a limit means **"don't know"**: split the box.
+- **Dependency**: the same variable twice is treated as two
+  ($[x]-[x]=[-1,1]$). The mean-value form fixes most of it within one
+  formula.
+- **Wrapping**: re-boxing a rotated set adds corners, compounding over
+  steps ($\sqrt2$ per step, 16× after 8).
+- **Loose is fine, wrong never is**: every primitive must be sound.
+- Splitting costs $2^d$ per halving; that is why we carry zonotopes.

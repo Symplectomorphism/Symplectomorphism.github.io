@@ -1,0 +1,211 @@
+---
+title: "Background: certified funnels and composition"
+subtitle: "What a funnel certificate promises, how to read its utilization, how one is chosen, and how funnels chain: on certified sets only, checked automatically, with measured sets as validation and never as logic."
+lightbox: true
+---
+
+**Before this page:** [interval arithmetic](interval-arithmetic.qmd),
+[zonotopes](zonotopes.qmd) and [how the two work
+together](intervals-and-zonotopes.qmd). The funnels themselves, edge by
+edge, are on [certified funnels](funnels.qmd).
+
+## 1. What a funnel is
+
+**Intuition.** A feedback law steers the box along one piece of the plan
+(one *edge*: a single contact formation with fixed stick or slip modes). A
+**funnel** is a certified tube around the planned motion: every state that
+starts in its **entry set** stays in the tube and leaves through its **exit
+set**, for every disk friction in $[0.3,0.5]$ and every disturbance in a
+measured set.
+
+**Check it by hand (a toy).** A rate error $\eta$ obeys
+$\eta_{k+1}=0.5\,\eta_k+w_k$ with $|w_k|\le0.1$. Entry set
+$|\eta_0|\le0.2$. Then $|\eta_1|\le0.5\cdot0.2+0.1=0.2$: the interval
+$[-0.2,0.2]$ maps into itself, so it is a tube for every step, and any
+condition that holds on it holds along the whole motion.
+
+**The general statement.** The certificate checks, by
+[interval](interval-arithmetic.qmd) or [zonotope](zonotopes.qmd)
+arithmetic on the rigid model, that one step of the planned mode carries
+every state of each band of the tube into a later band or the exit set,
+and that at every such state:
+
+- every closed contact carries a normal force of at least the **derived
+  force floor** $N_{\min}=2\times10^{-4}$ N, the simulator's measured
+  one-step contact-force residual at its joint 95/95 bound;
+- every force lies in its **friction cone** (sliding contacts on the edge
+  opposite the slip, sticking ones strictly inside an inner cone);
+- the **motor forces** lie in their box;
+- the **recognizer reads** the planned formation with margin.
+
+The executed motion is then checked in MJX on held-out rollouts.
+
+## 2. Utilization: how much room is left
+
+**Intuition.** Each condition has a margin: how far the worst state in the
+set is from violating it. **Utilization** is the certificate's smallest
+remaining margin as a fraction of its capacity. **1 means untouched, 0
+means at the limit: higher is safer.**
+
+**Check it by hand.** A friction cone allows $|f_t|\le\mu f_n$. If over the
+whole tube $|f_t|\le0.6\,\mu f_n$, that condition's utilization is
+$1-0.6=0.4$. If another condition's is $0.25$, the certificate's
+utilization is $0.25$, set by the tighter one, its **binding** condition.
+
+**In our chain.** The roll from $62^\circ$ is certified at 0.376, bound by
+the step corner's cone edge; the platform transport at about 0.21, bound by
+a force floor.
+
+## 3. Choosing a law: coverage first, then utilization
+
+**Intuition.** First make sure the law handles *every* state it must
+(coverage); among those that do, take the one with the most room
+(largest utilization). Coverage is judged for the **chain**, not the edge
+alone.
+
+**Check it by hand.** Three push magnitudes after the roll, each certified
+on 16 sub-boxes of the roll's exit set:
+
+| push | sub-boxes certified | utilization |
+|---|---|---|
+| 0.0538 N | 14 of 16 | — |
+| 0.1116 N | 16 of 16 | 0.694 |
+| 0.2316 N | 16 of 16 | 0.325 |
+
+The first fails coverage; of the other two, 0.1116 N has the larger
+utilization and is chosen.
+
+**Why coverage is the chain's.** A push counts only if the *landing after
+it* also comes to rest in the planned formation, because a stronger push
+lands harder. The landings after the 0.1116 N push hit the platform at
+34.5–35.5°/s; with the ray-0 roll's 0.02531 N push they hit at
+13.7–17.9°/s. Both came to rest in every MJX rollout (1536 of 1536), so
+both pass the chain's coverage test.
+
+## 4. Composition: on certified sets only
+
+**Intuition.** Two funnels chain when everything the first can deliver is
+something the second has been proved to accept. Both sides must be
+*proved* sets.
+
+**Check it by hand.** Funnel A's certified exit is $\eta\in[-0.05,0.04]$.
+Funnel B's certified entry is $\eta\in[-0.06,0.06]$. Since
+$[-0.05,0.04]\subseteq[-0.06,0.06]$, the junction composes. If B's entry
+were only *measured*, say the 95/95 region of the speeds MJX happened to
+produce, it would not count: a measured set describes what was executed,
+not what is guaranteed.
+
+**The general statement.** A junction composes when the exit set certified
+for one edge lies in the entry set certified for the next (the next
+funnel's bands re-verified from it). **Measured entry sets are subsets of
+the executed states and are used only to validate coverage; composition is
+established on certified sets.** The end-to-end claim is the per-certificate
+claims combined by a union bound: with $m$ certificates each holding except
+with probability $\alpha_i$, the chain holds except with probability at
+most $\sum_i\alpha_i$, with the measured end-to-end coverage reported
+alongside.
+
+### The automatic check, and a cascade
+
+A script, `chain_check`, reads each junction's exported set records and
+passes it only if the certified exit lies inside the certified entry,
+compared exactly. A measured set fails as **FAIL (measured)**, a missing
+record as **FAIL (missing)**, and a NaN never passes.
+
+**A cascade.** Re-certifying the tip from its departure's certified hand-off
+widened the tip's exit by about $10^{-5}$ rad/s: $|\eta'|\le0.036055$
+against the pivot's certified entry $0.036045$ rad/s, and $0.200$ mm against
+$0.182$ mm in the disk's place. That is outside, so the pivot was
+re-verified from the new exit (it holds, utilization 0.228), and the stop
+after it was re-certified from the pivot's new exit. A one-line change at
+the start of the chain forces every downstream junction to be re-checked,
+which is exactly what an automatic check is for.
+
+### "Inside the band" is not "a certified entry"
+
+Landing inside a funnel's certified *bands* does not by itself make a
+certified entry: the bands are proved invariant only for states that enter
+through the funnel's entry set. A departure that ends in the bands but
+outside the entry set needs the funnel **re-verified from that departure's
+exit**. Until then, `chain_check` fails the junction.
+
+### Asymmetric entry sets
+
+**Intuition.** A box entry set is symmetric about its centre. If the motion
+only goes forward, a symmetric box admits states that go *backwards*, which
+no real departure produces, and the certificate refuses them.
+
+**In our chain.** The floor-corner lift's departure hands off at a tilt
+rate within $[-0.0039,+0.0286]$ rad/s of its target of 1°/s (0.0175 rad/s).
+A symmetric entry of $\pm0.0286$ rad/s includes rates below
+$-0.0175$ rad/s about the target, i.e. tilting backwards, and the funnel
+refused it (no progress). Re-verified from the asymmetric entry, it holds
+(utilization 0.267).
+
+## 5. Measured quantities: joint 95/95 bounds
+
+**Intuition.** A certificate needs bounds on what the simulator does that
+the rigid model does not (residual accelerations, creep, settling). Bounding
+each quantity separately at 95/95 does *not* give 95% coverage of the whole
+certificate, because a rollout must lie inside all bounds at once.
+
+**Check it by hand.** Five independent quantities, each inside its own
+bound 95% of the time: all five at once only about $0.95^5=77\%$ of the
+time.
+
+**The general statement.** One **joint** region: each quantity is centred at
+its median and scaled by its own order statistic on half the calibration
+rollouts; one common inflation is the order statistic of the largest scaled
+deviation on the other half. It covers at least 95% of rollouts in all
+quantities at once, with 97.5% confidence per end of the friction band (so
+both ends hold at 95%). On the tip, per-quantity bounds covered 882 of 1000
+held-out rollouts jointly; the joint region covered 963.
+
+**Bound each quantity where it lives.** Charging the largest creep measured
+anywhere to every contact point over-bounds the contacts that barely move.
+On the floor-corner lift the disk creeps up to 0.329 mm along the bottom
+face while the step-corner contact creeps 0.0135 mm; each contact carries
+its own bound.
+
+**The rigid-versus-simulator gap is a measured disturbance.** After the
+make under the bottom face, MJX's box settles $+0.473$ to $+0.489^\circ$ in
+tilt (and $+0.885$ to $+0.907$ mm in the step corner's place) relative to the
+rigid model's rest. That settle enters the next departure's start set as a
+measured joint 95/95 region.
+
+## 6. Execute end to end, not just segment by segment
+
+**Intuition.** Checking each segment in its own simulation, from states
+saved by the previous one, can miss what happens between segments and
+whether the whole chain reaches the task's goal.
+
+**In our chain.** One continuous MJX simulation per rollout, 1536 rollouts
+from the box at rest to the platform transport's exit: every segment
+survived in all 1536, and the chain's own goal was reached in all 1536
+(Clopper–Pearson 95%: $[0.9976,1]$). But the executor also evaluates goal
+tests that no segment check looks at, and the stricter one, `lift_to`, was
+met in none of the 1536 runs: the platform transport's certified exit lies
+at 42.07 mm along the platform, short of where that test passes. A
+transport certified on to 62.4 mm, the first section passing the lift goal
+test (utilization 0.2083, 757 of 757 held-out rollouts inside), is the edge
+that addresses it.
+
+## What to remember
+
+- A **funnel**: entry set, law and tube, a certificate (force floor, cones,
+  motor box, reading condition) on the rigid model, checked in MJX.
+- **Utilization**: the smallest remaining margin as a fraction of capacity;
+  1 untouched, 0 at the limit, **higher is safer**.
+- **Choose** by coverage of the whole chain first, then the largest
+  utilization.
+- **Compose on certified sets only**; measured sets validate coverage;
+  the end-to-end claim is a union bound over certificates.
+- `chain_check` makes the containment automatic; a change upstream
+  cascades downstream.
+- **Inside the band is not a certified entry**; prefer **asymmetric**
+  entry sets for one-directional motion.
+- Measured quantities as **joint 95/95** regions, per contact, including
+  the rigid-versus-simulator settle.
+- **Execute end to end**: it finds gaps that segment checks miss.
+
+Next: [the techniques that made the chain certify](certification-techniques.qmd).

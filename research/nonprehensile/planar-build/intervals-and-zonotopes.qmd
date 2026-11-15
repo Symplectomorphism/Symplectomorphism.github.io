@@ -1,0 +1,138 @@
+---
+title: "Background: intervals and zonotopes together"
+subtitle: "Zonotopes replace intervals as the set we carry; intervals remain the rigorous subroutine underneath. Who does which job, and why intersecting two sound bounds is free tightness."
+lightbox: true
+---
+
+**Before this page:** [interval arithmetic](interval-arithmetic.qmd) and
+[zonotope propagation](zonotopes.qmd).
+
+**The one-line summary.** Our certifier does **zonotope-based set
+propagation with rigorous interval remainder bounds**. The zonotope is the
+*carried set*; interval arithmetic is the *subroutine* that bounds
+everything a zonotope cannot represent exactly. It is not "no interval
+analysis": the intervals move inside.
+
+## 1. Two different jobs
+
+**Intuition.** A certificate does two kinds of work. It *carries* a set of
+states from step to step, and it *bounds* individual quantities: a
+remainder, the solution of a contact system, a rounding error. Carrying is
+where boxes lose (wrapping); bounding a single scalar over a small region is
+where intervals are simple and exact enough.
+
+**Check it by hand.** Push the square $[-1,1]^2$ through the step
+$f(x,y)=(x+y,\ x-y+0.1x^2)$.
+
+- *Carrying.* The linear part maps the generators exactly:
+  $J(0)=\begin{bmatrix}1&1\\1&-1\end{bmatrix}$, so $G=I$ becomes
+  $\{(1,1),(1,-1)\}$, a diamond, not re-boxed.
+- *Bounding.* The quadratic term $0.1x^2$ is not linear. Over the hull
+  $x\in[-1,1]$, interval arithmetic gives its Hessian exactly,
+  $0.2$, and the Lagrange remainder of the second coordinate is at most
+  $\tfrac12\cdot0.2\cdot1^2=0.1$. That interval number becomes one more
+  generator, $(0,0.1)$.
+
+The result is the zonotope with generators $(1,1)$, $(1,-1)$ and $(0,0.1)$:
+the shape was carried by the zonotope, the remainder bounded by intervals.
+
+## 2. What zonotopes do: the carried set
+
+- **No re-boxing between steps.** The state set of each branch is a
+  zonotope from the entry to the hand-off.
+- **Zonotope records at junctions.** Every certified entry and exit set is
+  exported in one zonotope record format (centre, generators, optional
+  linear constraints, coordinate names and units, a certified flag, the
+  source commit). A box is the diagonal case.
+- **Conditions are checked on the zonotope** with the closed form
+  $a\cdot c-\|G^\top a\|_1$ ([zonotopes §7](zonotopes.qmd)).
+
+## 3. What intervals still do: the subroutine
+
+### Remainder bounds
+
+The Lagrange and mean-value remainders of a zonotope step need a bound on
+the Hessian or the Jacobian over the set's hull. That bound is an interval
+computation, as in §1.
+
+### Implicit contact solves: interval Newton (Krawczyk)
+
+**Intuition.** Contact forces at a step are the solution of a small system
+(the mode's equations, or a complementarity condition). Interval Newton
+proves that the system has exactly one solution in a box and returns a
+small box around it, for every parameter in a range at once.
+
+**Check it by hand.** Prove that $f(x)=x^2-2$ has exactly one root in
+$X=[1.3,1.5]$. Take the midpoint $m=1.4$, $f(m)=-0.04$, $f'(m)=2.8$,
+$Y=1/2.8$. The **Krawczyk operator**
+$$
+K=m-Yf(m)+\big(1-Y[f'](X)\big)(X-m)
+$$
+gives $m-Yf(m)=1.41429$, $[f'](X)=[2.6,3.0]$,
+$1-Y[f'](X)=[-0.0714,\,0.0714]$, times $X-m=[-0.1,0.1]$ is
+$[-0.00714,\,0.00714]$. So $K=[1.4071,\,1.4214]\subset X$, which proves a
+unique root in $K$ (indeed $\sqrt2=1.41421$).
+
+**In our chain.** At the tail step after the impact, the interval KKT solve
+(Krawczyk) enclosed the post-impact velocities more tightly than the
+first-order zonotope: the tail class fixes the box's velocities through
+stiff gap rows, and the interval solve handles them better. So the two are
+intersected (§4).
+
+### Outward rounding
+
+Every computed endpoint is rounded away from the true value, so
+floating-point rounding can never cut off a true state. Zonotope operations
+round their centres and generators the same way.
+
+### Static hold certificates over pose boxes
+
+Whether contacts can hold the box at *every* pose in a box of poses is a
+linear program with interval data. Rohn's theorem on interval systems
+reduces it to finitely many vertex programs, solved once each, with the
+float32 residuals carried into the bound. That certificate stays an
+interval certificate ([the hold gate](hold-gate.qmd), [certifying a whole
+box](certificate.qmd)).
+
+### The leaves of the entry-set cover
+
+The cover of the landing's entry set is a set of **boxes** of entry states
+(its leaves); each leaf's tree then carries zonotopes. Boxes are the
+natural pieces to split.
+
+## 4. Free tightness: intersect two sound bounds
+
+**Intuition.** If two methods each give a *sound* enclosure of the same
+quantity, the truth lies in both, so it lies in their intersection. The
+intersection is sound and never wider than either.
+
+**Check it by hand.** A zonotope bound says $x\in[0,3]$; an interval bound
+says $x\in[1,4]$. Then $x\in[1,3]$. For a lower bound on a margin: if one
+method says the margin is at least $0.02$ and the other at least $0.05$,
+it is at least $0.05$.
+
+**In our chain.**
+
+- Each impact-window tree intersects the zonotope with the re-boxed set at
+  every node. On the census's certifying cells, the zonotope's margin bound
+  was the better one 59% of the time, the interval KKT bound 41%: taking
+  the better of the two costs nothing in soundness.
+- Every migrated edge exports the intersection of its interval and
+  zonotope sets, and the migration's regression requires that a migrated
+  edge never refuses what its interval certificate held. On the tip's
+  departure the zonotope path reproduced the interval margins up to the
+  outward-rounding pad, and every take-off margin was at least the interval
+  one.
+
+## What to remember
+
+- Say **zonotope-based set propagation with rigorous interval remainder
+  bounds**, never "no interval analysis".
+- **Zonotopes carry the set**: no re-boxing, zonotope records at
+  junctions, conditions checked on the zonotope.
+- **Intervals are the subroutine**: remainders, Krawczyk contact solves,
+  outward rounding, Rohn-type hold certificates, the cover's box leaves.
+- **Intersecting two sound bounds is sound and never wider**: every
+  migrated edge exports the intersection.
+
+Next: [certified funnels and composition](funnel-composition.qmd).
