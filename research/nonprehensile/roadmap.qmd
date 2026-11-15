@@ -1,0 +1,92 @@
+---
+title: "Roadmap"
+subtitle: "Where the program goes from a certified chain: finish the zonotope migration, make the planner compose certified funnels, then learn certificates, use momentum, generalize across scenes, and move toward hardware and 3D."
+---
+
+## Where things stand
+
+The planner finds the held indirect lift from the scene alone in 197 of 200
+held-out searches ([Results](results/index.qmd)). Beside it, one route of the
+lift, "track C", is built as a chain of **certified funnels**: each edge is a
+transition certified for every state of its entry set and every disk friction
+in [0.3, 0.5], and the junctions between edges are checked as containments of
+certified sets ([Certified funnels](planar-build/funnels.qmd)). The chain is
+executed end to end in MuJoCo/MJX. Its certificates are moving from interval
+boxes to zonotopes, which carry the correlations that boxes lose
+([Background: zonotope propagation](planar-build/zonotopes.qmd)).
+
+The steps below are ordered by what each one makes possible next.
+
+## 1. Finish the certified chain and the migration
+
+- **The last measured link.** After the landing impact (certified by a
+  zonotope cover of the impact window), the box comes to rest on the platform.
+  That settling is today a measured outcome. It becomes an endpoint certificate
+  started from the impact cover's certified exit, with the same construction
+  as the chain's other rests.
+- **Every certificate on zonotopes.** The funnel certifier gains the zonotope
+  set type edge by edge: a regression shows each migrated edge holds wherever
+  its interval certificate held, with margins at least as large; then track C
+  is re-certified in chain order, so each edge starts from the previous edge's
+  certified zonotope exit; then the indirect lift's certified segment. Interval
+  arithmetic stays as the rigorous subroutine for remainder bounds, implicit
+  contact solves and rounding
+  ([Background: intervals and zonotopes together](planar-build/intervals-and-zonotopes.qmd)).
+- **The paper.** The method, the certified chain and the set-based
+  certificates, written for a journal (T-RO or IJRR).
+
+## 2. The planner composes certified funnels
+
+This is the program's central step. Today the search returns plans that are
+*held* in simulation, and the certified chain is built beside it. The goal is a
+planner whose output **is** a certified plan:
+
+- each edge the search expands is given a certified funnel, certified on
+  demand from the node's certified entry set and cached by edge and entry set;
+- junctions are composed by containment *during* the search, so a node is
+  reached only through certified hand-offs;
+- the search's success then means "certified end to end", and the realizer's
+  role shifts from finding held motions to proposing laws for the certifier.
+
+The design question to settle first is certification on demand inside the
+search against a precomputed library of funnels per edge, or a mix.
+
+## 3. Built on the certified planner
+
+- **Learned certificate proposals.** Once the search certifies edges routinely,
+  it produces data: which laws, hand-offs and set shapes certify. A graph
+  network over the contact-formation graph proposes these ingredients
+  (including zonotope generator templates); the exact verifier accepts or
+  refuses, so soundness never depends on the network. Its value is claimed only
+  through ablations.
+- **Motions that need momentum.** A second route ("track A") coasts the box
+  through a wedge of poses where no push can hold it: the box has to be moving.
+  It reuses the reach and impact machinery of track C and is the first plan in
+  which momentum is essential rather than incidental.
+- **Families of scenes.** Scene parameters, such as the step height, the box's
+  size and mass, enter the certificates as extra zonotope generators, so one
+  certificate covers a family of scenes rather than a single one.
+- **The disk sliding along the box.** An edge where the disk slides is parked
+  for a method change; the zonotope tools are the next attempt.
+
+## 4. Toward hardware and 3D
+
+- **Hybrid zonotopes.** At contact switches a set splits by contact mode.
+  Hybrid zonotopes represent such mode-branched sets exactly, which matters
+  more as modes multiply. This line is a natural collaboration with Justin
+  Koeln and Justin Ruths at UT Dallas.
+- **Perception.** A state estimator replaces the simulator's state; its error
+  bounds enter the certificates the same way today's measured disturbances do
+  (at joint 95/95).
+- **A real robot.** The same loop (plan, certify, execute with feedback) on
+  hardware, with the certificates' disturbance bounds measured on the robot.
+- **3D.** More contact modes and a higher-dimensional state, where set-based
+  certificates are the scalable route and box splitting is not.
+
+## The order, and why
+
+1 → 2 → 3 → 4. The learned proposer waits for the certified planner because
+it needs the planner's certified edges as data; the momentum route and scene
+families can proceed in parallel with it. Hardware and 3D build on all of it.
+
+[The method at a glance](index.qmd) · [Certified funnels](planar-build/funnels.qmd) · [Results](results/index.qmd)
