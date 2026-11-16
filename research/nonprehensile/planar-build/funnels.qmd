@@ -1,5 +1,8 @@
 ---
 title: "Certified funnels"
+resources:
+  - media/trackc/trackc_mu0.3.mp4
+  - media/trackc/trackc_mu0.5.mp4
 subtitle: "Each edge of the contact-formation graph becomes a certified transition: every state of its entry set, for every disk friction in the band, reaches the next edge's entry set. Chained, the edges certify a plan as executed, including motions that use momentum."
 ---
 
@@ -27,45 +30,70 @@ motion and coasting become plannable edges.
 
 The chain tips the box, pivots it on the step corner, breaks and remakes
 contact, rolls it over the corner, pushes it so that it lands on the platform
-in motion, and transports it to the goal.
+in motion, and transports it into the lift goal. Every edge below is certified
+for every state of its entry set and every disk friction in [0.3, 0.5]; the
+"utilization" is the certificate's smallest remaining margin as a fraction of
+its capacity, so **higher is safer**.
 
-| Piece | Certified | MJX from real entry states |
-|---|---|---|
-| Tip (held departure) | yes | — |
-| Pivot to 59.00° (law switch at 23°) | yes | 932 / 932 |
-| Stop at 59.00° | yes, with the derived force floor | 768 / 768 |
-| Gentle break, then make(m<sub>z</sub>) pressing along the inward normal | yes | 300 / 300 |
-| Break(g<sub>v</sub>) delivering the box to the roll | yes | 687 / 687 |
-| Roll over the corner | being re-certified from the 62° junction | pending |
-| Push and landing in motion | follows the roll | pending |
-| Transport to the goal | follows the landing | pending |
+| Piece | Certificate | Utilization | MJX from real entry states |
+|---|---|---|---|
+| Tip (held departure, tip funnel) | yes | 0.47 | — |
+| Pivot to 59.00° (law switch at 23°) | yes | 0.225 | 992 / 992 |
+| Stop at 59.00° | yes, derived force floor | rest 58.996–59.052° | — |
+| Gentle break, then make(m<sub>z</sub>) | yes (one certificate) | — | 300 / 300 |
+| Break(g<sub>v</sub>) into the roll | yes | 0.545 | 687 / 687 |
+| Roll over the corner at 1°/s, from the 62° junction | yes | 0.376 | 765 / 765 |
+| Push, 0.1116 N, on 16 sub-boxes of the roll's exit | yes | 0.686 | — |
+| **Landing impact window** | **yes, zonotope cover** | 310,372 pieces, 0 uncertified | — |
+| Rest after the impact | measured | — | every landing comes to rest |
+| Transport through the support switch to the goal (62.571 mm) | yes | 0.208 | 758 / 758 |
+| Rest at the goal | measured (certificate in progress) | — | — |
 
-The roll is re-searched because the junction at 62° failed: a jump from the
-break's 1°/s to the roll's 8°/s violates the sticking cone at the hand-off.
-The re-search includes ramped speed profiles. The best certified candidates
-so far keep 1°/s through the junction.
+**How the edges compose.** A junction composes when the certified exit of one
+edge lies inside the certified entry of the next; sets measured in simulation
+only validate coverage. An automatic check reads every certificate's exported
+sets and tests each junction. All junctions from the box at rest through the
+impact window compose on certified sets. Two links remain measured: the box
+coming to rest after the impact (at the hand-off the disk can still slide on
+the box top, so this needs a slide-to-stick certificate) and the rest at the
+goal.
 
-## The landing impact is measured, not certified
+**Executed end to end.** One continuous MuJoCo/MJX simulation per rollout,
+768 rollouts at each end of the friction band, every law switching at its
+certified hand-off: every segment survives in **1536 of 1536**, the
+transport reaches its certified exit inside the lift goal in 1536 of 1536, and
+the box rests at the lift goal in **1536 of 1536** (Clopper–Pearson 95%
+[0.9976, 1]). The final hold at the goal is the realizer's and is not
+certified.
 
-Every piece above is certified by **interval arithmetic**. Each quantity is
-carried as a range guaranteed to contain its true value, the state box is
-pushed through the dynamics step by step, and each condition is checked
-over the whole box at once.
+<video src="media/trackc/trackc_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-That fails over the few steps around the landing impact. The reason is the
-**wrapping effect**. Intervals store only axis-aligned boxes. Each step
-shears and rotates the set, and re-wrapping it in a box adds empty corners
-that compound.
+**Track C at μ = 0.3.** The caption bar names each segment and its law, and
+colours each junction by its status (certified, measured, uncertified). The
+roll, at 1°/s, is shown at 3× (the badge says so); everything else plays in
+real time.
 
-A line segment rotated by 45° shows it. The smallest box around the
-rotated segment is a square, so the width grows by √2. After 8 such
-rotations the box is 16 times wider, while the true set is still a segment.
-At impact the velocities flip and couple strongly to where the box hit.
-The box grows until nothing can be proved, and splitting it would need
-about 10<sup>10</sup> pieces.
+<video src="media/trackc/trackc_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-The impact window is therefore stated **by measurement**: every MJX landing
-ends at rest in the target formation, reported at 95/95.
+**Track C at μ = 0.5.** The rollout closest to the median segment timings at
+each end of the band, picked by script.
+
+## The landing impact, certified with zonotopes
+
+Every other piece above was first certified by **interval arithmetic**
+([Background: interval arithmetic](interval-arithmetic.qmd)). Around the
+landing impact that fails: intervals store only axis-aligned boxes, every step
+shears and rotates the set, and re-wrapping it adds empty corners that
+compound (the wrapping effect). Splitting the boxes finely enough would have
+needed on the order of 2<sup>36</sup> pieces.
+
+Carried as a **zonotope**, the set keeps the correlations a box throws away.
+Over the whole landing set the cover needs **310,372 pieces, all certified,
+none uncertified**, computed in about seven hours on two clusters. Sampled
+trajectories (1.13 million step checks) and exact rational solves of the
+contact system (253,000) found no escape from the certified sets. The thinnest
+certified margin lies in a contact case that no sampled trajectory takes: an
+over-approximation, sound as it stands.
 
 ## A set-based route: zonotopes
 
@@ -98,28 +126,16 @@ a centre plus a linear image of a cube.
   for nonlinear steps,
   [Siefert et al., ACC 2023](https://arxiv.org/abs/2210.09902)).
 
-**First test.** One impact branch and one small entry sub-box, with the
-first-order form (a chain-rule Jacobian with an interval remainder)
-intersected with the interval box at each step. The decision test was the
-size of the entry boxes on which every rocking class after the impact is
-excluded. Those boxes grew from 2<sup>−4</sup> to 2<sup>−2</sup> per
-coordinate, 2<sup>12</sup> in volume over the window's six coordinates,
-against a bar of 2<sup>10</sup> set beforehand.
+**The method in this chain.** The impact window was the first client of the
+zonotope set type; the funnel certifier now runs the same set type on every
+edge, and the edges re-certified on zonotopes so far hold with margins equal
+to or above their interval certificates. Interval arithmetic stays the
+rigorous subroutine for remainder bounds, implicit contact solves and
+rounding ([Background: intervals and zonotopes together](intervals-and-zonotopes.qmd)).
 
-Step by step the picture is mixed:
-
-- **The make step** encloses the reached set 2<sup>9</sup>–2<sup>13</sup>
-  times tighter in volume.
-- **The steps before impact** gain almost nothing.
-- **The tail step** alone is looser than the interval box, which is why the
-  two are intersected.
-
-The other branches and the rest of the landing set are untested.
-
-::: {.callout-note title="If the zonotope route works"}
-If zonotopes certify the impact window over the whole landing set, the
-landing becomes a certified link, and set-based certificates for
-contact-rich funnels deserve to be pursued well beyond this chain.
+::: {.callout-note title="Where this leads"}
+With the impact window certified, set-based certificates for contact-rich
+funnels deserve to be pursued well beyond this chain.
 
 Justin Koeln and Justin Ruths at UT Dallas work on exactly these set
 representations: hybrid zonotopes for reachability of mixed logical
