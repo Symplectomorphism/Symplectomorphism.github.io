@@ -641,7 +641,7 @@ $$
 </section>
 <section id="track-c-a-chain-with-a-landing-in-motion" class="level2">
 <h2 class="anchored" data-anchor-id="track-c-a-chain-with-a-landing-in-motion">Track C: a chain with a landing in motion</h2>
-<p>The chain tips the block, pivots it on the step corner, breaks and remakes contact, rolls it over the corner, pushes it so that it lands on the platform in motion, transports it into the lift goal and stops it there. Every edge below except the rest after the impact is certified for every state of its entry set and every disk friction in [0.3, 0.5]; the “utilization” is the certificate’s smallest remaining margin as a fraction of its capacity, so <strong>higher is safer</strong>.</p>
+<p>The chain tips the block, pivots it on the step corner, breaks and remakes contact, rolls it over the corner, pushes it so that it lands on the platform in motion, transports it into the lift goal, stops it there and lets go. Every segment below is certified for every state of its entry set and every disk friction in [0.3, 0.5]; the “utilization” is the certificate’s smallest remaining margin as a fraction of its capacity, so <strong>higher is safer</strong>.</p>
 <div class="table-responsive">
 <table class="caption-top table">
 <colgroup>
@@ -708,36 +708,58 @@ $$
 <td>—</td>
 </tr>
 <tr class="odd">
-<td>Rest after the impact</td>
-<td>measured in the chain; the rest itself is certified by an energy inequality on all 16,384 units</td>
-<td>—</td>
+<td><strong>Rest after the impact</strong></td>
+<td><strong>yes, energy (dissipation) inequality</strong></td>
+<td>16,384 / 16,384 units</td>
 <td>every landing comes to rest</td>
 </tr>
 <tr class="even">
-<td>Transport through the support switch to the goal (62.571 mm)</td>
-<td>yes</td>
-<td>0.208</td>
-<td>758 / 758</td>
+<td>Transport through the support switch, wide (β 0.25), from the certified departure</td>
+<td>yes, zonotope tube</td>
+<td>0.247</td>
+<td>731 / 731 held-out</td>
 </tr>
 <tr class="odd">
-<td><strong>Goal stop</strong> (held force)</td>
-<td><strong>yes</strong>, held force certified; a two-model rest across the support switch</td>
+<td><strong>Goal stop</strong> (held force c<sub>n</sub> 0.15 N)</td>
+<td><strong>yes</strong>, through the two-model rest</td>
 <td>—</td>
-<td>1536 / 1536 inside the certified rest set</td>
+<td>1536 / 1536 end inside its rest set</td>
+</tr>
+<tr class="even">
+<td><strong>Release</strong>, break(m<sub>z</sub>)</td>
+<td><strong>yes</strong>, passive braking ≥ 1.94 m/s²</td>
+<td>—</td>
+<td>1536 / 1536 settle inside the rigid rest set</td>
+</tr>
+<tr class="odd">
+<td>Block at rest after the release</td>
+<td><strong>yes</strong>, passive hold, every slip and tip excluded</td>
+<td>—</td>
+<td>1536 / 1536</td>
 </tr>
 </tbody>
 </table>
 </div>
-<p>In the chain’s own count the twelve segments (the break and the make are two) are <strong>11 certified, 1 measured, 0 uncertified</strong>, and the eleven junctions between them <strong>9 certified, 2 measured</strong>.</p>
-<p><strong>How the edges compose.</strong> A junction composes when the certified exit of one edge lies inside the certified entry of the next; sets measured in simulation only validate coverage. An automatic check reads every certificate’s exported sets and tests each junction. All junctions from the block at rest through the impact window compose on certified sets, and so does the junction from the transport into the goal stop. Only the rest after the landing impact remains measured: its junction from the impact window’s hand-off and its junction into the transport are read from MJX (at the hand-off the disk can still slide on the block’s top). The goal rest is certified: a two-model rest across the support switch.</p>
-<p><strong>Executed end to end.</strong> One continuous MuJoCo/MJX simulation per rollout, 768 rollouts at each end of the friction band, every law switching at its certified hand-off: every segment survives in <strong>1536 of 1536</strong>, the transport reaches its certified exit inside the lift goal in 1536 of 1536, and the block reaches the lift goal and comes to rest inside the certified rest set in <strong>1536 of 1536</strong> (Clopper–Pearson 95% [0.9976, 1]). The goal stop’s held force is certified; in MJX every rollout stays inside the certified rest set and within the measured budgets (0 of 1536 over).</p>
-<p><strong>The rest after the landing impact.</strong> The rest itself is certified by a dissipation (energy) inequality on all 16,384 post-impact units: friction at the platform and at the disk dissipates the kinetic energy faster than the hold force supplies it, which bounds how far the block slides and how far the disk slips on its face (<a href="../../../research/nonprehensile/planar-build/passivity-certificates.html">Background: dissipation certificates</a>). The certified rest set has x<sub>B</sub> ∈ [0.475, 3.666] mm and k<sub>m<sub>z</sub></sub> ∈ [−9.608, +0.104] mm; per unit, the block slides at most 1.70 mm and k shifts at most 1.53 mm. All 1536 end-to-end departures into the transport lie inside that certified rest set enlarged by the measured 95/95 hold creep, also on the strict per-unit test. That is a measurement: the link into the transport is still counted as measured, and its certified departure from the whole rest set is being completed.</p>
-<video src="media/trackc/trackc_goalstop_mu0.3.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+<p>In the chain’s own count all <strong>14 of 14 segments</strong> are certified (the break and the make are two) and all <strong>16 of 16 junctions</strong> between and inside them. One quantity is not in the rigid reduction and is measured in MJX: the disk’s clearance after it lifts off the block in the release.</p>
+<p><strong>How the edges compose.</strong> A junction composes when the certified exit of one edge lies inside the certified entry of the next; sets measured in simulation only validate coverage. An automatic check reads every certificate’s exported sets and tests each junction, and every one passes on certified sets:</p>
+<ul>
+<li>the ten junctions from the block at rest through the impact window;</li>
+<li>into the rest after the impact: the energy certificate’s units start from the impact window’s certified hand-off set;</li>
+<li>out of that rest into the transport: the departure from the certified rest set, grown by the hold creep, is certified on 4 slices of the disk’s place k, and the wide transport funnel is re-verified from that departure set;</li>
+<li>from the transport into the goal stop, which brakes at 0.15 N, and from the goal stop into the release;</li>
+<li>from the release into the block at rest: the release’s passive braking ends in its own passive hold, the same pattern as the impact window ending in the post-impact rest.</li>
+</ul>
+<p><strong>Executed end to end.</strong> 768 rollouts at each end of the friction band. Each is one continuous MuJoCo/MJX simulation from the block at rest to the wide transport’s exit (its commands bitwise equal to the certified wide law), and a second MJX run carries every rollout on through the goal stop and the release; every law switches at its certified hand-off. The block reaches the lift goal, released and at rest, in <strong>1536 of 1536</strong> (Clopper–Pearson 95% [0.9976, 1]). Through the goal stop’s hold, 1528 of 1536 stay inside its rest set; the other 8 dip at most 1.1 µm below it at the first step, and all 1536 end inside it.</p>
+<p><strong>Why the chain ends with a release.</strong> A rigid model holds a pushed block perfectly still, but MJX’s contact is soft: under a held push its friction lets the block creep, 18–25 µm/s at 0.15 N, for as long as the push lasts. The certified way to end a plan is therefore to stop pushing. Once the block has stopped, the disk breaks its contact (break(m<sub>z</sub>)), and the block rests on the platform with no disk force at all. That rest is certified: the platform’s friction brakes any remaining slide at no less than 1.94 m/s², and every slip and tip is excluded. In MJX all 1536 rollouts settle inside the rigid rest set; through the disk’s retraction the block moves at most 24 µm and tilts at most 0.0055°.</p>
+<p><strong>The rest after the landing impact.</strong> The rest is certified by a dissipation (energy) inequality on all 16,384 post-impact units: friction at the platform and at the disk dissipates the kinetic energy faster than the hold force supplies it, which bounds how far the block slides and how far the disk slips on its face (<a href="../../../research/nonprehensile/planar-build/passivity-certificates.html">Background: dissipation certificates</a>). The certified rest set has x<sub>B</sub> ∈ [0.475, 3.666] mm and k<sub>m<sub>z</sub></sub> ∈ [−9.608, +0.104] mm; per unit, the block slides at most 1.70 mm and k shifts at most 1.53 mm.</p>
+<p><strong>A barrier on the wide transport.</strong> A discrete-time barrier on the support load is verified over the wide transport through the support switch with a decay rate γ* = 0.0048 per step and no subdivision (<a href="../../../research/nonprehensile/planar-build/control-barrier-functions.html">Background: control barrier functions</a>).</p>
+<p><em>Record:</em> a second variant of the chain uses a narrower transport (to 62.571 mm, utilization 0.208) and a goal stop at 0.094 N without a release; in it 11 of 12 segments are certified and the rest after the impact is counted as measured.</p>
+<video src="media/trackc/trackc_wide_mu0.3.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
-<p><strong>Track C at μ = 0.3, through the goal stop.</strong> The caption bar names each of the twelve segments and its law, and colours each junction by its status (certified, measured, uncertified); the closing card gives the chain’s count. The roll, at 1°/s, is shown at 3× (the badge reads “playback 3.0×”), and so are the short stretches in which the block and the disk both rest, with brief pauses at some junctions; every other motion plays in real time. The badge at the top left always gives the current speed. <a href="media/trackc/trackc_goalstop_mu0.3_realtime.mp4">The same rollout with the roll in real time.</a></p>
-<video src="media/trackc/trackc_goalstop_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+<p><strong>Track C at μ = 0.3, through the release.</strong> The caption bar names each of the fourteen segments and its law, and colours each junction by its status; the closing card gives the chain’s count. The roll, at 1°/s, is shown at 3× (the badge reads “playback 3.0×”), and so are the short stretches in which the block and the disk both rest, with brief pauses at some junctions; every other motion plays in real time. The badge at the top left always gives the current speed. The chain ends with the release: the disk lets go and the block stays at rest. <a href="media/trackc/trackc_wide_mu0.3_realtime.mp4">The same rollout with the roll in real time.</a></p>
+<video src="media/trackc/trackc_wide_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
-<p><strong>Track C at μ = 0.5, through the goal stop.</strong> At each end of the band the rollout shown is the one closest to the median segment timings, picked by script. The playback speeds are as at μ = 0.3. <a href="media/trackc/trackc_goalstop_mu0.5_realtime.mp4">The same rollout with the roll in real time.</a></p>
+<p><strong>Track C at μ = 0.5, through the release.</strong> At each end of the band the rollout shown is picked by script, not by hand. The playback speeds are as at μ = 0.3. <a href="media/trackc/trackc_wide_mu0.5_realtime.mp4">The same rollout with the roll in real time.</a></p>
 </section>
 <section id="the-landing-impact-certified-with-zonotopes" class="level2">
 <h2 class="anchored" data-anchor-id="the-landing-impact-certified-with-zonotopes">The landing impact, certified with zonotopes</h2>
