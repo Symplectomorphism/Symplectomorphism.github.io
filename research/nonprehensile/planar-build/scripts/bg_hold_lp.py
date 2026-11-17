@@ -110,7 +110,7 @@ print(f"[5] corner A: grid search l1 distance {best:.4f} (LP-1 gave {lp1(WA)[0]:
 fig, axes = plt.subplots(1, 2, figsize=(8.4, 3.0), sharey=True)
 names = [n for n, _ in DIRS]
 SHOW = 2.0
-for ax, data, title in ((axes[0], exits, "(a) Flat box on two corners"),
+for ax, data, title in ((axes[0], exits, "(a) Flat block on two corners"),
                         (axes[1], exits_lim, f"(b) Plus the disk, normal force ≤ {F_MAX} mg")):
     vals = np.array([data[n] for n in names])
     m = vals.min()

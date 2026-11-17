@@ -1,15 +1,18 @@
 ---
 title: "Certified funnels"
 resources:
-  - media/trackc/trackc_mu0.3.mp4
-  - media/trackc/trackc_mu0.5.mp4
+  - media/trackc/trackc_goalstop_mu0.3.mp4
+  - media/trackc/trackc_goalstop_mu0.5.mp4
+  - media/trackc/trackc_goalstop_mu0.3_realtime.mp4
+  - media/trackc/trackc_goalstop_mu0.5_realtime.mp4
 subtitle: "Each edge of the contact-formation graph becomes a certified transition: every state of its entry set, for every disk friction in the band, reaches the next edge's entry set. Chained, the edges certify a plan as executed, including motions that use momentum."
 ---
 
 ## The idea
 
-The [hold gate](hold-gate.qmd) and the [box certificate](certificate.qmd)
-certify that the box *can be held* at every pose along a plan. A **funnel**
+The [hold gate](hold-gate.qmd) and the [certificate over a whole box of
+poses](certificate.qmd) certify that the block *can be held* at every pose
+along a plan. A **funnel**
 certifies the motion itself:
 
 - **Entry set.** A box of states the edge may start from: pose, velocity,
@@ -23,17 +26,20 @@ certifies the motion itself:
   the measured coverage is reported at 95/95.
 
 Edges whose sets compose this way form a chain that is certified end to end.
-The box no longer has to be held at every instant, so rolls, landings in
+The block no longer has to be held at every instant, so rolls, landings in
 motion and coasting become plannable edges.
 
 ## Track C: a chain with a landing in motion
 
-The chain tips the box, pivots it on the step corner, breaks and remakes
+The chain tips the block, pivots it on the step corner, breaks and remakes
 contact, rolls it over the corner, pushes it so that it lands on the platform
-in motion, and transports it into the lift goal. Every edge below is certified
+in motion, transports it into the lift goal and stops it there. Every edge
+below except the rest after the impact is certified
 for every state of its entry set and every disk friction in [0.3, 0.5]; the
 "utilization" is the certificate's smallest remaining margin as a fraction of
 its capacity, so **higher is safer**.
+
+::: {.table-responsive}
 
 | Piece | Certificate | Utilization | MJX from real entry states |
 |---|---|---|---|
@@ -45,42 +51,71 @@ its capacity, so **higher is safer**.
 | Roll over the corner at 1°/s, from the 62° junction | yes | 0.376 | 765 / 765 |
 | Push, 0.1116 N, on 16 sub-boxes of the roll's exit | yes | 0.686 | — |
 | **Landing impact window** | **yes, zonotope cover** | 310,372 pieces, 0 uncertified | — |
-| Rest after the impact | measured | — | every landing comes to rest |
+| Rest after the impact | measured in the chain; the rest itself is certified by an energy inequality on all 16,384 units | — | every landing comes to rest |
 | Transport through the support switch to the goal (62.571 mm) | yes | 0.208 | 758 / 758 |
-| Rest at the goal | measured (certificate in progress) | — | — |
+| **Goal stop** (held force) | **yes**, held force certified; a two-model rest across the support switch | — | 1536 / 1536 inside the certified rest set |
+
+:::
+
+In the chain's own count the twelve segments (the break and the make are two)
+are **11 certified, 1 measured, 0 uncertified**, and the eleven junctions
+between them **9 certified, 2 measured**.
 
 **How the edges compose.** A junction composes when the certified exit of one
 edge lies inside the certified entry of the next; sets measured in simulation
 only validate coverage. An automatic check reads every certificate's exported
-sets and tests each junction. All junctions from the box at rest through the
-impact window compose on certified sets. Two links remain measured: the box
-coming to rest after the impact (at the hand-off the disk can still slide on
-the box top, so this needs a slide-to-stick certificate) and the rest at the
-goal.
+sets and tests each junction. All junctions from the block at rest through
+the impact window compose on certified sets, and so does the junction from
+the transport into the goal stop. Only the rest after the landing impact
+remains measured: its junction from the impact window's hand-off and its
+junction into the transport are read from MJX (at the hand-off the disk can
+still slide on the block's top). The goal rest is certified: a two-model rest
+across the support switch.
 
 **Executed end to end.** One continuous MuJoCo/MJX simulation per rollout,
 768 rollouts at each end of the friction band, every law switching at its
 certified hand-off: every segment survives in **1536 of 1536**, the
 transport reaches its certified exit inside the lift goal in 1536 of 1536, and
-the box rests at the lift goal in **1536 of 1536** (Clopper–Pearson 95%
-[0.9976, 1]). The final hold at the goal is the realizer's and is not
-certified.
+the block reaches the lift goal and comes to rest inside the certified rest set
+in **1536 of 1536** (Clopper–Pearson 95% [0.9976, 1]). The goal stop's held
+force is certified; in MJX every rollout stays inside the certified rest set
+and within the measured budgets (0 of 1536 over).
 
-<video src="media/trackc/trackc_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+**The rest after the landing impact.** The rest itself is certified by a
+dissipation (energy) inequality on all 16,384 post-impact units: friction at
+the platform and at the disk dissipates the kinetic energy faster than the
+hold force supplies it, which bounds how far the block slides and how far
+the disk slips on its face
+([Background: dissipation certificates](passivity-certificates.qmd)). The
+certified rest set has x<sub>B</sub> ∈ [0.475, 3.666] mm and
+k<sub>m<sub>z</sub></sub> ∈ [−9.608, +0.104] mm; per unit, the block slides
+at most 1.70 mm and k shifts at most 1.53 mm. All 1536 end-to-end departures
+into the transport lie inside that certified rest set enlarged by the
+measured 95/95 hold creep, also on the strict per-unit test. That is a
+measurement: the link into the transport is still counted as measured, and
+its certified departure from the whole rest set is being completed.
 
-**Track C at μ = 0.3.** The caption bar names each segment and its law, and
-colours each junction by its status (certified, measured, uncertified). The
-roll, at 1°/s, is shown at 3× (the badge says so); everything else plays in
-real time.
+<video src="media/trackc/trackc_goalstop_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
-<video src="media/trackc/trackc_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+**Track C at μ = 0.3, through the goal stop.** The caption bar names each of
+the twelve segments and its law, and colours each junction by its status
+(certified, measured, uncertified); the closing card gives the chain's count.
+The roll, at 1°/s, is shown at 3× (the badge reads "playback 3.0×"), and so
+are the short stretches in which the block and the disk both rest, with brief
+pauses at some junctions; every other motion plays in real time. The badge at
+the top left always gives the current speed.
+[The same rollout with the roll in real time.](media/trackc/trackc_goalstop_mu0.3_realtime.mp4)
 
-**Track C at μ = 0.5.** The rollout closest to the median segment timings at
-each end of the band, picked by script.
+<video src="media/trackc/trackc_goalstop_mu0.5.mp4" controls muted playsinline preload="metadata" width="100%"></video>
+
+**Track C at μ = 0.5, through the goal stop.** At each end of the band the
+rollout shown is the one closest to the median segment timings, picked by
+script. The playback speeds are as at μ = 0.3.
+[The same rollout with the roll in real time.](media/trackc/trackc_goalstop_mu0.5_realtime.mp4)
 
 ## The landing impact, certified with zonotopes
 
-Every other piece above was first certified by **interval arithmetic**
+Every other piece above is certified by **interval arithmetic**
 ([Background: interval arithmetic](interval-arithmetic.qmd)). Around the
 landing impact that fails: intervals store only axis-aligned boxes, every step
 shears and rotates the set, and re-wrapping it adds empty corners that
@@ -126,10 +161,9 @@ a centre plus a linear image of a cube.
   for nonlinear steps,
   [Siefert et al., ACC 2023](https://arxiv.org/abs/2210.09902)).
 
-**The method in this chain.** The impact window was the first client of the
-zonotope set type; the funnel certifier now runs the same set type on every
-edge, and the edges re-certified on zonotopes so far hold with margins equal
-to or above their interval certificates. Interval arithmetic stays the
+**The method in this chain.** The funnel certifier runs the zonotope set type
+on every edge, the impact window included, and the edges certified both ways
+hold with zonotope margins equal to or above their interval margins. Interval arithmetic stays the
 rigorous subroutine for remainder bounds, implicit contact solves and
 rounding ([Background: intervals and zonotopes together](intervals-and-zonotopes.qmd)).
 

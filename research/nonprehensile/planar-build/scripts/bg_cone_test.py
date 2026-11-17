@@ -126,13 +126,13 @@ def box_panel(ax, corners, title):
     ax.set_title(title, fontsize=9.5, color=INK, loc="left")
 
 
-box_panel(axes[0, 0], "AB", "(a) Flat box on two corners, μ = 0.2")
+box_panel(axes[0, 0], "AB", "(a) Flat block on two corners, μ = 0.2")
 # The witness: half the weight on A+ and half on B-, both leaning inward.
 for x0, s, col in ((-1.0, 1, CA), (1.0, -1, CB)):
     axes[0, 0].add_patch(FancyArrowPatch((x0, -1), (x0 + s * 0.5 * MU * 2.2, -1 + 0.5 * 2.2), arrowstyle="-|>",
                                          mutation_scale=12, color=col, lw=2.6))
 axes[0, 0].text(0, 1.22, "witness: ½ mg along A₊ and ½ mg along B₋", fontsize=8, color=INK, ha="center")
-box_panel(axes[0, 1], "A", "(b) The same box on corner A alone")
+box_panel(axes[0, 1], "A", "(b) The same block on corner A alone")
 axes[0, 1].text(0, 1.15, "A's force always has a moment about the\ncenter of mass; gravity has none to cancel it",
                 fontsize=8, color=INK, ha="center")
 

@@ -150,10 +150,10 @@ def switch_band(out: Path) -> None:
     x = np.linspace(0, 1, 400)
     xs = 0.55
     mA = 0.30 - 0.25 * x  # margin under force model A (support at the step corner)
-    mB = (0.30 - 0.25 * xs) + 0.30 * (x - xs)  # margin under model B (support at the box corner)
+    mB = (0.30 - 0.25 * xs) + 0.30 * (x - xs)  # margin under model B (support at the block corner)
     true = np.where(x < xs, mA, mB)
     ax.plot(x, mA, color=BLUE, lw=1, ls="--", label="model A (left support at the step corner)")
-    ax.plot(x, mB, color=ORANGE, lw=1, ls="--", label="model B (left support at the box corner)")
+    ax.plot(x, mB, color=ORANGE, lw=1, ls="--", label="model B (left support at the block corner)")
     ax.plot(x, true, color="k", lw=2, label="true margin: A before the switch, B after (a kink)")
     w = 0.12
     band = (x > xs - w) & (x < xs + w)

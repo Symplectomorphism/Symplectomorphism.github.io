@@ -10,8 +10,11 @@ held-out searches ([Results](results/index.qmd)). Beside it, one route of the
 lift, "track C", is built as a chain of **certified funnels**: each edge is a
 transition certified for every state of its entry set and every disk friction
 in [0.3, 0.5], and the junctions between edges are checked as containments of
-certified sets ([Certified funnels](planar-build/funnels.qmd)). The chain is
-executed end to end in MuJoCo/MJX. Its certificates are moving from interval
+certified sets ([Certified funnels](planar-build/funnels.qmd)). Of its twelve
+segments, 11 are certified and 1 is measured (the rest after the landing
+impact), and none is uncertified; executed end to end in MuJoCo/MJX, the block
+reaches the lift goal and comes to rest inside the certified rest set in 1536
+of 1536 rollouts. Its certificates are moving from interval
 boxes to zonotopes, which carry the correlations that boxes lose
 ([Background: zonotope propagation](planar-build/zonotopes.qmd)).
 
@@ -20,10 +23,13 @@ The steps below are ordered by what each one makes possible next.
 ## 1. Finish the certified chain and the migration
 
 - **The last measured link.** After the landing impact (certified by a
-  zonotope cover of the impact window), the box comes to rest on the platform.
-  That settling is today a measured outcome. It becomes an endpoint certificate
-  started from the impact cover's certified exit, with the same construction
-  as the chain's other rests.
+  zonotope cover of the impact window), the block comes to rest on the
+  platform. That rest is certified by a dissipation (energy) inequality on all
+  16,384 post-impact units
+  ([Background: dissipation certificates](planar-build/passivity-certificates.qmd)),
+  but the chain still counts the segment as measured: the departure into the
+  transport is checked in MJX. What remains is a certified departure from the
+  whole certified rest set into the transport's entry.
 - **Every certificate on zonotopes.** The funnel certifier gains the zonotope
   set type edge by edge: a regression shows each migrated edge holds wherever
   its interval certificate held, with margins at least as large; then track C
@@ -37,7 +43,7 @@ The steps below are ordered by what each one makes possible next.
 
 ## 2. The planner composes certified funnels
 
-This is the program's central step. Today the search returns plans that are
+This is the program's central step. The search returns plans that are
 *held* in simulation, and the certified chain is built beside it. The goal is a
 planner whose output **is** a certified plan:
 
@@ -59,14 +65,14 @@ search against a precomputed library of funnels per edge, or a mix.
   (including zonotope generator templates); the exact verifier accepts or
   refuses, so soundness never depends on the network. Its value is claimed only
   through ablations.
-- **Motions that need momentum.** A second route ("track A") coasts the box
-  through a wedge of poses where no push can hold it: the box has to be moving.
-  It reuses the reach and impact machinery of track C and is the first plan in
-  which momentum is essential rather than incidental.
-- **Families of scenes.** Scene parameters, such as the step height, the box's
+- **Motions that need momentum.** A second route ("track A") coasts the block
+  through a wedge of poses where no push can hold it: the block has to be
+  moving. It reuses the reach and impact machinery of track C, in a plan where
+  momentum is essential rather than incidental.
+- **Families of scenes.** Scene parameters, such as the step height, the block's
   size and mass, enter the certificates as extra zonotope generators, so one
   certificate covers a family of scenes rather than a single one.
-- **The disk sliding along the box.** An edge where the disk slides is parked
+- **The disk sliding along the block.** An edge where the disk slides is parked
   for a method change; the zonotope tools are the next attempt.
 
 ## 4. Toward hardware and 3D
@@ -76,12 +82,28 @@ search against a precomputed library of funnels per edge, or a mix.
   more as modes multiply. This line is a natural collaboration with Justin
   Koeln and Justin Ruths at UT Dallas.
 - **Perception.** A state estimator replaces the simulator's state; its error
-  bounds enter the certificates the same way today's measured disturbances do
+  bounds enter the certificates the same way the simulator's measured disturbances do
   (at joint 95/95).
 - **A real robot.** The same loop (plan, certify, execute with feedback) on
   hardware, with the certificates' disturbance bounds measured on the robot.
 - **3D.** More contact modes and a higher-dimensional state, where set-based
   certificates are the scalable route and box splitting is not.
+
+## Research avenues
+
+Two certificate forms are being explored beside the set-propagation funnels.
+Both are directions under study, not results.
+
+- **Dissipation (passivity) certificates for contact edges.** A storage
+  function and a supply rate are searched jointly per edge, the dissipation
+  inequality between them is verified by zonotope set propagation, and the
+  certified level sets are composed along the contact-formation graph
+  ([Background: dissipation certificates](planar-build/passivity-certificates.qmd)).
+- **Barrier certificates (control barrier functions) for contact edges**, as a
+  second pillar. A support-load barrier is verified on the transport through
+  the support switch; a barrier on the block's tilt in the full compliant
+  model is planned
+  ([Background: control barrier functions](planar-build/control-barrier-functions.qmd)).
 
 ## The order, and why
 
