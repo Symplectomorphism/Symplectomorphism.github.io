@@ -395,7 +395,7 @@ block to zoom in.
         d: { title: "Desired motion",
           text: ["The plan as a sequence of edges. Each edge carries a feedback law, a nominal motion with a tube around it, and certified entry and exit sets: its funnel.",
                  "Consecutive edges meet at hand-off sections, where the certified exit of one edge lies inside the certified entry of the next.",
-                 "On the task, the chain is track C: it tips, pivots, rolls and pushes the block onto the platform, then transports it to the lift goal."],
+                 "On the task, the chain is track C: it tips, pivots, rolls and pushes the block onto the platform, then transports it to the lift goal, stops it and releases it."],
           links: ["trackc", "fc"] },
         decor: '<text class="hdr" x="30" y="44" font-size="26">Desired motion: the certified chain (track C)</text>' +
           '<text class="note" x="105" y="96" font-size="14" text-anchor="middle">start: block at rest</text>' +
@@ -404,7 +404,7 @@ block to zoom in.
           '<text class="note" x="697" y="425" font-size="14" text-anchor="middle">certified law switch</text>' +
           '<circle cx="105" cy="342" r="22" class="goal"/><circle cx="105" cy="342" r="6" fill="var(--sm-accent)"/>' +
           '<text class="note" x="105" y="392" font-size="14" text-anchor="middle">lift goal,</text>' +
-          '<text class="note" x="105" y="409" font-size="14" text-anchor="middle">certified stop</text>' +
+          '<text class="note" x="105" y="409" font-size="14" text-anchor="middle">released, at rest</text>' +
           /* two chained funnels */
           '<path class="fill-acc2" d="M50,458 C130,470 190,492 250,500 L250,532 C190,540 130,562 50,574 Z"/>' +
           '<path class="fill-acc2" d="M262,494 C330,502 380,508 440,512 L440,524 C380,528 330,534 262,542 Z"/>' +
@@ -444,15 +444,15 @@ block to zoom in.
           { id: "e-push", box: [617, 300, 160, 84], label: ["Push"],
             d: { title: "Push", text: ["A push sends the block onto the platform. Its magnitude is chosen coverage-first over the chain, then by the largest certified utilization, because a stronger push lands harder.", "The command jump at the hand-off is certified as a law switch."], links: ["fcchoose"] } },
           { id: "e-land", box: [420, 300, 160, 84], label: ["Landing", "in motion"],
-            d: { title: "Landing in motion", text: ["The block lands on the platform while moving and comes to rest in the formation {m_z, t}. Every MJX landing comes to rest there.", "Its impact window is certified by a zonotope cover of the whole landing set: 310,372 pieces, none uncertified.", "The rest after the impact is certified by a dissipation (energy) inequality on all 16,384 post-impact units: per unit the block slides at most 1.70 mm and the disk's place on its face shifts at most 1.53 mm. The link from that rest into the transport is still measured, so the chain counts this segment as measured."], links: ["funnels", "zono", "passivity"] } },
+            d: { title: "Landing in motion", text: ["The block lands on the platform while moving and comes to rest in the formation {m_z, t}. Every MJX landing comes to rest there.", "Its impact window is certified by a zonotope cover of the whole landing set: 310,372 pieces, none uncertified.", "The rest after the impact is certified by a dissipation (energy) inequality on all 16,384 post-impact units: per unit the block slides at most 1.70 mm and the disk's place on its face shifts at most 1.53 mm.", "The departure from that rest into the transport is certified, so the landing composes with the transport on certified sets."], links: ["funnels", "zono", "passivity"] } },
           { id: "e-transport", box: [222, 300, 160, 84], label: ["Transport to", "the lift goal"],
-            d: { title: "Transport to the lift goal", text: ["The disk transports the block along the platform to the lift goal. On the way the flush contact's support switches from the step corner to the block corner inside one formation; a support-switch band certifies the crossing.", "At the goal a certified stop holds the block with a certified force, and the rest at the goal is certified across the support switch."], links: ["techswitch", "fce2e"] } }
+            d: { title: "Transport to the lift goal", text: ["The disk transports the block along the platform to the lift goal. On the way the flush contact's support switches from the step corner to the block corner inside one formation; a support-switch band certifies the crossing.", "The wide transport (β 0.25) is certified from the departure set (utilization 0.247). At the goal a certified stop brakes the block at 0.15 N.", "Then the disk lets go (the release, break(m_z)): with no disk force the block is certified at rest on the platform, its passive braking at least 1.94 m/s² and every slip and tip excluded. Releasing avoids the slow creep that MJX's soft friction allows under a held push."], links: ["techswitch", "fce2e"] } }
         ] },
       { id: "feedback", box: [740, 340, 220, 132], label: ["Feedback"], sub: ["online execution", "switch at hand-offs"],
         d: { title: "Feedback (online execution)",
           text: ["Online, the active edge's feedback law commands the disk, and the executor switches to the next edge's law at the certified hand-off section.",
                  "Rest and stop edges hold the block with a certified force.",
-                 "The whole chain runs as one continuous MJX simulation per rollout; in 1536 of 1536 rollouts the block reaches the lift goal and comes to rest inside the certified rest set."],
+                 "The whole chain runs in MJX for 1536 rollouts; in all 1536 the block reaches the lift goal, released and at rest."],
           links: ["fce2e", "funnels"] },
         decor: '<text class="hdr" x="30" y="44" font-size="26">Feedback · online execution</text>' +
           '<text class="bandlbl" x="40" y="318" font-size="14">VALIDATION</text>',
@@ -467,9 +467,9 @@ block to zoom in.
           { id: "f-switch", box: [375, 100, 250, 130], label: ["Switch at certified", "sections"], sub: ["23°, 62°, the push"],
             d: { title: "Switching at certified sections", text: ["The executor switches to the next edge's law when the state reaches the certified hand-off section: at 23° in the pivot, at the 62° junction and at the push.", "Because the certified exit lies inside the next certified entry, each law starts from states it has been proved to accept."], links: ["fccomp", "trackc"] } },
           { id: "f-hold", box: [710, 100, 250, 130], label: ["Holds and stops"], sub: ["certified force at rest"],
-            d: { title: "Certified holds and stops", text: ["Rest and stop edges hold the block with a certified contact force, as in the stop at 59°, whose force has a derived floor, and in the goal stop."], links: ["trackc", "cert"] } },
-          { id: "f-e2e", box: [40, 330, 920, 140], label: ["End-to-end MJX execution"], sub: ["one continuous simulation per rollout", "1536 / 1536 at rest in the lift goal"],
-            d: { title: "End-to-end MJX execution", text: ["The whole chain runs as one continuous MJX simulation per rollout, from the block at rest to the goal, so nothing between segments is missed.", "In 1536 of 1536 rollouts the block reaches the lift goal and comes to rest inside the certified rest set, within the measured budgets.", "Of the chain's 12 segments, 11 are certified, 1 is measured (the rest after the landing impact) and none is uncertified."], links: ["fce2e"] } }
+            d: { title: "Certified holds and stops", text: ["Rest and stop edges hold the block with a certified contact force, as in the stop at 59°, whose force has a derived floor, and in the goal stop. After the goal stop the disk releases the block, whose rest without any disk force is certified."], links: ["trackc", "cert"] } },
+          { id: "f-e2e", box: [40, 330, 920, 140], label: ["End-to-end MJX execution"], sub: ["one continuous simulation per rollout", "1536 / 1536 released at rest in the lift goal"],
+            d: { title: "End-to-end MJX execution", text: ["The chain runs in MJX as one continuous simulation per rollout from the block at rest to the transport's exit, and a second run carries each rollout through the goal stop and the release, so nothing between segments is missed.", "In 1536 of 1536 rollouts the block reaches the lift goal, released and at rest (Clopper–Pearson 95% [0.9976, 1]).", "All 14 of the chain's segments and all 16 of its junctions are certified."], links: ["fce2e"] } }
         ] },
       { id: "plant", box: [390, 340, 220, 132], label: ["Plant"], sub: ["MuJoCo / MJX", "robot: planned"],
         d: { title: "Plant", chip: "Built · robot planned",
@@ -794,11 +794,10 @@ searches and in all 34 of the original test set, with a learned value and
 ranker; with videos.
 
 [Certified funnels →](planar-build/funnels.qmd): one route of the lift as a
-chain of certified funnels. Of its 12 segments, 11 are certified, 1 is
-measured (the rest after the landing impact) and none is uncertified; the
-goal stop is certified. Executed end to end in MJX, the block reaches the lift
-goal and comes to rest inside the certified rest set in 1536 of 1536
-rollouts; with videos.
+chain of certified funnels, certified end to end: all 14 segments and all 16
+junctions, from the block at rest through a landing in motion to the release
+at the goal. Executed in MJX, the block reaches the lift goal, released and at
+rest, in 1536 of 1536 rollouts; with videos.
 
 :::
 
@@ -852,16 +851,14 @@ held-out searches and in all 34 of the original test set
 ([Results](results/index.qmd)). Beside it, one route of the lift is built as a
 chain of **certified funnels**, each certified for every disk friction in a
 declared band and composed on certified sets: from the block at rest through a
-landing impact certified with zonotopes and a transport into the goal, to a
-certified stop at the goal. Of its 12 segments, 11 are certified, 1 is
-measured and none is uncertified. The measured one is the rest after the
-landing impact: the rest itself is certified on all 16,384 post-impact units
-by a dissipation (energy) inequality
+landing impact certified with zonotopes, a rest after the impact certified
+on all 16,384 post-impact units by a dissipation (energy) inequality
 ([Background: dissipation certificates](planar-build/passivity-certificates.qmd)),
-while its link into the transport is still measured. Executed end to end in
-simulation, the block reaches the lift goal and comes to rest inside the
-certified rest set in 1536 of 1536 rollouts
-([Certified funnels](planar-build/funnels.qmd)). The
+a transport into the goal and a stop there, to the release: the disk lets go
+and the block's rest on the platform, with no disk force, is certified. All 14
+segments and all 16 junctions of the chain are certified. Executed in
+simulation, the block reaches the lift goal, released and at rest, in 1536 of
+1536 rollouts ([Certified funnels](planar-build/funnels.qmd)). The
 [planar build](planar-build/index.qmd) pages give the details, the
 [Roadmap](roadmap.qmd) where it goes next, and
 [Issues](planar-build/issues.qmd) the open work.
