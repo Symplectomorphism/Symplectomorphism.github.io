@@ -1,0 +1,353 @@
+---
+title: "Background: contact forces at an instant"
+subtitle: "From the block's and the disk's equations of motion to the Delassus form a = Wλ + a_f, the per-class solve every certificate relies on, and how a class solution is enclosed over a whole box of states."
+lightbox: true
+bibliography: background.bib
+csl: ../../../ieee.csl
+link-citations: true
+---
+
+**Who this is for.** You know rigid-body dynamics and Coulomb friction, but
+not how a certificate turns "which forces act at the contacts?" into a
+computation it can prove things about. This page derives that computation
+from first principles, with a worked example you can check by hand. The
+manipulated object is the **block**; a **box** on this page is only a
+product of intervals, as in [interval arithmetic](interval-arithmetic.qmd).
+Companions: [deciding support](support-tutorial.qmd) (the static question),
+[certified funnels and composition](funnel-composition.qmd) and [the
+techniques that made the chain certify](certification-techniques.qmd). The
+code is `endpoint_generic.Edge.contact_data` and
+`post_impact_rest.class_maps` on branch `exp/edge-endpoints`; the technical
+report's Chapter 19 has the same material with proofs.
+
+## 1. The question at an instant
+
+**Intuition.** The [deciding-support page](support-tutorial.qmd) asks a
+static question: *can* some contact forces hold the block? A moving block
+asks a sharper one. At this instant, with these positions, velocities and
+motor force, which contact forces *does* rigid-body mechanics with Coulomb
+friction produce, and what accelerations follow? Does a contact open, stick,
+or slide, and which way? A certificate needs the answer not at one state but
+at every state of a box, and it needs to know that the answer the plan
+relies on is the *only* one.
+
+**The plan of the page.** Equations of motion (§2), each contact as two rows
+of a Jacobian (§3), the Delassus form (§4), classes and the class solve
+(§5), why the landing's flat family has no velocity terms (§6), the
+enclosure over a box (§7), excluding and certifying classes (§8), and what
+an independent check of the code found (§9).
+
+## 2. Two bodies, five coordinates
+
+**The convention.** The plane is $x$–$z$, $z$ up. The $y$ axis points into
+the page, and the block's tilt $\theta$ is a rotation about it, so a
+body-fixed vector $b$ has world components
+$$
+R(\theta)\,b = (b_x\cos\theta + b_z\sin\theta,\; -b_x\sin\theta + b_z\cos\theta).
+$$
+Differentiating, a body-fixed vector with world components $r$ turns at
+$$
+\dot r = \dot\theta\,\rho(r), \qquad \rho(r) = (r_z,\,-r_x).
+$$
+$\rho$ is a quarter turn, so $\rho(\rho(r)) = -r$ and
+$a\cdot\rho(b) = -\rho(a)\cdot b$.
+
+**Coordinates and masses.** $q = (x_B, z_B, \theta, x_M, z_M)$: the block's
+centre $c$, its tilt, and the disk's centre $P_M$. The disk is the robot's
+end effector: it translates and does not spin. With $u$ the motor force on
+the disk,
+$$
+M = \operatorname{diag}(m_B, m_B, I_B, m_M, m_M), \qquad
+f = (0,\,-m_B g,\,0,\,u_x,\,u_z - m_M g).
+$$
+The scene: $m_B = 0.1$ kg, side $a = 125$ mm, $I_B = m_B a^2/6$,
+$m_M = 0.02$ kg, disk radius $15.625$ mm, environment friction $0.2$, disk
+friction anywhere in $[0.3, 0.5]$.
+
+**A material point.** The block's point at world offset $r$ from the centre
+moves at
+$$
+\dot p = \dot c + \dot\theta\,\rho(r) = (\dot x_B + \dot\theta r_z,\; \dot z_B - \dot\theta r_x).
+$$
+
+## 3. A contact is two rows
+
+**Intuition.** Each contact has a normal $n$ and a tangent $t$. What matters
+is how fast the gap closes ($v_n$) and how fast the surfaces slip ($v_t$).
+Both are linear in the velocities, so each is a row of a Jacobian.
+
+**Block on a fixed environment** ($n$ into the block):
+$$
+v_e = e\cdot\dot p, \qquad J_e = (e_x,\; e_z,\; e_x r_z - e_z r_x,\; 0,\; 0), \qquad e\in\{n,t\}.
+$$
+**The disk on a block face** ($n$ the face's outward normal, $K = P_M - Rn$
+the block's point under the disk, $r = K - c$; the disk relative to the
+block):
+$$
+J_e = (-e_x,\; -e_z,\; -(e_x r_z - e_z r_x),\; e_x,\; e_z).
+$$
+**Forces come through the transpose.** A contact force
+$\lambda_n n + \lambda_t t$ does work $\lambda_n v_n + \lambda_t v_t$, so its
+generalized force is $J^\top\lambda$. The third entry of a row is the torque
+arm; the disk's row applies $+\lambda$ to the disk and $-\lambda$ to the
+block. Action and reaction come out of the rows.
+
+**Check it by hand.** A unit force straight up ($e = (0,1)$) at the block's
+bottom corner on its $+x$ side, $r = (a/2, -a/2)$ at $\theta = 0$: the row is
+$(0, 1, -a/2, 0, 0)$, a torque of $-a/2$ about $y$. Drawn with $+x$ to the
+right and $y$ into the page, a positive $\theta$ turns the block clockwise;
+a push up on the right side turns it counterclockwise, a negative
+$\theta$, as the sign says.
+
+**The sign of a slip matters.** A class below says "slides with $v_t > 0$",
+so the tangent's direction is part of the model. After the landing the disk
+presses on the block's left face, whose tangent in the code is
+$t_D = (0,-1)$: $v_t > 0$ means the disk moves *down* the face relative to
+the block.
+
+## 4. The Delassus form
+
+**Derivation.** Stack the closed contacts' rows into $J$ and their forces
+into $\lambda$. Newton–Euler is
+$$
+M\ddot q = f + J^\top \lambda .
+$$
+The contact accelerations are $a = J\ddot q + \dot J\dot q$. Substitute
+$\ddot q$:
+$$
+\boxed{\; a = W\lambda + a_f, \qquad W = J M^{-1} J^\top, \qquad a_f = J M^{-1} f + \dot J\dot q \;}
+$$
+$W$, the **Delassus matrix**, says how hard each contact force pushes each
+contact's acceleration: symmetric, positive semidefinite, definite when the
+rows are independent. $a_f$ is what the contacts would do with no contact
+force at all: gravity, the motor, and the velocity terms $\dot J\dot q$.
+Signorini's condition ($0 \le \lambda_n \perp a_n \ge 0$) and Coulomb's law
+close the system. That is the contact problem of Moreau
+[@moreau1988unilateral] and of the textbooks
+[@pfeiffer1996multibody; @brogliato2016nonsmooth], a linear complementarity
+problem (LCP) in $\lambda$ [@pang1996complementarity]; its velocity-level
+version is the time step of Stewart and Trinkle [@stewart1996implicit] and
+Anitescu and Potra [@anitescu1997formulating]. It can have no solution or
+several, so a certificate does not assume either away. It enumerates.
+
+**Check it by hand.** After the landing the block rests on the platform and
+cannot turn (§6). Lump the platform's two supports into one contact $t$
+(normal $(0,1)$, tangent $(1,0)$) and keep the disk $D$ on the left face
+(normal $(-1,0)$, tangent $(0,-1)$). Then
+$M^{-1} = \operatorname{diag}(10,10,50,50)$ on $(x_B, z_B, x_M, z_M)$, the
+rows are $(0,1,0,0)$, $(1,0,0,0)$, $(1,0,-1,0)$, $(0,1,0,-1)$, and with the
+hold force $u = (0.1,\, m_M g)$ N:
+$$
+W = \begin{pmatrix} 10 & 0 & 0 & 10\\ 0 & 10 & 10 & 0\\ 0 & 10 & 60 & 0\\ 10 & 0 & 0 & 60\end{pmatrix},\qquad
+a_f = \begin{pmatrix} -9.804\\ 0\\ -5\\ -9.804 \end{pmatrix}\ \text{m/s}^2 .
+$$
+One newton on the platform's normal lifts the block at $1/m_B = 10$ m/s²; one
+newton between disk and block separates them at $1/m_B + 1/m_M = 60$ m/s².
+With no contact forces the block falls at $g$ and the disk runs into it at
+$0.1/m_M = 5$ m/s² (negative means closing).
+
+![The flat family after the landing (+x to the left, as in the paper). The block slides forward on the platform's corner e₀ and on its own corner b₁; the disk presses on the block's face under the hold force u and slips up the face. Every contact frame is horizontal or vertical, and the block does not turn.](media/bg_class_solve_flat.svg){.lightbox}
+
+## 5. Classes: guess, solve, check
+
+**Intuition.** Coulomb's law is a switch: a contact is open, sticks, or
+slides one way or the other. Guess the switch position at every contact.
+Each guess, a **class**, makes the problem linear and square. Solve it, then
+check whether the guess was consistent.
+
+::: {.table-responsive}
+
+| Class | Meaning | Equations | Conditions (from $v_t = 0$) |
+|---|---|---|---|
+| O | open | $\lambda_n = 0,\ \lambda_t = 0$ | $a_n > 0$ |
+| S | sticks | $a_n = 0,\ a_t = 0$ | $\lambda_n \ge 0,\ \lvert\lambda_t\rvert \le \mu\lambda_n$ |
+| P | slides, $v_t > 0$ | $a_n = 0,\ \lambda_t + \mu\lambda_n = 0$ | $\lambda_n \ge 0,\ a_t > 0$ |
+| N | slides, $v_t < 0$ | $a_n = 0,\ \lambda_t - \mu\lambda_n = 0$ | $\lambda_n \ge 0,\ a_t < 0$ |
+
+:::
+
+With $a = W\lambda + a_f$ substituted, a class is a square system
+$A\lambda = b$: a closed contact contributes its row of $W$; a sticking one
+its tangential row too; a sliding one the friction law. The code solves it
+by Gauss–Jordan elimination in plain scalar operations, so that interval
+arithmetic can run through the same code (§7).
+
+**Check it by hand: the block slides forward and the disk slides up the
+face.** Up the face is $v_t < 0$ along $t_D$, so the class is (P, N). The
+four equations are $a_{n,t} = 0$, $\lambda_{t,t} = -0.2\,\lambda_{n,t}$,
+$a_{n,D} = 0$, $\lambda_{t,D} = \mu\lambda_{n,D}$. At $\mu = 0.4$:
+$$
+\lambda = (0.9346,\ -0.1869,\ 0.1145,\ 0.0458)\ \text{N},\qquad
+a = (0,\ -0.7243,\ 0,\ 2.2897)\ \text{m/s}^2 .
+$$
+The block's horizontal balance: $0.1145 - 0.1869 = 0.1\times(-0.7243)$. The
+disk's friction, $0.0458$ N, pushes the disk down and the block up, so the
+platform carries only $0.9804 - 0.0458 = 0.9346$ N. Both slips decelerate:
+the block at $0.724$ m/s², the disk's upward slip at $2.29$ m/s².
+
+**The other directions.** With the disk sliding *down* (P) its friction
+presses the block onto the platform (1.0274 N), and the block decelerates
+faster, at $0.879$ m/s². With the disk sticking (S), $\lambda_{t,D} = 0$, the
+block decelerates at $0.8007$ m/s², and the cone condition
+$0 \le 0.4\times 0.1160$ holds. The slip direction changes the answer by
+20%: it is part of the model, not a detail.
+
+**An excluded class: (O, S).** Suppose the block leaves the platform while
+the disk sticks. Then $\lambda_{n,D} = 0.0833$ N and
+$\lambda_{t,D} = 0.1634$ N. Two conditions fail: the block's normal
+acceleration $-8.17$ m/s² is not positive (it would have to sink into the
+platform to leave it), and $0.1634 > 0.4\times0.0833$ puts the disk's force
+outside its cone. One failure is enough.
+
+## 6. Why the flat family has no velocity terms
+
+**Intuition.** Velocity terms come from turning: a turning body's points
+have centripetal accelerations, and its contact frames turn with it. A block
+that does not turn has none.
+
+**The derivation.** By hand, with $\omega = \dot\theta$:
+
+- a block point in a fixed frame: $\dot J_e\dot q = -\omega^2\, e\cdot r$;
+- the disk's normal row: $2\omega\,\rho(n)\cdot(\dot P_M - \dot c) - \omega^2\, n\cdot(P_M - c)$;
+- the disk's tangential row: $2\omega\,\rho(t)\cdot(\dot P_M - \dot c) - \omega^2\, t\cdot(K - c)$.
+
+Every term carries $\omega$. After the landing, the block's two supports on
+the platform both have closed normal rows,
+$\dot z_B - \omega r_{x,1} = 0$ and $\dot z_B - \omega r_{x,2} = 0$ with
+different moment arms, so $\omega = 0$: the **flat family**. There
+$a_f = J M^{-1} f$ exactly, whatever the block's speed and the disk's slip.
+The accelerations depend on the velocities only through the class (the
+friction directions), which is why the rest certificate can evaluate each
+class once and use it at every speed.
+
+**One more fact the check confirms.** On the flat family the block only
+translates, so its translational equations see only the *sums* of the two
+supports' forces. The slips' accelerations therefore do not depend on the
+block's position or the disk's place on the face at all (only on the small
+tilt offset and on $\mu$); the moment balance only splits the platform's
+force between the two supports.
+
+## 7. From a point to a box: the mean-value form
+
+**Intuition.** A certificate needs $\lambda$ and $a$ at every state of a box
+$X$ of positions, offsets and friction coefficients. Treat the class
+solution as a smooth map $F$ of the state, and bound it by its value at the
+box's centre plus the most its slope can add.
+
+**The general statement.** With $m$ the box's centre, $r$ its radius and
+$[J]$ an interval enclosure of $F$'s Jacobian over $X$ (immrax's natural
+inclusion [@harapanahalli2024immrax]),
+$$
+F(X) \subseteq F(m) \pm \operatorname{mag}([J])\, r .
+$$
+*Why it is sound.* For a point $x\in X$ and an output $i$, the mean value
+theorem on the segment from $m$ to $x$ gives
+$F_i(x) - F_i(m) = \nabla F_i(\xi)\cdot(x - m)$ for some $\xi$ on the segment.
+The box is convex, so $\xi \in X$ and $\nabla F_i(\xi)\in [J]_i$; with
+$|x - m| \le r$ the bound follows [@moore2009introduction; @neumaier1990interval].
+
+*Why $F$ is smooth there.* $F$ is rational; it can only break where an
+elimination pivot vanishes. Every pivot is a divisor in $F$ and its
+derivatives, interval division by an interval containing 0 is unbounded, and
+the pivot's interval contains its range over $X$. So a *finite* $[J]$
+certifies that no pivot vanishes on $X$. A non-finite one leaves the class
+undecided, never passed.
+
+**Check it by hand.** In the class (P, N) of §5 the block's acceleration is a
+function of $\mu$ alone,
+$$
+a_t(\mu) = -1.9608 + 69.608\,\frac{1 + 0.2\mu}{60 + 2\mu},
+$$
+with slope
+$696.08/(60 + 2\mu)^2$. Over $\mu\in[0.3,0.5]$: $m = 0.4$, $r = 0.1$,
+$a_t(0.4) = -0.72434$, and the slope's interval is
+$696.08/[60.6, 61]^2 = [0.18707, 0.18955]$. The enclosure is
+$$
+-0.72434 \pm 0.018955 = [-0.74330, -0.70539]\ \text{m/s}^2,
+$$
+against the true range
+$[-0.74323, -0.70557]$.
+
+**Where it loses.** Over a large box the Jacobian's natural inclusion
+suffers the [dependency effect](interval-arithmetic.qmd): the same entries
+of $W$ appear many times in the elimination. On the flat family the slips'
+accelerations do not depend on position at all (§6), so any width their
+enclosures gain along the position coordinates is pure overestimate. That
+is what refuses some boxes after they are grown by the stopping distance,
+and splitting the box recovers them.
+
+## 8. Excluding and certifying classes
+
+**Excluding.** A class is excluded on a box when one of its conditions fails
+for *every* member, and the enclosure decides that soundly: if the upper end
+of $\lambda_n$'s enclosure is negative, no member has $\lambda_n \ge 0$. The
+conditions are positive normal forces, the friction cone at sticking
+contacts, and the strict sign conditions ($a_n > 0$ to open, $a_t$ in the
+direction of a slip that starts from rest).
+
+**Certifying.** The class the plan follows must hold with margin: normal
+forces at least the derived floor $N_{\min}$, and every sliding contact
+decelerating, $a_t + w \le -a_{\min} < 0$ over the box, with $w$ the
+measured residual. Then the slip reaches zero within
+$T \le v_t(0)/a_{\min}$ after at most $v_t(0)^2/(2a_{\min})$ of travel, and the
+conditions are checked on the box grown by that distance. At zero slip the
+class that would restart the slide needs $a_t \ge 0$, which the same
+deceleration bound excludes.
+
+**Starting versus moving.** The table's last column is for a contact that
+*starts* to slide from $v_t = 0$: its acceleration must point along the
+slip. A contact that is *already* sliding has its friction fixed by the sign
+of $v_t$, and a negative $a_t$ is the deceleration we want, not a
+contradiction. For moving contacts a class is impossible only through its
+forces. Applying the starting conditions to a moving contact excludes it for
+decelerating, which is the wrong conclusion.
+
+## 9. What an independent check found
+
+A script written from this derivation alone
+(`cmg/scripts/checks/class_solve_check.py`, branch `docs/class-solve`)
+recomputes $W$, $a_f$ and the class solutions (P, P, P), (P, P, S) and
+(P, P, N) at 20 random states of the rest certificate's set, and the pivot's
+$W$ and $a_f$ with the velocity terms at tilt rates up to 1 rad/s. The code
+agrees to rounding: the largest relative difference is $9\times10^{-15}$.
+
+Two modelling points came out of it.
+
+- **The platform corner's frame.** The code gives both supports the
+  platform's frame. The exact frame at the corner is the block face's,
+  turned by the tilt offset ($\le 1.08\times10^{-3}$ rad); the supports'
+  accelerations differ by at most $7\times10^{-3}$ m/s², about 1%.
+- **The disk's slip direction.** The landing hands off a disk that slides
+  *up* the face, which is class N in the code's frame, while the rest
+  certificate follows class P (sliding down). In P the block decelerates
+  at about 0.88 m/s², in N at about 0.72 m/s² (the worked example's numbers).
+  This is open and recorded in the technical report, Chapter 19.
+
+## What to remember
+
+- Each contact is **two rows** of a Jacobian; forces enter through the
+  **transpose**.
+- Eliminating the accelerations gives **$a = W\lambda + a_f$**: $W = JM^{-1}J^\top$
+  couples the contacts, $a_f$ holds gravity, the motor and the velocity terms.
+- A **class** fixes each contact's state; it makes the problem a square
+  linear system, whose solution is checked against the class's conditions.
+- On the **flat family** the block does not turn, so there are **no velocity
+  terms**: one solve per class serves every speed.
+- The **mean-value form** encloses a class solution over a box; a finite
+  Jacobian enclosure also proves the system is nonsingular there.
+- **Starting and moving differ**: a moving contact may decelerate; only its
+  forces can rule its class out.
+
+## Further reading {.unnumbered}
+
+- Moreau [@moreau1988unilateral]: the contact problem at the acceleration and velocity levels, the measure-differential formulation behind time stepping.
+- Pfeiffer and Glocker [@pfeiffer1996multibody]: multibody systems with unilateral contacts, the classes of contact states and their complementarity formulation, worked engineering examples.
+- Brogliato, *Nonsmooth Mechanics* [@brogliato2016nonsmooth]: the standard reference for the Delassus operator, impacts and complementarity systems.
+- Pang and Trinkle [@pang1996complementarity]: the acceleration-level problem with Coulomb friction as an LCP, and when solutions exist.
+- Stewart and Trinkle [@stewart1996implicit] and Anitescu and Potra [@anitescu1997formulating]: the velocity-level time step, the kind of step map the impact window certifies.
+- Neumaier [@neumaier1990interval] and Moore, Kearfott and Cloud [@moore2009introduction]: mean-value forms and interval linear systems.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
