@@ -56,7 +56,7 @@ div.csl-indent {
 <script src="../../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../../">
-<link href="../../../research/nonprehensile/planar-build/certification-techniques.html" rel="next">
+<link href="../../../research/nonprehensile/planar-build/passivity-certificates.html" rel="next">
 <link href="../../../research/nonprehensile/planar-build/intervals-and-zonotopes.html" rel="prev">
 <link href="../../../images/robot-arm-favicon.png" rel="icon" type="image/png">
 <script src="../../../site_libs/quarto-html/quarto.js" type="module"></script>
@@ -538,6 +538,24 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/passivity-certificates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: dissipation (passivity) certificates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/control-barrier-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: control barrier functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/contact-class-solve.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: contact forces at an instant</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../../research/nonprehensile/planar-build/certification-techniques.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Background: techniques that made the chain certify</span></a>
   </div>
@@ -672,7 +690,7 @@ $$
 <p><strong>Before this page:</strong> <a href="../../../research/nonprehensile/planar-build/interval-arithmetic.html">interval arithmetic</a>, <a href="../../../research/nonprehensile/planar-build/zonotopes.html">zonotopes</a> and <a href="../../../research/nonprehensile/planar-build/intervals-and-zonotopes.html">how the two work together</a>. The funnels themselves, edge by edge, are on <a href="../../../research/nonprehensile/planar-build/funnels.html">certified funnels</a>.</p>
 <section id="what-a-funnel-is" class="level2">
 <h2 class="anchored" data-anchor-id="what-a-funnel-is">1. What a funnel is</h2>
-<p><strong>Intuition.</strong> A feedback law steers the box along one piece of the plan (one <em>edge</em>: a single contact formation with fixed stick or slip modes). A <strong>funnel</strong> is a certified tube around the planned motion: every state that starts in its <strong>entry set</strong> stays in the tube and leaves through its <strong>exit set</strong>, for every disk friction in <span class="math inline">\([0.3,0.5]\)</span> and every disturbance in a measured set <span class="citation" data-cites="burridge1999sequential tedrake2010lqrtrees majumdar2017funnel"><a href="#ref-burridge1999sequential" role="doc-biblioref">[1]</a>, <a href="#ref-tedrake2010lqrtrees" role="doc-biblioref">[2]</a>, <a href="#ref-majumdar2017funnel" role="doc-biblioref">[3]</a></span>.</p>
+<p><strong>Intuition.</strong> A feedback law steers the block along one piece of the plan (one <em>edge</em>: a single contact formation with fixed stick or slip modes). A <strong>funnel</strong> is a certified tube around the planned motion: every state that starts in its <strong>entry set</strong> stays in the tube and leaves through its <strong>exit set</strong>, for every disk friction in <span class="math inline">\([0.3,0.5]\)</span> and every disturbance in a measured set <span class="citation" data-cites="burridge1999sequential tedrake2010lqrtrees majumdar2017funnel"><a href="#ref-burridge1999sequential" role="doc-biblioref">[1]</a>, <a href="#ref-tedrake2010lqrtrees" role="doc-biblioref">[2]</a>, <a href="#ref-majumdar2017funnel" role="doc-biblioref">[3]</a></span>.</p>
 <p><strong>Check it by hand (a toy).</strong> A rate error <span class="math inline">\(\eta\)</span> obeys <span class="math inline">\(\eta_{k+1}=0.5\,\eta_k+w_k\)</span> with <span class="math inline">\(|w_k|\le0.1\)</span>. Entry set <span class="math inline">\(|\eta_0|\le0.2\)</span>. Then <span class="math inline">\(|\eta_1|\le0.5\cdot0.2+0.1=0.2\)</span>: the interval <span class="math inline">\([-0.2,0.2]\)</span> maps into itself, so it is a tube for every step, and any condition that holds on it holds along the whole motion.</p>
 <p><strong>The general statement.</strong> The certificate checks, by <a href="../../../research/nonprehensile/planar-build/interval-arithmetic.html">interval</a> or <a href="../../../research/nonprehensile/planar-build/zonotopes.html">zonotope</a> arithmetic on the rigid model, that one step of the planned mode carries every state of each band of the tube into a later band or the exit set, and that at every such state:</p>
 <ul>
@@ -748,12 +766,12 @@ $$
 <p><strong>Check it by hand.</strong> Five independent quantities, each inside its own bound 95% of the time: all five at once only about <span class="math inline">\(0.95^5=77\%\)</span> of the time.</p>
 <p><strong>The general statement.</strong> One <strong>joint</strong> region, built from order statistics <span class="citation" data-cites="wilks1941determination krishnamoorthy2009statistical"><a href="#ref-wilks1941determination" role="doc-biblioref">[4]</a>, <a href="#ref-krishnamoorthy2009statistical" role="doc-biblioref">[5]</a></span>: each quantity is centred at its median and scaled by its own order statistic on half the calibration rollouts; one common inflation is the order statistic of the largest scaled deviation on the other half. It covers at least 95% of rollouts in all quantities at once, with 97.5% confidence per end of the friction band (so both ends hold at 95%). On the tip, per-quantity bounds covered 882 of 1000 held-out rollouts jointly; the joint region covered 963.</p>
 <p><strong>Bound each quantity where it lives.</strong> Charging the largest creep measured anywhere to every contact point over-bounds the contacts that barely move. On the roll from <span class="math inline">\(62^\circ\)</span>, the disk’s place on the bottom face creeps up to 2.39 mm in MJX, the largest creep of any contact. Charging 2.39 mm to the step-corner contact as well made the first band’s lower bound on progress per step <span class="math inline">\(-2.9\times10^{-5}\)</span>, a refusal; with each contact’s own creep it is at least <span class="math inline">\(1.37\times10^{-4}\)</span>, above the <span class="math inline">\(3.49\times10^{-5}\)</span> one band needs, and the roll certifies. Each contact carries its own bound inside the joint region.</p>
-<p><strong>The rigid-versus-simulator gap is a measured disturbance.</strong> After the make under the bottom face, MJX’s box settles <span class="math inline">\(+0.473\)</span> to <span class="math inline">\(+0.489^\circ\)</span> in tilt (and <span class="math inline">\(+0.885\)</span> to <span class="math inline">\(+0.907\)</span> mm in the step corner’s place) relative to the rigid model’s rest. That settle enters the next departure’s start set as a measured joint 95/95 region.</p>
+<p><strong>The rigid-versus-simulator gap is a measured disturbance.</strong> After the make under the bottom face, MJX’s block settles <span class="math inline">\(+0.473\)</span> to <span class="math inline">\(+0.489^\circ\)</span> in tilt (and <span class="math inline">\(+0.885\)</span> to <span class="math inline">\(+0.907\)</span> mm in the step corner’s place) relative to the rigid model’s rest. That settle enters the next departure’s start set as a measured joint 95/95 region.</p>
 </section>
 <section id="execute-end-to-end-not-just-segment-by-segment" class="level2">
 <h2 class="anchored" data-anchor-id="execute-end-to-end-not-just-segment-by-segment">6. Execute end to end, not just segment by segment</h2>
 <p><strong>Intuition.</strong> Checking each segment in its own simulation, from states saved by the previous one, can miss what happens between segments and whether the whole chain reaches the task’s goal.</p>
-<p><strong>In our chain.</strong> One continuous MJX simulation per rollout, 1536 rollouts from the box at rest to the platform transport’s exit: every segment survived in all 1536, and the chain’s own goal was reached in all 1536 (Clopper–Pearson <span class="citation" data-cites="clopper1934use"><a href="#ref-clopper1934use" role="doc-biblioref">[6]</a></span> 95%: <span class="math inline">\([0.9976,1]\)</span>). But the executor also evaluates goal tests that no segment check looks at, and the stricter one, <code>lift_to</code>, was met in none of the 1536 runs: the platform transport’s certified exit lies at 42.07 mm along the platform, short of where that test passes. A transport certified on to 62.4 mm, the first section passing the lift goal test (utilization 0.2083, 757 of 757 held-out rollouts inside), is the edge that addresses it.</p>
+<p><strong>In our chain.</strong> One continuous MJX simulation per rollout, 1536 rollouts from the block at rest to the platform transport’s exit: every segment survived in all 1536, and the chain’s own goal was reached in all 1536 (Clopper–Pearson <span class="citation" data-cites="clopper1934use"><a href="#ref-clopper1934use" role="doc-biblioref">[6]</a></span> 95%: <span class="math inline">\([0.9976,1]\)</span>). But the executor also evaluates goal tests that no segment check looks at, and the stricter one, <code>lift_to</code>, was met in none of the 1536 runs: the platform transport’s certified exit lies at 42.07 mm along the platform, short of where that test passes. A transport certified on to 62.4 mm, the first section passing the lift goal test (utilization 0.2083, 757 of 757 held-out rollouts inside), is the edge that addresses it.</p>
 </section>
 <section id="what-to-remember" class="level2">
 <h2 class="anchored" data-anchor-id="what-to-remember">What to remember</h2>
@@ -1349,8 +1367,8 @@ $$
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../../research/nonprehensile/planar-build/certification-techniques.html" class="pagination-link" aria-label="Background: techniques that made the chain certify">
-        <span class="nav-page-text">Background: techniques that made the chain certify</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../../research/nonprehensile/planar-build/passivity-certificates.html" class="pagination-link" aria-label="Background: dissipation (passivity) certificates">
+        <span class="nav-page-text">Background: dissipation (passivity) certificates</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

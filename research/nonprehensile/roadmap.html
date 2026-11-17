@@ -498,6 +498,24 @@ window.MathJax = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../research/nonprehensile/planar-build/passivity-certificates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: dissipation (passivity) certificates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../research/nonprehensile/planar-build/control-barrier-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: control barrier functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../research/nonprehensile/planar-build/contact-class-solve.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: contact forces at an instant</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../research/nonprehensile/planar-build/certification-techniques.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Background: techniques that made the chain certify</span></a>
   </div>
@@ -570,6 +588,7 @@ window.MathJax = {
   <li><a href="#the-planner-composes-certified-funnels" id="toc-the-planner-composes-certified-funnels" class="nav-link" data-scroll-target="#the-planner-composes-certified-funnels">2. The planner composes certified funnels</a></li>
   <li><a href="#built-on-the-certified-planner" id="toc-built-on-the-certified-planner" class="nav-link" data-scroll-target="#built-on-the-certified-planner">3. Built on the certified planner</a></li>
   <li><a href="#toward-hardware-and-3d" id="toc-toward-hardware-and-3d" class="nav-link" data-scroll-target="#toward-hardware-and-3d">4. Toward hardware and 3D</a></li>
+  <li><a href="#research-avenues" id="toc-research-avenues" class="nav-link" data-scroll-target="#research-avenues">Research avenues</a></li>
   <li><a href="#the-order-and-why" id="toc-the-order-and-why" class="nav-link" data-scroll-target="#the-order-and-why">The order, and why</a></li>
   </ul>
 </nav>
@@ -623,20 +642,20 @@ $$
 
 <section id="where-things-stand" class="level2">
 <h2 class="anchored" data-anchor-id="where-things-stand">Where things stand</h2>
-<p>The planner finds the held indirect lift from the scene alone in 197 of 200 held-out searches (<a href="../../research/nonprehensile/results/index.html">Results</a>). Beside it, one route of the lift, “track C”, is built as a chain of <strong>certified funnels</strong>: each edge is a transition certified for every state of its entry set and every disk friction in [0.3, 0.5], and the junctions between edges are checked as containments of certified sets (<a href="../../research/nonprehensile/planar-build/funnels.html">Certified funnels</a>). The chain is executed end to end in MuJoCo/MJX. Its certificates are moving from interval boxes to zonotopes, which carry the correlations that boxes lose (<a href="../../research/nonprehensile/planar-build/zonotopes.html">Background: zonotope propagation</a>).</p>
+<p>The planner finds the held indirect lift from the scene alone in 197 of 200 held-out searches (<a href="../../research/nonprehensile/results/index.html">Results</a>). Beside it, one route of the lift, “track C”, is built as a chain of <strong>certified funnels</strong>: each edge is a transition certified for every state of its entry set and every disk friction in [0.3, 0.5], and the junctions between edges are checked as containments of certified sets (<a href="../../research/nonprehensile/planar-build/funnels.html">Certified funnels</a>). Of its twelve segments, 11 are certified and 1 is measured (the rest after the landing impact), and none is uncertified; executed end to end in MuJoCo/MJX, the block reaches the lift goal and comes to rest inside the certified rest set in 1536 of 1536 rollouts. Its certificates are moving from interval boxes to zonotopes, which carry the correlations that boxes lose (<a href="../../research/nonprehensile/planar-build/zonotopes.html">Background: zonotope propagation</a>).</p>
 <p>The steps below are ordered by what each one makes possible next.</p>
 </section>
 <section id="finish-the-certified-chain-and-the-migration" class="level2">
 <h2 class="anchored" data-anchor-id="finish-the-certified-chain-and-the-migration">1. Finish the certified chain and the migration</h2>
 <ul>
-<li><strong>The last measured link.</strong> After the landing impact (certified by a zonotope cover of the impact window), the box comes to rest on the platform. That settling is today a measured outcome. It becomes an endpoint certificate started from the impact cover’s certified exit, with the same construction as the chain’s other rests.</li>
+<li><strong>The last measured link.</strong> After the landing impact (certified by a zonotope cover of the impact window), the block comes to rest on the platform. That rest is certified by a dissipation (energy) inequality on all 16,384 post-impact units (<a href="../../research/nonprehensile/planar-build/passivity-certificates.html">Background: dissipation certificates</a>), but the chain still counts the segment as measured: the departure into the transport is checked in MJX. What remains is a certified departure from the whole certified rest set into the transport’s entry.</li>
 <li><strong>Every certificate on zonotopes.</strong> The funnel certifier gains the zonotope set type edge by edge: a regression shows each migrated edge holds wherever its interval certificate held, with margins at least as large; then track C is re-certified in chain order, so each edge starts from the previous edge’s certified zonotope exit; then the indirect lift’s certified segment. Interval arithmetic stays as the rigorous subroutine for remainder bounds, implicit contact solves and rounding (<a href="../../research/nonprehensile/planar-build/intervals-and-zonotopes.html">Background: intervals and zonotopes together</a>).</li>
 <li><strong>The paper.</strong> The method, the certified chain and the set-based certificates, written for a journal (T-RO or IJRR).</li>
 </ul>
 </section>
 <section id="the-planner-composes-certified-funnels" class="level2">
 <h2 class="anchored" data-anchor-id="the-planner-composes-certified-funnels">2. The planner composes certified funnels</h2>
-<p>This is the program’s central step. Today the search returns plans that are <em>held</em> in simulation, and the certified chain is built beside it. The goal is a planner whose output <strong>is</strong> a certified plan:</p>
+<p>This is the program’s central step. The search returns plans that are <em>held</em> in simulation, and the certified chain is built beside it. The goal is a planner whose output <strong>is</strong> a certified plan:</p>
 <ul>
 <li>each edge the search expands is given a certified funnel, certified on demand from the node’s certified entry set and cached by edge and entry set;</li>
 <li>junctions are composed by containment <em>during</em> the search, so a node is reached only through certified hand-offs;</li>
@@ -648,18 +667,26 @@ $$
 <h2 class="anchored" data-anchor-id="built-on-the-certified-planner">3. Built on the certified planner</h2>
 <ul>
 <li><strong>Learned certificate proposals.</strong> Once the search certifies edges routinely, it produces data: which laws, hand-offs and set shapes certify. A graph network over the contact-formation graph proposes these ingredients (including zonotope generator templates); the exact verifier accepts or refuses, so soundness never depends on the network. Its value is claimed only through ablations.</li>
-<li><strong>Motions that need momentum.</strong> A second route (“track A”) coasts the box through a wedge of poses where no push can hold it: the box has to be moving. It reuses the reach and impact machinery of track C and is the first plan in which momentum is essential rather than incidental.</li>
-<li><strong>Families of scenes.</strong> Scene parameters, such as the step height, the box’s size and mass, enter the certificates as extra zonotope generators, so one certificate covers a family of scenes rather than a single one.</li>
-<li><strong>The disk sliding along the box.</strong> An edge where the disk slides is parked for a method change; the zonotope tools are the next attempt.</li>
+<li><strong>Motions that need momentum.</strong> A second route (“track A”) coasts the block through a wedge of poses where no push can hold it: the block has to be moving. It reuses the reach and impact machinery of track C, in a plan where momentum is essential rather than incidental.</li>
+<li><strong>Families of scenes.</strong> Scene parameters, such as the step height, the block’s size and mass, enter the certificates as extra zonotope generators, so one certificate covers a family of scenes rather than a single one.</li>
+<li><strong>The disk sliding along the block.</strong> An edge where the disk slides is parked for a method change; the zonotope tools are the next attempt.</li>
 </ul>
 </section>
 <section id="toward-hardware-and-3d" class="level2">
 <h2 class="anchored" data-anchor-id="toward-hardware-and-3d">4. Toward hardware and 3D</h2>
 <ul>
 <li><strong>Hybrid zonotopes.</strong> At contact switches a set splits by contact mode. Hybrid zonotopes represent such mode-branched sets exactly, which matters more as modes multiply. This line is a natural collaboration with Justin Koeln and Justin Ruths at UT Dallas.</li>
-<li><strong>Perception.</strong> A state estimator replaces the simulator’s state; its error bounds enter the certificates the same way today’s measured disturbances do (at joint 95/95).</li>
+<li><strong>Perception.</strong> A state estimator replaces the simulator’s state; its error bounds enter the certificates the same way the simulator’s measured disturbances do (at joint 95/95).</li>
 <li><strong>A real robot.</strong> The same loop (plan, certify, execute with feedback) on hardware, with the certificates’ disturbance bounds measured on the robot.</li>
 <li><strong>3D.</strong> More contact modes and a higher-dimensional state, where set-based certificates are the scalable route and box splitting is not.</li>
+</ul>
+</section>
+<section id="research-avenues" class="level2">
+<h2 class="anchored" data-anchor-id="research-avenues">Research avenues</h2>
+<p>Two certificate forms are being explored beside the set-propagation funnels. Both are directions under study, not results.</p>
+<ul>
+<li><strong>Dissipation (passivity) certificates for contact edges.</strong> A storage function and a supply rate are searched jointly per edge, the dissipation inequality between them is verified by zonotope set propagation, and the certified level sets are composed along the contact-formation graph (<a href="../../research/nonprehensile/planar-build/passivity-certificates.html">Background: dissipation certificates</a>).</li>
+<li><strong>Barrier certificates (control barrier functions) for contact edges</strong>, as a second pillar. A support-load barrier is verified on the transport through the support switch; a barrier on the block’s tilt in the full compliant model is planned (<a href="../../research/nonprehensile/planar-build/control-barrier-functions.html">Background: control barrier functions</a>).</li>
 </ul>
 </section>
 <section id="the-order-and-why" class="level2">

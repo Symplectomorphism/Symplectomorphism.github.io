@@ -489,6 +489,24 @@ ul.task-list li input[type="checkbox"] {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/passivity-certificates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: dissipation (passivity) certificates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/control-barrier-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: control barrier functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/contact-class-solve.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: contact forces at an instant</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../../research/nonprehensile/planar-build/certification-techniques.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Background: techniques that made the chain certify</span></a>
   </div>
@@ -612,18 +630,19 @@ $$
 
 <section id="the-idea" class="level2">
 <h2 class="anchored" data-anchor-id="the-idea">The idea</h2>
-<p>The <a href="../../../research/nonprehensile/planar-build/hold-gate.html">hold gate</a> and the <a href="../../../research/nonprehensile/planar-build/certificate.html">box certificate</a> certify that the box <em>can be held</em> at every pose along a plan. A <strong>funnel</strong> certifies the motion itself:</p>
+<p>The <a href="../../../research/nonprehensile/planar-build/hold-gate.html">hold gate</a> and the <a href="../../../research/nonprehensile/planar-build/certificate.html">certificate over a whole box of poses</a> certify that the block <em>can be held</em> at every pose along a plan. A <strong>funnel</strong> certifies the motion itself:</p>
 <ul>
 <li><strong>Entry set.</strong> A box of states the edge may start from: pose, velocity, contact offsets, and μ<sub>disk</sub> ∈ [0.3, 0.5].</li>
 <li><strong>Law and tube.</strong> A feedback law and a tube around its nominal motion.</li>
 <li><strong>Certificate.</strong> For every state in the entry set and every friction in the band, the motion stays in the tube, the contact forces stay inside their cones and above a derived floor, the motor stays in its box, and the edge ends inside the next edge’s entry set.</li>
 <li><strong>Check.</strong> The certified edge is executed in MJX from measured states, and the measured coverage is reported at 95/95.</li>
 </ul>
-<p>Edges whose sets compose this way form a chain that is certified end to end. The box no longer has to be held at every instant, so rolls, landings in motion and coasting become plannable edges.</p>
+<p>Edges whose sets compose this way form a chain that is certified end to end. The block no longer has to be held at every instant, so rolls, landings in motion and coasting become plannable edges.</p>
 </section>
 <section id="track-c-a-chain-with-a-landing-in-motion" class="level2">
 <h2 class="anchored" data-anchor-id="track-c-a-chain-with-a-landing-in-motion">Track C: a chain with a landing in motion</h2>
-<p>The chain tips the box, pivots it on the step corner, breaks and remakes contact, rolls it over the corner, pushes it so that it lands on the platform in motion, and transports it into the lift goal. Every edge below is certified for every state of its entry set and every disk friction in [0.3, 0.5]; the “utilization” is the certificate’s smallest remaining margin as a fraction of its capacity, so <strong>higher is safer</strong>.</p>
+<p>The chain tips the block, pivots it on the step corner, breaks and remakes contact, rolls it over the corner, pushes it so that it lands on the platform in motion, transports it into the lift goal and stops it there. Every edge below except the rest after the impact is certified for every state of its entry set and every disk friction in [0.3, 0.5]; the “utilization” is the certificate’s smallest remaining margin as a fraction of its capacity, so <strong>higher is safer</strong>.</p>
+<div class="table-responsive">
 <table class="caption-top table">
 <colgroup>
 <col style="width: 25%">
@@ -690,7 +709,7 @@ $$
 </tr>
 <tr class="odd">
 <td>Rest after the impact</td>
-<td>measured</td>
+<td>measured in the chain; the rest itself is certified by an energy inequality on all 16,384 units</td>
 <td>—</td>
 <td>every landing comes to rest</td>
 </tr>
@@ -701,25 +720,28 @@ $$
 <td>758 / 758</td>
 </tr>
 <tr class="odd">
-<td>Rest at the goal</td>
-<td>measured (certificate in progress)</td>
+<td><strong>Goal stop</strong> (held force)</td>
+<td><strong>yes</strong>, held force certified; a two-model rest across the support switch</td>
 <td>—</td>
-<td>—</td>
+<td>1536 / 1536 inside the certified rest set</td>
 </tr>
 </tbody>
 </table>
-<p><strong>How the edges compose.</strong> A junction composes when the certified exit of one edge lies inside the certified entry of the next; sets measured in simulation only validate coverage. An automatic check reads every certificate’s exported sets and tests each junction. All junctions from the box at rest through the impact window compose on certified sets. Two links remain measured: the box coming to rest after the impact (at the hand-off the disk can still slide on the box top, so this needs a slide-to-stick certificate) and the rest at the goal.</p>
-<p><strong>Executed end to end.</strong> One continuous MuJoCo/MJX simulation per rollout, 768 rollouts at each end of the friction band, every law switching at its certified hand-off: every segment survives in <strong>1536 of 1536</strong>, the transport reaches its certified exit inside the lift goal in 1536 of 1536, and the box rests at the lift goal in <strong>1536 of 1536</strong> (Clopper–Pearson 95% [0.9976, 1]). The final hold at the goal is the realizer’s and is not certified.</p>
-<video src="media/trackc/trackc_mu0.3.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+</div>
+<p>In the chain’s own count the twelve segments (the break and the make are two) are <strong>11 certified, 1 measured, 0 uncertified</strong>, and the eleven junctions between them <strong>9 certified, 2 measured</strong>.</p>
+<p><strong>How the edges compose.</strong> A junction composes when the certified exit of one edge lies inside the certified entry of the next; sets measured in simulation only validate coverage. An automatic check reads every certificate’s exported sets and tests each junction. All junctions from the block at rest through the impact window compose on certified sets, and so does the junction from the transport into the goal stop. Only the rest after the landing impact remains measured: its junction from the impact window’s hand-off and its junction into the transport are read from MJX (at the hand-off the disk can still slide on the block’s top). The goal rest is certified: a two-model rest across the support switch.</p>
+<p><strong>Executed end to end.</strong> One continuous MuJoCo/MJX simulation per rollout, 768 rollouts at each end of the friction band, every law switching at its certified hand-off: every segment survives in <strong>1536 of 1536</strong>, the transport reaches its certified exit inside the lift goal in 1536 of 1536, and the block reaches the lift goal and comes to rest inside the certified rest set in <strong>1536 of 1536</strong> (Clopper–Pearson 95% [0.9976, 1]). The goal stop’s held force is certified; in MJX every rollout stays inside the certified rest set and within the measured budgets (0 of 1536 over).</p>
+<p><strong>The rest after the landing impact.</strong> The rest itself is certified by a dissipation (energy) inequality on all 16,384 post-impact units: friction at the platform and at the disk dissipates the kinetic energy faster than the hold force supplies it, which bounds how far the block slides and how far the disk slips on its face (<a href="../../../research/nonprehensile/planar-build/passivity-certificates.html">Background: dissipation certificates</a>). The certified rest set has x<sub>B</sub> ∈ [0.475, 3.666] mm and k<sub>m<sub>z</sub></sub> ∈ [−9.608, +0.104] mm; per unit, the block slides at most 1.70 mm and k shifts at most 1.53 mm. All 1536 end-to-end departures into the transport lie inside that certified rest set enlarged by the measured 95/95 hold creep, also on the strict per-unit test. That is a measurement: the link into the transport is still counted as measured, and its certified departure from the whole rest set is being completed.</p>
+<video src="media/trackc/trackc_goalstop_mu0.3.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
-<p><strong>Track C at μ = 0.3.</strong> The caption bar names each segment and its law, and colours each junction by its status (certified, measured, uncertified). The roll, at 1°/s, is shown at 3× (the badge says so); everything else plays in real time.</p>
-<video src="media/trackc/trackc_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
+<p><strong>Track C at μ = 0.3, through the goal stop.</strong> The caption bar names each of the twelve segments and its law, and colours each junction by its status (certified, measured, uncertified); the closing card gives the chain’s count. The roll, at 1°/s, is shown at 3× (the badge reads “playback 3.0×”), and so are the short stretches in which the block and the disk both rest, with brief pauses at some junctions; every other motion plays in real time. The badge at the top left always gives the current speed. <a href="media/trackc/trackc_goalstop_mu0.3_realtime.mp4">The same rollout with the roll in real time.</a></p>
+<video src="media/trackc/trackc_goalstop_mu0.5.mp4" controls="" muted="" playsinline="" preload="metadata" width="100%">
 </video>
-<p><strong>Track C at μ = 0.5.</strong> The rollout closest to the median segment timings at each end of the band, picked by script.</p>
+<p><strong>Track C at μ = 0.5, through the goal stop.</strong> At each end of the band the rollout shown is the one closest to the median segment timings, picked by script. The playback speeds are as at μ = 0.3. <a href="media/trackc/trackc_goalstop_mu0.5_realtime.mp4">The same rollout with the roll in real time.</a></p>
 </section>
 <section id="the-landing-impact-certified-with-zonotopes" class="level2">
 <h2 class="anchored" data-anchor-id="the-landing-impact-certified-with-zonotopes">The landing impact, certified with zonotopes</h2>
-<p>Every other piece above was first certified by <strong>interval arithmetic</strong> (<a href="../../../research/nonprehensile/planar-build/interval-arithmetic.html">Background: interval arithmetic</a>). Around the landing impact that fails: intervals store only axis-aligned boxes, every step shears and rotates the set, and re-wrapping it adds empty corners that compound (the wrapping effect). Splitting the boxes finely enough would have needed on the order of 2<sup>36</sup> pieces.</p>
+<p>Every other piece above is certified by <strong>interval arithmetic</strong> (<a href="../../../research/nonprehensile/planar-build/interval-arithmetic.html">Background: interval arithmetic</a>). Around the landing impact that fails: intervals store only axis-aligned boxes, every step shears and rotates the set, and re-wrapping it adds empty corners that compound (the wrapping effect). Splitting the boxes finely enough would have needed on the order of 2<sup>36</sup> pieces.</p>
 <p>Carried as a <strong>zonotope</strong>, the set keeps the correlations a box throws away. Over the whole landing set the cover needs <strong>310,372 pieces, all certified, none uncertified</strong>, computed in about seven hours on two clusters. Sampled trajectories (1.13 million step checks) and exact rational solves of the contact system (253,000) found no escape from the certified sets. The thinnest certified margin lies in a contact case that no sampled trajectory takes: an over-approximation, sound as it stands.</p>
 </section>
 <section id="a-set-based-route-zonotopes" class="level2">
@@ -734,7 +756,7 @@ $$
 <li><strong>General polytopes don’t scale.</strong> Their face and vertex counts grow exponentially with the dimension, and a nonlinear map does not map a polytope to a polytope.</li>
 <li><strong>The hard part is the contact switch.</strong> At impact, part of the set is already in contact and part is not. The set has to be split along the contact guard and each part followed in its own mode. A <strong>hybrid zonotope</strong>, a union of constrained zonotopes indexed by binary factors, represents exactly such a mode-branched set (<a href="https://arxiv.org/abs/2106.14831">Bird, Pangborn, Jain and Koeln, <em>Automatica</em> 2023</a>; for nonlinear steps, <a href="https://arxiv.org/abs/2210.09902">Siefert et al., ACC 2023</a>).</li>
 </ul>
-<p><strong>The method in this chain.</strong> The impact window was the first client of the zonotope set type; the funnel certifier now runs the same set type on every edge, and the edges re-certified on zonotopes so far hold with margins equal to or above their interval certificates. Interval arithmetic stays the rigorous subroutine for remainder bounds, implicit contact solves and rounding (<a href="../../../research/nonprehensile/planar-build/intervals-and-zonotopes.html">Background: intervals and zonotopes together</a>).</p>
+<p><strong>The method in this chain.</strong> The funnel certifier runs the zonotope set type on every edge, the impact window included, and the edges certified both ways hold with zonotope margins equal to or above their interval margins. Interval arithmetic stays the rigorous subroutine for remainder bounds, implicit contact solves and rounding (<a href="../../../research/nonprehensile/planar-build/intervals-and-zonotopes.html">Background: intervals and zonotopes together</a>).</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">

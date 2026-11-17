@@ -177,7 +177,7 @@ window.Quarto = {
 <meta property="og:description" content="Aykut C. Satici, Associate Professor of Systems Engineering at UT Dallas. Robotics, nonlinear control, and machine learning.">
 <meta property="og:image" content="https://Symplectomorphism.github.io/research/nonprehensile/planar-build/media/bg_cone_slice.svg">
 <meta property="og:site_name" content="Aykut C. Satici">
-<meta property="og:image:alt" content="Top: the box on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at fz = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the box. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by scripts/bg_cone_test.py, which runs cone_test on both cases.">
+<meta property="og:image:alt" content="Top: the block on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at fz = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the block. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by scripts/bg_cone_test.py, which runs cone_test on both cases.">
 </head>
 
 <body class="nav-sidebar docked nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
@@ -575,6 +575,24 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/passivity-certificates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: dissipation (passivity) certificates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/control-barrier-functions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: control barrier functions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../../research/nonprehensile/planar-build/contact-class-solve.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Background: contact forces at an instant</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../../research/nonprehensile/planar-build/certification-techniques.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Background: techniques that made the chain certify</span></a>
   </div>
@@ -693,7 +711,7 @@ $$
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../../research/nonprehensile/index.html">Nonprehensile Manipulation</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/index.html">Planar Build</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/interval-arithmetic.html">Background</a></li><li class="breadcrumb-item"><a href="../../../research/nonprehensile/planar-build/support-tutorial.html">Background: deciding support</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Background: deciding support</h1>
-<p class="subtitle lead">From the exact cone test to linear programs: how the hold gate decides whether contacts can hold the box, proves its answer either way, and measures by how much.</p>
+<p class="subtitle lead">From the exact cone test to linear programs: how the hold gate decides whether contacts can hold the block, proves its answer either way, and measures by how much.</p>
 </div>
 
 
@@ -710,10 +728,10 @@ $$
 </header>
 
 
-<p><strong>What this explains.</strong> Before every edit, the <a href="../../../research/nonprehensile/planar-build/hold-gate.html">hold gate</a> asks whether a set of contacts can hold the box against gravity. This page derives the answer from first principles in two stages. First an <strong>exact test</strong> that works in the plane: it turns the question into membership in a cone in three dimensions and decides it with a <em>witness</em>, a <em>certificate</em> and a <em>margin</em>. Then the <strong>linear programs (LPs)</strong> that answer the same question in any dimension, with limits on the manipulator’s force and margins against a set of disturbances. The LPs are the gate today; the exact test is its cross-check. You need Coulomb friction and a little linear algebra. The code is in <code>cmg/src/cmg/physics/planar_hold.py</code> (<code>cone_test</code>) and <code>hold_lp.py</code> on the branch <code>master</code>.</p>
+<p><strong>What this explains.</strong> Before every edit, the <a href="../../../research/nonprehensile/planar-build/hold-gate.html">hold gate</a> asks whether a set of contacts can hold the block against gravity. This page derives the answer from first principles in two stages. First an <strong>exact test</strong> that works in the plane: it turns the question into membership in a cone in three dimensions and decides it with a <em>witness</em>, a <em>certificate</em> and a <em>margin</em>. Then the <strong>linear programs (LPs)</strong> that answer the same question in any dimension, with limits on the manipulator’s force and margins against a set of disturbances. The LPs are the gate today; the exact test is its cross-check. You need Coulomb friction and a little linear algebra. The code is in <code>cmg/src/cmg/physics/planar_hold.py</code> (<code>cone_test</code>) and <code>hold_lp.py</code> on the branch <code>master</code>.</p>
 <section id="the-question" class="level2">
 <h2 class="anchored" data-anchor-id="the-question">1. The question</h2>
-<p>A rigid box rests in the x–z plane on some contacts. Each contact pushes on the box with a force that Coulomb friction confines to a cone <span class="citation" data-cites="mason2001mechanics"><a href="#ref-mason2001mechanics" role="doc-biblioref">[1]</a></span>. The box is <strong>supported</strong> if some choice of admissible contact forces cancels gravity exactly: the net force <em>and</em> the net moment. That is statics only: no dynamics and no time.</p>
+<p>A rigid block rests in the x–z plane on some contacts. Each contact pushes on the block with a force that Coulomb friction confines to a cone <span class="citation" data-cites="mason2001mechanics"><a href="#ref-mason2001mechanics" role="doc-biblioref">[1]</a></span>. The block is <strong>supported</strong> if some choice of admissible contact forces cancels gravity exactly: the net force <em>and</em> the net moment. That is statics only: no dynamics and no time.</p>
 </section>
 <section id="from-forces-to-one-cone" class="level2">
 <h2 class="anchored" data-anchor-id="from-forces-to-one-cone">2. From forces to one cone</h2>
@@ -724,13 +742,13 @@ f = \lambda_+\,(n+\mu t) + \lambda_-\,(n-\mu t), \qquad \lambda_\pm \ge 0 .
 <p><strong>Wrenches.</strong> Write each ray <span class="math inline">\(r\)</span> at each endpoint <span class="math inline">\(p\)</span> as a <em>wrench</em>: force and moment about the center of mass <span class="math inline">\(c\)</span>, made dimensionless, <span class="math display">\[
 w = \Big(r_x,\; r_z,\; \tfrac{(p-c)\times r}{\ell}\Big) \in \R^3,
 \qquad (p-c)\times r = (p-c)_z\, r_x - (p-c)_x\, r_z ,
-\]</span> with forces in units of the weight <span class="math inline">\(mg\)</span> and moments in units of <span class="math inline">\(mg\,\ell\)</span>, where <span class="math inline">\(\ell = a/2\)</span> is the box’s half-size. Gravity applies the wrench <span class="math inline">\((0,-1,0)\)</span> about the center of mass, so the contacts must supply <span class="math display">\[
+\]</span> with forces in units of the weight <span class="math inline">\(mg\)</span> and moments in units of <span class="math inline">\(mg\,\ell\)</span>, where <span class="math inline">\(\ell = a/2\)</span> is the block’s half-size. Gravity applies the wrench <span class="math inline">\((0,-1,0)\)</span> about the center of mass, so the contacts must supply <span class="math display">\[
 \text{need} = (0,\, 1,\, 0).
 \]</span></p>
 <p><strong>The question becomes geometry.</strong> Let <span class="math inline">\(w_1,\dots,w_k\)</span> be all the ray wrenches (at most 4 contacts × 2 endpoints × 2 rays = 16). Then <span class="math display">\[
 \boxed{\ \text{supported} \iff \text{need} \in C = \Big\{\textstyle\sum_i \lambda_i w_i : \lambda_i \ge 0\Big\}\ }
 \]</span> where <span class="math inline">\(C\)</span> is the convex cone the generators span.</p>
-<p><strong>Running example.</strong> A square box flat on the floor, <span class="math inline">\(\mu = 0.2\)</span>, touching at its two bottom corners A (left) and B (right). In units of <span class="math inline">\(\ell\)</span>, the corners sit at <span class="math inline">\((\mp1,-1)\)</span> from the center of mass. The four generators are:</p>
+<p><strong>Running example.</strong> A square block flat on the floor, <span class="math inline">\(\mu = 0.2\)</span>, touching at its two bottom corners A (left) and B (right). In units of <span class="math inline">\(\ell\)</span>, the corners sit at <span class="math inline">\((\mp1,-1)\)</span> from the center of mass. The four generators are:</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -773,8 +791,8 @@ w = \Big(r_x,\; r_z,\; \tfrac{(p-c)\times r}{\ell}\Big) \in \R^3,
 <p>A cone in <span class="math inline">\(\R^3\)</span> is hard to draw, but when every generator pushes upward (<span class="math inline">\(f_z &gt; 0\)</span>) it is fixed by where its rays cross the plane <span class="math inline">\(f_z = 1\)</span>. Each generator becomes a point <span class="math inline">\((f_x/f_z,\ \tau/f_z)\)</span>, the cone becomes the convex polygon of those points, and need becomes the origin. <em>Supported</em> then means <em>the origin lies in the polygon</em>.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="media/bg_cone_slice.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Top: the box on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at fz = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the box. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by scripts/bg_cone_test.py, which runs cone_test on both cases."><img src="media/bg_cone_slice.svg" class="img-fluid figure-img" alt="Top: the box on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at fz = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the box. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by scripts/bg_cone_test.py, which runs cone_test on both cases."></a></p>
-<figcaption>Top: the box on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at f<sub>z</sub> = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the box. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by <code>scripts/bg_cone_test.py</code>, which runs <code>cone_test</code> on both cases.</figcaption>
+<p><a href="media/bg_cone_slice.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Top: the block on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at fz = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the block. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by scripts/bg_cone_test.py, which runs cone_test on both cases."><img src="media/bg_cone_slice.svg" class="img-fluid figure-img" alt="Top: the block on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at fz = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the block. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by scripts/bg_cone_test.py, which runs cone_test on both cases."></a></p>
+<figcaption>Top: the block on both bottom corners (a) and on corner A alone (b), with each corner’s friction cone. Bottom: the same two cones sliced at f<sub>z</sub> = 1. (c) The origin (need) lies inside the parallelogram, at the midpoint of A₊ and B₋: half the weight along each of those rays holds the block. (d) Corner A’s two rays span a flat cone, and the plane through them separates the cone from need. Produced by <code>scripts/bg_cone_test.py</code>, which runs <code>cone_test</code> on both cases.</figcaption>
 </figure>
 </div>
 <p>The slice is only a picture. A disk pushing sideways can have <span class="math inline">\(f_z \le 0\)</span>, and every test below works in <span class="math inline">\(\R^3\)</span>.</p>
@@ -794,7 +812,7 @@ w = \Big(r_x,\; r_z,\; \tfrac{(p-c)\times r}{\ell}\Big) \in \R^3,
 </div>
 </div>
 <p><em>Why.</em> Suppose <span class="math inline">\(x = \sum_i \lambda_i w_i\)</span> with <span class="math inline">\(\lambda &gt; 0\)</span> on generators that are linearly dependent, so <span class="math inline">\(\sum_i \alpha_i w_i = 0\)</span> for some <span class="math inline">\(\alpha \ne 0\)</span>, which we may take to have a positive entry. Replace <span class="math inline">\(\lambda\)</span> by <span class="math inline">\(\lambda - s\alpha\)</span> and increase <span class="math inline">\(s\)</span> until the first coefficient hits zero. The sum still equals <span class="math inline">\(x\)</span>, the coefficients stay nonnegative, and one generator has dropped out. Repeat until the generators are independent; there are at most <span class="math inline">\(d\)</span> of them.</p>
-<p><em>Algorithm.</em> Here <span class="math inline">\(d = 3\)</span>, so the test solves every subset of 1, 2 and 3 generators: <span class="math inline">\(16 + 120 + 560 = 696\)</span> tiny systems (a projection, a 2×2 system, Cramer’s rule). A subset whose coefficients are <span class="math inline">\(\ge 0\)</span> and that reproduces need is a <strong>witness</strong>: actual contact forces that hold the box.</p>
+<p><em>Algorithm.</em> Here <span class="math inline">\(d = 3\)</span>, so the test solves every subset of 1, 2 and 3 generators: <span class="math inline">\(16 + 120 + 560 = 696\)</span> tiny systems (a projection, a 2×2 system, Cramer’s rule). A subset whose coefficients are <span class="math inline">\(\ge 0\)</span> and that reproduces need is a <strong>witness</strong>: actual contact forces that hold the block.</p>
 <p><em>Example.</em> <span class="math inline">\(\tfrac12 w_{A_+} + \tfrac12 w_{B_-} = (0, 1, 0)\)</span>: half the weight through each corner, both forces leaning slightly inward (panels a, c).</p>
 </section>
 <section id="no-with-a-certificate-farkas" class="level2">
@@ -831,7 +849,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 <p><em>Inside.</em> <span class="math inline">\(C\)</span> is the intersection of its facet half-spaces <span class="math inline">\(\{x : y_f\cdot x \ge 0\}\)</span>. A ball of radius <span class="math inline">\(\rho\)</span> around need fits in <span class="math inline">\(C\)</span> exactly when <span class="math inline">\(\rho \le y_f\cdot\text{need}\)</span> for every facet, so the distance to the boundary is <span class="math inline">\(\min_f y_f\cdot\text{need}\)</span>; any other supporting plane bounds a larger half-space and gives a larger value.</p>
 <p><em>Outside.</em> The nearest point of <span class="math inline">\(C\)</span> lies inside a two-dimensional face, on a generator’s ray, or at the apex. The unit vector from need toward it is then that face’s normal, the negated perpendicular part of need, or <span class="math inline">\(-\text{need}\)</span>; all are candidates and support <span class="math inline">\(C\)</span>. By duality, <span class="math inline">\(\operatorname{dist}(x, C) = \max\{-y\cdot x : y \text{ supporting},\ \|y\|\le1\}\)</span>.</p>
 <p><em>Checked.</em> On random cones the margin agrees with minus the NNLS distance outside (to 3·10⁻⁶) and with the shortest exit along hundreds of directions inside (to 4·10⁻⁷); this is a test in the suite.</p>
-<p>The flat box has four facets:</p>
+<p>The flat block has four facets:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 20%">
@@ -880,7 +898,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 </tr>
 </tbody>
 </table>
-<p>So <span class="math inline">\(m = \mu/\sqrt{1+\mu^2} = 0.196\)</span>, and sliding binds first. A purely sideways push of up to <span class="math inline">\(\mu\,mg = 0.2\,mg\)</span> is absorbed; the <em>worst</em> direction also lifts the box a little, which unloads friction, hence 0.196. The tipping value does not depend on <span class="math inline">\(\mu\)</span>, so with <span class="math inline">\(\mu &gt; 1/\sqrt2\)</span> tipping binds: <span class="math inline">\(m = \min(\mu/\sqrt{1+\mu^2},\ 1/\sqrt3)\)</span>. For corner A alone, <span class="math inline">\(m = -0.636\)</span>: need lies 0.636 from the cone. The certificate of §5 gave −0.577: any certificate proves “no”, but only the nearest one measures the gap. The distance mixes forces and moments, so it depends on <span class="math inline">\(\ell\)</span>; the yes/no answer does not.</p>
+<p>So <span class="math inline">\(m = \mu/\sqrt{1+\mu^2} = 0.196\)</span>, and sliding binds first. A purely sideways push of up to <span class="math inline">\(\mu\,mg = 0.2\,mg\)</span> is absorbed; the <em>worst</em> direction also lifts the block a little, which unloads friction, hence 0.196. The tipping value does not depend on <span class="math inline">\(\mu\)</span>, so with <span class="math inline">\(\mu &gt; 1/\sqrt2\)</span> tipping binds: <span class="math inline">\(m = \min(\mu/\sqrt{1+\mu^2},\ 1/\sqrt3)\)</span>. For corner A alone, <span class="math inline">\(m = -0.636\)</span>: need lies 0.636 from the cone. The certificate of §5 gave −0.577: any certificate proves “no”, but only the nearest one measures the gap. The distance mixes forces and moments, so it depends on <span class="math inline">\(\ell\)</span>; the yes/no answer does not.</p>
 </section>
 <section id="robustness-comes-cheaply" class="level2">
 <h2 class="anchored" data-anchor-id="robustness-comes-cheaply">7. Robustness comes cheaply</h2>
@@ -980,15 +998,15 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 <p>The gate uses <span class="math inline">\(D\)</span> = the ℓ₁ unit ball, whose corners are the pure disturbances <span class="math inline">\(\pm e_i\)</span> (a push along x, a lift, a twist). With LP-1 this gives a <strong>signed ℓ₁ margin</strong>: <span class="math inline">\(\min_i t(\pm e_i)\)</span> inside and <span class="math inline">\(-\delta\)</span> outside. It is always within a factor <span class="math inline">\(\sqrt3\)</span> of the Euclidean margin of §6 (<span class="math inline">\(\sqrt6\)</span> in 3D).</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="media/bg_lp_exits.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Exit distances of the flat box along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+fz) never breaks support; lifting by the full weight (−fz) and twisting by mg·ℓ (±τ) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg: the +fx exit rises to 0.72, but the margin stays 0.2, because the disk pushes only one way. From scripts/bg_hold_lp.py (HiGHS, float64)."><img src="media/bg_lp_exits.svg" class="img-fluid figure-img" alt="Exit distances of the flat box along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+fz) never breaks support; lifting by the full weight (−fz) and twisting by mg·ℓ (±τ) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg: the +fx exit rises to 0.72, but the margin stays 0.2, because the disk pushes only one way. From scripts/bg_hold_lp.py (HiGHS, float64)."></a></p>
-<figcaption>Exit distances of the flat box along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+f<sub>z</sub>) never breaks support; lifting by the full weight (−f<sub>z</sub>) and twisting by mg·ℓ (±τ) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg: the +f<sub>x</sub> exit rises to 0.72, but the margin stays 0.2, because the disk pushes only one way. From <code>scripts/bg_hold_lp.py</code> (HiGHS, float64).</figcaption>
+<p><a href="media/bg_lp_exits.svg" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Exit distances of the flat block along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+fz) never breaks support; lifting by the full weight (−fz) and twisting by mg·ℓ (±τ) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg: the +fx exit rises to 0.72, but the margin stays 0.2, because the disk pushes only one way. From scripts/bg_hold_lp.py (HiGHS, float64)."><img src="media/bg_lp_exits.svg" class="img-fluid figure-img" alt="Exit distances of the flat block along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+fz) never breaks support; lifting by the full weight (−fz) and twisting by mg·ℓ (±τ) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg: the +fx exit rises to 0.72, but the margin stays 0.2, because the disk pushes only one way. From scripts/bg_hold_lp.py (HiGHS, float64)."></a></p>
+<figcaption>Exit distances of the flat block along the six pure directions, from LP-2. (a) On two corners: the margin is the sideways push, 0.2·mg = μ·mg. Pushing down (+f<sub>z</sub>) never breaks support; lifting by the full weight (−f<sub>z</sub>) and twisting by mg·ℓ (±τ) do. (b) With the disk pushing on the left face at the height of the center of mass, and its normal force limited to 0.5·mg: the +f<sub>x</sub> exit rises to 0.72, but the margin stays 0.2, because the disk pushes only one way. From <code>scripts/bg_hold_lp.py</code> (HiGHS, float64).</figcaption>
 </figure>
 </div>
-<p>The flat box’s ℓ₁ margin is 0.2, exactly μ: the smallest pure push that breaks support. Its Euclidean margin was 0.196, because the worst Euclidean direction mixes a push with a slight lift.</p>
+<p>The flat block’s ℓ₁ margin is 0.2, exactly μ: the smallest pure push that breaks support. Its Euclidean margin was 0.196, because the worst Euclidean direction mixes a push with a slight lift.</p>
 </section>
 <section id="lp-3-force-limits" class="level2">
 <h2 class="anchored" data-anchor-id="lp-3-force-limits">12. LP-3: force limits</h2>
-<p>Every edge has unit normal component, so a contact’s normal force is the sum of its edge weights, and a limit is one more row. The gate uses the simulator’s motors instead: held still, the disk’s two slide motors (±1 N each, read from the MuJoCo model) must supply its push on the box plus its own weight, <span class="math inline">\(u = A(F - f_M)\)</span>, which gives two rows per motor. The feasible wrenches are then the environment’s cone plus a polytope from the disk, and directions the disk helps have finite exits: in panel (b), <span class="math inline">\(t(+f_x) = 0.72 = 0.5\)</span> from the disk plus <span class="math inline">\(0.2 \times 1.1\)</span> of floor friction, since the disk’s friction also presses the box onto the floor. The dual gains one multiplier per row; the certificate stays a few inequalities anyone can check.</p>
+<p>Every edge has unit normal component, so a contact’s normal force is the sum of its edge weights, and a limit is one more row. The gate uses the simulator’s motors instead: held still, the disk’s two slide motors (±1 N each, read from the MuJoCo model) must supply its push on the block plus its own weight, <span class="math inline">\(u = A(F - f_M)\)</span>, which gives two rows per motor. The feasible wrenches are then the environment’s cone plus a polytope from the disk, and directions the disk helps have finite exits: in panel (b), <span class="math inline">\(t(+f_x) = 0.72 = 0.5\)</span> from the disk plus <span class="math inline">\(0.2 \times 1.1\)</span> of floor friction, since the disk’s friction also presses the block onto the floor. The dual gains one multiplier per row; the certificate stays a few inequalities anyone can check.</p>
 </section>
 <section id="solving-it-inside-jax" class="level2">
 <h2 class="anchored" data-anchor-id="solving-it-inside-jax">13. Solving it inside JAX</h2>
@@ -1024,7 +1042,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 </tr>
 </tbody>
 </table>
-<p><strong>linrax</strong> (a two-phase tableau simplex in JAX, pinned to 0.3.0) is the solver; HiGHS (via SciPy, float64) checks every answer in the tests. <code>hold_lp</code> replaces linrax’s pivot loop at import with three changes: a cap of 300 pivots per phase (under <code>vmap</code> one LP that never finishes hangs the batch), Bland’s leaving rule (linrax’s rule let a 3D LP cycle), and a corrected test for artificial rows (which had returned a slack of −1 as “optimal” on the flat box). linrax returns no dual, so the dual is recovered from the final basis by solving <span class="math inline">\(B^\top y = c_B\)</span>.</p>
+<p><strong>linrax</strong> (a two-phase tableau simplex in JAX, pinned to 0.3.0) is the solver; HiGHS (via SciPy, float64) checks every answer in the tests. <code>hold_lp</code> replaces linrax’s pivot loop at import with three changes: a cap of 300 pivots per phase (under <code>vmap</code> one LP that never finishes hangs the batch), Bland’s leaving rule (linrax’s rule let a 3D LP cycle), and a corrected test for artificial rows (which had returned a slack of −1 as “optimal” on the flat block). linrax returns no dual, so the dual is recovered from the final basis by solving <span class="math inline">\(B^\top y = c_B\)</span>.</p>
 <p><strong>Float32.</strong> All computations stay in float32. Four measures, each fixing a failure the tests found:</p>
 <ol type="1">
 <li>the equality rows are rotated by a Householder reflection that makes every right-hand side positive (the planar need <span class="math inline">\((0,1,0)\)</span> has two zero rows);</li>
@@ -1064,7 +1082,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 </tr>
 </tbody>
 </table>
-<p>Both get all 1,000 random cases right; every other disagreement is a pose reported uncertain and rejected (the safe direction), where a witness needs weights of 60–190 times the box’s weight, beyond what float32 can check. The gate’s own checks, with motor limits, are on <a href="../../../research/nonprehensile/planar-build/hold-gate.html#accuracy">the hold gate</a>.</p>
+<p>Both get all 1,000 random cases right; every other disagreement is a pose reported uncertain and rejected (the safe direction), where a witness needs weights of 60–190 times the block’s weight, beyond what float32 can check. The gate’s own checks, with motor limits, are on <a href="../../../research/nonprehensile/planar-build/hold-gate.html#accuracy">the hold gate</a>.</p>
 <p><strong>In 3D.</strong> On a cube touched by up to four contacts (8-edge pyramids, <span class="math inline">\(d = 6\)</span>, up to 128 generators, 1,024 cases), nothing hangs, nothing is certified wrongly, 763 of 768 random and 255 of 256 near-boundary cases are right, and the rest are “uncertain” (safe) except one false acceptance 0.1% outside the boundary. The uncertain cases come from float32 rounding over the longer pivot sequences; the cure would be rebuilding the tableau from the final basis (<em>reinversion</em>). The 3D build is frozen; the project is planar.</p>
 </section>
 <section id="how-the-gate-uses-them" class="level2">
@@ -1124,7 +1142,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>1. What is the flat box’s Euclidean margin with μ = 0.5, and what binds?
+<span class="screen-reader-only">Tip</span>1. What is the flat block’s Euclidean margin with μ = 0.5, and what binds?
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
@@ -1140,7 +1158,7 @@ m \;=\; \min_{y \text{ supporting},\ \|y\| = 1}\; y\cdot \text{need},
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>2. Can a larger μ let corner A alone hold the flat box?
+<span class="screen-reader-only">Tip</span>2. Can a larger μ let corner A alone hold the flat block?
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
