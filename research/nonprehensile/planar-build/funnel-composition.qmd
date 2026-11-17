@@ -1,6 +1,6 @@
 ---
 title: "Background: certified funnels and composition"
-subtitle: "What a funnel certificate promises, how to read its utilization, how one is chosen, and how funnels chain: on certified sets only, checked automatically, with measured sets as validation and never as logic."
+subtitle: "What a funnel certificate promises, the law that runs inside it, how to read its utilization, how one is chosen, and how funnels chain: on certified sets only, checked automatically, with measured sets as validation and never as logic."
 lightbox: true
 bibliography: background.bib
 csl: ../../../ieee.csl
@@ -43,7 +43,75 @@ and that at every such state:
 
 The executed motion is then checked in MJX on held-out rollouts.
 
-## 2. Utilization: how much room is left
+## 2. The funnel law: what the disk does inside a funnel
+
+**Intuition.** Along one edge the motion is one-dimensional at heart: a
+*progress variable* $\theta$ must increase (on the pivot, the block's tilt),
+and everything else should stay as planned. So the law has **no clock**. At
+every step it reads where the block is ($\theta$), compares how fast it moves
+with the planned rate at that place, and compares the quantities the plan
+holds constant with their planned values. This is maneuver regulation
+[@hauser1995maneuver], with gains from a transverse linearization
+[@shiriaev2010transverse].
+
+**The coordinates.**
+
+- the **target rate** $\omega(\theta)>0$, from the slip bound: each sliding
+  contact uses a share $\beta$ of its slip bound;
+- the **rate error** $\eta=\dot\theta-\omega(\theta)$;
+- the **constants** $k$ of the rigid motion while the contacts stick, and
+  their planned values $k^*$. On the pivot the disk sticks to the block's
+  face. As the block turns under the round disk (radius $R$), the contact
+  point's offset $h$ along the face changes by $-R\,d\theta$, so the disk's
+  place on the face, $k=h+R\theta$, stays fixed.
+
+$(\eta,\ k-k^*)$ are the **transverse coordinates**: both are zero on the
+plan, whatever the time.
+
+**The law.** The disk pushes along a fixed force ray (on the pivot straight
+into the face) with the magnitude
+$$
+c=c^*(\theta)+K_\eta(\theta)\,\eta+K_k(\theta)\,(k-k^*),
+$$
+plus a term that carries its own weight. $c^*(\theta)$ is the push that keeps
+the block exactly on the planned orbit $\dot\theta=\omega(\theta)$. The gains
+come from linearizing the transverse dynamics about that orbit and choosing
+how fast the rate error dies out: $\dot\eta=-\lambda\eta$ to first order.
+
+**Check it by hand (a toy).** Let the tilt obey
+$\ddot\theta=b\,c-g(\theta)$ with $b>0$ (pushing harder tips faster).
+
+- On the orbit, $\ddot\theta=\frac{d}{dt}\omega(\theta)=\omega'(\theta)\,\omega(\theta)$,
+  so $c^*=(\omega'\omega+g)/b$.
+- With $c=c^*+K_\eta\eta$:
+  $\dot\eta=\ddot\theta-\omega'\dot\theta=bK_\eta\eta-\omega'\eta$.
+- For $\dot\eta=-\lambda\eta$ take $K_\eta=(\omega'-\lambda)/b$.
+
+With $b=2$, $\lambda=40$ 1/s and $\omega'=-0.5$ 1/s (the planned rate falls
+as the block tilts), $K_\eta=-20.25$: a block $0.1$ rad/s too fast gets a push
+$2.0$ smaller than $c^*$, and one too slow a push $2.0$ larger.
+
+**The pivot (worked example).** The block tilts on its floor corner from
+$23^\circ$ to $41^\circ$ in the formation $\{m_x,g_v,s_v\}$: the floor corner
+and the step corner slide, the disk sticks. With $\beta=1$ the target rate
+falls from $5.95^\circ$/s at $23^\circ$ to $2.56^\circ$/s at $41^\circ$. The
+push is straight into the face, $\lambda=40$ 1/s (the realizer's block
+damping over the block's mass), and $k^*=50.46$ mm, the disk's place in the
+planned call. The four functions $\omega$, $c^*$, $K_\eta$ and $K_k$ are
+Chebyshev series of degree 12 in $\theta$ on $[15^\circ,50^\circ]$.
+
+**Why the series *is* the law.** The controller evaluates exactly these
+series, and the certificate is computed for them. The series approximate the
+transverse design closely (on the pivot to about $10^{-6}$ in the gains'
+units, far less for $\omega$), but that approximation never enters the
+certificate: a poorer fit would be a slightly different law, certified or
+refused on its own merits. Nothing has to be bounded about the fit.
+
+**In our chain.** `cmg.certify.certifier` builds the law for any edge
+(`build_law`; the degree is its constant `DEG`), `cmg.certify.transverse` for
+the pivot; the derivation is in the technical report's chapter on Theorem T.
+
+## 3. Utilization: how much room is left
 
 **Intuition.** Each condition has a margin: how far the worst state in the
 set is from violating it. **Utilization** is the certificate's smallest
@@ -59,7 +127,7 @@ utilization is $0.25$, set by the tighter one, its **binding** condition.
 the step corner's cone edge; the platform transport at about 0.21, bound by
 a force floor.
 
-## 3. Choosing a law: coverage first, then utilization
+## 4. Choosing a law: coverage first, then utilization
 
 **Intuition.** First make sure the law handles *every* state it must
 (coverage); among those that do, take the one with the most room
@@ -86,7 +154,7 @@ lands harder. The landings after the 0.1116 N push hit the platform at
 13.7–17.9°/s. Both came to rest in every MJX rollout (1536 of 1536), so
 both pass the chain's coverage test.
 
-## 4. Composition: on certified sets only
+## 5. Composition: on certified sets only
 
 **Intuition.** Two funnels chain when everything the first can deliver is
 something the second has been proved to accept. Both sides must be
@@ -146,7 +214,7 @@ $-0.0175$ rad/s about the target, i.e. tilting backwards, and the funnel
 refused it (no progress). Re-verified from the asymmetric entry, it holds
 (utilization 0.267).
 
-## 5. Measured quantities: joint 95/95 bounds
+## 6. Measured quantities: joint 95/95 bounds
 
 **Intuition.** A certificate needs bounds on what the simulator does that
 the rigid model does not (residual accelerations, creep, settling). Bounding
@@ -182,7 +250,7 @@ tilt (and $+0.885$ to $+0.907$ mm in the step corner's place) relative to the
 rigid model's rest. That settle enters the next departure's start set as a
 measured joint 95/95 region.
 
-## 6. Execute end to end, not just segment by segment
+## 7. Execute end to end, not just segment by segment
 
 **Intuition.** Checking each segment in its own simulation, from states
 saved by the previous one, can miss what happens between segments and
@@ -206,6 +274,9 @@ released and at rest, in 1536 of 1536 rollouts
 
 - A **funnel**: entry set, law and tube, a certificate (force floor, cones,
   motor box, reading condition) on the rigid model, checked in MJX.
+- The **law** has no clock: $c=c^*(\theta)+K_\eta\eta+K_k(k-k^*)$ on the
+  rate error $\eta=\dot\theta-\omega(\theta)$ and the constants $k-k^*$;
+  the law is its Chebyshev series, so no fit error enters the certificate.
 - **Utilization**: the smallest remaining margin as a fraction of capacity;
   1 untouched, 0 at the limit, **higher is safer**.
 - **Choose** by coverage of the whole chain first, then the largest
@@ -227,6 +298,8 @@ Next: [the techniques that made the chain certify](certification-techniques.qmd)
 - Burridge, Rizzi and Koditschek [@burridge1999sequential]: the classic on sequential composition of funnels, where "exit inside the next entry" comes from.
 - Tedrake et al. [@tedrake2010lqrtrees]: LQR-trees, funnels verified by sums of squares and composed into a tree.
 - Majumdar and Tedrake [@majumdar2017funnel]: funnel libraries composed online, with robustness to disturbances.
+- Hauser and Hindman [@hauser1995maneuver]: maneuver regulation, a law indexed by the path instead of time.
+- Shiriaev, Freidovich and Gusev [@shiriaev2010transverse]: transverse linearization, where the gains come from.
 - Sadraddini and Tedrake [@sadraddini2019linear]: linear encodings for the containment checks a junction needs.
 - Wilks [@wilks1941determination]: distribution-free tolerance limits from order statistics, the basis of a 95/95 bound.
 - Krishnamoorthy and Mathew [@krishnamoorthy2009statistical]: tolerance regions in depth, including multivariate and nonparametric ones.
