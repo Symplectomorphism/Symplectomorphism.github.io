@@ -519,7 +519,8 @@ def plan():
     w = np.array(p["predicted_weight_lb"])
     ax.plot(d, w, color=GREEN, label="predicted scale weight")
     label(ax, d[-1], w[-1], f"{w[-1]:.0f} lb\n{d[-1].astype(dt.date):%b %-d, %Y}", dx=8)
-    label(ax, hd[0], cur["obs_lb"][0], f"{cur['obs_lb'][0]:.1f} lb", MUTED, dx=8, dy=4,
+    k0 = next(i for i, x in enumerate(cur["obs_lb"]) if x is not None)  # first reading used
+    label(ax, hd[k0], cur["obs_lb"][k0], f"{cur['obs_lb'][k0]:.1f} lb", MUTED, dx=8, dy=4,
           weight="normal")
     ax.legend(loc="upper right")
     style(ax, ylabel="weight (lb)")

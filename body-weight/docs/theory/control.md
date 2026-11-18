@@ -42,8 +42,17 @@ $$
 C = \frac{I - 4 P_g - 9 F_g}{4},
 $$
 
-which keeps the three choices independent. Planned days have no alcohol,
-sodium deviation or exercise.
+which keeps the three choices independent. Protein is a decision only when
+`protein_g_per_kg` is 0; by default it is held at 1.6 g/kg in every block
+([below](#protein)).
+
+The plan prescribes food only. Planned days have no alcohol, and hold exercise
+$X$, the sodium deviation $\Delta\mathrm{Na}$ and the step deviation
+$\Delta\mathrm{St}$ at their averages over the last 14 logged days: the
+maintenance was fitted with logged exercise on top of it, so planning as if
+exercise stopped predicts too little loss, and planning as if sodium jumped back
+to habitual predicts a water rebound that only happens if that salt is eaten.
+`wdm plan` prints the three values it assumed.
 
 ## The objective {#objective}
 
@@ -60,8 +69,9 @@ $$
 
 $T_k$ is predicted settled tissue at the end of plan day $k$
 ([below](#settled)). The reference
-$r_k = W_0 + \min(k/N, 1)\,(W^\star - W_0)$ runs linearly from the current scale
-weight $W_0$ to the target $W^\star$ over the $N$ days remaining.
+$r_k = T_0 + \min(k/N, 1)\,(T^\star - T_0)$ runs linearly from today's settled
+tissue $T_0$ to the target tissue $T^\star$ over the $N$ days remaining
+([below](#target)).
 $\Delta I_k$ is the day-to-day change in intake ($I_0$ is the last finished
 day's logged intake), $D_k = E_{\mathrm{base}} - I_k$ the deficit
 ([model](model.md#expenditure)), $C_k$ the carbohydrate prescribed, and
@@ -91,9 +101,32 @@ against quadratic effort it has an interior optimum.
 Two choices close loopholes. **The terminal term tracks $r_H$, not the goal**:
 over a horizon shorter than the time remaining, a penalty on the gap to the goal
 would pin intake to the calorie floor. **Both objectives score tissue, not scale
-weight**: a cost on $W = T + G_c + G_n$ can be lowered by cutting carbohydrate
-alone, draining $G_c$. (The reference is still built from scale weights, so it
-differs from tissue by the starting water offset.)
+weight**: a cost on $W = T + G_c + G_n + G_{\mathrm{gut}}$ can be lowered by
+cutting carbohydrate alone, draining $G_c$ and $G_n$, or by eating less for a
+few days, emptying the gut.
+
+### The tissue target {#target}
+
+A goal is stated as a scale reading, but the plan moves settled tissue, and the
+two differ by gut content: about 0.0006 kg per kcal/day eaten, some 1.5 kg at
+maintenance. Aiming tissue at the goal itself would leave the scale that much
+above it once you eat normally. The target is therefore the settled tissue that
+reads the goal on the scale **at maintenance**, with the water compartments at
+their habitual level and the gut holding the content of weight-stable intake:
+
+$$
+T^\star = W^\star - k_{\mathrm{gut}}\left(\frac{c_0 + c_1 W^\star}{1 - \phi} + \bar X\right),
+$$
+
+with $\phi = 0.10$ the thermic fraction and $\bar X$ the assumed exercise
+([decisions](#decisions)). $W^\star$ stands in for tissue in the mass term, an
+approximation good to a few kcal/day. A plan that meets its target therefore
+reads the goal once you eat at maintenance. While you are still dieting, the
+gut holds less and the scale reads **below** the goal by the difference, about
+0.0006 kg for every kcal/day the diet is below maintenance: roughly 0.5 kg (a
+pound) at a 900 kcal/day deficit. Expect the scale to rise by about that much as
+intake returns to maintenance, together with the glycogen and sodium water that
+refill.
 
 ### Settled tissue {#settled}
 
@@ -116,16 +149,19 @@ loss of settled tissue as a percentage of it.
 
 Once the goal is reached the question becomes what intake holds the subject
 there. Maintain mode uses the deadline objective with a different reference: from
-today's tissue $T_0$ to the held weight $W_h$ (`[maintain] weight_lb`, or $T_0$
-itself when none is set) over the horizon,
+today's settled tissue $T_0$ to the tissue $T_h$ that reads the held weight $W_h$
+(`[maintain] weight_lb`) on the scale at maintenance, by the
+[formula above](#target), or $T_0$ itself when no weight is set, over the
+horizon,
 
 $$
-r_k = T_0 + \frac{k}{H}\,(W_h - T_0), \qquad k = 1, \dots, H,
+r_k = T_0 + \frac{k}{H}\,(T_h - T_0), \qquad k = 1, \dots, H,
 $$
 
 with no goal date. Tissue is the right basis: at maintenance the water
-compartments refill and the scale settles at tissue, so holding "today's weight"
-mid-diet, with the water drained, would cut tissue to stay there. At the held
+compartments refill and the scale settles at tissue plus the gut content of
+weight-stable eating, so holding "today's scale reading" mid-diet, with the
+water drained and the gut light, would cut tissue to stay there. At the held
 weight the reference is flat and the effort term pulls intake to the
 weight-stable level; a 3 lb drift is corrected over the 28-day horizon, under
 1 lb a week. Every constraint still applies. Usage is in
@@ -136,7 +172,7 @@ weight-stable level; a 3 lb drift is corrected over the 28-day horizon, under
 | Constraint | Form | Default | Enforced as |
 |:--|:--|:--|:--|
 | Calorie floor and ceiling | $I_{\min} \le I_b \le I_{\max}$ | 1500 and 6000 kcal/day (`min_kcal`, `max_kcal`) | Box bound |
-| Protein | $P_{\min} \le$ g/kg of the plan's starting weight $\le 3.0$ | $P_{\min} = 1.6$ (`min_protein_g_per_kg`) | Box bound |
+| Protein | $P_{\min} \le$ g/kg of the plan's starting weight $\le 3.0$ | $P_{\min} = 1.6$ (`min_protein_g_per_kg`); held at `protein_g_per_kg` = 1.6 unless that is 0 | Box bound (equal bounds when held) |
 | Fat share | $0.15 \le \phi_{F,b} \le 0.75$ | ceiling via `--max-fat-fraction` | Box bound |
 | Tissue-loss rate | $T_{k-1} - T_k \le \gamma\,T_k/7$, $k = 1, \dots, H$ | $\gamma = 1\%$/week (`max_loss_frac_per_week`) | One inequality per day |
 | Carbohydrate floor | $C_b \ge C_{\min}$ | 20 g/day (`min_carb_g`) | One inequality per block |
@@ -153,6 +189,19 @@ The limit is therefore a fraction $\gamma$ per week of each day's settled tissue
 
 The carbohydrate floor is a safety limit, distinct from the carbohydrate
 preference, and no value of $w_c$ crosses it.
+
+### Why protein is held fixed {#protein}
+
+The objectives score tissue mass. Under the model's partitioning, more protein
+raises the fat share $p$ of each kilogram lost, which raises $\rho_{\mathrm{eff}}$:
+the same deficit then loses less mass, though more of it fat
+([the model](model.md#partition)). Left free, an optimizer scoring mass drives
+protein to its floor, the opposite of what keeping muscle calls for. So
+protein is held at `protein_g_per_kg` (`[preferences]` or
+`--protein-g-per-kg`; default 1.6 g/kg, about where extra protein stops
+measurably helping to keep lean mass in a deficit, and the reference of the
+protein term). A value below $P_{\min}$ is raised to it, one above 3.0 lowered
+to it; 0 frees protein between those bounds.
 
 ## Solving {#slsqp}
 
@@ -180,20 +229,35 @@ T_n = T_0 \left(1 + \frac{\gamma}{7}\right)^{-n},
 n_{\min} = \frac{-\ln\bigl(1 - \Delta/T_0\bigr)}{\ln(1 + \gamma/7)} ,
 $$
 
-with $\Delta = W_0 - W^\star$ the distance to the target on the scale, assuming
-the water compartments end where they are now. The earliest date is
+with $\Delta = T_0 - T^\star$ the distance to the [tissue target](#target), in
+settled tissue like the rate limit itself. The earliest date is
 $\lceil n_{\min} \rceil$ days after the plan starts (20 kg from 100 kg at 1% per
-week takes 157 days, not the fixed-rate 140). The message reads
+week takes 157 days, not the fixed-rate 140). If that is after the goal date,
+the message reads
 
 > `target of <W*> lb by <date> is not reachable within your 1%/week limit; the earliest achievable date at that maximum rate is <date>`
+
+The rate limit is not the only one that can bind. When the model's expenditure
+is low, even the calorie floor every day cannot produce the permitted rate, so
+deadline mode also simulates the fastest diet allowed on energy grounds: $I_{\min}$
+every day, with the plan's first-day protein, carbohydrate at 20 g (the
+carbohydrate floor), the rest as fat, and the plan's assumed exercise, sodium
+and steps, for up to three years. If that forecast's settled
+tissue reaches $T^\star$ only after the goal date, or never, the message reads
+
+> `target of <W*> lb by <date> is not reachable at your <I_min> kcal/day floor; the model's forecast at the floor reaches it on <date>`
+
+(or `does not reach it within 1095 days`). This check ignores the rate limit,
+which the first one covers.
 
 ## Macro preferences {#macros}
 
 **Carbohydrate aversion.** $w_c \sum_k C_k^2$ (`--carb-aversion W`, default 0)
-prefers less carbohydrate at every level. Since carbohydrate is the residual it
-works by pushing protein and fat up (`--max-fat-fraction` gives the freed energy
-somewhere to go), so total energy can rise: on synthetic data, raising it from 0
-to 3 moved a day from 1903 kcal at 40% carbohydrate to 2250 kcal at 4%.
+prefers less carbohydrate at every level. Since carbohydrate is the residual and
+protein is held fixed, it works by pushing fat up (`--max-fat-fraction` gives
+the freed energy somewhere to go; with `protein_g_per_kg` at 0, protein rises
+too): on synthetic data, raising it from 0 to 3 moved a day from 1891 kcal at
+34% carbohydrate and 36% fat to 1859 kcal at 4% carbohydrate and 65% fat.
 
 **Tie-breaker.** Tissue dynamics barely distinguish one fat/carbohydrate split
 from another, and a flat direction makes the solver unreliable, so a weak term

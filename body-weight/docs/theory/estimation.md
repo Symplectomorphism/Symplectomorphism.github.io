@@ -33,21 +33,24 @@ starts is a calendar question for the [controller](control.md#plan-start).
 Process noise stands for unlogged snacks, log error and activity changes:
 
 $$
-Q_k = \operatorname{diag}(\sigma_T^2, \sigma_F^2, \sigma_G^2, \sigma_N^2, \sigma_A^2)
+Q_k = \operatorname{diag}(\sigma_T^2, \sigma_F^2, \sigma_G^2, \sigma_N^2, \sigma_A^2, \sigma_{\mathrm{gut}}^2)
     + \bigl[(1 - m_k)\,\sigma_I^2 + m_k\, s_k^2\bigr]\, b b^{\top},
 \qquad
-b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0)^{\top},
+b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0, 0)^{\top},
 $$
 
 where $m_k$ marks a food log, $\sigma_I = 600$ kcal/day is the intake spread on
 an unlogged day, and $s_k$ is a quarter of the energy of a day logged as an
 [estimate](../data.md#estimating) (zero otherwise). The inflation is rank one
-because an unknown intake moves tissue and fat together.
+because an unknown intake moves tissue and fat together. $\sigma_{\mathrm{gut}} =
+0.10$ kg/day is the day-to-day randomness of gut content (meal and bowel timing)
+beyond what intake explains.
 
 ## Missing data and episodes {#missing-data}
 
 A missing weigh-in skips the update, which for data missing at random costs
-precision but adds no bias (Durbin and Koopman, 2012). Separate diet attempts
+precision but adds no bias (Durbin and Koopman, 2012). A weigh-in flagged
+`exclude_weight` is treated the same way ([data](../data.md#weighing)). Separate diet attempts
 (episodes) share the metabolism but not the state ([pooling](#pooling)).
 
 ## The filter {#filter}
@@ -97,9 +100,9 @@ it finds $\sigma_v = {{< meta sy.ObsSd >}}$ kg against a true 0.45
 Phase 2 appends the parameters to the state and filters everything together:
 
 $$
-z_k = \bigl(\underbrace{T, F, G_c, G_n, A}_{x_k},\;
+z_k = \bigl(\underbrace{T, F, G_c, G_n, A, G_{\mathrm{gut}}}_{x_k},\;
             \underbrace{\eta}_{\in \mathbb{R}^9},\;
-            \underbrace{\eta_w}_{\in \mathbb{R}^2}\bigr) \in \mathbb{R}^{16}.
+            \underbrace{\eta_w}_{\in \mathbb{R}^2}\bigr) \in \mathbb{R}^{17}.
 $$
 
 The waist block exists only when some episode has a waist reading.
@@ -124,8 +127,19 @@ surprises, explicable only by bending parameters.
 
 ### Pooling across episodes {#pooling}
 
-Each episode starts from its first weigh-in, with fat from the configured
-body-fat fraction or the Deurenberg et al. (1991) prediction. The parameter
+Each episode starts from its first weigh-in $y_0$. Gut content starts at the
+level of pre-diet eating, $G_{\mathrm{gut}}(0) = k_{\mathrm{gut}}$ times the
+weight-stable intake of the expenditure prior, and tissue at $y_0$ minus that;
+fat is the configured body-fat fraction of tissue, or the Deurenberg et al.
+(1991) prediction. The first weigh-in of a diet is the least reliable reading of
+tissue: pre-diet eating leaves gut content, glycogen and salt water above their
+habitual levels by an unknown amount that drains over the first days. So the
+initial belief gives tissue $\pm 1.5$ kg beyond the reading's own noise, each
+water compartment $0 \pm 1$ kg, gut content $\pm 0.4$ kg, fat $\pm 4$ kg (about
+the Deurenberg standard error) and adaptation $0 \pm 5$ kcal/day, so that the
+early drop can be explained as water rather than forced into tissue, which
+inflated the maintenance estimate. The widths were chosen by real-data
+likelihood and backtest; wider still stopped helping. The parameter
 posterior carries forward as the next episode's prior, its covariance relaxed
 toward the prior across the gap $\Delta t$ (days):
 
@@ -168,13 +182,14 @@ Read this before quoting any parameter.
 
 | Status | Quantity | Why |
 |:--|:--|:------|
-| Well identified | Maintenance $c_0 + c_1 W$ | Each coefficient is wide over one dataset's narrow mass range, but their combination is well determined. |
+| Well identified | Maintenance $c_0 + c_1 T$ | Each coefficient is wide over one dataset's narrow mass range, but their combination is well determined. |
 | Well identified | $k_G$, $\tau_G$ | Carbohydrate varies daily and the water swings are large next to the noise. |
 | Weak | $\beta_A$, $\tau_A$ | Separable from an error in $c_0$ only through the lag; a diet break or refeed week helps. |
 | Weak | $k_{Na}$ | Everyday sodium swings move the scale less than one weigh-in's noise; logging sodium helps. |
 | Weak | Fat mass $F$ | Seen only through $\rho_{\mathrm{eff}}$, which a 15 kg loss changes by under 10%. |
 | Not identified | $\kappa_P$ | A second-order effect through $\rho_{\mathrm{eff}}$. |
 | Not identified | Thermic-effect coefficients | Held fixed: their effect looks like a logging bias, which $c_0$ absorbs. |
+| Not identified | $k_{\mathrm{gut}}$, $\tau_{\mathrm{gut}}$, $k_{St}$, $\xi_C$ | Held fixed ([the model](model.md#water)): the data barely distinguish neighboring values, or confound them with the energy balance. |
 
 ::: {.callout-note title="Quote maintenance, not its coefficients"}
 Quoting $c_0$ or $c_1$ alone overstates the uncertainty in what the subject can
@@ -202,8 +217,11 @@ sd and 50/90% coverage) and log predictive density. On the synthetic subject the
 skill is {{< meta sy.BtOneSkill >}}% at a day and {{< meta sy.BtSevenSkill >}}% at a week
 ([walkthrough step 6](../walkthrough/06-backtest.md)).
 
-On real data the first mornings of a diet drop more than the water compartments
-explain, most likely gut contents, which no state represents.
+The pooled bias can hide a model that is wrong in opposite directions at
+different times, such as too little predicted loss early in a diet and too much
+later, the signature of early water or gut loss counted as tissue.
+`wdm backtest --by-origin` scores the forecasts in 7-day bins of origin date, so
+a sign that flips between periods shows ([reading it](../reading-output.md#by-origin)).
 
 **Caveats.** Phase-1 noise is fitted on the whole record, so coverage is slightly
 optimistic. Forecasts from neighboring origins overlap (at $h = 7$, consecutive

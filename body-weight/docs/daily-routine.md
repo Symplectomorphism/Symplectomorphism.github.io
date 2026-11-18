@@ -73,7 +73,7 @@ wdm log --kcal 520 --protein 38 --carb 41 --fat 22
     fat          22 / 146 g   124 g left
 ```
 
-Food flags **add** to the day, so meals logged separately sum to the day's totals. Training goes in its own column (`wdm log --exercise KCAL`; the model does the energy balance, so neither column is subtracted from the other), and the step counter's total with `wdm log --steps N`. Eating out, estimate everything and add `--estimate` ([When you don't know exactly](data.md#estimating)). [Commands](commands.md#wdm-log) covers every flag, including corrections with `--set` and `--clear`.
+Food flags **add** to the day, so meals logged separately sum to the day's totals. Training goes in its own column (`wdm log --exercise KCAL`; the model does the energy balance, so neither column is subtracted from the other), and the step counter's total with `wdm log --steps N`, which the model reads as walking energy above or below your average ([steps](data.md#activity)). Eating out, estimate everything and add `--estimate` ([When you don't know exactly](data.md#estimating)). [Commands](commands.md#wdm-log) covers every flag, including corrections with `--set` and `--clear`.
 
 Logging never shifts the plan: `wdm log` compares against the latest plan logged for today, and before `wdm daily` has run it shows the totals alone.
 

@@ -22,12 +22,16 @@ to the target.
 | $T$, $F$, $M$ | Tissue, fat and lean mass ($M = T - F$) | kg |
 | $G_c$, $G_n$ | Glycogen water and sodium water, deviations from habitual levels | kg |
 | $A$ | Adaptive thermogenesis ($\le 0$ in a deficit) | kcal/day |
-| $W$ | Scale weight, $T + G_c + G_n$ | kg |
-| $x$, $u$ | State $(T, F, G_c, G_n, A)$; the day's inputs | |
-| $c_0$, $c_1$ | Expenditure intercept (absorbs constant log bias) and mass slope | kcal/day; per kg |
+| $G_{\mathrm{gut}}$ | Gut content: food and stool in transit | kg |
+| $W$ | Scale weight, $T + G_c + G_n + G_{\mathrm{gut}}$ | kg |
+| $x$, $u$ | State $(T, F, G_c, G_n, A, G_{\mathrm{gut}})$; the day's inputs | |
+| $c_0$, $c_1$ | Expenditure intercept (absorbs constant log bias) and tissue-mass slope | kcal/day; per kg |
 | $\beta_A$, $\tau_A$ | Adaptation gain and time constant | ; days |
 | $k_G$, $\tau_G$ | Glycogen-water gain and time constant | kg per g/day; days |
 | $k_{Na}$, $\tau_{Na}$ | Sodium-water gain and time constant | kg per mg/day; days |
+| $\xi_C$ | Sodium-equivalent effect of removing all carbohydrate (4000, fixed) | mg/day |
+| $k_{\mathrm{gut}}$, $\tau_{\mathrm{gut}}$ | Gut-content gain (0.0006, fixed) and time constant (3, fixed) | kg per kcal/day; days |
+| $k_{St}$ | Energy cost of a step per kg of tissue (0.0005, fixed) | kcal per step per kg |
 | $\kappa_P$ | Fat-share shift per g/kg/day of protein above 1.6 | |
 | $a_w$, $b_w$ | Waist offset and slope (cm of waist per kg of fat) | cm; cm/kg |
 | $E$, $E_{\mathrm{base}}$ | Total expenditure; expenditure without adaptation | kcal/day |
@@ -46,7 +50,9 @@ to the target.
 | $P_g$, $C$, $F_g$, $A_g$ | Protein, carbohydrate, fat and alcohol eaten | g/day |
 | $\bar C$, $\Delta C$ | Habitual carbohydrate intake; $C - \bar C$ | g/day |
 | $\mathrm{Na}$, $\overline{\mathrm{Na}}$, $\Delta\mathrm{Na}$ | Sodium; its habitual level; the deviation | mg/day |
+| $\Delta\mathrm{Na}_{\mathrm{eff}}$ | Sodium deviation as the kidneys see it, carbohydrate's effect included | mg/day |
 | $X$ | Logged exercise | kcal/day |
+| $\mathrm{St}$, $\overline{\mathrm{St}}$, $\Delta\mathrm{St}$ | Step count; the episode's mean; the deviation | steps/day |
 | $q$ | Under-reporting fraction of logged intake | |
 | $m_k$, $o_k$ | 1 if day $k$ has a food log; 1 if it has a weigh-in | |
 
@@ -55,13 +61,14 @@ to the target.
 | Symbol | Meaning |
 |:--|:------|
 | $y_k$, $y^w_k$ | Scale reading (kg) and waist reading (cm) on morning $k$ |
-| $H$ | Scale observation row $(1, 0, 1, 1, 0)$ |
+| $H$ | Scale observation row $(1, 0, 1, 1, 0, 1)$ |
 | $R = \sigma_v^2$, $\sigma_w$ | Scale noise variance; waist noise sd (1.5 cm) |
 | $Q_k$, $\sigma_I$, $s_k$ | Process-noise covariance; intake spread on an unlogged day (600 kcal); an estimated day's uncertainty |
+| $\sigma_{\mathrm{gut}}$ | Daily process-noise sd of gut content (0.10 kg) |
 | $f$, $g$ | One-day step map; the vector field it integrates |
 | $\eta$, $\eta_w$ | Standardized metabolic parameters (9) and waist calibration (2) |
 | $\theta$; $c$, $s$ | Parameters in natural units; the center and scale of their prior map |
-| $z_k$ | Augmented state $(x_k, \eta, \eta_w)$, 14 or 16 entries |
+| $z_k$ | Augmented state $(x_k, \eta, \eta_w)$, 15 or 17 entries |
 | $\sigma_\eta$ | Daily random-walk scale on $\eta$ (0.02 prior sigmas) |
 | $\hat x_{k \mid j}$, $P$ | Estimate of $x_k$ given readings through day $j$; a covariance |
 | $e_k$, $S_k$ | Innovation and its predicted variance |
@@ -81,7 +88,9 @@ to the target.
 | $H$, $B$ | Horizon length (days); number of week-long decision blocks |
 | $\mathbf{d}$ | Decisions: energy, protein per kg and fat share for each block |
 | $W_0$, $T_0$ | Scale weight and tissue at the start of the plan |
-| $W^\star$, $W_h$ | Target weight (deadline mode); held weight (maintain mode) |
+| $W^\star$, $W_h$ | Target weight (deadline mode); held weight (maintain mode), both scale readings |
+| $T^\star$, $T_h$ | Settled tissue that reads $W^\star$ or $W_h$ on the scale at maintenance |
+| $\bar X$ | Exercise the plan assumes (the recent average) |
 | $T_k$, $T_H$ | Predicted settled tissue on plan day $k$; at the horizon's end |
 | $r_k$, $r_H$ | Reference path; its value at the horizon's end |
 | $J$ | Objective |

@@ -95,8 +95,8 @@ for f in week[::20]:
 Backtest -- forecasts of the scale reading (Gaussian noise)
 
   horizon     n   bias    RMSE  persist   skill   z sd   50% cov   90% cov   log score
-    1 d     106  -0.10    1.12     1.39    +20%   0.85      55%       92%      -0.752
-    7 d     100  -0.13    1.17     1.95    +40%   0.77      59%       98%      -0.814
+    1 d     106  -0.14    1.18     1.57    +25%   0.75      61%       96%      -0.850
+    7 d     100  -0.23    1.22     2.06    +41%   0.68      65%       98%      -0.916
 
   bias, RMSE and persistence RMSE in lb. 'persist' forecasts the last reading;
   'skill' is the RMSE improvement over it. A calibrated model has z sd near 1
@@ -104,30 +104,30 @@ Backtest -- forecasts of the scale reading (Gaussian noise)
   per reading (kg units); higher is better, and it is the fair way to compare
   noise models, because it rewards honest intervals as well as accurate means.
 
-h = 1: forecast sd 1.26 to 1.62 lb, median 1.28; reading noise alone 1.08 lb
-h = 7: forecast sd 1.38 to 1.91 lb, median 1.42; reading noise alone 1.08 lb
+h = 1: forecast sd 1.48 to 2.02 lb, median 1.52; reading noise alone 1.28 lb
+h = 7: forecast sd 1.60 to 2.56 lb, median 1.65; reading noise alone 1.28 lb
 
 7-day forecasts by stretch     n    RMSE  persist   90% cov
-  origin day   0- 29        27    1.60     2.31       96%
-  origin day  30- 59        25    0.97     1.79      100%
-  origin day  60-119        48    0.96     1.81       98%
+  origin day   0- 29        27    1.55     2.63      100%
+  origin day  30- 59        25    1.07     1.67      100%
+  origin day  60-119        48    1.09     1.87       96%
 
 five 7-day forecasts, lb      predicted     sd   observed   last reading
-  from 2026-06-02          217.4   1.88      214.9          219.9
-  from 2026-06-24          211.4   1.53      212.3          214.5
-  from 2026-07-16          209.0   1.43      209.2          209.9
-  from 2026-08-09          203.9   1.41      204.7          204.1
-  from 2026-08-31          200.0   1.39      200.7          202.1
+  from 2026-06-02          215.7   2.56      213.6          219.4
+  from 2026-06-24          210.0   1.81      210.9          212.5
+  from 2026-07-16          208.3   1.66      208.2          209.4
+  from 2026-08-09          202.6   1.64      203.4          202.2
+  from 2026-08-31          198.4   1.62      199.1          200.5
 ```
 
 ## What to notice
 
-- **The model beats persistence, more so at a week.** "The scale reads the same as last time" has an RMSE of 1.39 lb at 1 day and 1.95 lb at 7, because the weight is falling. The model's RMSE barely grows, 1.12 to 1.17 lb, because it knows what was eaten: skill +20 % and +40 %. A model that cannot beat persistence at a week is not earning its complexity.
-- **No bias**: −0.10 and −0.13 lb.
-- **The intervals are a little too wide.** Standardized errors have standard deviation 0.85 and 0.77 instead of 1, and the 90 % intervals cover 92 % and 98 %. Erring wide is the safer direction; the likely cause is the fast water counted twice (step 3).
-- **The floor on any forecast is the reading noise**, 1.08 lb; the median forecast sd is 1.28 lb at 1 day and 1.42 at 7. The widest are the earliest, before the parameters have contracted.
-- **Early forecasts are the worst.** For origins in days 0 to 29 the 7-day RMSE is 1.60 lb, then 0.97 and 0.96. Persistence is also worst early (2.31 lb), when the water drop is fastest.
-- **Single forecasts are noisy.** From 2026-08-09 persistence (204.1) happened to be closer to the reading (204.7) than the model (203.9), which is why the table scores a hundred of them.
+- **The model beats persistence, more so at a week.** "The scale reads the same as last time" has an RMSE of 1.57 lb at 1 day and 2.06 lb at 7, because the weight is falling. The model's RMSE barely grows, 1.18 to 1.22 lb, because it knows what was eaten: skill +25 % and +41 %. A model that cannot beat persistence at a week is not earning its complexity.
+- **No bias**: −0.14 and −0.23 lb.
+- **The intervals are a little too wide.** Standardized errors have standard deviation 0.75 and 0.68 instead of 1, and the 90 % intervals cover 96 % and 98 %. Erring wide is the safer direction; the likely cause is the fast water counted twice (step 3).
+- **The floor on any forecast is the reading noise**, 1.28 lb; the median forecast sd is 1.52 lb at 1 day and 1.65 at 7. The widest are the earliest, before the parameters have contracted.
+- **Early forecasts are the worst.** For origins in days 0 to 29 the 7-day RMSE is 1.55 lb, then 1.07 and 1.09. Persistence is also worst early (2.63 lb), when the water drop is fastest.
+- **Single forecasts are noisy.** The five above miss the reading by 0.1 lb (from 2026-07-16) to 2.1 lb (from 2026-06-02, the widest interval), which is why the table scores a hundred of them.
 - **The caveats** (phase 1 saw the whole record; overlapping 7-day forecasts are not independent) are in [Backtest](../theory/estimation.md#backtest).
 
 ## The code
@@ -140,4 +140,4 @@ five 7-day forecasts, lb      predicted     sd   observed   last reading
 ## Try this
 
 - Score longer horizons with `horizons=(1, 7, 14, 28)` and watch persistence fall further behind.
-- Compare noise models fairly by log score: fit both phases with `dof=4.0` (`identify_noise([ep], dof=4.0)`, then `backtest(..., dof=4.0)`). Here z sd moves to 1.08 and 0.93, closer to 1, but the log scores fall from −0.752 and −0.814 to −0.773 and −0.842: on Gaussian data the Gaussian model still forecasts better.
+- Compare noise models fairly by log score: fit both phases with `dof=4.0` (`identify_noise([ep], dof=4.0)`, then `backtest(..., dof=4.0)`). Here z sd moves to 1.07 and 0.90, closer to 1, and the log scores rise from −0.850 and −0.916 to −0.825 and −0.897: on this record the Student-t model forecasts slightly better.

@@ -150,9 +150,21 @@ def real(data_dir: Path) -> dict:
     last_ep = [e for e in episodes if e.name == last.name][0]
     sd = last.state_sd()
     trend_lb = float(last.scale_trend_kg()[-1] * LB_PER_KG)
+    # Expenditure scales with tissue mass, not scale weight (water and gut
+    # content cost no energy), so maintenance is evaluated at tissue.
+    tissue_now_lb = float(last.tissue_kg()[-1] * LB_PER_KG)
+    # Every recorded reading, including any flagged exclude_weight: the model
+    # ignores those, but the day-one story (the first overnight drop) is told
+    # from what the scale actually said.
+    import pandas as pd
+
+    raw = pd.read_csv(data_dir / "observations.csv", parse_dates=["date"])
+    raw = raw[raw["episode"] == last.name].set_index("date")["weight_lb"]
+    raw_lb = raw.reindex(pd.DatetimeIndex(last.dates.astype("datetime64[ns]"))).to_numpy(float)
     current = {
         "name": last.name,
         "dates": _dates(last.dates),
+        "raw_obs_lb": _list(raw_lb, 2),
         "obs_lb": _list(np.where(last_ep.weight_observed, last_ep.weight_kg * LB_PER_KG, np.nan), 2),
         "scale_lb": _list(last.scale_trend_kg() * LB_PER_KG, 3),
         "tissue_lb": _list(last.tissue_kg() * LB_PER_KG, 3),
@@ -163,8 +175,8 @@ def real(data_dir: Path) -> dict:
         "adapt_kcal": _list(last.adaptation_kcal(), 1),
         "kcal": _list(np.where(last_ep.intake_known, last_ep.energy_kcal, np.nan), 0),
         "trend_lb": trend_lb,
-        "maintenance_kcal": fit.maintenance_kcal(trend_lb),
-        "weight_stable_kcal": fit.weight_stable_intake_kcal(trend_lb),
+        "maintenance_kcal": fit.maintenance_kcal(tissue_now_lb),
+        "weight_stable_kcal": fit.weight_stable_intake_kcal(tissue_now_lb),
     }
 
     # The plan actually being followed, as last written by `wdm plan --out`.
@@ -188,7 +200,7 @@ def real(data_dir: Path) -> dict:
     # The prior's maintenance interval at today's trend weight, for comparison.
     eta = jax.random.normal(jax.random.key(2), (20_000, fit.eta_mean.shape[0]))
     prior = jax.vmap(fit.transform.constrain)(eta)
-    prior_maint = np.asarray(prior.rmr_intercept + prior.rmr_slope * trend_lb / LB_PER_KG)
+    prior_maint = np.asarray(prior.rmr_intercept + prior.rmr_slope * tissue_now_lb / LB_PER_KG)
     waist = [
         {"name": w.name, "median": w.median, "q05": w.q05, "q95": w.q95}
         for w in (fit.waist_summaries() if fit.n_waist else [])
@@ -211,7 +223,7 @@ def real(data_dir: Path) -> dict:
         "trends": trends,
         "params": _summaries(fit),
         "current": current,
-        "maintenance": _maintenance_draws(fit, trend_lb),
+        "maintenance": _maintenance_draws(fit, tissue_now_lb),
     }
 
 
@@ -225,7 +237,9 @@ def synthetic(days: int = 120) -> dict:
     fit = fit_joint(episodes, cfg, _load_noise(ni.obs_sd))
     last = fit.episodes[-1]
     sd = last.state_sd()
-    w_end_lb = float(last.scale_trend_kg()[-1] * LB_PER_KG)
+    # Maintenance at the estimated tissue mass, where the model evaluates it;
+    # the truth's value is computed at the same mass.
+    w_end_lb = float(last.tissue_kg()[-1] * LB_PER_KG)
 
     true_maint = float(true.rmr_intercept + true.rmr_slope * w_end_lb / LB_PER_KG)
     return {
@@ -414,7 +428,7 @@ def numbers(data_dir: Path) -> dict[str, str]:
     v["long_losses"] = f"{min(long):.0f} to {max(long):.0f} lb"
 
     # Day one of the current attempt
-    obs = cur["obs_lb"]
+    obs = cur["raw_obs_lb"]  # what the scale said, excluded readings included
     day1 = cur["kcal"][0]
     expend = cur["weight_stable_kcal"]
     p_fat = float(forbes_fat_fraction(jnp.asarray(cur["fat_kg"][0])))
@@ -431,7 +445,7 @@ def numbers(data_dir: Path) -> dict[str, str]:
     v["day1_water"] = f"{drop - tissue_kg * lb:.1f} lb"
 
     # Where things stand
-    last_obs = next(x for x in reversed(obs) if x is not None)
+    last_obs = next(x for x in reversed(cur["obs_lb"]) if x is not None)
     lo, med, hi = r["maintenance"]["interval"]
     v["day"] = str(len(cur["dates"]))
     v["as_of"] = dt.date.fromisoformat(cur["dates"][-1]).strftime("%B %-d, %Y")

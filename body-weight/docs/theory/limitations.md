@@ -52,11 +52,13 @@ noise.
 
 | Simplification | Consequence |
 |:--|:------|
-| Expenditure linear in total mass | Lean and fat tissue burn at different rates. |
+| Expenditure linear in tissue mass | Lean and fat tissue burn at different rates. |
 | First-order adaptation, one time constant | Real adaptation has several mechanisms on different timescales. |
 | Fixed thermic-effect coefficients | They vary between people and meals. |
 | Forbes' law as the partitioning baseline | A population regression applied to one person. |
-| No gut-contents state | The first days of a diet drop more than predicted. |
+| Gut content proportional to intake, with a fixed gain and lag | Fiber, meal timing and bowel habits move it too; a fiber term was tried and did not help, and the rest is left in the noise. |
+| One fixed cost per step, relative to the episode's mean | Pace, hills and load change the cost of a step, and a step counter misses activity such as cycling. |
+| Plans hold exercise, steps and sodium at their last 14-day averages | A change of routine shows up as forecast error until the weigh-ins catch it. |
 | No menstrual-cycle term | A large, systematic water signal for subjects who cycle, left in the noise. |
 | No exercise-composition model | Resistance training changes the fat/lean split in ways the protein term only crudely proxies. |
 | Waist linear in fat mass | The true slope steepens as fat falls; the estimated slope must track it. |
@@ -98,7 +100,7 @@ registered dietitian first.
 1. **Stochastic or minimax MPC**, propagating parameter uncertainty into the plan.
 2. **An adherence model** relating what is prescribed to what is eaten, using the
    plans log (Nahum-Shani et al., 2018).
-3. **Composition-resolved expenditure**, $c_M M + c_F F$ instead of $c_1 W$, if
+3. **Composition-resolved expenditure**, $c_M M + c_F F$ instead of $c_1 T$, if
    enough data accumulate to identify it.
 4. **Full Bayesian inference** by MCMC or sequential Monte Carlo.
 5. **Body-composition measurements.** Occasional DEXA scans would constrain fat

@@ -15,7 +15,7 @@ code/src/wdm/
 │   ├── types.py        State, Params, DailyInput (JAX pytrees); the timing convention
 │   ├── energetics.py   resting rate, thermic effect of food, adaptive thermogenesis
 │   ├── partition.py    Forbes' law: how a change of tissue splits into fat and lean
-│   ├── glycogen.py     carbohydrate -> glycogen -> bound water; sodium water
+│   ├── glycogen.py     carbohydrate -> glycogen -> bound water; sodium water; gut content
 │   ├── dynamics.py     the continuous-time model (Diffrax) and the discrete step map
 │   └── observation.py  the scale and the waist tape
 ├── filters/
@@ -54,11 +54,11 @@ uv run python -m pytest -n0 --pdb    # one process, to debug a failure
 
 | File | Focus |
 |---|---|
-| `test_models.py` | Closed-form checks, energy conservation, integrator agreement, the waist prior |
+| `test_models.py` | Closed-form checks, energy conservation, integrator agreement, the waist prior, carbohydrate's effect on sodium water, the cost of steps |
 | `test_filters.py` | Comparison with exact batch posteriors, sigma-point properties, the gate, Student-t |
 | `test_estimation.py` | Parameter recovery and calibration, the tape, weight-only episodes, timing, the habitual reference, the backtest |
-| `test_control.py` | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, infeasibility, objective behavior, maintain mode |
-| `test_io.py` | Schema validation, gaps, units, waist columns, habitual intake, estimated days, the `[maintain]` section |
+| `test_control.py` | Constraints, SLSQP without the fallback, the per-day rate limit (day 1 included), the protein check's basis, fixed and free protein, the assumed exercise and sodium, infeasibility at the rate limit and the calorie floor, objective behavior, maintain mode |
+| `test_io.py` | Schema validation, gaps, units, waist columns, habitual intake, estimated days, steps as deviations, excluded weigh-ins, the `[maintain]` section |
 | `test_cli.py` | Staleness arithmetic, the plan's start, the default mode (maintain, deadline, sustainable) |
 | `test_daily.py` | Recording readings, food, meals and steps; `--estimate`, `--set` and `--clear`; the plans log; prompting; `log` and its `eat` alias; the adherence figure |
 | `test_exercise.py` | MET arithmetic, tempo and hold parsing, classification |

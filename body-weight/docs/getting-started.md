@@ -65,11 +65,11 @@ wdm demo --days 60 --figures /tmp/wdm-demo
 Phase 2 -- posterior parameter estimates
 
   parameter              median                90% interval  shift
-  rmr_intercept          1352.7                [1079, 1694]   +3.8%
+  rmr_intercept          1338.9                [1070, 1674]   +2.7%
   ...
   ground-truth recovery: 9/9 parameters inside their 90% interval
-  smoothed trend RMSE vs hidden truth: 211 g
-  (single-weigh-in noise was 492 g)
+  smoothed trend RMSE vs hidden truth: 237 g
+  (single-weigh-in noise was 595 g)
 ```
 
 It reads and writes nothing of yours. The [walkthrough](walkthrough/index.qmd) takes the same pipeline apart one step at a time.

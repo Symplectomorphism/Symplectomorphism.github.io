@@ -2,7 +2,7 @@
 title: "4. Phase 2: state and metabolism"
 ---
 
-Phase 2 appends the nine metabolic parameters to the five physiological states and runs an unscented Kalman filter and smoother over the scale and the food log. Each weigh-in updates both where the subject is and what kind of metabolism produced the path so far. This step leaves the tape out (step 5 adds it) and scores the result against the truth from step 2. The theory is in [Estimation: phase 2](../theory/estimation.md#phase-2); the command-line equivalent is [`wdm filter`](../commands.md#wdm-filter).
+Phase 2 appends the nine metabolic parameters to the six physiological states and runs an unscented Kalman filter and smoother over the scale and the food log. Each weigh-in updates both where the subject is and what kind of metabolism produced the path so far. This step leaves the tape out (step 5 adds it) and scores the result against the truth from step 2. The theory is in [Estimation: phase 2](../theory/estimation.md#phase-2); the command-line equivalent is [`wdm filter`](../commands.md#wdm-filter).
 
 ```bash
 uv run python walkthrough/04_phase2.py
@@ -65,16 +65,17 @@ for s in fit.summaries:
     print(f"  {s.name:16s} {t:10.4g}   {inside:>5s}     {t / s.prior_center - 1:+6.1%}")
 print()
 
-# The intercept and slope trade off; their sum at the current weight is what the
-# data pin down. The truth's value is computed the same way.
+# The intercept and slope trade off; their sum at the current mass is what the
+# data pin down. Evaluated at tissue, which is what expenditure scales with; the
+# truth's value is computed the same way.
 last = fit.episodes[-1]
-w_lb = float(last.scale_trend_kg()[-1] * LB_PER_KG)
+w_lb = float(last.tissue_kg()[-1] * LB_PER_KG)
 lo, med, hi = fit.maintenance_interval_kcal(w_lb)
 w_kg = w_lb / LB_PER_KG
 true_maint = float(true.rmr_intercept + true.rmr_slope * w_kg)
 prior_maint = c0 + c1 * w_kg
 print(
-    f"maintenance at {w_lb:.1f} lb: {med:.0f} kcal/day, 90% [{lo:.0f}, {hi:.0f}];"
+    f"maintenance at {w_lb:.1f} lb of tissue: {med:.0f} kcal/day, 90% [{lo:.0f}, {hi:.0f}];"
     f" truth {true_maint:.0f}, prior {prior_maint:.0f}"
 )
 print()
@@ -97,15 +98,15 @@ print(f"smoothed scale weight vs truth, all 120 days: RMSE {np.sqrt(np.mean(err*
 Phase 2 -- posterior parameter estimates
 
   parameter              median                90% interval  shift
-  rmr_intercept          1353.1                [1081, 1691]   +3.8%
-  rmr_slope              15.405              [12.22, 19.41]   +6.2%
-  at_gain                0.1532           [0.05403, 0.3637]   +2.1%
-  at_tau                 12.631              [5.513, 28.91]   -9.8%
-  gly_gain            0.0035331        [0.001965, 0.006445]  +17.8%
-  gly_tau                1.2272             [0.6757, 2.236]  -18.2%
-  na_gain            7.2163e-05      [2.125e-05, 0.0002437]  -63.9%
-  na_tau                 1.3121             [0.6846, 2.506]  +31.2%
-  partition_kappa      0.049742          [-0.03239, 0.1347]   -0.5%
+  rmr_intercept            1344                [1075, 1678]   +3.1%
+  rmr_slope              15.283              [12.08, 19.32]   +5.4%
+  at_gain               0.14805           [0.05158, 0.3574]   -1.3%
+  at_tau                 13.025              [5.679, 29.89]   -7.0%
+  gly_gain            0.0044005         [0.002222, 0.00886]  +46.7%
+  gly_tau                1.1497             [0.6185, 2.137]  -23.4%
+  na_gain            0.00010902      [4.409e-05, 0.0002694]  -45.5%
+  na_tau                 1.1495             [0.6262, 2.111]  +14.9%
+  partition_kappa      0.048273          [-0.03363, 0.1332]   -3.5%
 
   'shift' is movement of the posterior median away from the prior center. Values near zero mean the data was uninformative about that parameter.
 
@@ -116,28 +117,28 @@ Phase 2 -- posterior parameter estimates
   at_tau                   11     yes     -21.4%
   gly_gain             0.0042     yes     +40.0%
   gly_tau                   2     yes     +33.3%
-  na_gain             0.00025      NO     +25.0%
+  na_gain             0.00025     yes     +25.0%
   na_tau                    1     yes      +0.0%
   partition_kappa        0.06     yes     +20.0%
 
-maintenance at 195.3 lb: 2739 kcal/day, 90% [2547, 2953]; truth 2694, prior 2588
+maintenance at 192.3 lb of tissue: 2698 kcal/day, 90% [2510, 2908]; truth 2676, prior 2568
 
-  tissue_kg  day 119:    88.91 +-   0.24   truth    89.20
-  fat_kg     day 119:    22.53 +-   3.79   truth    22.43
-  adapt_kcal day 119:  -136.08 +-  79.15   truth  -161.41
-smoothed scale weight vs truth, all 120 days: RMSE 0.208 kg
+  tissue_kg  day 119:    87.20 +-   0.29   truth    87.49
+  fat_kg     day 119:    22.02 +-   3.80   truth    22.02
+  adapt_kcal day 119:  -125.41 +-  73.03   truth  -158.27
+smoothed scale weight vs truth, all 120 days: RMSE 0.227 kg
 ```
 
 ## What to notice
 
-- **Eight of the nine true values are inside their 90 % intervals.** That is the minimum an honest estimator must do on data from its own model, and not the same as learning all nine; one miss in nine at 90 % is within chance.
-- **The sodium gain is the miss.** The median, 7.2·10⁻⁵ kg per mg/day, moved −63.9 % from the prior center of 2.0·10⁻⁴; the truth, 2.5·10⁻⁴, sits just above the interval. This is weak information, not bias: ±800 mg of random sodium moves the scale by about 0.1 kg, so the likelihood is nearly flat in the gain and one seed's data can favor a low value. With two or three times the sodium variation the estimates converge on the truth ([Identifiability](../theory/estimation.md#identifiability)). It matters because a 1000 mg change is worth 0.25 kg at the true gain, so an estimate 3.5 times low leaves much of the sodium swing for the filter to explain some other way.
-- **What "shift" means.** (Posterior median − prior center) / |prior center|. Near zero, the line is reading back the prior: `partition_kappa` shifts −0.5 %, since 120 days at one protein level cannot reveal a protein effect. Its interval is even slightly wider than the prior's, because the parameter random walk (0.02 prior standard deviations a day, so the filter keeps listening) adds variance the data never removed.
-- **The two expenditure coefficients are not learned separately.** The intercept moved +3.8 % toward a truth at +18 %; the slope moved +6.2 % against a truth at −10 %. Over the 11.8 kg this episode spans, raising one and lowering the other leaves the trajectory almost unchanged.
-- **Their combination is learned.** Maintenance at 195.3 lb is 2739 kcal/day, 90 % [2547, 2953], against a truth of 2694 and a prior of 2588. This number, not either coefficient, is what the controller relies on.
-- **The glycogen gain is partly learned**, +17.8 % toward a truth at +40 %, helped by the weekly carbohydrate cycle.
-- **States.** Tissue on day 119 is 88.91 ± 0.24 kg against a true 89.20. Fat is 22.53 ± 3.79 kg against 22.43, but the 3.79 kg is nearly the 4 kg prior it started with: the scale taught the filter little about fat, and the estimate is right only because the configured body fat matches the generator's. Step 5 shows what happens when it does not.
-- **The smoothed scale weight** is within 0.208 kg of the truth over all 120 days, against step 3's 0.290 kg causal trend: the smoother has the food log and both directions in time.
+- **All nine true values are inside their 90 % intervals.** That is the minimum an honest estimator must do on data from its own model, and not the same as learning all nine; at 90 %, one miss in nine would still be within chance.
+- **The sodium gain is the weakest.** The median, 1.1·10⁻⁴ kg per mg/day, moved −45.5 % from the prior center of 2.0·10⁻⁴, away from the truth, 2.5·10⁻⁴, which sits near the top of the interval. ±800 mg of random sodium moves the scale by about 0.1 kg, so the likelihood is nearly flat in the gain and one seed's data can favor a low value ([Identifiability](../theory/estimation.md#identifiability)). Doubling or tripling the sodium spread (`sodium_sd_mg=1600.0` or `2400.0` in the spec) moves the median toward the truth, to 1.3·10⁻⁴ and 1.5·10⁻⁴, but not onto it. It matters because a 1000 mg change is worth 0.25 kg at the true gain, so an estimate 2.3 times low leaves much of the sodium swing for the filter to explain some other way.
+- **What "shift" means.** (Posterior median − prior center) / |prior center|. Near zero, the line is reading back the prior: `partition_kappa` shifts −3.5 %, since 120 days at one protein level cannot reveal a protein effect. Its interval is even slightly wider than the prior's, because the parameter random walk (0.02 prior standard deviations a day, so the filter keeps listening) adds variance the data never removed.
+- **The two expenditure coefficients are not learned separately.** The intercept moved +3.1 % toward a truth at +18 %; the slope moved +5.4 % against a truth at −10 %. Over the 12.4 kg this episode spans, raising one and lowering the other leaves the trajectory almost unchanged.
+- **Their combination is learned.** Maintenance at today's 192.3 lb of tissue (the model's expenditure scales with tissue, not the scale reading) is 2698 kcal/day, 90 % [2510, 2908], against a truth of 2676 and a prior of 2568. This number, not either coefficient, is what the controller relies on.
+- **The glycogen gain is learned**, +46.7 % against a truth at +40 %, helped by the weekly carbohydrate cycle.
+- **States.** Tissue on day 119 is 87.20 ± 0.29 kg against a true 87.49. Fat is 22.02 ± 3.80 kg against 22.02, but the 3.80 kg is nearly the 4 kg prior it started with: the scale taught the filter little about fat, and the estimate is right only because the configured body fat matches the generator's. Step 5 shows what happens when it does not.
+- **The smoothed scale weight** is within 0.227 kg of the truth over all 120 days, against step 3's 0.385 kg causal trend: the smoother has the food log and both directions in time.
 
 ## The code
 
@@ -151,7 +152,7 @@ smoothed scale weight vs truth, all 120 days: RMSE 0.208 kg
 
 ## Try this
 
-- Widen the prior with `fit_joint([ep], cfg, noise, prior_scale=2.0)`. Informed parameters move further; uninformed ones only widen. Does the sodium gain's interval reach the truth?
+- Widen the prior with `fit_joint([ep], cfg, noise, prior_scale=2.0)`. Informed parameters move further; uninformed ones only widen. Which way does the sodium gain's median go?
 - Under-log by 10 % (`dataclasses.replace(ep, energy_kcal=0.9 * ep.energy_kcal)`) and compare the maintenance line. The fit explains a short log by a lower maintenance: it describes the log, not the body.
-- Mark days as estimated, as `wdm log --estimate` does for a restaurant meal: `dataclasses.replace(ep, intake_sd_kcal=0.25 * np.nan_to_num(ep.energy_kcal))` treats every logged day as known only to ±25 %. Each day then teaches the filter less about the metabolism, and the maintenance interval widens, from [2547, 2953] to [2522, 2973].
+- Mark days as estimated, as `wdm log --estimate` does for a restaurant meal: `dataclasses.replace(ep, intake_sd_kcal=0.25 * np.nan_to_num(ep.energy_kcal))` treats every logged day as known only to ±25 %. Each day then teaches the filter less about the metabolism, and the maintenance interval widens, from [2510, 2908] to [2481, 2924].
 - Print `fit.episodes[0].adaptation_kcal()` every 10 days next to `truth["adapt_kcal"]`, and see how long the filter takes to believe in adaptation.

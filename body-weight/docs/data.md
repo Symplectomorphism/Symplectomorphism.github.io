@@ -29,13 +29,14 @@ Row *k* is day *k*: the weigh-in on its morning and everything eaten during it. 
 | `alcohol_g` | g/day | 0 to 500 | Alcohol, 7 kcal/g; often left out of logs. |
 | `sodium_mg` | mg/day | 0 to 30,000 | Sodium; a major driver of day-to-day water weight. |
 | `exercise_kcal` | kcal/day | 0 to 8,000 | Deliberate exercise energy above baseline. Blank counts as 0. |
-| `steps` | count | 0 to 150,000 | Step count. Kept as a diagnostic, not used in the energy balance. |
+| `steps` | count | 0 to 150,000 | Step count. Steps above or below the episode's average add or remove walking energy ([below](#activity)). |
 | `waist_in` | in | 15 to 90 | Waist at the navel. (`waist_cm`, 38 to 230, also accepted.) |
 | `glucose_mg_dl` | mg/dL | 20 to 600 | Fasting blood glucose. A [health reading](#health-readings). |
 | `ketones_mmol_l` | mmol/L | 0 to 10 | Blood ketones (beta-hydroxybutyrate). A health reading. |
 | `resting_hr_bpm` | bpm | 25 to 200 | Resting heart rate. A health reading. |
 | `bp_systolic_mmhg`, `bp_diastolic_mmhg` | mmHg | 60 to 260, 30 to 160 | Blood pressure. Health readings; a diastolic at or above the systolic draws a warning. |
 | `estimated` | 1 or blank | 0 to 1 | 1 when the day's food is an estimate; the filter then treats its energy as uncertain by about a quarter. `wdm log --estimate` sets it (and adds the column if the file lacks it). |
+| `exclude_weight` | 1 or blank | 0 to 1 | 1 to keep the day's weigh-in in the file but out of the model; the day's food still counts. For a reading you know is off ([below](#weighing)). |
 | `notes` | text | | Free text, never parsed. Useful when reviewing outliers. |
 
 The ranges catch unit errors and typos (a weight in kg typed into the lb column, a slipped decimal point), not unusual days. A row may give a quantity in one unit only: `weight_lb` or `weight_kg`, `waist_in` or `waist_cm`. Columns not listed here are ignored with a warning.
@@ -58,6 +59,8 @@ Within an episode, dates should be contiguous. Between episodes, gaps are fine. 
 
 **Consistency matters far more than precision.** Weigh under the same conditions every time: first thing in the morning, after the bathroom, before eating or drinking, same clothing (ideally none), same scale on the same spot. The day-to-day scatter is fluid, not instrument error, so this habit is worth more than a better scale. A scale that reads 1.5 lb heavy is harmless: the bias is absorbed into the initial condition. A scale used at random times of day injects noise that no filter can remove. If you weighed twice, keep the morning fasted value.
 
+A reading you know is off for a reason the model cannot see, such as a diet's first morning after a large pre-diet meal, can be set aside without deleting it: put 1 in `exclude_weight` and say why in `notes`. The model then treats the morning as one without a weigh-in. Use it rarely, for a known cause, not for a reading you merely dislike; the filter's outlier gate already handles typing errors. (The first weigh-in of every diet is already treated as uncertain by about 1.5 kg, because pre-diet eating leaves food, glycogen and salt water that drain over the first days.)
+
 ### The food columns
 
 `kcal` and the macronutrients are the model's **input**. Their quality decides what it can learn:
@@ -66,7 +69,7 @@ Within an episode, dates should be contiguous. Between episodes, gaps are fine. 
 |---|---|
 | nothing | trend estimation only; no maintenance estimate |
 | `kcal` only | maintenance and adaptation estimates, but no glycogen-water correction |
-| `kcal` and macronutrients | the full model: carbohydrate drives the glycogen-water compartment, which explains much of the day-to-day scale noise, and the protein/carb/fat split changes the thermic effect of food |
+| `kcal` and macronutrients | the full model: carbohydrate drives the glycogen-water compartment, which explains much of the day-to-day scale noise (and part of the sodium-water one), and the protein/carb/fat split changes the thermic effect of food |
 
 A day counts as logged when it has `kcal` or a full protein/carb/fat split. A day with neither is treated as intake unknown, not as a fast; a real fast is `kcal` = 0.
 
@@ -76,11 +79,15 @@ A day counts as logged when it has `kcal` or a full protein/carb/fat split. A da
 
 ### `sodium_mg`
 
-Optional but valuable if your tracker reports it. Sodium shifts extracellular water over one to two days and is often a larger source of scale noise than carbohydrate. Supplied, it drives the sodium-water compartment: roughly 0.2 kg of water per 1,000 mg/day of sustained change, and about half a kilogram the morning after a salty restaurant meal, gone in two or three days. Left blank, the day is taken at your habitual sodium (4,000 mg by default), so estimate rather than leave it blank on days you eat out ([When you don't know exactly](#estimating)).
+Optional but valuable if your tracker reports it. Sodium shifts extracellular water over one to two days and is often a larger source of scale noise than carbohydrate. Supplied, it drives the sodium-water compartment: roughly 0.2 kg of water per 1,000 mg/day of sustained change, and about half a kilogram the morning after a salty restaurant meal, gone in two or three days. Carbohydrate moves the same compartment: eating less of it than usual makes the kidneys excrete more sodium, so the model counts a cut in carbohydrate as a cut in sodium, 4,000 mg/day for removing all of it and in proportion for a partial cut (Hall, 2010; [the model](theory/model.md#water)). Left blank, the day is taken at your habitual sodium (4,000 mg by default), so estimate rather than leave it blank on days you eat out ([When you don't know exactly](#estimating)).
 
-### `exercise_kcal` and `steps`
+### `exercise_kcal` and `steps` {#activity}
 
-Both optional. Left blank, steady activity is absorbed into the estimated maintenance, which is often the more honest choice if your activity is stable. If you lift, [Exercise energy](exercise.md) estimates `exercise_kcal` per session. Treat wearable calorie estimates with suspicion; they are usually noisier than food logs. If you supply both columns, only `exercise_kcal` enters the energy balance.
+Both optional, and both enter the energy balance; they cover different things. `exercise_kcal` is workouts: deliberate exercise energy above baseline, added to the day's expenditure. If you lift, [Exercise energy](exercise.md) estimates it per session. Treat wearable calorie estimates with suspicion; they are usually noisier than food logs.
+
+`steps` is everyday walking, counted against your own average: each step above or below the episode's mean step count adds or removes 0.0005 kcal per kg of body tissue, about 200 kcal/day for a 4,000-step swing at 100 kg. Your usual walking stays inside the estimated maintenance, so only the day-to-day changes are explained by steps. Do not count a walk in both columns: log a dedicated walk either as exercise or through the step count.
+
+Left blank, a day's exercise counts as 0 and its steps as your average. Steady activity is then absorbed into the estimated maintenance, which is often the more honest choice if your activity is stable.
 
 ### `waist_in`
 
@@ -104,6 +111,7 @@ Fasting glucose, ketones, resting heart rate, and blood pressure are logged and 
 | The macros, with `kcal` given | Carbohydrate at your habitual level (260 g by default), no protein effect on the fat/lean split, a flat thermic effect of food |
 | One or two macros | The same as all three: a partial split (protein only, say) is ignored, because the model needs all three |
 | `sodium_mg` | Your habitual sodium (4,000 mg by default): about a restaurant day, which is wrong for a quiet day at home |
+| `steps` | Your average step count for the episode: no walking energy above or below the usual |
 
 So at a restaurant or a friend's, log your best guess at all of it, and mark the day as an estimate:
 
@@ -161,6 +169,7 @@ When the restaurant publishes them, use them. Otherwise estimate in order of wha
 | Weighed twice in a day | Keep the morning fasted value only |
 | Long gap between diets | Start a new episode |
 | A reading looks wrong | Keep it and say why in `notes`; the filter's outlier gate downweights it |
+| A reading you know is off (a diet's first morning after a large pre-diet meal) | Keep it, set `exclude_weight` to 1, and say why in `notes` |
 
 Do not delete inconvenient rows or interpolate missing values by hand: both corrupt the noise estimates that everything downstream depends on. Reporting a gap honestly is strictly better than filling it in.
 

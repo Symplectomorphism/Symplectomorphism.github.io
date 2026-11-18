@@ -134,14 +134,14 @@ around them.
 
 ## The model {.divider}
 
-Five states, nine metabolic parameters (two more with a tape measure), one equation that
+Six states, nine metabolic parameters (two more with a tape measure), one equation that
 matters most.
 
 ## The loop {.smaller}
 
 ![](assets/structure.svg){.fig-wide fig-alt="Block diagram: person, scale, filter, controller, with the controller's prescription feeding back to the person."}
 
-- The person is a nonlinear system with **five hidden states**. The sensors are a scale,
+- The person is a nonlinear system with **six hidden states**. The sensors are a scale,
   read each morning, and optionally a tape measure, weekly.
 - The filter estimates the states **and** the person's metabolic parameters, jointly.
 - The controller plans weeks ahead from that estimate, and the subject eats **only the first
@@ -152,7 +152,7 @@ This is a textbook output-feedback loop with an unusual plant. The plant's input
 its output is one noisy number per day, and its parameters are unknown and personal.
 :::
 
-## Five states
+## Six states
 
 | State | Units | Meaning | Clock |
 |---|---|---|---|
@@ -161,6 +161,7 @@ its output is one noisy number per day, and its parameters are unknown and perso
 | $G_c$ | kg | glycogen and bound water, deviation from its habitual fill | 1 to 2 days |
 | $G_n$ | kg | sodium-associated water, deviation from habitual | about 1 day |
 | $A$ | kcal/day | adaptive thermogenesis; negative in a deficit | about 2 weeks |
+| $G_{\text{gut}}$ | kg | gut content: food and stool in transit, following intake | about 3 days |
 
 : {tbl-colwidths="[7,11,62,20]"}
 
@@ -170,31 +171,34 @@ $$
 \qquad
 \dot F = p\,\dot T,
 \qquad
-y = T + G_c + G_n + v
+y = T + G_c + G_n + G_{\text{gut}} + v
 $$
 :::
 
 Energy eaten $I$ minus energy spent $E$ goes into tissue, except what is diverted into
 glycogen ($\rho_G \approx 1{,}025$ kcal/kg of glycogen-water complex). $\rho_{\text{eff}}$ is
 the energy density of the tissue being lost, $p$ its fat fraction, and the scale reads $y$:
-tissue plus both water compartments plus noise $v$.
+tissue plus both water compartments and gut content, plus noise $v$.
 
 ## Expenditure, and the plateau as an ODE
 
 ::: eqbox
 $$
-E = c_0 + c_1 W + \text{TEF} + X + A,
+E = c_0 + c_1 T + \text{TEF} + X + k_{St}\,T\,(\mathrm{St} - \overline{\mathrm{St}}) + A,
 \qquad
 \dot A = \frac{-\beta_A\,(E_{\text{base}} - I) - A}{\tau_A}
 $$
 :::
 
-- $c_0 + c_1 W$: resting and baseline expenditure, $W$ total mass, TEF the thermic effect of
-  food, $X$ logged exercise, and $E_{\text{base}} = E - A$.
+- $c_0 + c_1 T$: resting and baseline expenditure, scaled by tissue (water and gut content
+  cost nothing to maintain), TEF the thermic effect of food, $X$ logged exercise, steps
+  $\mathrm{St}$ above the episode's mean $\overline{\mathrm{St}}$ at $k_{St} = 0.0005$
+  kcal per step per kg, and $E_{\text{base}} = E - A$.
 - Under a sustained deficit $D = E_{\text{base}} - I$, adaptation settles at $-\beta_A D$ with
   time constant $\tau_A$. Priors: $\beta_A \approx 0.15$, $\tau_A \approx 14$ days.
 - Water: $\dot G_c = (k_G\,\Delta C - G_c)/\tau_G$, with $\Delta C$ carbohydrate relative to
-  habitual (pre-diet) intake; the same form for sodium.
+  habitual (pre-diet) intake; the same form for sodium, and cutting carbohydrate also sheds
+  sodium water, since the kidneys then excrete more sodium.
 
 ::: remark
 $c_0$ also absorbs any **constant** bias in the food log, harmlessly. A bias that **drifts** is
@@ -266,7 +270,7 @@ morning $k$ to morning $k+1$: food never moves the reading taken before it.
 :::
 ::: card
 [Observe linearly]{.cardh}
-$y_k = H x_k + v_k$ with $H = (1\ 0\ 1\ 1\ 0)$. The scale is linear in the state, so its update
+$y_k = H x_k + v_k$ with $H = (1\ 0\ 1\ 1\ 0\ 1)$. The scale is linear in the state, so its update
 is **exact**. A weekly waist reading, $a_w + b_w F$ with a personal offset and slope that
 are learned, is the one nonlinear update.
 :::
@@ -412,8 +416,8 @@ is only weakly observable: it enters the dynamics only through rho_eff.
 Over the narrow range of weights in one dataset, raising $c_0$ and lowering $c_1$ leaves the
 fitted trajectory almost unchanged: correlation **{{< meta bw.syn_corr >}}**.
 
-So each coefficient has a wide marginal, but **maintenance** $c_0 + c_1 W$ at the current
-weight is tight: {{< meta bw.syn_maint >}} kcal/day around a true {{< meta bw.syn_true_maint >}}.
+So each coefficient has a wide marginal, but **maintenance** $c_0 + c_1 T$ at the current
+tissue mass is tight: {{< meta bw.syn_maint >}} kcal/day around a true {{< meta bw.syn_true_maint >}}.
 
 The package reports maintenance by propagating the full covariance through the sum. A test
 asserts that interval is more than 20% narrower than treating the two as independent.
@@ -616,7 +620,7 @@ allowance, so the rate limit, if it binds at all, binds late.
 :::
 ::: stat
 [{{< meta bw.maint >}}]{.num}
-[maintenance $c_0 + c_1W$; 90% interval {{< meta bw.maint_interval >}}, against the prior's {{< meta bw.maint_prior >}}]{.lab}
+[maintenance $c_0 + c_1 T$; 90% interval {{< meta bw.maint_interval >}}, against the prior's {{< meta bw.maint_prior >}}]{.lab}
 :::
 ::: {.stat .gold}
 [{{< meta bw.fat >}}]{.num}
@@ -777,8 +781,8 @@ slope innovations rather than level jumps.
 ::: kv
 | Symbol | Meaning |
 |---|---|
-| $T, F, G_c, G_n, A$ | tissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day) |
-| $W = T + G_c + G_n$ | total mass, what the scale reads before noise $v$ |
+| $T, F, G_c, G_n, A, G_{\text{gut}}$ | tissue, fat, glycogen water, sodium water (kg); adaptation (kcal/day); gut content (kg) |
+| $W = T + G_c + G_n + G_{\text{gut}}$ | total mass, what the scale reads before noise $v$ |
 | $I, E, X, D$ | intake, expenditure, logged exercise, deficit $E_{\text{base}} - I$ (kcal/day) |
 | $P_g, C, F_g$ | protein, carbohydrate, fat (g/day); $\Delta C$ carbohydrate relative to habitual intake |
 | $c_0, c_1$ | expenditure intercept (kcal/day) and slope (kcal/day per kg) |
@@ -786,7 +790,7 @@ slope innovations rather than level jumps.
 | $k_G, \tau_G$; $k_{Na}, \tau_{Na}$ | gain and time constant of the glycogen and sodium water compartments |
 | $p, \kappa_P$ | fat fraction of a mass change; its protein sensitivity |
 | $\rho_F, \rho_L, \rho_G, \rho_{\text{eff}}$ | energy density of fat, lean tissue, glycogen-water complex, and the current mix (kcal/kg) |
-| $\eta, z$ | unconstrained parameters; the augmented state (14 entries, 16 with the tape) |
+| $\eta, z$ | unconstrained parameters; the augmented state (15 entries, 17 with the tape) |
 | $a_w, b_w$ | waist offset (cm) and slope (cm of waist per kg of fat) |
 | $\ell, b$ | level and slope of the local linear trend model |
 | $\gamma$ | permitted weekly tissue-loss fraction |

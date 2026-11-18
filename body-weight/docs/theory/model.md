@@ -2,12 +2,12 @@
 title: "The model"
 ---
 
-`wdm` models one person's body weight as a five-state, continuous-time system
+`wdm` models one person's body weight as a six-state, continuous-time system
 driven by a daily food log, observed through a scale and an optional tape
 measure. Units: kilograms, kilocalories, days; symbols are in
 [Notation](notation.md).
 
-## The five states {#states}
+## The six states {#states}
 
 | Symbol | Code name | Units | Meaning |
 |:--|:--|:--|:----------|
@@ -16,8 +16,9 @@ measure. Units: kilograms, kilocalories, days; symbols are in
 | $G_c$ | `gly_water_kg` | kg | Glycogen and its bound water, relative to habitual intake. |
 | $G_n$ | `na_water_kg` | kg | Sodium-associated water, relative to habitual intake. |
 | $A$ | `adapt_kcal` | kcal/day | Adaptive thermogenesis, negative in a deficit. |
+| $G_{\mathrm{gut}}$ | `gut_kg` | kg | Gut content: food and stool in transit (absolute, not a deviation). |
 
-The scale weighs $W = T + G_c + G_n$.
+The scale weighs $W = T + G_c + G_n + G_{\mathrm{gut}}$.
 
 ## Energy balance {#energy-balance}
 
@@ -72,11 +73,24 @@ omitting it would assert that protein has no effect.
 ## Expenditure {#expenditure}
 
 $$
-E = \underbrace{c_0 + c_1 W}_{\text{resting + baseline activity}}
-  + \mathrm{TEF} + X + A ,
+E = \underbrace{c_0 + c_1 T}_{\text{resting + baseline activity}}
+  + \mathrm{TEF} + X + k_{St}\,T\,\Delta\mathrm{St} + A ,
 $$
 
-with $X$ the logged exercise (kcal/day).
+with $X$ the logged exercise (kcal/day). The mass term uses tissue, not scale
+weight: glycogen water, sodium water and gut content cost nothing to maintain,
+and scaling expenditure with them would let a carbohydrate or salt swing change
+the predicted burn.
+
+**Steps.** $\Delta\mathrm{St} = \mathrm{St} - \overline{\mathrm{St}}$ is the
+day's step count minus the episode's mean, zero on a day without one, and
+$k_{St} = 0.0005$ kcal per step per kg of tissue: walking costs roughly
+0.5 kcal per kg per km above rest, at 1,300 to 1,400 steps a kilometer, plus
+the upright posture walking adds over sitting. A 4,000-step swing at 100 kg is
+200 kcal/day. Measured from the mean, habitual walking stays inside $c_0$ and
+$c_1$, and steps explain only day-to-day changes in activity. $k_{St}$ is fixed:
+a few weeks of step counts cannot separate it from the noise in daily intake.
+$X$ covers workouts; steps cover everyday walking.
 
 **Resting expenditure.** The Mifflin-St Jeor equation (Mifflin et al., 1990),
 times an activity level of 1.45, centers the priors on $c_0$ and $c_1$; both are
@@ -98,7 +112,7 @@ loss explains (Leibel et al., 1995), sometimes for years (Fothergill et al.,
 2016). Adaptation responds to the gap against expenditure without it:
 
 $$
-E_{\mathrm{base}} = c_0 + c_1 W + \mathrm{TEF} + X, \qquad
+E_{\mathrm{base}} = c_0 + c_1 T + \mathrm{TEF} + X + k_{St}\,T\,\Delta\mathrm{St}, \qquad
 D = E_{\mathrm{base}} - I, \qquad
 \dot A = \frac{-\beta_A D - A}{\tau_A},
 $$
@@ -111,12 +125,12 @@ deficit eventually loses 75 kcal/day to it, and loss slows at constant intake.
 The plateau is a property of the system, not a failure of the person in it.
 :::
 
-The intake that holds weight steady is $(c_0 + c_1 W)/(1 - \phi)$ for a thermic
-fraction $\phi$, about 11% above $c_0 + c_1 W$ at $\phi = 0.10$.
+The intake that holds weight steady is $(c_0 + c_1 T)/(1 - \phi)$ for a thermic
+fraction $\phi$, about 11% above $c_0 + c_1 T$ at $\phi = 0.10$.
 
-## Water compartments {#water}
+## Water and gut content {#water}
 
-Two first-order lags move the scale within days with no change in tissue.
+Three first-order lags move the scale within days with no change in tissue.
 
 **Glycogen water** (about 3 g of water per gram of glycogen; Olsson and Saltin,
 1970):
@@ -129,41 +143,75 @@ A sustained +250 g/day swing puts about 0.8 kg on the scale. This compartment
 explains the dramatic first week of a low-carbohydrate diet and the "relapse"
 after one large meal, and keeps that water from masquerading as fat.
 
-**Sodium water** tracks sodium load:
+**Sodium water** tracks sodium load, as the kidneys see it:
 
 $$
-\dot G_n = \frac{k_{Na}\,\Delta\mathrm{Na} - G_n}{\tau_{Na}}, \qquad
+\dot G_n = \frac{k_{Na}\,\Delta\mathrm{Na}_{\mathrm{eff}} - G_n}{\tau_{Na}}, \qquad
+\Delta\mathrm{Na}_{\mathrm{eff}} = \Delta\mathrm{Na}
+  + \xi_C \operatorname{clip}\!\left(\frac{\Delta C}{\bar C},\, -1,\, 1\right), \qquad
 \Delta\mathrm{Na} = \mathrm{Na} - \overline{\mathrm{Na}} ,
 $$
 
 with $\mathrm{Na}$ in mg/day and $\Delta\mathrm{Na} = 0$ when sodium is not
 logged. A salty restaurant meal raises the next morning's weight by roughly 0.4
-to 0.7 kg, gone within two or three days.
+to 0.7 kg, gone within two or three days. Carbohydrate below habitual intake
+makes the kidneys excrete more sodium, and the water with it: removing all
+dietary carbohydrate acts like eating $\xi_C = 4000$ mg/day less sodium, and a
+partial cut acts in proportion (Hall, 2010). $\xi_C$ is that literature value,
+held fixed, since a diet's early weeks are the only time it is visible and
+fitting it from them would confound it with the energy balance. The term is zero
+on days without a logged macronutrient split.
+
+**Gut content** follows how much is eaten, with a lag of a few days:
+
+$$
+\dot G_{\mathrm{gut}} = \frac{k_{\mathrm{gut}}\,I - G_{\mathrm{gut}}}{\tau_{\mathrm{gut}}},
+\qquad k_{\mathrm{gut}} = 0.0006\ \text{kg per kcal/day}, \quad
+\tau_{\mathrm{gut}} = 3\ \text{days},
+$$
+
+with $I$ the day's intake (expenditure on an unlogged day). A 3,000 kcal/day
+diet keeps about 1.8 kg in the gut and a 1,300 kcal/day diet about 0.8 kg, so
+starting a diet sheds about a kilogram over the first week. Without this state
+that drop is counted as tissue lost, which inflates the maintenance estimate.
+Both constants are fixed, chosen by real-data likelihood and backtest from a
+small grid around literature-scale values (0.0003 to 0.0008 kg per kcal/day;
+whole-gut transit takes one to three days); the data barely distinguish
+neighboring values. A fiber term was tried and did not help.
 
 ### The habitual-intake reference {#habitual}
 
 $\bar C$ and $\overline{\mathrm{Na}}$ are the subject's habitual, pre-diet
 intakes: by default 260 g and 4000 mg a day for men, 200 g and 3000 mg for women
-([The subject file](../configuration.md)). A diet starts with both compartments
-at their habitual fill, $G_c(0) = G_n(0) = 0$, so the drop to diet intake drains
-them in the first days: 80 g/day of carbohydrate against a habitual 260 g sends
-$G_c$ toward $-0.54$ kg. The reference is fixed rather than each episode's mean
-intake, because a mean hides that drop and moves as days are added.
+([The subject file](../configuration.md)). A diet starts with both water
+compartments believed to be at their habitual fill, $G_c(0) = G_n(0) = 0$
+(give or take 1 kg each, since pre-diet eating can leave them above it), so the
+drop to diet intake drains them in the first days: 80 g/day of carbohydrate
+against a habitual 260 g sends $G_c$ toward $-0.54$ kg and, through the kidneys,
+$G_n$ toward $k_{Na} \times 4000 \times (-180/260) \approx -0.55$ kg at the prior
+gain. The reference is fixed rather than each episode's mean intake, because a
+mean hides that drop and moves as days are added. Gut content needs no
+reference: it starts at $k_{\mathrm{gut}}$ times the weight-stable intake of the
+expenditure prior ([initial belief](estimation.md#pooling)).
 
 ## The assembled model {#assembled}
 
-With state $x = (T, F, G_c, G_n, A)$ and daily input
-$u = (I, P_g, \Delta C, F_g, A_g, \Delta\mathrm{Na}, X)$:
+With state $x = (T, F, G_c, G_n, A, G_{\mathrm{gut}})$ and daily input
+$u = (I, P_g, \Delta C, F_g, A_g, \Delta\mathrm{Na}, X, \Delta\mathrm{St})$:
 
 $$
 \begin{aligned}
 \rho_{\mathrm{eff}}\,\dot T &= I - E - \rho_G\,\dot G_c, &
 \dot F &= p\,\dot T, \\
 \dot G_c &= (k_G\,\Delta C - G_c)/\tau_G, &
-\dot G_n &= (k_{Na}\,\Delta\mathrm{Na} - G_n)/\tau_{Na}, \\
-\dot A &= \bigl(-\beta_A (E_{\mathrm{base}} - I) - A\bigr)/\tau_A .
+\dot G_n &= (k_{Na}\,\Delta\mathrm{Na}_{\mathrm{eff}} - G_n)/\tau_{Na}, \\
+\dot A &= \bigl(-\beta_A (E_{\mathrm{base}} - I) - A\bigr)/\tau_A , &
+\dot G_{\mathrm{gut}} &= (k_{\mathrm{gut}}\,I - G_{\mathrm{gut}})/\tau_{\mathrm{gut}} .
 \end{aligned}
 $$
+
+Sodium water and gut content carry no energy, so neither appears in the tissue
+equation.
 
 $\rho_G \approx 1025$ kcal/kg is the energy density of the glycogen-water
 complex (4.1 kcal/g of glycogen, diluted by 3 g of water).
@@ -188,14 +236,18 @@ $\theta = c + s\eta$.
 | `na_tau` | $\tau_{Na}$ | Sodium-water time constant | 1.0 | log, 0.40 | days | Standard physiology |
 | `partition_kappa` | $\kappa_P$ | Fat-share shift per g/kg/day of protein above 1.6 | 0.05 | normal, 0.05 | per g/kg/day | Helms et al. (2014) |
 
+Held fixed rather than estimated: the thermic-effect coefficients, the step cost
+$k_{St}$, the carbohydrate effect on sodium $\xi_C$, and the gut-content gain
+$k_{\mathrm{gut}}$ and lag $\tau_{\mathrm{gut}}$ (reasons above).
 
 ## Unlogged days and timescales {#timescales}
 
 An unlogged day assumes intake equal to expenditure, habitual carbohydrate and
-sodium, and inflated process noise ([process noise](estimation.md#process-noise)).
+sodium, and inflated process noise ([process noise](estimation.md#process-noise));
+a day without a step count assumes the episode's mean.
 
-The water compartments move in 1 to 2 days, adaptation in about 14, tissue over
-months. Instantaneous adaptation would be confounded with an error in $c_0$; the
+The water compartments move in 1 to 2 days, gut content in about 3, adaptation
+in about 14, tissue over months. Instantaneous adaptation would be confounded with an error in $c_0$; the
 transient after a change in intake is the whole basis for estimating $\beta_A$.
 
 ## The observation model {#observation}
@@ -204,11 +256,12 @@ transient after a change in intake is the whole basis for estimating $\beta_A$.
 
 $$
 y_k = H x_k + v_k, \qquad
-H = \begin{pmatrix} 1 & 0 & 1 & 1 & 0 \end{pmatrix}, \qquad
+H = \begin{pmatrix} 1 & 0 & 1 & 1 & 0 & 1 \end{pmatrix}, \qquad
 v_k \sim \mathcal{N}(0, R).
 $$
 
-$R$ is mostly fluid and gut-content variation, not instrument error: an sd near
+$R$ is mostly fluid variation and the day-to-day scatter of gut content around
+its modeled level, not instrument error: an sd near
 0.4 to 0.6 kg for consistent morning weights ([how to weigh](../data.md#weighing)),
 estimated in [phase 1](estimation.md#phase-1) and gated against typing errors
 ([noise model](estimation.md#noise-model)).

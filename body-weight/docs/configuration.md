@@ -27,6 +27,7 @@ min_protein_g_per_kg = 1.6
 # max_kcal = 6000.0
 
 [preferences]
+# protein_g_per_kg = 1.6
 # target_carb_fraction = 0.08
 # target_fat_fraction = 0.45
 ```
@@ -52,20 +53,20 @@ These build the **priors**, the starting beliefs the filter updates from your da
 
 | Key | Meaning |
 |---|---|
-| `target_weight_lb` | Goal weight, lb |
+| `target_weight_lb` | Goal weight, lb, as the scale reads it once you eat at maintenance |
 | `target_date` | The date to reach it, `"YYYY-MM-DD"` |
 
-This section selects deadline mode ([which mode runs](#mode)). `wdm plan --target-weight-lb` and `--target-date` override it for one run; to change the deadline for good, edit `target_date` here. If the goal cannot be reached within your rate limit, the plan still respects the limit, and a `NOTE` gives the earliest date that can be met ([reading the plan](reading-output.md#the-plan)).
+This section selects deadline mode ([which mode runs](#mode)). The plan aims at the tissue that reads the goal on the scale once you eat at maintenance; while you are still dieting, the gut holds less food, and glycogen and sodium water are drained, so the forecast on the goal date sits a pound or more below the goal ([the tissue target](theory/control.md#target)). `wdm plan --target-weight-lb` and `--target-date` override it for one run; to change the deadline for good, edit `target_date` here. If the goal cannot be reached by its date, within your rate limit or at your calorie floor, the plan still respects both, and a `NOTE` gives the earliest date that can be met ([reading the plan](reading-output.md#the-plan)).
 
 ## `[maintain]` {#maintain}
 
 | Key | Meaning |
 |---|---|
-| `weight_lb` | The weight to hold, lb |
+| `weight_lb` | The weight to hold, lb, as the scale reads it at maintenance |
 
 Once you reach your goal, replace `[goal]` with this section and carry on with `wdm daily` and `wdm log`; it selects maintain mode, even over a `[goal]` left in the file. The controller holds this weight with no deadline, eating near your weight-stable intake and easing back over about four weeks if the trend drifts off (under 1 lb a week for a 3 lb drift). `wdm plan --mode maintain` works without the section and holds today's settled tissue; `--target-weight-lb` sets the weight for one run. [Control](theory/control.md#maintain) has the formulation.
 
-Expect the scale to rise a pound or two in the first days of eating more carbohydrate: that is glycogen water refilling, not fat, and the model tells the two apart. The filter keeps learning during maintenance.
+Expect the scale to rise a pound or two in the first days of eating more: that is glycogen and sodium water refilling and a fuller gut, not fat, and the model tells them apart. The filter keeps learning during maintenance.
 
 ## Which mode runs {#mode}
 
@@ -80,19 +81,22 @@ Hard limits. The optimizer treats them as constraints, and an independent check 
 | `min_kcal` | Floor on prescribed intake, kcal/day | 1,500 |
 | `max_kcal` | Ceiling on prescribed intake, kcal/day | 6,000 |
 | `max_loss_frac_per_week` | Ceiling on the rate of **tissue** loss, as a fraction per week (0.01 = 1%/week); applied per day as a fraction 1/7 of this of the day's tissue | 0.01 |
-| `min_protein_g_per_kg` | Floor on protein, g per kg of body weight at the plan's start | 1.6 |
+| `min_protein_g_per_kg` | Floor on protein, g per kg of body weight at the plan's start; a lower `protein_g_per_kg` is raised to it | 1.6 |
 
 `min_kcal` must be positive and below `max_kcal`, and `max_loss_frac_per_week` must lie in (0, 0.10). The defaults are deliberately conservative. Do not lower the intake floor or raise the rate limit without talking to a doctor or dietitian.
 
 The rate limit applies to settled tissue, not scale weight, so a fast water drop is neither progress nor danger to the controller ([Control](theory/control.md#settled)).
 
-## `[preferences]`
+## `[preferences]` {#preferences}
 
 Diet style, with no principled default but yours. Nothing here is a guardrail.
 
 | Key | Meaning | Default |
 |---|---|---|
+| `protein_g_per_kg` | Protein held fixed in every plan, g per kg of body weight at the plan's start, in [0, 4]. 0 lets the optimizer choose it between `min_protein_g_per_kg` and 3.0. | 1.6 |
 | `target_carb_fraction` | Carbohydrate's share of energy to hold: 0.05 to 0.10 for keto-style, 0.20 to 0.30 for low-carb. A strongly weighted preference, not just a floor. | unset |
 | `target_fat_fraction` | Fat's share of energy to settle on when nothing else sets the split. Used only if `target_carb_fraction` is unset. | unset: the midpoint of 0.15 and the maximum fat fraction (0.75) |
 
-State one of the two. Pulling on either share moves the other, and carbohydrate is the more direct way to name most diet styles. Both have per-run overrides on `wdm plan` (`--target-carb-fraction`, `--target-fat-fraction`), along with `--carb-aversion`, `--min-carb-g` (default 20 g), and `--max-fat-fraction` (default 0.75); see [Commands](commands.md#wdm-plan).
+**Protein is fixed, not optimized.** The plan's objective scores tissue mass, and under the model's partitioning more protein keeps lean tissue, which slows the loss of mass while speeding the loss of fat ([the model](theory/model.md#partition)). An optimizer scoring mass therefore drove protein to its floor, the opposite of what keeping muscle calls for. The default, 1.6 g/kg, is about where extra protein stops measurably helping to keep lean mass in a deficit.
+
+Of the two shares, state one. Pulling on either moves the other, and carbohydrate is the more direct way to name most diet styles. All three keys have per-run overrides on `wdm plan` (`--protein-g-per-kg`, `--target-carb-fraction`, `--target-fat-fraction`), along with `--carb-aversion`, `--min-carb-g` (default 20 g), and `--max-fat-fraction` (default 0.75); see [Commands](commands.md#wdm-plan).

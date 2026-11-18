@@ -14,6 +14,7 @@ Plan (deadline mode, 155 day horizon)
   2026-10-29     2164   149    64   146    27     12    61     204.2    1.89     0.64
   ...
   ... 141 more days
+  Forecast assumes 0 kcal/day of exercise, steps +0/day from your usual, and sodium +0 mg/day from habitual (recent averages).
 
   plan written to plan.csv
 
@@ -34,7 +35,11 @@ Plan (deadline mode, 155 day horizon)
 
 **The `Today:` line is the prescription.** Every other row is what the model currently expects, and tomorrow's run replaces it: plan weeks ahead, eat one day, re-estimate, replan. The plan starts this morning while the last row is dated today, however much food it holds, so a rerun gives the same prescription for the same data ([the full rule](theory/control.md#plan-start)).
 
-`lb/wk` and `loss%/wk` disagree, especially early, because scale weight includes water that moves fast; in the first days of a diet the scale can drop several pounds a week with tissue loss well inside the limit.
+`lb/wk` and `loss%/wk` disagree, especially early, because scale weight includes water and gut content that move fast; in the first days of a diet the scale can drop several pounds a week with tissue loss well inside the limit.
+
+**The `Forecast assumes` line.** The plan prescribes food only, so its forecast holds everything else at what you have been doing: your average exercise, step count and sodium over the last 14 logged days, steps as the difference from the episode's average and sodium as the difference from your habitual intake. If you stop training or eat much more salt from tomorrow, the `pred lb` column is off accordingly, and the prescription adjusts once the weigh-ins show it. (This synthetic subject logs no exercise, steps or sodium, so all three are zero.)
+
+`pro` is the same every day: protein is fixed at `protein_g_per_kg` (1.6 g per kg of the plan's starting weight by default), not chosen by the optimizer ([why](configuration.md#preferences)).
 
 **What can appear below the plan:**
 
@@ -43,6 +48,7 @@ Plan (deadline mode, 155 day horizon)
 | `all safety constraints satisfied` | An independent check of the finished plan (not the optimizer's own word) found every limit in `[safety]` met. |
 | `CONSTRAINT VIOLATIONS (do not follow this plan)` | That check failed; the list says which limit on which day. Do not eat this plan. Loosen nothing in a hurry: rerun, and if it persists, report it. |
 | `NOTE: target of 170 lb by 2026-12-01 is not reachable within your 1%/week limit; the earliest achievable date at that maximum rate is 2027-03-07` | The deadline is too aggressive for your rate limit. The plan still respects the limit (it goes as fast as allowed); move the date in `subject.toml`, or use sustainable mode. |
+| `NOTE: target of 170 lb by 2027-03-07 is not reachable at your 1500 kcal/day floor; the model's forecast at the floor reaches it on 2027-05-20` | The rate limit allows the date, but your expenditure is too low for eating at the calorie floor every day to get there in time. The date given is the model's forecast at the floor, with the plan's protein and fat share and your recent exercise and sodium. Move the date; do not lower the floor without a doctor or dietitian. |
 | `Refusing to plan: the most recent state estimate is from ... days ago` | The current episode's last weigh-in is more than three days old. Weigh in and log it. |
 | `goal date ... has already passed` | Set a new `target_date`. |
 
@@ -103,7 +109,7 @@ Estimate as of 2026-10-28 (episode 'current')
 
 **Read the `shift` column first.** It is how far each parameter's median has moved from its prior. A shift near zero means the data have not spoken about that parameter yet, and its interval is the prior's. The parameters are defined in [the model](theory/model.md#parameters); the two `waist_` rows appear only when the file has waist readings.
 
-**Then read the state.** *Maintenance* is the energy you would spend today at your trend weight, and *weight-stable intake* the logged intake that would hold your weight steady; these combinations are much better determined than the coefficients behind them ([why](theory/estimation.md#identifiability)). *Fat mass* is weakly identified from a scale: read its trend, not its level, and expect its interval to span several kilograms. *Adaptive thermogenesis* is the expenditure your body has shed in response to the deficit so far.
+**Then read the state.** *Maintenance* is the energy you would spend today at your current tissue mass (the filtered estimate, without the water and gut content the trend weight includes, which cost no energy to maintain), and *weight-stable intake* the logged intake that would hold your weight steady; these combinations are much better determined than the coefficients behind them ([why](theory/estimation.md#identifiability)). *Fat mass* is weakly identified from a scale: read its trend, not its level, and expect its interval to span several kilograms. *Adaptive thermogenesis* is the expenditure your body has shed in response to the deficit so far.
 
 `--figures DIR` writes the filter's figures; [Latest figures](../figures.qmd) says how to read each.
 
@@ -115,8 +121,8 @@ Estimate as of 2026-10-28 (episode 'current')
 Backtest -- forecasts of the scale reading (Gaussian noise)
 
   horizon     n   bias    RMSE  persist   skill   z sd   50% cov   90% cov   log score
-    1 d      58  -0.19    1.10     1.47    +25%   0.85      43%       98%      -0.747
-    7 d      52  -0.40    1.15     2.12    +46%   0.74      54%       96%      -0.832
+    1 d      58  -0.25    1.12     1.75    +36%   0.65      66%      100%      -0.877
+    7 d      52  -0.46    1.18     2.27    +48%   0.58      65%      100%      -0.973
 ```
 
 - **`skill`** first: the RMSE improvement over persistence ("the next reading equals the last one"). A model that cannot beat persistence at a week is not earning its complexity.
@@ -124,6 +130,25 @@ Backtest -- forecasts of the scale reading (Gaussian noise)
 - **`log score`** is the mean log predictive density per reading; higher is better. It is the fair way to compare noise models (`--student-t 4` against the Gaussian default), because it rewards honest intervals as well as accurate means.
 
 The scores are mildly optimistic and the effective sample is smaller than `n` ([caveats](theory/estimation.md#backtest)).
+
+### By origin date {#by-origin}
+
+The pooled bias can hide a model that is wrong in opposite directions at different times. `wdm backtest --by-origin` adds the same scores for each horizon in 7-day bins of the date the forecast was made from:
+
+```text
+Forecast error by origin date (7-day bins; observed minus predicted)
+  ...
+  7-day forecasts
+  episode       origins                   n    bias    RMSE   mean z
+  current       2026-08-03 to 2026-08-09    6   +0.01    0.89   -0.02
+  current       2026-08-10 to 2026-08-16    4   -0.43    0.63   -0.22
+  current       2026-08-17 to 2026-08-23    6   -0.18    1.11   -0.09
+  current       2026-08-24 to 2026-08-30    6   +0.50    0.92   +0.27
+  current       2026-08-31 to 2026-09-06    6   -1.09    1.39   -0.58
+  ...
+```
+
+Bias is observed minus predicted, in lb: positive means the scale came in heavier than forecast, so the model expected more loss than happened. A sound model has bias scattered around zero, as here (the synthetic subject is simulated from the model itself). A sign that flips from one period to the next points to a structural error rather than noise: too little predicted loss in a diet's first weeks and too much later is the signature of early water or gut loss booked as tissue, which inflates the maintenance estimate. `mean z` is the bin's average standardized error; a bin with only a few forecasts says little on its own.
 
 ## The plans log
 
@@ -179,7 +204,7 @@ Roughly in order of value per unit of effort:
 9. **Log `exercise_kcal`** on training days ([Exercise energy](exercise.md)).
 10. **Vary intake deliberately.** A diet break or refeed week creates the transient that makes adaptation identifiable: for once the experimentally optimal action is the pleasant one.
 
-Leave a reading that looks wrong in the file, with a note; the outlier gate downweights it ([Missing data and outliers](data.md#missing-data-and-outliers)).
+Leave a reading that looks wrong in the file, with a note; the outlier gate downweights it. A reading you know is off for a reason the model cannot see, such as a diet's first morning after a large pre-diet meal, can be set aside with `exclude_weight` ([Missing data and outliers](data.md#missing-data-and-outliers)).
 
 ## Troubleshooting
 
@@ -189,7 +214,8 @@ Leave a reading that looks wrong in the file, with a note; the outlier gate down
 | Innovation sd well above 1 | Noise understated. Check for inconsistent weighing or a stretch of erratic logging. |
 | Weekly pattern in the innovations | Weekend eating the log misses. Log weekends more carefully rather than changing the model. |
 | Maintenance implausibly low | A drifting log bias, or real adaptation. The data cannot tell these apart; treat the estimate cautiously. |
-| The plan sits on the rate limit every day | The deadline is aggressive for your limits. Look for the `NOTE`, or use sustainable mode. |
+| The plan sits on the rate limit or the calorie floor every day | The deadline is aggressive for your limits. Look for the `NOTE`, or use sustainable mode. |
+| `--by-origin` bias changes sign between periods | A structural error that the pooled bias hides, not noise ([By origin date](#by-origin)). |
 | Fat-mass interval enormous | Expected. Read the trend, not the level. |
 | `wdm fit-noise` refuses: too few weigh-ins | Correct. Three noise scales cannot be identified from a handful of points. |
 | Warning or refusal: the state is days old | The latest episode's last weigh-in is more than three days old. Weigh in (`wdm daily`). |

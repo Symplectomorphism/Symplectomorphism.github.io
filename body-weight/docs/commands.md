@@ -110,11 +110,11 @@ wdm plan [CSV] [--config TOML] [--mode {deadline,sustainable,maintain}]
         [--horizon DAYS] [--block DAYS] [--target-weight-lb LB]
         [--target-date YYYY-MM-DD] [--max-fat-fraction FRAC]
         [--carb-aversion W] [--min-carb-g G] [--target-carb-fraction FRAC]
-        [--target-fat-fraction FRAC] [--out FILE] [--log-dir DIR]
-        [--figures DIR] [--full]
+        [--target-fat-fraction FRAC] [--protein-g-per-kg G] [--out FILE]
+        [--log-dir DIR] [--figures DIR] [--full]
 ```
 
-Runs phase 1, phase 2, and the controller, then checks the plan against every safety constraint independently of the optimizer. Prints the first 14 days, writes the whole plan to `--out`, and prints today's prescription. Theory: [Control](theory/control.md); output: [Reading the output](reading-output.md#the-plan).
+Runs phase 1, phase 2, and the controller, then checks the plan against every safety constraint independently of the optimizer. Prints the first 14 days, writes the whole plan to `--out`, and prints today's prescription. The plan prescribes food only: its forecast assumes you keep your average exercise, step count and sodium of the last 14 logged days, and says so in a line under the table. Theory: [Control](theory/control.md); output: [Reading the output](reading-output.md#the-plan).
 
 | Option | Meaning | Default |
 |---|---|---|
@@ -129,6 +129,7 @@ Runs phase 1, phase 2, and the controller, then checks the plan against every sa
 | `--min-carb-g G` | Hard floor on carbohydrate, g/day | 20 |
 | `--target-carb-fraction FRAC` | Carbohydrate's share of energy to hold (0.05 to 0.10 is keto-style); wins over the fat target | `[preferences]`, else unset |
 | `--target-fat-fraction FRAC` | Fat's share of energy when nothing else sets the split | `[preferences]`, else the midpoint of 0.15 and `--max-fat-fraction` |
+| `--protein-g-per-kg G` | Protein held fixed in every block, g per kg of the plan's starting weight (raised to `min_protein_g_per_kg` if below it); 0 lets the optimizer choose between that floor and 3.0 | `[preferences] protein_g_per_kg`, else 1.6 |
 | `--out FILE` | The plan as CSV, overwritten every run | `code/plan.csv` |
 | `--log-dir DIR` | Also archive the plan as `DIR/<start>.csv` and append it to `DIR/log.csv` | off |
 | `--figures DIR` | Write `plan.pdf` (the first 28 days) | off |
@@ -174,7 +175,7 @@ Phase 1, then phase 2: the posterior of every parameter (median, 90% interval, s
 
 ```text
 wdm backtest [CSV] [--config TOML] [--horizons DAYS [DAYS ...]]
-        [--student-t DOF] [--out FILE]
+        [--student-t DOF] [--by-origin] [--out FILE]
 ```
 
 Replays every episode day by day and scores the filter's forecasts of each weigh-in it had not yet seen, against persistence ("tomorrow equals the last reading"). Output: [The backtest](reading-output.md#the-backtest); method: [Estimation](theory/estimation.md).
@@ -183,6 +184,7 @@ Replays every episode day by day and scores the filter's forecasts of each weigh
 |---|---|---|
 | `--horizons DAYS ...` | Forecast horizons in days | `1 7` |
 | `--student-t DOF` | Use Student-t observation noise with DOF degrees of freedom in both phases, to compare with the Gaussian default by log score | off (Gaussian with a 4-sigma gate) |
+| `--by-origin` | Also print bias, RMSE and mean z of each horizon's forecasts in 7-day bins of origin date, which exposes a model wrong in opposite directions at different times ([reading it](reading-output.md#by-origin)) | off |
 | `--out FILE` | Write every scored forecast: `episode, origin, horizon, predicted_lb, sd_lb, observed_lb, persistence_lb, z` | off |
 
 ### `wdm plots`

@@ -118,40 +118,40 @@ true parameters vs the prior center
 
 first ten days ('-' = not recorded)
   date        reading   truth   kcal   pro  carb  fat  sodium  waist
-  2026-06-01        -  100.00      -     -     -    -       -   111.0
-  2026-06-02    99.75   99.76   2537   180   278   78    2527       -
-  2026-06-03    99.64   99.56   2440   180   264   74    2905       -
-  2026-06-04    99.64   99.62   2156   180   205   68    1402       -
-  2026-06-05    99.64   98.78   2056   180   172   72    2095       -
-  2026-06-06    97.83   98.30   1792   180   116   68    3290       -
-  2026-06-07    97.31   98.01   2102   180   174   76    1297       -
-  2026-06-08    97.42   97.87   2609   180   277   87    3677   108.8
-  2026-06-09    97.49   98.09   2339   180   243   72    1603       -
-  2026-06-10    98.36   98.02      -     -     -    -       -       -
+  2026-06-01        -  100.00      -     -     -    -       -   110.3
+  2026-06-02    99.50   99.51   2537   180   278   78    2527       -
+  2026-06-03    99.43   99.36   2440   180   264   74    2905       -
+  2026-06-04    99.39   99.37   2156   180   205   68    1402       -
+  2026-06-05    99.15   98.30   2056   180   172   72    2095       -
+  2026-06-06    97.13   97.60   1792   180   116   68    3290       -
+  2026-06-07    96.32   97.02   2102   180   174   76    1297       -
+  2026-06-08    96.48   96.94   2609   180   277   87    3677   108.2
+  2026-06-09    96.90   97.50   2339   180   243   72    1603       -
+  2026-06-10    97.79   97.46      -     -     -    -       -       -
 
 weigh-ins 107/120, food logs 106/120, waist readings 18
 reading minus truth: mean -0.091 kg, sd 0.410 kg (set to 0.45)
 logged intake: mean 2233 kcal/day, carb 211 g/day
 
 hidden truth, day 0 -> day 119
-  scale_kg        100.00 ->    88.22   (-11.78)
-  tissue_kg       100.00 ->    89.20   (-10.80)
-  fat_kg           30.00 ->    22.43   (-7.57)
+  scale_kg        100.00 ->    87.57   (-12.43)
+  tissue_kg        98.10 ->    87.49   (-10.62)
+  fat_kg           29.43 ->    22.02   (-7.41)
   gly_water_kg      0.00 ->    -0.73   (-0.73)
-  na_water_kg       0.00 ->    -0.24   (-0.24)
-  adapt_kcal        0.00 ->  -161.41   (-161.41)
+  na_water_kg       0.00 ->    -0.51   (-0.51)
+  adapt_kcal        0.00 ->  -158.27   (-158.27)
 ```
 
 ## What to notice
 
 - **Missing days.** 107 of 120 mornings have a weigh-in and 106 days a food log, against set rates of 85 % and 90 %, drawn independently: 2026-06-10 has a weigh-in but no food log, 2026-06-01 neither. A missing value is a missing observation, not a missing row.
 - **The truth is off the prior.** The maintenance intercept is 18 % above the prior and the mass slope 10 % below; adaptation is 47 % stronger and 21 % faster; glycogen holds 40 % more water per gram; the sodium gain (not printed; step 4 scores it) is 25 % above its prior. If the truth sat at the prior, an estimator that ignored the data would look perfect.
-- **Readings scatter around the truth.** On 2026-06-05 the scale reads 99.64 kg against a truth of 98.78 kg, +0.86 kg (1.9 standard deviations). Over all 107 readings the error has mean −0.091 kg and standard deviation 0.410 kg, a sample from the 0.45 kg set.
+- **Readings scatter around the truth.** On 2026-06-05 the scale reads 99.15 kg against a truth of 98.30 kg, +0.85 kg (1.9 standard deviations). Over all 107 readings the error has mean −0.091 kg and standard deviation 0.410 kg, a sample from the 0.45 kg set.
 - **The food log.** Protein is 180 g every day, fat 30 % of energy, and carbohydrate the rest plus a weekly ±60 g cycle (278 g on 06-02, 116 g on 06-06) that exercises the glycogen compartment. Logged energy averages 2233 kcal/day, near the target of 80 % of true day-0 maintenance, 0.80 × (1538 + 13.05 × 100) = 2274.
-- **Sodium moves the truth from day to day.** The 1402 mg on 2026-06-04 pulls sodium water toward 2.5·10⁻⁴ × (1402 − 4000) = −0.65 kg, 63 % of which lands by the next morning: the truth on 06-05 is 0.84 kg below the day before. Step 3 shows what this does to the scale's apparent noise.
-- **Both water compartments sit below zero**, because carbohydrate averages 211 g against a habitual 260 g and sodium is drawn around 3000 mg against 4000 mg. On day 119 sodium water is −0.24 kg, close to 2.5·10⁻⁴ × (3000 − 4000).
-- **The tape.** 18 weekly readings. Day 0's 111.0 cm matches 75 + 1.2 × 30.00 = 111.0 cm plus a 1.5 cm reading error.
-- **The hidden truth.** Over 120 days the scale falls 11.78 kg, tissue 10.80 kg and fat 7.57 kg (70 % of tissue); adaptation ends at −161 kcal/day. Steps 4 and 5 try to recover these.
+- **Sodium moves the truth from day to day.** The 1402 mg on 2026-06-04, with 205 g of carbohydrate (which counts as 4000 × 55/260 = 846 mg less sodium), pulls sodium water toward 2.5·10⁻⁴ × (1402 − 4000 − 846) = −0.86 kg. With a 1-day time constant 63 % of the gap closes by the next morning, so sodium water falls 0.38 kg; with 0.51 kg of glycogen water, the truth on 06-05 is 1.07 kg below the day before. Step 3 shows what this does to the scale's apparent noise.
+- **Both water compartments sit below zero**, because carbohydrate averages 211 g against a habitual 260 g and sodium is drawn around 3000 mg against 4000 mg. Sodium water averages −0.44 kg over days 30 to 119, which is 2.5·10⁻⁴ × (3000 − 4000 − 4000 × 49/260): the carbohydrate cut counts as less sodium too. On day 119 it is −0.51 kg.
+- **The tape.** 18 weekly readings. Day 0's 110.3 cm matches 75 + 1.2 × 29.43 = 110.3 cm plus a 1.5 cm reading error.
+- **The hidden truth.** The 100 kg start holds 1.90 kg of gut content, the level of pre-diet eating, so tissue starts at 98.10 kg and fat at 30 % of it. Over 120 days the scale falls 12.43 kg, tissue 10.62 kg and fat 7.41 kg (70 % of tissue); gut content falls to 1.32 kg (not printed: the scale minus the other compartments), and adaptation ends at −158 kcal/day. Steps 4 and 5 try to recover these.
 
 ## The code
 
@@ -167,7 +167,7 @@ hidden truth, day 0 -> day 119
 - The data come from the estimator's own model, so this tests the estimator, not the model; whether the model describes a person is the backtest's question (step 6).
 - The food log is exact when present. A real log's bias lands in `rmr_intercept` ([Limitations](../theory/limitations.md#drifting-bias)).
 - Reading noise is Gaussian, 0.45 kg, with no gross errors, so the filter's outlier gate is not exercised.
-- Process noise only on tissue (0.08 kg/day) and glycogen water (0.15 kg/day).
+- Process noise only on tissue (0.08 kg/day) and glycogen water (0.15 kg/day); gut content follows intake exactly, although the filter allows it 0.10 kg/day.
 - Sodium is drawn independently each day, 3000 ± 800 mg, and logged exactly; this day-to-day variation is what lets phase 2 see the sodium gain.
 - Weigh-ins and logs are missing at random. Real missing days are not: unlogged days tend to be high-intake days.
 - Waist is linear in fat mass, 75 cm + 1.2 cm/kg, read to ±1.5 cm: the form the filter assumes ([The waist](../theory/model.md#waist)).
