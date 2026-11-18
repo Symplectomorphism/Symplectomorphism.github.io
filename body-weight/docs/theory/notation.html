@@ -865,34 +865,54 @@ $$
 <td style="text-align: left;">kcal/day</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><span class="math inline">\(W\)</span></td>
-<td style="text-align: left;">Scale weight, <span class="math inline">\(T + G_c + G_n\)</span></td>
+<td style="text-align: left;"><span class="math inline">\(G_{\mathrm{gut}}\)</span></td>
+<td style="text-align: left;">Gut content: food and stool in transit</td>
 <td style="text-align: left;">kg</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;"><span class="math inline">\(x\)</span>, <span class="math inline">\(u\)</span></td>
-<td style="text-align: left;">State <span class="math inline">\((T, F, G_c, G_n, A)\)</span>; the day’s inputs</td>
-<td style="text-align: left;"></td>
+<td style="text-align: left;"><span class="math inline">\(W\)</span></td>
+<td style="text-align: left;">Scale weight, <span class="math inline">\(T + G_c + G_n + G_{\mathrm{gut}}\)</span></td>
+<td style="text-align: left;">kg</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;"><span class="math inline">\(c_0\)</span>, <span class="math inline">\(c_1\)</span></td>
-<td style="text-align: left;">Expenditure intercept (absorbs constant log bias) and mass slope</td>
-<td style="text-align: left;">kcal/day; per kg</td>
+<td style="text-align: left;"><span class="math inline">\(x\)</span>, <span class="math inline">\(u\)</span></td>
+<td style="text-align: left;">State <span class="math inline">\((T, F, G_c, G_n, A, G_{\mathrm{gut}})\)</span>; the day’s inputs</td>
+<td style="text-align: left;"></td>
 </tr>
 <tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(c_0\)</span>, <span class="math inline">\(c_1\)</span></td>
+<td style="text-align: left;">Expenditure intercept (absorbs constant log bias) and tissue-mass slope</td>
+<td style="text-align: left;">kcal/day; per kg</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(\beta_A\)</span>, <span class="math inline">\(\tau_A\)</span></td>
 <td style="text-align: left;">Adaptation gain and time constant</td>
 <td style="text-align: left;">; days</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(k_G\)</span>, <span class="math inline">\(\tau_G\)</span></td>
 <td style="text-align: left;">Glycogen-water gain and time constant</td>
 <td style="text-align: left;">kg per g/day; days</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(k_{Na}\)</span>, <span class="math inline">\(\tau_{Na}\)</span></td>
 <td style="text-align: left;">Sodium-water gain and time constant</td>
 <td style="text-align: left;">kg per mg/day; days</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\xi_C\)</span></td>
+<td style="text-align: left;">Sodium-equivalent effect of removing all carbohydrate (4000, fixed)</td>
+<td style="text-align: left;">mg/day</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(k_{\mathrm{gut}}\)</span>, <span class="math inline">\(\tau_{\mathrm{gut}}\)</span></td>
+<td style="text-align: left;">Gut-content gain (0.0006, fixed) and time constant (3, fixed)</td>
+<td style="text-align: left;">kg per kcal/day; days</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(k_{St}\)</span></td>
+<td style="text-align: left;">Energy cost of a step per kg of tissue (0.0005, fixed)</td>
+<td style="text-align: left;">kcal per step per kg</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><span class="math inline">\(\kappa_P\)</span></td>
@@ -979,9 +999,19 @@ $$
 <td style="text-align: left;">mg/day</td>
 </tr>
 <tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\Delta\mathrm{Na}_{\mathrm{eff}}\)</span></td>
+<td style="text-align: left;">Sodium deviation as the kidneys see it, carbohydrate’s effect included</td>
+<td style="text-align: left;">mg/day</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(X\)</span></td>
 <td style="text-align: left;">Logged exercise</td>
 <td style="text-align: left;">kcal/day</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\mathrm{St}\)</span>, <span class="math inline">\(\overline{\mathrm{St}}\)</span>, <span class="math inline">\(\Delta\mathrm{St}\)</span></td>
+<td style="text-align: left;">Step count; the episode’s mean; the deviation</td>
+<td style="text-align: left;">steps/day</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><span class="math inline">\(q\)</span></td>
@@ -1016,7 +1046,7 @@ $$
 </tr>
 <tr class="even">
 <td style="text-align: left;"><span class="math inline">\(H\)</span></td>
-<td style="text-align: left;">Scale observation row <span class="math inline">\((1, 0, 1, 1, 0)\)</span></td>
+<td style="text-align: left;">Scale observation row <span class="math inline">\((1, 0, 1, 1, 0, 1)\)</span></td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(R = \sigma_v^2\)</span>, <span class="math inline">\(\sigma_w\)</span></td>
@@ -1027,62 +1057,66 @@ $$
 <td style="text-align: left;">Process-noise covariance; intake spread on an unlogged day (600 kcal); an estimated day’s uncertainty</td>
 </tr>
 <tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(\sigma_{\mathrm{gut}}\)</span></td>
+<td style="text-align: left;">Daily process-noise sd of gut content (0.10 kg)</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(f\)</span>, <span class="math inline">\(g\)</span></td>
 <td style="text-align: left;">One-day step map; the vector field it integrates</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(\eta\)</span>, <span class="math inline">\(\eta_w\)</span></td>
 <td style="text-align: left;">Standardized metabolic parameters (9) and waist calibration (2)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(\theta\)</span>; <span class="math inline">\(c\)</span>, <span class="math inline">\(s\)</span></td>
 <td style="text-align: left;">Parameters in natural units; the center and scale of their prior map</td>
 </tr>
-<tr class="even">
-<td style="text-align: left;"><span class="math inline">\(z_k\)</span></td>
-<td style="text-align: left;">Augmented state <span class="math inline">\((x_k, \eta, \eta_w)\)</span>, 14 or 16 entries</td>
-</tr>
 <tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(z_k\)</span></td>
+<td style="text-align: left;">Augmented state <span class="math inline">\((x_k, \eta, \eta_w)\)</span>, 15 or 17 entries</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(\sigma_\eta\)</span></td>
 <td style="text-align: left;">Daily random-walk scale on <span class="math inline">\(\eta\)</span> (0.02 prior sigmas)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(\hat x_{k \mid j}\)</span>, <span class="math inline">\(P\)</span></td>
 <td style="text-align: left;">Estimate of <span class="math inline">\(x_k\)</span> given readings through day <span class="math inline">\(j\)</span>; a covariance</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(e_k\)</span>, <span class="math inline">\(S_k\)</span></td>
 <td style="text-align: left;">Innovation and its predicted variance</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\kappa\)</span>, <span class="math inline">\(\lambda\)</span></td>
 <td style="text-align: left;">Unscented-transform tuning (0.3, 2, 0) and its derived scaling</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(W_m\)</span>, <span class="math inline">\(W_c\)</span></td>
 <td style="text-align: left;">Sigma-point weights for the mean and covariance</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(\ell\)</span>, <span class="math inline">\(b\)</span></td>
 <td style="text-align: left;">Phase-1 trend: weight level and daily slope</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(\sigma_\ell, \sigma_b, \sigma_v\)</span></td>
 <td style="text-align: left;">Phase-1 noise sds: level, slope, observation</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(n_\sigma\)</span>, <span class="math inline">\(R_k^{\mathrm{eff}}\)</span></td>
 <td style="text-align: left;">Gate threshold (4 sds); the gated observation variance</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(\nu\)</span></td>
 <td style="text-align: left;">Student-<span class="math inline">\(t\)</span> degrees of freedom (optional noise model)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(\tau_{\mathrm{forget}}\)</span></td>
 <td style="text-align: left;">Prior-relaxation time between episodes (730 days)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;"><span class="math inline">\(h\)</span>, <span class="math inline">\(j\)</span></td>
 <td style="text-align: left;">Backtest horizon and origin day</td>
 </tr>
@@ -1117,7 +1151,15 @@ $$
 </tr>
 <tr class="even">
 <td style="text-align: left;"><span class="math inline">\(W^\star\)</span>, <span class="math inline">\(W_h\)</span></td>
-<td style="text-align: left;">Target weight (deadline mode); held weight (maintain mode)</td>
+<td style="text-align: left;">Target weight (deadline mode); held weight (maintain mode), both scale readings</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><span class="math inline">\(T^\star\)</span>, <span class="math inline">\(T_h\)</span></td>
+<td style="text-align: left;">Settled tissue that reads <span class="math inline">\(W^\star\)</span> or <span class="math inline">\(W_h\)</span> on the scale at maintenance</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><span class="math inline">\(\bar X\)</span></td>
+<td style="text-align: left;">Exercise the plan assumes (the recent average)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;"><span class="math inline">\(T_k\)</span>, <span class="math inline">\(T_H\)</span></td>

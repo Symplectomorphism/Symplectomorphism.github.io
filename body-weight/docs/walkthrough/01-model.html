@@ -836,7 +836,7 @@ $$
 </header>
 
 
-<p>The five-state model on its own: one constant low-carbohydrate diet, simulated for 16 weeks at the prior parameters, with no noise, no data and no filter. The equations are in <a href="../../../body-weight/docs/theory/model.html">The model</a>.</p>
+<p>The six-state model on its own: one constant low-carbohydrate diet, simulated for 16 weeks at the prior parameters, with no noise, no data and no filter. The equations are in <a href="../../../body-weight/docs/theory/model.html">The model</a>.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run python walkthrough/01_model.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
 <summary>
@@ -845,7 +845,7 @@ The script
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Step 1: the model on its own.</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">Simulate 16 weeks of a constant low-carbohydrate diet at the prior parameters:</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">no noise, no data, no filter. The point is to see the five states move: the</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">no noise, no data, no filter. The point is to see the six states move: the</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">scale drops fast in the first days (glycogen and sodium water), then settles</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">into slower tissue loss, which itself slows as adaptation builds.</span></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
@@ -855,116 +855,124 @@ The script
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.config <span class="im">import</span> Subject</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models <span class="im">import</span> DailyInput, Params, State, simulate, simulate_diffrax</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models.energetics <span class="im">import</span> baseline_expenditure</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models.partition <span class="im">import</span> fat_fraction</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># A 40-year-old man, 175 cm, 100 kg at 30 % body fat.</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>subj <span class="op">=</span> Subject(sex<span class="op">=</span><span class="st">"male"</span>, age_years<span class="op">=</span><span class="dv">40</span>, height_cm<span class="op">=</span><span class="fl">175.0</span>, body_fat_frac<span class="op">=</span><span class="fl">0.30</span>)</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>w0 <span class="op">=</span> <span class="fl">100.0</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>c0, c1 <span class="op">=</span> subj.expenditure_prior(w0)  <span class="co"># Mifflin-St Jeor x activity, split c0 + c1 W</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>params <span class="op">=</span> Params.prior(c0, c1)  <span class="co"># every other parameter at its literature prior</span></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>carb_ref, sodium_ref <span class="op">=</span> subj.habitual_intake()  <span class="co"># habitual 260 g carb, 4000 mg sodium</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co"># The diet, held constant every day: 180 g protein, 100 g carb, 98 g fat, 2500 mg sodium.</span></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">112</span></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>protein, carb, fat, sodium <span class="op">=</span> <span class="fl">180.0</span>, <span class="fl">100.0</span>, <span class="fl">98.0</span>, <span class="fl">2500.0</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>kcal <span class="op">=</span> <span class="dv">4</span> <span class="op">*</span> protein <span class="op">+</span> <span class="dv">4</span> <span class="op">*</span> carb <span class="op">+</span> <span class="dv">9</span> <span class="op">*</span> fat</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.constants <span class="im">import</span> GUT_KG_PER_KCAL</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models <span class="im">import</span> DailyInput, Params, State, simulate, simulate_diffrax</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models.energetics <span class="im">import</span> TEF_MIXED_DIET_FRACTION, baseline_expenditure</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models.partition <span class="im">import</span> fat_fraction</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># A 40-year-old man, 175 cm, 100 kg at 30 % body fat.</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>subj <span class="op">=</span> Subject(sex<span class="op">=</span><span class="st">"male"</span>, age_years<span class="op">=</span><span class="dv">40</span>, height_cm<span class="op">=</span><span class="fl">175.0</span>, body_fat_frac<span class="op">=</span><span class="fl">0.30</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>w0 <span class="op">=</span> <span class="fl">100.0</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>c0, c1 <span class="op">=</span> subj.expenditure_prior(w0)  <span class="co"># Mifflin-St Jeor x activity, split c0 + c1 W</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>params <span class="op">=</span> Params.prior(c0, c1)  <span class="co"># every other parameter at its literature prior</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>carb_ref, sodium_ref <span class="op">=</span> subj.habitual_intake()  <span class="co"># habitual 260 g carb, 4000 mg sodium</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># The diet, held constant every day: 180 g protein, 100 g carb, 98 g fat, 2500 mg sodium.</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">112</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>protein, carb, fat, sodium <span class="op">=</span> <span class="fl">180.0</span>, <span class="fl">100.0</span>, <span class="fl">98.0</span>, <span class="fl">2500.0</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>kcal <span class="op">=</span> <span class="dv">4</span> <span class="op">*</span> protein <span class="op">+</span> <span class="dv">4</span> <span class="op">*</span> carb <span class="op">+</span> <span class="dv">9</span> <span class="op">*</span> fat</span>
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> const(v):</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.full(n, v)</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> const(v):</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jnp.full(n, v)</span>
 <span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> DailyInput(</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    energy_kcal<span class="op">=</span>const(kcal),</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    protein_g<span class="op">=</span>const(protein),</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    carb_dev_g<span class="op">=</span>const(carb <span class="op">-</span> carb_ref),</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    fat_g<span class="op">=</span>const(fat),</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    alcohol_g<span class="op">=</span>const(<span class="fl">0.0</span>),</span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    sodium_dev_mg<span class="op">=</span>const(sodium <span class="op">-</span> sodium_ref),</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>    exercise_kcal<span class="op">=</span>const(<span class="fl">0.0</span>),</span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    intake_known<span class="op">=</span>const(<span class="fl">1.0</span>),</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    macro_known<span class="op">=</span>const(<span class="fl">1.0</span>),</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>x0 <span class="op">=</span> State(</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    tissue_kg<span class="op">=</span>jnp.asarray(w0),</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    fat_kg<span class="op">=</span>jnp.asarray(<span class="fl">0.30</span> <span class="op">*</span> w0),</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    gly_water_kg<span class="op">=</span>jnp.asarray(<span class="fl">0.0</span>),</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    na_water_kg<span class="op">=</span>jnp.asarray(<span class="fl">0.0</span>),</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    adapt_kcal<span class="op">=</span>jnp.asarray(<span class="fl">0.0</span>),</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>u0 <span class="op">=</span> jax.tree_util.tree_map(<span class="kw">lambda</span> a: a[<span class="dv">0</span>], u)  <span class="co"># day 0's input, for the printout</span></span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>e0 <span class="op">=</span> <span class="bu">float</span>(baseline_expenditure(x0, u0, params, carb_ref))</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"prior: c0 = </span><span class="sc">{</span>c0<span class="sc">:.0f}</span><span class="ss"> kcal/day, c1 = </span><span class="sc">{</span>c1<span class="sc">:.2f}</span><span class="ss"> kcal/day/kg,"</span></span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" at_gain = </span><span class="sc">{</span><span class="bu">float</span>(params.at_gain)<span class="sc">:.2f}</span><span class="ss">"</span></span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"day-0 expenditure (no adaptation) </span><span class="sc">{</span>e0<span class="sc">:.0f}</span><span class="ss"> kcal/day, intake </span><span class="sc">{</span>kcal<span class="sc">:.0f}</span><span class="ss">: gap </span><span class="sc">{</span>e0 <span class="op">-</span> kcal<span class="sc">:.0f}</span><span class="ss">"</span></span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"fat share of tissue lost on day 0: </span><span class="sc">{</span><span class="bu">float</span>(fat_fraction(x0, u0, params))<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>traj <span class="op">=</span> simulate(x0, u, params, carb_ref)  <span class="co"># state after each day, length n</span></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>s <span class="op">=</span> np.vstack([np.asarray(x0.to_vector()), np.asarray(traj.to_vector()).T])  <span class="co"># (n + 1, 5)</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>scale <span class="op">=</span> s[:, <span class="dv">0</span>] <span class="op">+</span> s[:, <span class="dv">2</span>] <span class="op">+</span> s[:, <span class="dv">3</span>]</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">" day   scale  tissue     fat  gly H2O  Na H2O   adapt   lost   of which water"</span>)</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> d <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">7</span>, <span class="dv">14</span>, <span class="dv">28</span>, <span class="dv">56</span>, <span class="dv">84</span>, <span class="dv">112</span>):</span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>    lost <span class="op">=</span> scale[<span class="dv">0</span>] <span class="op">-</span> scale[d]</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    water <span class="op">=</span> <span class="fl">0.0</span> <span class="op">-</span> (s[d, <span class="dv">2</span>] <span class="op">+</span> s[d, <span class="dv">3</span>])</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"</span><span class="sc">{</span>d<span class="sc">:4d}</span><span class="ss">  </span><span class="sc">{</span>scale[d]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">0</span>]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">1</span>]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">2</span>]<span class="sc">:+7.3f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">3</span>]<span class="sc">:+6.3f}</span><span class="ss">"</span></span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  </span><span class="sc">{</span>s[d, <span class="dv">4</span>]<span class="sc">:+6.0f}</span><span class="ss">  </span><span class="sc">{</span>lost<span class="sc">:5.2f}</span><span class="ss">   </span><span class="sc">{</span>water<span class="sc">:5.2f}</span><span class="ss">"</span></span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    <span class="st">"scale loss by week (kg): "</span></span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> <span class="st">"  "</span>.join(<span class="ss">f"w</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>scale[<span class="dv">7</span> <span class="op">*</span> (w <span class="op">-</span> <span class="dv">1</span>)] <span class="op">-</span> scale[<span class="dv">7</span> <span class="op">*</span> w]<span class="sc">:.2f}</span><span class="ss">"</span> <span class="cf">for</span> w <span class="kw">in</span> (<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">12</span>, <span class="dv">16</span>))</span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>fat_lost, tissue_lost <span class="op">=</span> s[<span class="dv">0</span>, <span class="dv">1</span>] <span class="op">-</span> s[<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>], s[<span class="dv">0</span>, <span class="dv">0</span>] <span class="op">-</span> s[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>]</span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"after </span><span class="sc">{</span>n<span class="sc">}</span><span class="ss"> days: tissue -</span><span class="sc">{</span>tissue_lost<span class="sc">:.2f}</span><span class="ss"> kg, of which fat </span><span class="sc">{</span>fat_lost<span class="sc">:.2f}</span><span class="ss"> kg"</span></span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" (</span><span class="sc">{</span>fat_lost <span class="op">/</span> tissue_lost<span class="sc">:.0%}</span><span class="ss">)"</span></span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="co"># The fast RK4 map against the adaptive Diffrax reference.</span></span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>ref <span class="op">=</span> simulate_diffrax(x0, u, params, carb_ref)</span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>err <span class="op">=</span> np.<span class="bu">max</span>(np.<span class="bu">abs</span>(np.asarray(ref.scale_kg) <span class="op">-</span> scale[<span class="dv">1</span>:]))</span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference </span><span class="sc">{</span>err <span class="op">*</span> <span class="fl">1e6</span><span class="sc">:.2f}</span><span class="ss"> mg"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> DailyInput(</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    energy_kcal<span class="op">=</span>const(kcal),</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    protein_g<span class="op">=</span>const(protein),</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    carb_dev_g<span class="op">=</span>const(carb <span class="op">-</span> carb_ref),</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    fat_g<span class="op">=</span>const(fat),</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    alcohol_g<span class="op">=</span>const(<span class="fl">0.0</span>),</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>    sodium_dev_mg<span class="op">=</span>const(sodium <span class="op">-</span> sodium_ref),</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    exercise_kcal<span class="op">=</span>const(<span class="fl">0.0</span>),</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    intake_known<span class="op">=</span>const(<span class="fl">1.0</span>),</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    macro_known<span class="op">=</span>const(<span class="fl">1.0</span>),</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Gut content starts where weight-stable pre-diet eating held it, part of the</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co"># starting weight: tissue is the rest.</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>habitual_kcal <span class="op">=</span> (c0 <span class="op">+</span> c1 <span class="op">*</span> w0) <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">-</span> TEF_MIXED_DIET_FRACTION)</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>gut0 <span class="op">=</span> GUT_KG_PER_KCAL <span class="op">*</span> habitual_kcal</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>x0 <span class="op">=</span> State(</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    tissue_kg<span class="op">=</span>jnp.asarray(w0 <span class="op">-</span> gut0),</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    fat_kg<span class="op">=</span>jnp.asarray(<span class="fl">0.30</span> <span class="op">*</span> (w0 <span class="op">-</span> gut0)),</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    gly_water_kg<span class="op">=</span>jnp.asarray(<span class="fl">0.0</span>),</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    na_water_kg<span class="op">=</span>jnp.asarray(<span class="fl">0.0</span>),</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>    adapt_kcal<span class="op">=</span>jnp.asarray(<span class="fl">0.0</span>),</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>    gut_kg<span class="op">=</span>jnp.asarray(gut0),</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>u0 <span class="op">=</span> jax.tree_util.tree_map(<span class="kw">lambda</span> a: a[<span class="dv">0</span>], u)  <span class="co"># day 0's input, for the printout</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>e0 <span class="op">=</span> <span class="bu">float</span>(baseline_expenditure(x0, u0, params, carb_ref))</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"prior: c0 = </span><span class="sc">{</span>c0<span class="sc">:.0f}</span><span class="ss"> kcal/day, c1 = </span><span class="sc">{</span>c1<span class="sc">:.2f}</span><span class="ss"> kcal/day/kg,"</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" at_gain = </span><span class="sc">{</span><span class="bu">float</span>(params.at_gain)<span class="sc">:.2f}</span><span class="ss">"</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"day-0 expenditure (no adaptation) </span><span class="sc">{</span>e0<span class="sc">:.0f}</span><span class="ss"> kcal/day, intake </span><span class="sc">{</span>kcal<span class="sc">:.0f}</span><span class="ss">: gap </span><span class="sc">{</span>e0 <span class="op">-</span> kcal<span class="sc">:.0f}</span><span class="ss">"</span></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"fat share of tissue lost on day 0: </span><span class="sc">{</span><span class="bu">float</span>(fat_fraction(x0, u0, params))<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>traj <span class="op">=</span> simulate(x0, u, params, carb_ref)  <span class="co"># state after each day, length n</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>s <span class="op">=</span> np.vstack([np.asarray(x0.to_vector()), np.asarray(traj.to_vector()).T])  <span class="co"># (n + 1, 6)</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>scale <span class="op">=</span> s[:, <span class="dv">0</span>] <span class="op">+</span> s[:, <span class="dv">2</span>] <span class="op">+</span> s[:, <span class="dv">3</span>] <span class="op">+</span> s[:, <span class="dv">5</span>]</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">" day   scale  tissue     fat  gly H2O  Na H2O     gut   adapt   lost   of which water+gut"</span>)</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> d <span class="kw">in</span> (<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">7</span>, <span class="dv">14</span>, <span class="dv">28</span>, <span class="dv">56</span>, <span class="dv">84</span>, <span class="dv">112</span>):</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>    lost <span class="op">=</span> scale[<span class="dv">0</span>] <span class="op">-</span> scale[d]</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>    transient <span class="op">=</span> (s[<span class="dv">0</span>, <span class="dv">2</span>] <span class="op">+</span> s[<span class="dv">0</span>, <span class="dv">3</span>] <span class="op">+</span> s[<span class="dv">0</span>, <span class="dv">5</span>]) <span class="op">-</span> (s[d, <span class="dv">2</span>] <span class="op">+</span> s[d, <span class="dv">3</span>] <span class="op">+</span> s[d, <span class="dv">5</span>])</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"</span><span class="sc">{</span>d<span class="sc">:4d}</span><span class="ss">  </span><span class="sc">{</span>scale[d]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">0</span>]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">1</span>]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">2</span>]<span class="sc">:+7.3f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">3</span>]<span class="sc">:+6.3f}</span><span class="ss">"</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  </span><span class="sc">{</span>s[d, <span class="dv">5</span>]<span class="sc">:6.3f}</span><span class="ss">  </span><span class="sc">{</span>s[d, <span class="dv">4</span>]<span class="sc">:+6.0f}</span><span class="ss">  </span><span class="sc">{</span>lost<span class="sc">:5.2f}</span><span class="ss">   </span><span class="sc">{</span>transient<span class="sc">:5.2f}</span><span class="ss">"</span></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>()</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    <span class="st">"scale loss by week (kg): "</span></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> <span class="st">"  "</span>.join(<span class="ss">f"w</span><span class="sc">{</span>w<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span>scale[<span class="dv">7</span> <span class="op">*</span> (w <span class="op">-</span> <span class="dv">1</span>)] <span class="op">-</span> scale[<span class="dv">7</span> <span class="op">*</span> w]<span class="sc">:.2f}</span><span class="ss">"</span> <span class="cf">for</span> w <span class="kw">in</span> (<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">12</span>, <span class="dv">16</span>))</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>fat_lost, tissue_lost <span class="op">=</span> s[<span class="dv">0</span>, <span class="dv">1</span>] <span class="op">-</span> s[<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>], s[<span class="dv">0</span>, <span class="dv">0</span>] <span class="op">-</span> s[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"after </span><span class="sc">{</span>n<span class="sc">}</span><span class="ss"> days: tissue -</span><span class="sc">{</span>tissue_lost<span class="sc">:.2f}</span><span class="ss"> kg, of which fat </span><span class="sc">{</span>fat_lost<span class="sc">:.2f}</span><span class="ss"> kg"</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" (</span><span class="sc">{</span>fat_lost <span class="op">/</span> tissue_lost<span class="sc">:.0%}</span><span class="ss">)"</span></span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a><span class="co"># The fast RK4 map against the adaptive Diffrax reference.</span></span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>ref <span class="op">=</span> simulate_diffrax(x0, u, params, carb_ref)</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>err <span class="op">=</span> np.<span class="bu">max</span>(np.<span class="bu">abs</span>(np.asarray(ref.scale_kg) <span class="op">-</span> scale[<span class="dv">1</span>:]))</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference </span><span class="sc">{</span>err <span class="op">*</span> <span class="fl">1e6</span><span class="sc">:.2f}</span><span class="ss"> mg"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <pre class="text"><code>prior: c0 = 1303 kcal/day, c1 = 14.50 kcal/day/kg, at_gain = 0.15
-day-0 expenditure (no adaptation) 2981 kcal/day, intake 2002: gap 979
-fat share of tissue lost on day 0: 0.753
+day-0 expenditure (no adaptation) 2954 kcal/day, intake 2002: gap 952
+fat share of tissue lost on day 0: 0.749
 
- day   scale  tissue     fat  gly H2O  Na H2O   adapt   lost   of which water
-   0  100.00  100.00   30.00   +0.000  +0.000      +0   0.00    0.00
-   1   99.48   99.90   29.93   -0.234  -0.190     -10   0.52    0.42
-   2   99.18   99.79   29.84   -0.353  -0.259     -19   0.82    0.61
-   3   98.98   99.68   29.76   -0.415  -0.285     -28   1.02    0.70
-   7   98.42   99.20   29.40   -0.475  -0.300     -57   1.58    0.78
-  14   97.61   98.39   28.79   -0.480  -0.300     -91   2.39    0.78
-  28   96.06   96.84   27.64   -0.480  -0.300    -122   3.94    0.78
-  56   93.15   93.93   25.51   -0.480  -0.300    -132   6.85    0.78
-  84   90.36   91.14   23.50   -0.480  -0.300    -129   9.64    0.78
- 112   87.66   88.44   21.59   -0.480  -0.300    -123  12.34    0.78
+ day   scale  tissue     fat  gly H2O  Na H2O     gut   adapt   lost   of which water+gut
+   0  100.00   98.16   29.45   +0.000  +0.000   1.835      +0   0.00    0.00
+   1   98.99   98.07   29.38   -0.234  -0.501   1.656     -10   1.01    0.91
+   2   98.45   97.96   29.30   -0.353  -0.685   1.527     -19   1.55    1.35
+   3   98.11   97.85   29.21   -0.415  -0.753   1.435     -27   1.89    1.57
+   7   97.37   97.38   28.86   -0.475  -0.792   1.263     -56   2.63    1.84
+  14   96.51   96.57   28.26   -0.480  -0.792   1.207     -89   3.49    1.90
+  28   94.98   95.05   27.13   -0.480  -0.792   1.201    -120   5.02    1.91
+  56   92.11   92.18   25.03   -0.480  -0.792   1.201    -130   7.89    1.91
+  84   89.35   89.43   23.06   -0.480  -0.792   1.201    -126  10.65    1.91
+ 112   86.69   86.76   21.19   -0.480  -0.792   1.201    -121  13.31    1.91
 
-scale loss by week (kg): w1:1.58  w2:0.82  w4:0.76  w8:0.71  w12:0.69  w16:0.67
-after 112 days: tissue -11.56 kg, of which fat 8.41 kg (73%)
-RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference 5.49 mg</code></pre>
+scale loss by week (kg): w1:2.63  w2:0.86  w4:0.75  w8:0.70  w12:0.68  w16:0.66
+after 112 days: tissue -11.40 kg, of which fat 8.26 kg (72%)
+RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference 12.81 mg</code></pre>
 <section id="what-to-notice" class="level2">
 <h2 class="anchored" data-anchor-id="what-to-notice">What to notice</h2>
 <ul>
-<li><strong>The prior.</strong> Mifflin-St Jeor scaled by an activity level of 1.45 gives c0 = 1303 kcal/day and c1 = 14.50 kcal/day per kg. Day-0 expenditure is 2981 kcal/day, so 2981 − 1303 − 14.50 × 100 = 228 kcal/day is the thermic effect of this day’s food. Against 2002 kcal eaten, the gap is 979 kcal/day.</li>
-<li><strong>The early water drop.</strong> Day 1 loses 0.52 kg, 0.42 kg of it water. Eating 100 g of carbohydrate against a habitual 260 g drains glycogen water toward gly_gain × (100 − 260) = 0.0030 × (−160) = −0.480 kg; with a 1.5-day time constant it is 86 % of the way there by day 3 (1 − e^(−2) = 0.865).</li>
-<li><strong>Sodium water is a large share of it.</strong> Water held per milligram of sodium is fixed by the extracellular concentration, so the prior gain is large: 2.0·10⁻⁴ kg per mg/day. Eating 2500 mg against a habitual 4000 mg settles at −0.300 kg, and with a 1-day time constant 63 % of that (−0.190 kg) is gone by the first morning: almost half of day 1’s water. The same gain makes one salty day visible: 3000 mg above habitual adds about 0.38 kg the next morning.</li>
-<li><strong>Then slower loss.</strong> Week 1 loses 1.58 kg, 0.78 kg of it water; week 2 loses 0.82 kg and almost no water. The weekly loss keeps shrinking, to 0.67 kg in week 16, because expenditure falls with mass (c1 × 12.34 kg ≈ 179 kcal/day by day 112) and adaptation builds.</li>
-<li><strong>Adaptation is a lagged state.</strong> A reaches −57 kcal/day after a week (time constant 14 days), peaks at −132 around day 56, then shrinks as the gap closes. It relaxes toward −at_gain × gap: at day 56 the gap is about 880 kcal/day, and 0.15 × 880 = 132.</li>
-<li><strong>What is lost.</strong> Forbes’ law at 30 kg of fat gives 0.743, and 1.8 g/kg of protein (0.2 above the 1.6 reference) adds 0.010, so the day-0 fat share is 0.753. It falls as fat falls: 8.41 kg of fat in 11.56 kg of tissue over 112 days, 73 %.</li>
-<li><strong>The integrator.</strong> The filter’s fixed-step map (RK4, four substeps a day) agrees with an adaptive Tsit5 solve to 5.49 mg over 112 days.</li>
+<li><strong>The start.</strong> The scale reads 100 kg, but 1.835 kg of that is gut content: the subject was eating the weight-stable 3059 kcal/day of the prior, (1303 + 14.50 × 100) / 0.90, and the gut holds 0.0006 kg per kcal/day eaten. Tissue starts at the remaining 98.16 kg, fat at 30 % of it, 29.45 kg.</li>
+<li><strong>The prior.</strong> Mifflin-St Jeor scaled by an activity level of 1.45 gives c0 = 1303 kcal/day and c1 = 14.50 kcal/day per kg of tissue. Day-0 expenditure is 2954 kcal/day, so 2954 − 1303 − 14.50 × 98.16 = 228 kcal/day is the thermic effect of this day’s food. Against 2002 kcal eaten, the gap is 952 kcal/day.</li>
+<li><strong>The early drop.</strong> Day 1 loses 1.01 kg, 0.91 kg of it water and gut content. Eating 100 g of carbohydrate against a habitual 260 g drains glycogen water toward gly_gain × (100 − 260) = 0.0030 × (−160) = −0.480 kg; with a 1.5-day time constant it is 86 % of the way there by day 3 (1 − e^(−2) = 0.865).</li>
+<li><strong>Sodium water is the largest share of it.</strong> Water held per milligram of sodium is fixed by the extracellular concentration, so the prior gain is large: 2.0·10⁻⁴ kg per mg/day. Eating 2500 mg against a habitual 4000 mg is −1500 mg/day, and cutting carbohydrate by 160 of 260 g makes the kidneys shed another 4000 × 160/260 = 2462 mg/day; together they settle at 2.0·10⁻⁴ × (−3962) = −0.792 kg. With a 1-day time constant 63 % of that (−0.501 kg) is gone by the first morning: more than half of day 1’s drop. The same gain makes one salty day visible: 3000 mg above habitual adds about 0.38 kg the next morning.</li>
+<li><strong>Gut content follows intake.</strong> At 2002 kcal/day it settles at 0.0006 × 2002 = 1.201 kg, 0.634 kg below where it started, with a 3-day time constant: 63 % of the way by day 3 (1.435 kg).</li>
+<li><strong>Then slower loss.</strong> Week 1 loses 2.63 kg, 1.84 kg of it water and gut content; week 2 loses 0.86 kg, only 0.06 kg of it water and gut. The weekly loss keeps shrinking, to 0.66 kg in week 16, because expenditure falls with tissue (c1 × 11.40 kg ≈ 165 kcal/day by day 112) and adaptation builds.</li>
+<li><strong>Adaptation is a lagged state.</strong> A reaches −56 kcal/day after a week (time constant 14 days), peaks at −130 around day 56, then shrinks as the gap closes. It relaxes toward −at_gain × gap: at day 56 the gap is 1303 + 14.50 × 92.18 + 228 − 2002 ≈ 866 kcal/day, and 0.15 × 866 = 130.</li>
+<li><strong>What is lost.</strong> Forbes’ law at 29.45 kg of fat gives 0.739, and 1.8 g/kg of protein (0.2 above the 1.6 reference) adds 0.010, so the day-0 fat share is 0.749. It falls as fat falls: 8.26 kg of fat in 11.40 kg of tissue over 112 days, 72 %.</li>
+<li><strong>The integrator.</strong> The filter’s fixed-step map (RK4, four substeps a day) agrees with an adaptive Tsit5 solve to 12.81 mg over 112 days.</li>
 </ul>
 </section>
 <section id="the-code" class="level2">
@@ -999,8 +1007,8 @@ RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference 5.49 mg</code></pre
 <td><code>models.energetics</code>: <code>baseline_expenditure</code>, <code>thermic_effect</code>, <code>adaptation_rate</code></td>
 </tr>
 <tr class="odd">
-<td>Water compartments</td>
-<td><code>models.glycogen</code>: <code>glycogen_rate</code>, <code>sodium_rate</code>; priors in <code>constants</code></td>
+<td>Water compartments and gut content</td>
+<td><code>models.glycogen</code>: <code>glycogen_rate</code>, <code>sodium_rate</code>, <code>effective_sodium_dev_mg</code>, <code>gut_rate</code>; priors and fixed constants in <code>constants</code></td>
 </tr>
 <tr class="even">
 <td>Fat share and energy density</td>
@@ -1016,10 +1024,10 @@ RK4 (4 substeps/day) vs adaptive Tsit5: max scale difference 5.49 mg</code></pre
 <section id="try-this" class="level2">
 <h2 class="anchored" data-anchor-id="try-this">Try this</h2>
 <ul>
-<li>Keep the energy and eat the habitual 260 g of carbohydrate instead (carb 260, fat 27): the glycogen column stays at zero, and week 1 drops 1.20 kg instead of 1.58 (the 0.30 kg of sodium water still goes). By day 112 the scale ends lower, 87.57 kg against 87.66, because carbohydrate’s thermic effect is higher than fat’s (the gap is 1013 kcal/day instead of 979).</li>
-<li>Switch adaptation off with <code>params = dataclasses.replace(Params.prior(c0, c1), at_gain=jnp.asarray(0.0))</code>. Week 16 then loses 0.77 kg instead of 0.67, and tissue falls 13.22 kg instead of 11.56 over the 112 days.</li>
-<li>Move 70 g of carbohydrate to protein (protein 250, carb 30, fat 98, the same 2002 kcal). Two effects pull against each other: the fat share rises to 0.788, so each kilogram lost carries more energy, but protein’s thermic effect widens the gap to 1028 kcal/day. Here the second wins slightly: tissue falls 11.70 kg instead of 11.56, and fat 8.92 kg instead of 8.41 (76 % of the loss). The deeper carbohydrate cut also drains more glycogen water (−0.690 kg).</li>
-<li>Set <code>sodium = 4000.0</code>, the habitual level: the sodium column stays at zero and day 1’s drop shrinks to the glycogen water and tissue alone.</li>
+<li>Keep the energy and eat the habitual 260 g of carbohydrate instead (carb 260, fat 27, 2003 kcal): the glycogen column stays at zero, sodium water stops at the −0.300 kg of the sodium cut alone, and week 1 drops 1.76 kg instead of 2.63. Tissue falls further, 11.90 kg against 11.40, because carbohydrate’s thermic effect is higher than fat’s (the gap is 986 kcal/day instead of 952), yet the scale ends higher on day 112, 87.17 kg against 86.69: the 0.97 kg more glycogen and sodium water the low-carbohydrate diet drained outweighs the extra tissue.</li>
+<li>Switch adaptation off with <code>params = dataclasses.replace(Params.prior(c0, c1), at_gain=jnp.asarray(0.0))</code>. Week 16 then loses 0.76 kg instead of 0.66, and tissue falls 13.05 kg instead of 11.40 over the 112 days.</li>
+<li>Move 70 g of carbohydrate to protein (protein 250, carb 30, fat 98, the same 2002 kcal). Two effects pull against each other: the fat share rises to 0.784, so each kilogram lost carries more energy, but protein’s thermic effect widens the gap to 1001 kcal/day. Here the second wins slightly: tissue falls 11.57 kg instead of 11.40, and fat 8.81 kg instead of 8.26 (76 % of the loss). The deeper carbohydrate cut also drains more glycogen water (−0.690 kg) and more sodium water (−1.008 kg).</li>
+<li>Set <code>sodium = 4000.0</code>, the habitual level. The sodium column no longer reaches zero: carbohydrate’s effect alone holds it at 2.0·10⁻⁴ × (−2462) = −0.492 kg, and day 1’s drop shrinks from 1.01 kg to 0.82.</li>
 </ul>
 
 

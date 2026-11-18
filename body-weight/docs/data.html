@@ -820,7 +820,7 @@ window.Quarto = {
   <li><a href="#weighing" id="toc-weighing" class="nav-link" data-scroll-target="#weighing"><code>weight_lb</code></a></li>
   <li><a href="#the-food-columns" id="toc-the-food-columns" class="nav-link" data-scroll-target="#the-food-columns">The food columns</a></li>
   <li><a href="#sodium_mg" id="toc-sodium_mg" class="nav-link" data-scroll-target="#sodium_mg"><code>sodium_mg</code></a></li>
-  <li><a href="#exercise_kcal-and-steps" id="toc-exercise_kcal-and-steps" class="nav-link" data-scroll-target="#exercise_kcal-and-steps"><code>exercise_kcal</code> and <code>steps</code></a></li>
+  <li><a href="#activity" id="toc-activity" class="nav-link" data-scroll-target="#activity"><code>exercise_kcal</code> and <code>steps</code></a></li>
   <li><a href="#waist_in" id="toc-waist_in" class="nav-link" data-scroll-target="#waist_in"><code>waist_in</code></a></li>
   <li><a href="#health-readings" id="toc-health-readings" class="nav-link" data-scroll-target="#health-readings">Health readings</a></li>
   </ul></li>
@@ -970,7 +970,7 @@ $$
 <td><code>steps</code></td>
 <td>count</td>
 <td>0 to 150,000</td>
-<td>Step count. Kept as a diagnostic, not used in the energy balance.</td>
+<td>Step count. Steps above or below the episode’s average add or remove walking energy (<a href="#activity">below</a>).</td>
 </tr>
 <tr class="odd">
 <td><code>waist_in</code></td>
@@ -1009,6 +1009,12 @@ $$
 <td>1 when the day’s food is an estimate; the filter then treats its energy as uncertain by about a quarter. <code>wdm log --estimate</code> sets it (and adds the column if the file lacks it).</td>
 </tr>
 <tr class="odd">
+<td><code>exclude_weight</code></td>
+<td>1 or blank</td>
+<td>0 to 1</td>
+<td>1 to keep the day’s weigh-in in the file but out of the model; the day’s food still counts. For a reading you know is off (<a href="#weighing">below</a>).</td>
+</tr>
+<tr class="even">
 <td><code>notes</code></td>
 <td>text</td>
 <td></td>
@@ -1034,6 +1040,7 @@ $$
 <section id="weighing" class="level3">
 <h3 class="anchored" data-anchor-id="weighing"><code>weight_lb</code></h3>
 <p><strong>Consistency matters far more than precision.</strong> Weigh under the same conditions every time: first thing in the morning, after the bathroom, before eating or drinking, same clothing (ideally none), same scale on the same spot. The day-to-day scatter is fluid, not instrument error, so this habit is worth more than a better scale. A scale that reads 1.5 lb heavy is harmless: the bias is absorbed into the initial condition. A scale used at random times of day injects noise that no filter can remove. If you weighed twice, keep the morning fasted value.</p>
+<p>A reading you know is off for a reason the model cannot see, such as a diet’s first morning after a large pre-diet meal, can be set aside without deleting it: put 1 in <code>exclude_weight</code> and say why in <code>notes</code>. The model then treats the morning as one without a weigh-in. Use it rarely, for a known cause, not for a reading you merely dislike; the filter’s outlier gate already handles typing errors. (The first weigh-in of every diet is already treated as uncertain by about 1.5 kg, because pre-diet eating leaves food, glycogen and salt water that drain over the first days.)</p>
 </section>
 <section id="the-food-columns" class="level3">
 <h3 class="anchored" data-anchor-id="the-food-columns">The food columns</h3>
@@ -1060,7 +1067,7 @@ $$
 </tr>
 <tr class="odd">
 <td><code>kcal</code> and macronutrients</td>
-<td>the full model: carbohydrate drives the glycogen-water compartment, which explains much of the day-to-day scale noise, and the protein/carb/fat split changes the thermic effect of food</td>
+<td>the full model: carbohydrate drives the glycogen-water compartment, which explains much of the day-to-day scale noise (and part of the sodium-water one), and the protein/carb/fat split changes the thermic effect of food</td>
 </tr>
 </tbody>
 </table>
@@ -1070,11 +1077,13 @@ $$
 </section>
 <section id="sodium_mg" class="level3">
 <h3 class="anchored" data-anchor-id="sodium_mg"><code>sodium_mg</code></h3>
-<p>Optional but valuable if your tracker reports it. Sodium shifts extracellular water over one to two days and is often a larger source of scale noise than carbohydrate. Supplied, it drives the sodium-water compartment: roughly 0.2 kg of water per 1,000 mg/day of sustained change, and about half a kilogram the morning after a salty restaurant meal, gone in two or three days. Left blank, the day is taken at your habitual sodium (4,000 mg by default), so estimate rather than leave it blank on days you eat out (<a href="#estimating">When you don’t know exactly</a>).</p>
+<p>Optional but valuable if your tracker reports it. Sodium shifts extracellular water over one to two days and is often a larger source of scale noise than carbohydrate. Supplied, it drives the sodium-water compartment: roughly 0.2 kg of water per 1,000 mg/day of sustained change, and about half a kilogram the morning after a salty restaurant meal, gone in two or three days. Carbohydrate moves the same compartment: eating less of it than usual makes the kidneys excrete more sodium, so the model counts a cut in carbohydrate as a cut in sodium, 4,000 mg/day for removing all of it and in proportion for a partial cut (Hall, 2010; <a href="../../body-weight/docs/theory/model.html#water">the model</a>). Left blank, the day is taken at your habitual sodium (4,000 mg by default), so estimate rather than leave it blank on days you eat out (<a href="#estimating">When you don’t know exactly</a>).</p>
 </section>
-<section id="exercise_kcal-and-steps" class="level3">
-<h3 class="anchored" data-anchor-id="exercise_kcal-and-steps"><code>exercise_kcal</code> and <code>steps</code></h3>
-<p>Both optional. Left blank, steady activity is absorbed into the estimated maintenance, which is often the more honest choice if your activity is stable. If you lift, <a href="../../body-weight/docs/exercise.html">Exercise energy</a> estimates <code>exercise_kcal</code> per session. Treat wearable calorie estimates with suspicion; they are usually noisier than food logs. If you supply both columns, only <code>exercise_kcal</code> enters the energy balance.</p>
+<section id="activity" class="level3">
+<h3 class="anchored" data-anchor-id="activity"><code>exercise_kcal</code> and <code>steps</code></h3>
+<p>Both optional, and both enter the energy balance; they cover different things. <code>exercise_kcal</code> is workouts: deliberate exercise energy above baseline, added to the day’s expenditure. If you lift, <a href="../../body-weight/docs/exercise.html">Exercise energy</a> estimates it per session. Treat wearable calorie estimates with suspicion; they are usually noisier than food logs.</p>
+<p><code>steps</code> is everyday walking, counted against your own average: each step above or below the episode’s mean step count adds or removes 0.0005 kcal per kg of body tissue, about 200 kcal/day for a 4,000-step swing at 100 kg. Your usual walking stays inside the estimated maintenance, so only the day-to-day changes are explained by steps. Do not count a walk in both columns: log a dedicated walk either as exercise or through the step count.</p>
+<p>Left blank, a day’s exercise counts as 0 and its steps as your average. Steady activity is then absorbed into the estimated maintenance, which is often the more honest choice if your activity is stable.</p>
 </section>
 <section id="waist_in" class="level3">
 <h3 class="anchored" data-anchor-id="waist_in"><code>waist_in</code></h3>
@@ -1120,6 +1129,10 @@ $$
 <tr class="even">
 <td><code>sodium_mg</code></td>
 <td>Your habitual sodium (4,000 mg by default): about a restaurant day, which is wrong for a quiet day at home</td>
+</tr>
+<tr class="odd">
+<td><code>steps</code></td>
+<td>Your average step count for the episode: no walking energy above or below the usual</td>
 </tr>
 </tbody>
 </table>
@@ -1264,6 +1277,10 @@ $$
 <tr class="odd">
 <td>A reading looks wrong</td>
 <td>Keep it and say why in <code>notes</code>; the filter’s outlier gate downweights it</td>
+</tr>
+<tr class="even">
+<td>A reading you know is off (a diet’s first morning after a large pre-diet meal)</td>
+<td>Keep it, set <code>exclude_weight</code> to 1, and say why in <code>notes</code></td>
 </tr>
 </tbody>
 </table>

@@ -862,8 +862,9 @@ $$
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># max_kcal = 6000.0</span></span>
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="kw">[preferences]</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># target_carb_fraction = 0.08</span></span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># target_fat_fraction = 0.45</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co"># protein_g_per_kg = 1.6</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="co"># target_carb_fraction = 0.08</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># target_fat_fraction = 0.45</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>A misspelled key in <code>[subject]</code>, <code>[safety]</code>, or <code>[preferences]</code> is an error, not a silent default, and every value is checked when the file is read.</p>
 <section id="subject" class="level2">
 <h2 class="anchored" data-anchor-id="subject"><code>[subject]</code></h2>
@@ -927,6 +928,10 @@ $$
 <section id="goal" class="level2">
 <h2 class="anchored" data-anchor-id="goal"><code>[goal]</code></h2>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Key</th>
@@ -936,7 +941,7 @@ $$
 <tbody>
 <tr class="odd">
 <td><code>target_weight_lb</code></td>
-<td>Goal weight, lb</td>
+<td>Goal weight, lb, as the scale reads it once you eat at maintenance</td>
 </tr>
 <tr class="even">
 <td><code>target_date</code></td>
@@ -944,11 +949,15 @@ $$
 </tr>
 </tbody>
 </table>
-<p>This section selects deadline mode (<a href="#mode">which mode runs</a>). <code>wdm plan --target-weight-lb</code> and <code>--target-date</code> override it for one run; to change the deadline for good, edit <code>target_date</code> here. If the goal cannot be reached within your rate limit, the plan still respects the limit, and a <code>NOTE</code> gives the earliest date that can be met (<a href="../../body-weight/docs/reading-output.html#the-plan">reading the plan</a>).</p>
+<p>This section selects deadline mode (<a href="#mode">which mode runs</a>). The plan aims at the tissue that reads the goal on the scale once you eat at maintenance; while you are still dieting, the gut holds less food, and glycogen and sodium water are drained, so the forecast on the goal date sits a pound or more below the goal (<a href="../../body-weight/docs/theory/control.html#target">the tissue target</a>). <code>wdm plan --target-weight-lb</code> and <code>--target-date</code> override it for one run; to change the deadline for good, edit <code>target_date</code> here. If the goal cannot be reached by its date, within your rate limit or at your calorie floor, the plan still respects both, and a <code>NOTE</code> gives the earliest date that can be met (<a href="../../body-weight/docs/reading-output.html#the-plan">reading the plan</a>).</p>
 </section>
 <section id="maintain" class="level2">
 <h2 class="anchored" data-anchor-id="maintain"><code>[maintain]</code></h2>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Key</th>
@@ -958,12 +967,12 @@ $$
 <tbody>
 <tr class="odd">
 <td><code>weight_lb</code></td>
-<td>The weight to hold, lb</td>
+<td>The weight to hold, lb, as the scale reads it at maintenance</td>
 </tr>
 </tbody>
 </table>
 <p>Once you reach your goal, replace <code>[goal]</code> with this section and carry on with <code>wdm daily</code> and <code>wdm log</code>; it selects maintain mode, even over a <code>[goal]</code> left in the file. The controller holds this weight with no deadline, eating near your weight-stable intake and easing back over about four weeks if the trend drifts off (under 1 lb a week for a 3 lb drift). <code>wdm plan --mode maintain</code> works without the section and holds today’s settled tissue; <code>--target-weight-lb</code> sets the weight for one run. <a href="../../body-weight/docs/theory/control.html#maintain">Control</a> has the formulation.</p>
-<p>Expect the scale to rise a pound or two in the first days of eating more carbohydrate: that is glycogen water refilling, not fat, and the model tells the two apart. The filter keeps learning during maintenance.</p>
+<p>Expect the scale to rise a pound or two in the first days of eating more: that is glycogen and sodium water refilling and a fuller gut, not fat, and the model tells them apart. The filter keeps learning during maintenance.</p>
 </section>
 <section id="mode" class="level2">
 <h2 class="anchored" data-anchor-id="mode">Which mode runs</h2>
@@ -1003,7 +1012,7 @@ $$
 </tr>
 <tr class="even">
 <td><code>min_protein_g_per_kg</code></td>
-<td>Floor on protein, g per kg of body weight at the plan’s start</td>
+<td>Floor on protein, g per kg of body weight at the plan’s start; a lower <code>protein_g_per_kg</code> is raised to it</td>
 <td>1.6</td>
 </tr>
 </tbody>
@@ -1029,18 +1038,24 @@ $$
 </thead>
 <tbody>
 <tr class="odd">
+<td><code>protein_g_per_kg</code></td>
+<td>Protein held fixed in every plan, g per kg of body weight at the plan’s start, in [0, 4]. 0 lets the optimizer choose it between <code>min_protein_g_per_kg</code> and 3.0.</td>
+<td>1.6</td>
+</tr>
+<tr class="even">
 <td><code>target_carb_fraction</code></td>
 <td>Carbohydrate’s share of energy to hold: 0.05 to 0.10 for keto-style, 0.20 to 0.30 for low-carb. A strongly weighted preference, not just a floor.</td>
 <td>unset</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>target_fat_fraction</code></td>
 <td>Fat’s share of energy to settle on when nothing else sets the split. Used only if <code>target_carb_fraction</code> is unset.</td>
 <td>unset: the midpoint of 0.15 and the maximum fat fraction (0.75)</td>
 </tr>
 </tbody>
 </table>
-<p>State one of the two. Pulling on either share moves the other, and carbohydrate is the more direct way to name most diet styles. Both have per-run overrides on <code>wdm plan</code> (<code>--target-carb-fraction</code>, <code>--target-fat-fraction</code>), along with <code>--carb-aversion</code>, <code>--min-carb-g</code> (default 20 g), and <code>--max-fat-fraction</code> (default 0.75); see <a href="../../body-weight/docs/commands.html#wdm-plan">Commands</a>.</p>
+<p><strong>Protein is fixed, not optimized.</strong> The plan’s objective scores tissue mass, and under the model’s partitioning more protein keeps lean tissue, which slows the loss of mass while speeding the loss of fat (<a href="../../body-weight/docs/theory/model.html#partition">the model</a>). An optimizer scoring mass therefore drove protein to its floor, the opposite of what keeping muscle calls for. The default, 1.6 g/kg, is about where extra protein stops measurably helping to keep lean mass in a deficit.</p>
+<p>Of the two shares, state one. Pulling on either moves the other, and carbohydrate is the more direct way to name most diet styles. All three keys have per-run overrides on <code>wdm plan</code> (<code>--protein-g-per-kg</code>, <code>--target-carb-fraction</code>, <code>--target-fat-fraction</code>), along with <code>--carb-aversion</code>, <code>--min-carb-g</code> (default 20 g), and <code>--max-fat-fraction</code> (default 0.75); see <a href="../../body-weight/docs/commands.html#wdm-plan">Commands</a>.</p>
 
 
 </section>

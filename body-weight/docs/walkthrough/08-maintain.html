@@ -836,7 +836,7 @@ $$
 </header>
 
 
-<p>Once a goal is reached, the question changes from “how fast” to “what intake holds this weight”. Maintain mode answers it with the deadline objective and no deadline: the reference eases tissue from where it is today to the held weight over the 28-day horizon. This step asks the controller to hold today’s tissue (the default, with no held weight set) and then a weight 3 lb below it, from the same fitted state as step 7, and compares its intake with the fitted maintenance. The theory is in <a href="../../../body-weight/docs/theory/control.html#maintain">Maintain mode</a>; the command-line equivalent is <a href="../../../body-weight/docs/commands.html#wdm-plan"><code>wdm plan --mode maintain</code></a>, or a <a href="../../../body-weight/docs/configuration.html#maintain"><code>[maintain]</code> section</a> in the subject file.</p>
+<p>Once a goal is reached, the question changes from “how fast” to “what intake holds this weight”. Maintain mode answers it with the deadline objective and no deadline: the reference eases settled tissue from where it is today to the tissue that reads the held weight on the scale at maintenance, over the 28-day horizon. This step asks the controller to hold today’s tissue (the default, with no held weight set) and then a held weight 3 lb below today’s tissue in pounds, from the same fitted state as step 7, and compares its intake with the fitted maintenance. The theory is in <a href="../../../body-weight/docs/theory/control.html#maintain">Maintain mode</a>; the command-line equivalent is <a href="../../../body-weight/docs/commands.html#wdm-plan"><code>wdm plan --mode maintain</code></a>, or a <a href="../../../body-weight/docs/configuration.html#maintain"><code>[maintain]</code> section</a> in the subject file.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run python walkthrough/08_maintain.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <details>
 <summary>
@@ -862,7 +862,7 @@ The script
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.constants <span class="im">import</span> LB_PER_KG</span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.control <span class="im">import</span> PlanSpec, check_constraints, feasibility_report, solve</span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.estimation <span class="im">import</span> fit_joint, identify_noise</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models <span class="im">import</span> NoiseModel, Params, State, inputs_from_episode, step</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.models <span class="im">import</span> N_STATES, NoiseModel, Params, State, inputs_from_episode, step</span>
 <span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> wdm.synthetic <span class="im">import</span> SyntheticSpec, make_episode</span>
 <span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>subj <span class="op">=</span> Subject(sex<span class="op">=</span><span class="st">"male"</span>, age_years<span class="op">=</span><span class="dv">40</span>, height_cm<span class="op">=</span><span class="fl">175.0</span>, body_fat_frac<span class="op">=</span><span class="fl">0.30</span>)</span>
@@ -890,7 +890,7 @@ The script
 <span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># The plan starts where step 7's does: the last filtered state, advanced a day.</span></span>
 <span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>u_last <span class="op">=</span> jax.tree_util.tree_map(<span class="kw">lambda</span> a: a[<span class="op">-</span><span class="dv">1</span>], inputs_from_episode(ep))</span>
 <span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>x0 <span class="op">=</span> step(</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    State.from_vector(fit.episodes[<span class="op">-</span><span class="dv">1</span>].filtered.filtered_mean[<span class="op">-</span><span class="dv">1</span>][:<span class="dv">5</span>]),</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    State.from_vector(fit.episodes[<span class="op">-</span><span class="dv">1</span>].filtered.filtered_mean[<span class="op">-</span><span class="dv">1</span>][:N_STATES]),</span>
 <span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    u_last,</span>
 <span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    fit.params,</span>
 <span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    ep.carb_ref_g,</span>
@@ -898,71 +898,75 @@ The script
 <span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>start <span class="op">=</span> ep.dates[<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> np.timedelta64(<span class="dv">1</span>, <span class="st">"D"</span>)</span>
 <span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>prev_kcal <span class="op">=</span> <span class="bu">float</span>(ep.energy_kcal[np.flatnonzero(ep.intake_known)[<span class="op">-</span><span class="dv">1</span>]])</span>
 <span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>w_lb <span class="op">=</span> <span class="bu">float</span>(x0.scale_kg) <span class="op">*</span> LB_PER_KG</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>lo, med, hi <span class="op">=</span> fit.maintenance_interval_kcal(w_lb)</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"plan starts </span><span class="sc">{</span>start<span class="sc">}</span><span class="ss"> at </span><span class="sc">{</span>w_lb<span class="sc">:.1f}</span><span class="ss"> lb; last logged intake </span><span class="sc">{</span>prev_kcal<span class="sc">:.0f}</span><span class="ss"> kcal"</span>)</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"fitted maintenance at </span><span class="sc">{</span>w_lb<span class="sc">:.1f}</span><span class="ss"> lb: </span><span class="sc">{</span>med<span class="sc">:.0f}</span><span class="ss"> kcal/day, 90% [</span><span class="sc">{</span>lo<span class="sc">:.0f}</span><span class="ss">, </span><span class="sc">{</span>hi<span class="sc">:.0f}</span><span class="ss">]"</span>)</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>tissue_lb <span class="op">=</span> <span class="bu">float</span>(x0.tissue_kg) <span class="op">*</span> LB_PER_KG</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>lo, med, hi <span class="op">=</span> fit.maintenance_interval_kcal(tissue_lb)  <span class="co"># expenditure scales with tissue</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"plan starts </span><span class="sc">{</span>start<span class="sc">}</span><span class="ss"> at </span><span class="sc">{</span>w_lb<span class="sc">:.1f}</span><span class="ss"> lb; last logged intake </span><span class="sc">{</span>prev_kcal<span class="sc">:.0f}</span><span class="ss"> kcal"</span>)</span>
 <span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"start: tissue </span><span class="sc">{</span><span class="bu">float</span>(x0.tissue_kg)<span class="sc">:.2f}</span><span class="ss"> kg; water: glycogen </span><span class="sc">{</span><span class="bu">float</span>(x0.gly_water_kg)<span class="sc">:+.2f}</span><span class="ss"> kg,"</span></span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" sodium </span><span class="sc">{</span><span class="bu">float</span>(x0.na_water_kg)<span class="sc">:+.2f}</span><span class="ss"> kg; adaptation </span><span class="sc">{</span><span class="bu">float</span>(x0.adapt_kcal)<span class="sc">:.0f}</span><span class="ss"> kcal/day"</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"fitted maintenance at </span><span class="sc">{</span>tissue_lb<span class="sc">:.1f}</span><span class="ss"> lb of tissue: </span><span class="sc">{</span>med<span class="sc">:.0f}</span><span class="ss"> kcal/day,"</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" 90% [</span><span class="sc">{</span>lo<span class="sc">:.0f}</span><span class="ss">, </span><span class="sc">{</span>hi<span class="sc">:.0f}</span><span class="ss">]"</span></span>
 <span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> hold(weight_lb<span class="op">=</span><span class="va">None</span>):</span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>    held <span class="op">=</span> Maintain(weight_lb<span class="op">=</span>weight_lb) <span class="cf">if</span> weight_lb <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> <span class="va">None</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>    c <span class="op">=</span> dataclasses.replace(cfg, maintain<span class="op">=</span>held)</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>    ps <span class="op">=</span> PlanSpec(mode<span class="op">=</span><span class="st">"maintain"</span>, horizon_days<span class="op">=</span><span class="dv">28</span>, block_days<span class="op">=</span><span class="dv">7</span>)  <span class="co"># as `wdm plan`</span></span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>    plan <span class="op">=</span> solve(</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>        x0, fit.params, c, ps, carb_ref_g<span class="op">=</span>ep.carb_ref_g, start_date<span class="op">=</span>start, previous_kcal<span class="op">=</span>prev_kcal</span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">== maintain </span><span class="sc">{</span><span class="ss">f'</span><span class="sc">{</span>weight_lb<span class="sc">:.1f}</span><span class="ss"> lb'</span> <span class="cf">if</span> held <span class="cf">else</span> <span class="st">'today (no held weight)'</span><span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  block from    kcal  pro  carb  fat   end lb  lb/wk  tissue kg  adapt"</span>)</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    lbs <span class="op">=</span> plan.predicted_weight_lb</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> b <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="bu">len</span>(plan.kcal), <span class="dv">7</span>):</span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        e <span class="op">=</span> b <span class="op">+</span> <span class="dv">6</span></span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        rate <span class="op">=</span> (lbs[b <span class="op">-</span> <span class="dv">1</span>] <span class="cf">if</span> b <span class="cf">else</span> w_lb) <span class="op">-</span> lbs[e]</span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  </span><span class="sc">{</span>plan<span class="sc">.</span>dates[b]<span class="sc">}</span><span class="ss">  </span><span class="sc">{</span>plan<span class="sc">.</span>kcal[b]<span class="sc">:5.0f}</span><span class="ss"> </span><span class="sc">{</span>plan<span class="sc">.</span>protein_g[b]<span class="sc">:4.0f}</span><span class="ss"> </span><span class="sc">{</span>plan<span class="sc">.</span>carb_g[b]<span class="sc">:5.0f}</span><span class="ss">"</span></span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f" </span><span class="sc">{</span>plan<span class="sc">.</span>fat_g[b]<span class="sc">:4.0f}</span><span class="ss">  </span><span class="sc">{</span>lbs[e]<span class="sc">:7.1f}</span><span class="ss">  </span><span class="sc">{</span>rate<span class="sc">:5.2f}</span><span class="ss">"</span></span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"     </span><span class="sc">{</span>plan<span class="sc">.</span>predicted_tissue_kg[e]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>plan<span class="sc">.</span>predicted_adapt_kcal[e]<span class="sc">:5.0f}</span><span class="ss">"</span></span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  converged </span><span class="sc">{</span>plan<span class="sc">.</span>converged<span class="sc">}</span><span class="ss">; constraints: </span><span class="sc">{</span>check_constraints(plan, c, ps) <span class="kw">or</span> <span class="st">'all met'</span><span class="sc">}</span><span class="ss">;"</span></span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f" feasibility report: </span><span class="sc">{</span>feasibility_report(plan, c) <span class="kw">or</span> <span class="st">'none'</span><span class="sc">}</span><span class="ss">"</span></span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> plan</span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>hold()  <span class="co"># no [maintain] weight: hold today's tissue</span></span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>hold(<span class="bu">round</span>(<span class="bu">float</span>(x0.tissue_kg) <span class="op">*</span> LB_PER_KG <span class="op">-</span> <span class="fl">3.0</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"start: tissue </span><span class="sc">{</span><span class="bu">float</span>(x0.tissue_kg)<span class="sc">:.2f}</span><span class="ss"> kg; water: glycogen </span><span class="sc">{</span><span class="bu">float</span>(x0.gly_water_kg)<span class="sc">:+.2f}</span><span class="ss"> kg,"</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f" sodium </span><span class="sc">{</span><span class="bu">float</span>(x0.na_water_kg)<span class="sc">:+.2f}</span><span class="ss"> kg; adaptation </span><span class="sc">{</span><span class="bu">float</span>(x0.adapt_kcal)<span class="sc">:.0f}</span><span class="ss"> kcal/day"</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> hold(weight_lb<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>    held <span class="op">=</span> Maintain(weight_lb<span class="op">=</span>weight_lb) <span class="cf">if</span> weight_lb <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>    c <span class="op">=</span> dataclasses.replace(cfg, maintain<span class="op">=</span>held)</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    ps <span class="op">=</span> PlanSpec(mode<span class="op">=</span><span class="st">"maintain"</span>, horizon_days<span class="op">=</span><span class="dv">28</span>, block_days<span class="op">=</span><span class="dv">7</span>)  <span class="co"># as `wdm plan`</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    plan <span class="op">=</span> solve(</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        x0, fit.params, c, ps, carb_ref_g<span class="op">=</span>ep.carb_ref_g, start_date<span class="op">=</span>start, previous_kcal<span class="op">=</span>prev_kcal</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">== maintain </span><span class="sc">{</span><span class="ss">f'</span><span class="sc">{</span>weight_lb<span class="sc">:.1f}</span><span class="ss"> lb'</span> <span class="cf">if</span> held <span class="cf">else</span> <span class="st">'today (no held weight)'</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"  block from    kcal  pro  carb  fat   end lb  lb/wk  tissue kg  adapt"</span>)</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>    lbs <span class="op">=</span> plan.predicted_weight_lb</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> b <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="bu">len</span>(plan.kcal), <span class="dv">7</span>):</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        e <span class="op">=</span> b <span class="op">+</span> <span class="dv">6</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>        rate <span class="op">=</span> (lbs[b <span class="op">-</span> <span class="dv">1</span>] <span class="cf">if</span> b <span class="cf">else</span> w_lb) <span class="op">-</span> lbs[e]</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  </span><span class="sc">{</span>plan<span class="sc">.</span>dates[b]<span class="sc">}</span><span class="ss">  </span><span class="sc">{</span>plan<span class="sc">.</span>kcal[b]<span class="sc">:5.0f}</span><span class="ss"> </span><span class="sc">{</span>plan<span class="sc">.</span>protein_g[b]<span class="sc">:4.0f}</span><span class="ss"> </span><span class="sc">{</span>plan<span class="sc">.</span>carb_g[b]<span class="sc">:5.0f}</span><span class="ss">"</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f" </span><span class="sc">{</span>plan<span class="sc">.</span>fat_g[b]<span class="sc">:4.0f}</span><span class="ss">  </span><span class="sc">{</span>lbs[e]<span class="sc">:7.1f}</span><span class="ss">  </span><span class="sc">{</span>rate<span class="sc">:5.2f}</span><span class="ss">"</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"     </span><span class="sc">{</span>plan<span class="sc">.</span>predicted_tissue_kg[e]<span class="sc">:6.2f}</span><span class="ss">  </span><span class="sc">{</span>plan<span class="sc">.</span>predicted_adapt_kcal[e]<span class="sc">:5.0f}</span><span class="ss">"</span></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  converged </span><span class="sc">{</span>plan<span class="sc">.</span>converged<span class="sc">}</span><span class="ss">; constraints: </span><span class="sc">{</span>check_constraints(plan, c, ps) <span class="kw">or</span> <span class="st">'all met'</span><span class="sc">}</span><span class="ss">;"</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f" feasibility report: </span><span class="sc">{</span>feasibility_report(plan, c) <span class="kw">or</span> <span class="st">'none'</span><span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> plan</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>hold()  <span class="co"># no [maintain] weight: hold today's tissue</span></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>hold(<span class="bu">round</span>(<span class="bu">float</span>(x0.tissue_kg) <span class="op">*</span> LB_PER_KG <span class="op">-</span> <span class="fl">3.0</span>, <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<pre class="text"><code>plan starts 2026-09-29 at 195.2 lb; last logged intake 2322 kcal
-fitted maintenance at 195.2 lb: 2740 kcal/day, 90% [2549, 2952]
-start: tissue 88.83 kg; water: glycogen -0.18 kg, sodium -0.12 kg; adaptation -135 kcal/day
+<pre class="text"><code>plan starts 2026-09-29 at 194.1 lb; last logged intake 2322 kcal
+fitted maintenance at 192.1 lb of tissue: 2699 kcal/day, 90% [2513, 2908]
+start: tissue 87.13 kg; water: glycogen -0.20 kg, sodium -0.24 kg; adaptation -125 kcal/day
 
 == maintain today (no held weight)
   block from    kcal  pro  carb  fat   end lb  lb/wk  tissue kg  adapt
-  2026-09-29   2717  142   108  191    194.5   0.63      88.78    -92
-  2026-10-06   2885  142   188  174    195.1  -0.55      88.75    -57
-  2026-10-13   2954  142   228  164    195.4  -0.35      88.77    -33
-  2026-10-20   2979  162   180  179    195.2   0.25      88.83    -19
+  2026-09-29   2698  141   136  177    193.8   0.22      87.09    -85
+  2026-10-06   2854  141   207  163    195.0  -1.12      87.06    -54
+  2026-10-13   2917  141   240  155    195.5  -0.58      87.07    -32
+  2026-10-20   2940  141   252  152    195.8  -0.27      87.11    -17
   converged True; constraints: all met; feasibility report: none
 
-== maintain 192.8 lb
+== maintain 189.1 lb
   block from    kcal  pro  carb  fat   end lb  lb/wk  tissue kg  adapt
-  2026-09-29   2469  142   163  139    194.4   0.80      88.51   -109
-  2026-10-06   2532  142   196  131    193.9   0.45      88.19    -90
-  2026-10-13   2564  142   220  124    193.5   0.48      87.89    -77
-  2026-10-20   2598  142   411   43    194.0  -0.59      87.48    -70
+  2026-09-29   2094  141   183   89    192.4   1.63      86.49   -123
+  2026-10-06   1984  141   148   92    190.2   2.22      85.76   -128
+  2026-10-13   1921  141   133   92    188.2   2.02      84.98   -133
+  2026-10-20   1883  141   130   89    186.3   1.90      84.16   -138
   converged True; constraints: all met; feasibility report: none</code></pre>
 <section id="what-to-notice" class="level2">
 <h2 class="anchored" data-anchor-id="what-to-notice">What to notice</h2>
 <ul>
-<li><strong>The starting point is step 7’s</strong>: 195.2 lb on the scale, tissue 88.83 kg, both water compartments below habitual, adaptation −135 kcal/day after four months of deficit. The fitted maintenance line, 2740 kcal/day, is c0 + c1 W alone, without adaptation or the thermic effect of food.</li>
-<li><strong>The held weight is tissue, not today’s scale reading</strong>: 88.83 kg is 195.8 lb, 0.30 kg above the scale, the drained water that refills on ordinary eating. Why the plan holds tissue is in <a href="../../../body-weight/docs/theory/control.html#maintain">Maintain mode</a>.</li>
-<li><strong>Holding today’s tissue means eating near maintenance.</strong> The plan eats 2717 to 2979 kcal and tissue stays within 0.08 kg of where it started. Intake rises because adaptation fades once the deficit ends (−92 to −19 kcal/day). By the last block expenditure is roughly 2740 − 19 plus about 248 kcal/day of thermic effect, about 2970, against 2979 eaten.</li>
-<li><strong>The scale ends below the tissue it holds</strong>, at 195.2 lb rather than 195.8, because carbohydrate stays below the habitual 260 g and glycogen water stays partly drained.</li>
-<li><strong>A drift is corrected gently.</strong> Holding 192.8 lb, 3 lb below today’s tissue, the reference covers the gap in 28 days: tissue falls about 0.7 lb a week at 2469 to 2564 kcal and ends at 87.48 kg against the 87.45 held, nowhere near the calorie floor or the rate limit.</li>
-<li><strong>The horizon’s end.</strong> Both plans change their mix in the last block (the second jumps to 411 g of carbohydrate), the same end effect as step 7: the cost tracks tissue, so the mix in the last days is nearly free.</li>
+<li><strong>The starting point is step 7’s</strong>: 194.1 lb on the scale, tissue 87.13 kg, both water compartments below habitual, adaptation −125 kcal/day after four months of deficit. The fitted maintenance line, 2699 kcal/day, is c0 + c1 T at today’s tissue alone (192.1 lb), without adaptation or the thermic effect of food, as <code>wdm filter</code> reports it.</li>
+<li><strong>With no held weight, the plan holds today’s settled tissue, not today’s scale reading</strong>: 87.13 kg is 192.1 lb, 2.0 lb below the scale. The scale also weighs gut content, about 1.35 kg here (88.04 kg on the scale, less 87.13 of tissue, plus the 0.44 kg of drained water), and that outweighs the drained water. Why the plan holds tissue is in <a href="../../../body-weight/docs/theory/control.html#maintain">Maintain mode</a>.</li>
+<li><strong>Holding today’s tissue means eating near maintenance.</strong> The plan eats 2698 to 2940 kcal and tissue stays within 0.07 kg of where it started. Intake rises because adaptation fades once the deficit ends (−85 to −17 kcal/day). By the last block expenditure is roughly 2699 (maintenance at 87.11 kg of tissue) − 17 plus about 244 kcal/day of thermic effect, about 2926, against 2940 eaten.</li>
+<li><strong>The scale ends above the tissue it holds</strong>, at 195.8 lb against 192.0, because it also weighs gut content: about 0.0006 × 2940 ≈ 1.8 kg (3.9 lb) at this intake. With carbohydrate back near the habitual 260 g, little water is left drained, so 195.8 lb is roughly what holding today’s tissue reads on the scale at maintenance.</li>
+<li><strong>A held weight is a scale reading.</strong> 189.1 lb is 3 lb below today’s tissue in pounds, but read on the scale at maintenance it means 84.00 kg of tissue: 189.1 lb (85.77 kg) less about 1.77 kg of gut content. That is 3.1 kg (6.8 lb) below today’s settled tissue (87.10 kg), so this is not a gentle 3 lb correction: the reference covers the gap in 28 days, the plan eats 1883 to 2094 kcal, the scale falls about 2 lb a week, adaptation deepens to −138 kcal/day, and tissue ends at 84.16 kg (84.07 settled) against the 84.00 held. By the last block tissue falls about 0.9 % a week, close to the 1 % limit.</li>
+<li><strong>Protein is held at 141 g</strong> in every block of both plans, 1.6 g/kg of the starting scale weight, as in step 7.</li>
 <li><strong>No feasibility report.</strong> Maintain mode has no date, so the check that flagged step 7’s impossible deadline does not run. Replanning each morning keeps easing toward the held weight, and the 1 %-per-week limit still caps any correction.</li>
 </ul>
 </section>
@@ -989,10 +993,14 @@ start: tissue 88.83 kg; water: glycogen -0.18 kg, sodium -0.12 kg; adaptation -1
 <td><code>control.mpc.PlanSpec.mode</code>, <code>config.Maintain</code></td>
 </tr>
 <tr class="odd">
+<td>The tissue a held weight sets</td>
+<td><code>control.mpc</code>: <code>tissue_at_scale_weight</code>, <code>Plan.target_tissue_kg</code></td>
+</tr>
+<tr class="even">
 <td>Fitted maintenance</td>
 <td><code>estimation.joint.JointFit.maintenance_interval_kcal</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Adaptation relaxing as the gap closes</td>
 <td><code>models.energetics.adaptation_rate</code></td>
 </tr>
@@ -1002,9 +1010,9 @@ start: tissue 88.83 kg; water: glycogen -0.18 kg, sodium -0.12 kg; adaptation -1
 <section id="try-this" class="level2">
 <h2 class="anchored" data-anchor-id="try-this">Try this</h2>
 <ul>
-<li>Hold today’s scale reading explicitly with <code>hold(round(w_lb, 1))</code> (195.2 lb): the plan then has about 0.3 kg of tissue to lose, the drained water’s worth.</li>
+<li>Hold today’s scale reading explicitly with <code>hold(round(w_lb, 1))</code> (194.1 lb). At maintenance that reading means 86.25 kg of tissue, 88.04 kg less about 1.8 kg of gut content, so the plan has about 0.85 kg of tissue to lose from today’s 87.10 kg settled: it eats 2531 to 2647 kcal and ends at 86.29 kg. A weight 3 lb below today’s scale reading, <code>hold(round(w_lb - 3.0, 1))</code> (191.1 lb), is a 4.8 lb correction in tissue, about 1.3 lb a week at 2188 to 2269 kcal.</li>
 <li>Hold 3 lb above today’s tissue instead. The plan eats above maintenance, and the rate limit, which only caps loss, plays no part.</li>
-<li>Give the 3-lb plan twice the horizon, <code>PlanSpec(mode="maintain", horizon_days=56, block_days=7)</code>: the same correction spread over eight weeks, at about half the weekly pace.</li>
+<li>Give the 189.1-lb plan twice the horizon, <code>PlanSpec(mode="maintain", horizon_days=56, block_days=7)</code>: the same correction spread over eight weeks, at about half the weekly pace.</li>
 <li>Feed the first plan to the true subject, as step 7 does with <code>simulate</code>, and see how far the posterior-mean metabolism lets the true weight drift in four weeks. Replanning every morning is what keeps that drift small in use.</li>
 </ul>
 

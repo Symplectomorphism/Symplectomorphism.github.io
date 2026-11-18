@@ -785,10 +785,14 @@ window.Quarto = {
   <li><a href="#decisions" id="toc-decisions" class="nav-link" data-scroll-target="#decisions">Decision variables</a></li>
   <li><a href="#objective" id="toc-objective" class="nav-link" data-scroll-target="#objective">The objective</a>
   <ul class="collapse">
+  <li><a href="#target" id="toc-target" class="nav-link" data-scroll-target="#target">The tissue target</a></li>
   <li><a href="#settled" id="toc-settled" class="nav-link" data-scroll-target="#settled">Settled tissue</a></li>
   <li><a href="#maintain" id="toc-maintain" class="nav-link" data-scroll-target="#maintain">Maintain mode</a></li>
   </ul></li>
-  <li><a href="#constraints" id="toc-constraints" class="nav-link" data-scroll-target="#constraints">Constraints</a></li>
+  <li><a href="#constraints" id="toc-constraints" class="nav-link" data-scroll-target="#constraints">Constraints</a>
+  <ul class="collapse">
+  <li><a href="#protein" id="toc-protein" class="nav-link" data-scroll-target="#protein">Why protein is held fixed</a></li>
+  </ul></li>
   <li><a href="#slsqp" id="toc-slsqp" class="nav-link" data-scroll-target="#slsqp">Solving</a></li>
   <li><a href="#check" id="toc-check" class="nav-link" data-scroll-target="#check">The independent check</a></li>
   <li><a href="#feasibility" id="toc-feasibility" class="nav-link" data-scroll-target="#feasibility">Infeasible goals and the earliest date</a></li>
@@ -865,7 +869,8 @@ $$
 <p><span class="math display">\[
 C = \frac{I - 4 P_g - 9 F_g}{4},
 \]</span></p>
-<p>which keeps the three choices independent. Planned days have no alcohol, sodium deviation or exercise.</p>
+<p>which keeps the three choices independent. Protein is a decision only when <code>protein_g_per_kg</code> is 0; by default it is held at 1.6 g/kg in every block (<a href="#protein">below</a>).</p>
+<p>The plan prescribes food only. Planned days have no alcohol, and hold exercise <span class="math inline">\(X\)</span>, the sodium deviation <span class="math inline">\(\Delta\mathrm{Na}\)</span> and the step deviation <span class="math inline">\(\Delta\mathrm{St}\)</span> at their averages over the last 14 logged days: the maintenance was fitted with logged exercise on top of it, so planning as if exercise stopped predicts too little loss, and planning as if sodium jumped back to habitual predicts a water rebound that only happens if that salt is eaten. <code>wdm plan</code> prints the three values it assumed.</p>
 </section>
 <section id="objective" class="level2">
 <h2 class="anchored" data-anchor-id="objective">The objective</h2>
@@ -878,7 +883,7 @@ J = w_T \bigl(T_H - r_H\bigr)^2
   + w_c \sum_{k} C_k^2
   + w_\phi \sum_{k} \bigl(\phi_k - \phi^\star\bigr)^2 .
 \]</span></p>
-<p><span class="math inline">\(T_k\)</span> is predicted settled tissue at the end of plan day <span class="math inline">\(k\)</span> (<a href="#settled">below</a>). The reference <span class="math inline">\(r_k = W_0 + \min(k/N, 1)\,(W^\star - W_0)\)</span> runs linearly from the current scale weight <span class="math inline">\(W_0\)</span> to the target <span class="math inline">\(W^\star\)</span> over the <span class="math inline">\(N\)</span> days remaining. <span class="math inline">\(\Delta I_k\)</span> is the day-to-day change in intake (<span class="math inline">\(I_0\)</span> is the last finished day’s logged intake), <span class="math inline">\(D_k = E_{\mathrm{base}} - I_k\)</span> the deficit (<a href="../../../body-weight/docs/theory/model.html#expenditure">model</a>), <span class="math inline">\(C_k\)</span> the carbohydrate prescribed, and <span class="math inline">\(\phi_k\)</span>, <span class="math inline">\(\phi^\star\)</span> a macronutrient’s energy share and its target (<a href="#macros">macros</a>).</p>
+<p><span class="math inline">\(T_k\)</span> is predicted settled tissue at the end of plan day <span class="math inline">\(k\)</span> (<a href="#settled">below</a>). The reference <span class="math inline">\(r_k = T_0 + \min(k/N, 1)\,(T^\star - T_0)\)</span> runs linearly from today’s settled tissue <span class="math inline">\(T_0\)</span> to the target tissue <span class="math inline">\(T^\star\)</span> over the <span class="math inline">\(N\)</span> days remaining (<a href="#target">below</a>). <span class="math inline">\(\Delta I_k\)</span> is the day-to-day change in intake (<span class="math inline">\(I_0\)</span> is the last finished day’s logged intake), <span class="math inline">\(D_k = E_{\mathrm{base}} - I_k\)</span> the deficit (<a href="../../../body-weight/docs/theory/model.html#expenditure">model</a>), <span class="math inline">\(C_k\)</span> the carbohydrate prescribed, and <span class="math inline">\(\phi_k\)</span>, <span class="math inline">\(\phi^\star\)</span> a macronutrient’s energy share and its target (<a href="#macros">macros</a>).</p>
 <p><strong>Sustainable mode.</strong></p>
 <p><span class="math display">\[
 J = w_p T_H + w_s \sum_k \Delta I_k^2 + w_e \sum_k D_k^2 + w_c \sum_k C_k^2
@@ -939,7 +944,15 @@ J = w_p T_H + w_s \sum_k \Delta I_k^2 + w_e \sum_k D_k^2 + w_c \sum_k C_k^2
 </tr>
 </tbody>
 </table>
-<p>Two choices close loopholes. <strong>The terminal term tracks <span class="math inline">\(r_H\)</span>, not the goal</strong>: over a horizon shorter than the time remaining, a penalty on the gap to the goal would pin intake to the calorie floor. <strong>Both objectives score tissue, not scale weight</strong>: a cost on <span class="math inline">\(W = T + G_c + G_n\)</span> can be lowered by cutting carbohydrate alone, draining <span class="math inline">\(G_c\)</span>. (The reference is still built from scale weights, so it differs from tissue by the starting water offset.)</p>
+<p>Two choices close loopholes. <strong>The terminal term tracks <span class="math inline">\(r_H\)</span>, not the goal</strong>: over a horizon shorter than the time remaining, a penalty on the gap to the goal would pin intake to the calorie floor. <strong>Both objectives score tissue, not scale weight</strong>: a cost on <span class="math inline">\(W = T + G_c + G_n + G_{\mathrm{gut}}\)</span> can be lowered by cutting carbohydrate alone, draining <span class="math inline">\(G_c\)</span> and <span class="math inline">\(G_n\)</span>, or by eating less for a few days, emptying the gut.</p>
+<section id="target" class="level3">
+<h3 class="anchored" data-anchor-id="target">The tissue target</h3>
+<p>A goal is stated as a scale reading, but the plan moves settled tissue, and the two differ by gut content: about 0.0006 kg per kcal/day eaten, some 1.5 kg at maintenance. Aiming tissue at the goal itself would leave the scale that much above it once you eat normally. The target is therefore the settled tissue that reads the goal on the scale <strong>at maintenance</strong>, with the water compartments at their habitual level and the gut holding the content of weight-stable intake:</p>
+<p><span class="math display">\[
+T^\star = W^\star - k_{\mathrm{gut}}\left(\frac{c_0 + c_1 W^\star}{1 - \phi} + \bar X\right),
+\]</span></p>
+<p>with <span class="math inline">\(\phi = 0.10\)</span> the thermic fraction and <span class="math inline">\(\bar X\)</span> the assumed exercise (<a href="#decisions">decisions</a>). <span class="math inline">\(W^\star\)</span> stands in for tissue in the mass term, an approximation good to a few kcal/day. A plan that meets its target therefore reads the goal once you eat at maintenance. While you are still dieting, the gut holds less and the scale reads <strong>below</strong> the goal by the difference, about 0.0006 kg for every kcal/day the diet is below maintenance: roughly 0.5 kg (a pound) at a 900 kcal/day deficit. Expect the scale to rise by about that much as intake returns to maintenance, together with the glycogen and sodium water that refill.</p>
+</section>
 <section id="settled" class="level3">
 <h3 class="anchored" data-anchor-id="settled">Settled tissue</h3>
 <p>Energy stored as glycogen is withheld from tissue (the <span class="math inline">\(\rho_G \dot G_c\)</span> term of the <a href="../../../body-weight/docs/theory/model.html#assembled">assembled model</a>) and handed back when glycogen drains. Scored on bare tissue, a plan could load carbohydrate in its last weeks and let the energy return to tissue after the horizon closes, and a rate limit could be loosened by draining glycogen. The controller therefore scores <strong>settled tissue</strong>, the tissue left once glycogen returns to its habitual level:</p>
@@ -950,11 +963,11 @@ T^{\mathrm{s}}_k = T_k + \frac{\rho_G}{\rho_{\mathrm{eff}}}\,G_{c,k}.
 </section>
 <section id="maintain" class="level3">
 <h3 class="anchored" data-anchor-id="maintain">Maintain mode</h3>
-<p>Once the goal is reached the question becomes what intake holds the subject there. Maintain mode uses the deadline objective with a different reference: from today’s tissue <span class="math inline">\(T_0\)</span> to the held weight <span class="math inline">\(W_h\)</span> (<code>[maintain] weight_lb</code>, or <span class="math inline">\(T_0\)</span> itself when none is set) over the horizon,</p>
+<p>Once the goal is reached the question becomes what intake holds the subject there. Maintain mode uses the deadline objective with a different reference: from today’s settled tissue <span class="math inline">\(T_0\)</span> to the tissue <span class="math inline">\(T_h\)</span> that reads the held weight <span class="math inline">\(W_h\)</span> (<code>[maintain] weight_lb</code>) on the scale at maintenance, by the <a href="#target">formula above</a>, or <span class="math inline">\(T_0\)</span> itself when no weight is set, over the horizon,</p>
 <p><span class="math display">\[
-r_k = T_0 + \frac{k}{H}\,(W_h - T_0), \qquad k = 1, \dots, H,
+r_k = T_0 + \frac{k}{H}\,(T_h - T_0), \qquad k = 1, \dots, H,
 \]</span></p>
-<p>with no goal date. Tissue is the right basis: at maintenance the water compartments refill and the scale settles at tissue, so holding “today’s weight” mid-diet, with the water drained, would cut tissue to stay there. At the held weight the reference is flat and the effort term pulls intake to the weight-stable level; a 3 lb drift is corrected over the 28-day horizon, under 1 lb a week. Every constraint still applies. Usage is in <a href="../../../body-weight/docs/configuration.html#maintain">The subject file</a>.</p>
+<p>with no goal date. Tissue is the right basis: at maintenance the water compartments refill and the scale settles at tissue plus the gut content of weight-stable eating, so holding “today’s scale reading” mid-diet, with the water drained and the gut light, would cut tissue to stay there. At the held weight the reference is flat and the effort term pulls intake to the weight-stable level; a 3 lb drift is corrected over the 28-day horizon, under 1 lb a week. Every constraint still applies. Usage is in <a href="../../../body-weight/docs/configuration.html#maintain">The subject file</a>.</p>
 </section>
 </section>
 <section id="constraints" class="level2">
@@ -984,8 +997,8 @@ r_k = T_0 + \frac{k}{H}\,(W_h - T_0), \qquad k = 1, \dots, H,
 <tr class="even">
 <td style="text-align: left;">Protein</td>
 <td style="text-align: left;"><span class="math inline">\(P_{\min} \le\)</span> g/kg of the plan’s starting weight <span class="math inline">\(\le 3.0\)</span></td>
-<td style="text-align: left;"><span class="math inline">\(P_{\min} = 1.6\)</span> (<code>min_protein_g_per_kg</code>)</td>
-<td style="text-align: left;">Box bound</td>
+<td style="text-align: left;"><span class="math inline">\(P_{\min} = 1.6\)</span> (<code>min_protein_g_per_kg</code>); held at <code>protein_g_per_kg</code> = 1.6 unless that is 0</td>
+<td style="text-align: left;">Box bound (equal bounds when held)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Fat share</td>
@@ -1022,6 +1035,10 @@ r_k = T_0 + \frac{k}{H}\,(W_h - T_0), \qquad k = 1, \dots, H,
 </div>
 </div>
 <p>The carbohydrate floor is a safety limit, distinct from the carbohydrate preference, and no value of <span class="math inline">\(w_c\)</span> crosses it.</p>
+<section id="protein" class="level3">
+<h3 class="anchored" data-anchor-id="protein">Why protein is held fixed</h3>
+<p>The objectives score tissue mass. Under the model’s partitioning, more protein raises the fat share <span class="math inline">\(p\)</span> of each kilogram lost, which raises <span class="math inline">\(\rho_{\mathrm{eff}}\)</span>: the same deficit then loses less mass, though more of it fat (<a href="../../../body-weight/docs/theory/model.html#partition">the model</a>). Left free, an optimizer scoring mass drives protein to its floor, the opposite of what keeping muscle calls for. So protein is held at <code>protein_g_per_kg</code> (<code>[preferences]</code> or <code>--protein-g-per-kg</code>; default 1.6 g/kg, about where extra protein stops measurably helping to keep lean mass in a deficit, and the reference of the protein term). A value below <span class="math inline">\(P_{\min}\)</span> is raised to it, one above 3.0 lowered to it; 0 frees protein between those bounds.</p>
+</section>
 </section>
 <section id="slsqp" class="level2">
 <h2 class="anchored" data-anchor-id="slsqp">Solving</h2>
@@ -1039,14 +1056,19 @@ T_n = T_0 \left(1 + \frac{\gamma}{7}\right)^{-n},
 \qquad
 n_{\min} = \frac{-\ln\bigl(1 - \Delta/T_0\bigr)}{\ln(1 + \gamma/7)} ,
 \]</span></p>
-<p>with <span class="math inline">\(\Delta = W_0 - W^\star\)</span> the distance to the target on the scale, assuming the water compartments end where they are now. The earliest date is <span class="math inline">\(\lceil n_{\min} \rceil\)</span> days after the plan starts (20 kg from 100 kg at 1% per week takes 157 days, not the fixed-rate 140). The message reads</p>
+<p>with <span class="math inline">\(\Delta = T_0 - T^\star\)</span> the distance to the <a href="#target">tissue target</a>, in settled tissue like the rate limit itself. The earliest date is <span class="math inline">\(\lceil n_{\min} \rceil\)</span> days after the plan starts (20 kg from 100 kg at 1% per week takes 157 days, not the fixed-rate 140). If that is after the goal date, the message reads</p>
 <blockquote class="blockquote">
 <p><code>target of &lt;W*&gt; lb by &lt;date&gt; is not reachable within your 1%/week limit; the earliest achievable date at that maximum rate is &lt;date&gt;</code></p>
 </blockquote>
+<p>The rate limit is not the only one that can bind. When the model’s expenditure is low, even the calorie floor every day cannot produce the permitted rate, so deadline mode also simulates the fastest diet allowed on energy grounds: <span class="math inline">\(I_{\min}\)</span> every day, with the plan’s first-day protein, carbohydrate at 20 g (the carbohydrate floor), the rest as fat, and the plan’s assumed exercise, sodium and steps, for up to three years. If that forecast’s settled tissue reaches <span class="math inline">\(T^\star\)</span> only after the goal date, or never, the message reads</p>
+<blockquote class="blockquote">
+<p><code>target of &lt;W*&gt; lb by &lt;date&gt; is not reachable at your &lt;I_min&gt; kcal/day floor; the model's forecast at the floor reaches it on &lt;date&gt;</code></p>
+</blockquote>
+<p>(or <code>does not reach it within 1095 days</code>). This check ignores the rate limit, which the first one covers.</p>
 </section>
 <section id="macros" class="level2">
 <h2 class="anchored" data-anchor-id="macros">Macro preferences</h2>
-<p><strong>Carbohydrate aversion.</strong> <span class="math inline">\(w_c \sum_k C_k^2\)</span> (<code>--carb-aversion W</code>, default 0) prefers less carbohydrate at every level. Since carbohydrate is the residual it works by pushing protein and fat up (<code>--max-fat-fraction</code> gives the freed energy somewhere to go), so total energy can rise: on synthetic data, raising it from 0 to 3 moved a day from 1903 kcal at 40% carbohydrate to 2250 kcal at 4%.</p>
+<p><strong>Carbohydrate aversion.</strong> <span class="math inline">\(w_c \sum_k C_k^2\)</span> (<code>--carb-aversion W</code>, default 0) prefers less carbohydrate at every level. Since carbohydrate is the residual and protein is held fixed, it works by pushing fat up (<code>--max-fat-fraction</code> gives the freed energy somewhere to go; with <code>protein_g_per_kg</code> at 0, protein rises too): on synthetic data, raising it from 0 to 3 moved a day from 1891 kcal at 34% carbohydrate and 36% fat to 1859 kcal at 4% carbohydrate and 65% fat.</p>
 <p><strong>Tie-breaker.</strong> Tissue dynamics barely distinguish one fat/carbohydrate split from another, and a flat direction makes the solver unreliable, so a weak term (<span class="math inline">\(w_\phi = 0.1\)</span>) pulls fat’s share toward the midpoint <span class="math inline">\(\bar\phi\)</span> of its bounds.</p>
 <p><strong>Target fractions.</strong> <code>target_carb_fraction</code> or <code>target_fat_fraction</code>, on the command line or under <code>[preferences]</code>, replaces <span class="math inline">\(\bar\phi\)</span> with <span class="math inline">\(w_\phi = 100\)</span>. Only one term is used: the carbohydrate target if set, then the fat target, then <span class="math inline">\(\bar\phi\)</span>. Shares are of energy (<span class="math inline">\(9F_g/I\)</span>, <span class="math inline">\(4C/I\)</span>).</p>
 </section>
@@ -1056,7 +1078,7 @@ n_{\min} = \frac{-\ln\bigl(1 - \Delta/T_0\bigr)}{\ln(1 + \gamma/7)} ,
 </section>
 <section id="behavior" class="level2">
 <h2 class="anchored" data-anchor-id="behavior">Behavior on synthetic data</h2>
-<p>On the synthetic subject (195.9 lb, maintenance near 2731 kcal/day), a reachable deadline loses 1.72 lb a week, peaking at 0.93% of tissue; the sustainable plan sits on the 1% limit, since with the default weights the optimum of progress against effort lies at or beyond it; and an impossible deadline is flagged and pushed to whichever limit binds first, here the rate limit. <a href="../../../body-weight/docs/walkthrough/07-plan.html">Walkthrough step 7</a> runs all three.</p>
+<p>On the synthetic subject (195.1 lb, maintenance near 2706 kcal/day), a reachable deadline loses 1.86 lb a week, peaking at 0.93% of tissue; the sustainable plan sits on the 1% limit, since with the default weights the optimum of progress against effort lies at or beyond it; and an impossible deadline is flagged and pushed to whichever limit binds first, here the rate limit. <a href="../../../body-weight/docs/walkthrough/07-plan.html">Walkthrough step 7</a> runs all three.</p>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>

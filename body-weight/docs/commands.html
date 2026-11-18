@@ -1101,9 +1101,9 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
         [--horizon DAYS] [--block DAYS] [--target-weight-lb LB]
         [--target-date YYYY-MM-DD] [--max-fat-fraction FRAC]
         [--carb-aversion W] [--min-carb-g G] [--target-carb-fraction FRAC]
-        [--target-fat-fraction FRAC] [--out FILE] [--log-dir DIR]
-        [--figures DIR] [--full]</code></pre>
-<p>Runs phase 1, phase 2, and the controller, then checks the plan against every safety constraint independently of the optimizer. Prints the first 14 days, writes the whole plan to <code>--out</code>, and prints today’s prescription. Theory: <a href="../../body-weight/docs/theory/control.html">Control</a>; output: <a href="../../body-weight/docs/reading-output.html#the-plan">Reading the output</a>.</p>
+        [--target-fat-fraction FRAC] [--protein-g-per-kg G] [--out FILE]
+        [--log-dir DIR] [--figures DIR] [--full]</code></pre>
+<p>Runs phase 1, phase 2, and the controller, then checks the plan against every safety constraint independently of the optimizer. Prints the first 14 days, writes the whole plan to <code>--out</code>, and prints today’s prescription. The plan prescribes food only: its forecast assumes you keep your average exercise, step count and sodium of the last 14 logged days, and says so in a line under the table. Theory: <a href="../../body-weight/docs/theory/control.html">Control</a>; output: <a href="../../body-weight/docs/reading-output.html#the-plan">Reading the output</a>.</p>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -1169,21 +1169,26 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td><code>[preferences]</code>, else the midpoint of 0.15 and <code>--max-fat-fraction</code></td>
 </tr>
 <tr class="even">
+<td><code>--protein-g-per-kg G</code></td>
+<td>Protein held fixed in every block, g per kg of the plan’s starting weight (raised to <code>min_protein_g_per_kg</code> if below it); 0 lets the optimizer choose between that floor and 3.0</td>
+<td><code>[preferences] protein_g_per_kg</code>, else 1.6</td>
+</tr>
+<tr class="odd">
 <td><code>--out FILE</code></td>
 <td>The plan as CSV, overwritten every run</td>
 <td><code>code/plan.csv</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--log-dir DIR</code></td>
 <td>Also archive the plan as <code>DIR/&lt;start&gt;.csv</code> and append it to <code>DIR/log.csv</code></td>
 <td>off</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--figures DIR</code></td>
 <td>Write <code>plan.pdf</code> (the first 28 days)</td>
 <td>off</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--full</code></td>
 <td>Print every day of the horizon, not 14</td>
 <td>off</td>
@@ -1231,14 +1236,9 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <section id="wdm-backtest" class="level3">
 <h3 class="anchored" data-anchor-id="wdm-backtest"><code>wdm backtest</code></h3>
 <pre class="text"><code>wdm backtest [CSV] [--config TOML] [--horizons DAYS [DAYS ...]]
-        [--student-t DOF] [--out FILE]</code></pre>
+        [--student-t DOF] [--by-origin] [--out FILE]</code></pre>
 <p>Replays every episode day by day and scores the filter’s forecasts of each weigh-in it had not yet seen, against persistence (“tomorrow equals the last reading”). Output: <a href="../../body-weight/docs/reading-output.html#the-backtest">The backtest</a>; method: <a href="../../body-weight/docs/theory/estimation.html">Estimation</a>.</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
-</colgroup>
 <thead>
 <tr class="header">
 <th>Option</th>
@@ -1258,6 +1258,11 @@ COMMAND: daily, log (eat), plan, validate, fit-noise, filter, backtest,
 <td>off (Gaussian with a 4-sigma gate)</td>
 </tr>
 <tr class="odd">
+<td><code>--by-origin</code></td>
+<td>Also print bias, RMSE and mean z of each horizon’s forecasts in 7-day bins of origin date, which exposes a model wrong in opposite directions at different times (<a href="../../body-weight/docs/reading-output.html#by-origin">reading it</a>)</td>
+<td>off</td>
+</tr>
+<tr class="even">
 <td><code>--out FILE</code></td>
 <td>Write every scored forecast: <code>episode, origin, horizon, predicted_lb, sd_lb, observed_lb, persistence_lb, z</code></td>
 <td>off</td>

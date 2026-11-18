@@ -862,16 +862,17 @@ x_{k+1} = f(x_k, u_k) = x_k + \int_0^1 g\bigl(x(s), u_k\bigr)\,\mathrm{d}s ,
 <h2 class="anchored" data-anchor-id="process-noise">Process noise</h2>
 <p>Process noise stands for unlogged snacks, log error and activity changes:</p>
 <p><span class="math display">\[
-Q_k = \operatorname{diag}(\sigma_T^2, \sigma_F^2, \sigma_G^2, \sigma_N^2, \sigma_A^2)
+Q_k = \operatorname{diag}(\sigma_T^2, \sigma_F^2, \sigma_G^2, \sigma_N^2, \sigma_A^2, \sigma_{\mathrm{gut}}^2)
     + \bigl[(1 - m_k)\,\sigma_I^2 + m_k\, s_k^2\bigr]\, b b^{\top},
 \qquad
-b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0)^{\top},
+b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0, 0)^{\top},
 \]</span></p>
-<p>where <span class="math inline">\(m_k\)</span> marks a food log, <span class="math inline">\(\sigma_I = 600\)</span> kcal/day is the intake spread on an unlogged day, and <span class="math inline">\(s_k\)</span> is a quarter of the energy of a day logged as an <a href="../../../body-weight/docs/data.html#estimating">estimate</a> (zero otherwise). The inflation is rank one because an unknown intake moves tissue and fat together.</p>
+<p>where <span class="math inline">\(m_k\)</span> marks a food log, <span class="math inline">\(\sigma_I = 600\)</span> kcal/day is the intake spread on an unlogged day, and <span class="math inline">\(s_k\)</span> is a quarter of the energy of a day logged as an <a href="../../../body-weight/docs/data.html#estimating">estimate</a> (zero otherwise). The inflation is rank one because an unknown intake moves tissue and fat together. <span class="math inline">\(\sigma_{\mathrm{gut}} =
+0.10\)</span> kg/day is the day-to-day randomness of gut content (meal and bowel timing) beyond what intake explains.</p>
 </section>
 <section id="missing-data" class="level2">
 <h2 class="anchored" data-anchor-id="missing-data">Missing data and episodes</h2>
-<p>A missing weigh-in skips the update, which for data missing at random costs precision but adds no bias (Durbin and Koopman, 2012). Separate diet attempts (episodes) share the metabolism but not the state (<a href="#pooling">pooling</a>).</p>
+<p>A missing weigh-in skips the update, which for data missing at random costs precision but adds no bias (Durbin and Koopman, 2012). A weigh-in flagged <code>exclude_weight</code> is treated the same way (<a href="../../../body-weight/docs/data.html#weighing">data</a>). Separate diet attempts (episodes) share the metabolism but not the state (<a href="#pooling">pooling</a>).</p>
 </section>
 <section id="filter" class="level2">
 <h2 class="anchored" data-anchor-id="filter">The filter</h2>
@@ -892,15 +893,15 @@ b = \frac{1}{\rho_{\mathrm{eff}}}\,(1, p, 0, 0, 0)^{\top},
   \begin{pmatrix} \ell_k \\ b_k \end{pmatrix} + w_k,
 \qquad y_k = \ell_k + v_k,
 \]</span></p>
-<p>by maximum likelihood over <span class="math inline">\((\sigma_\ell, \sigma_b, \sigma_v)\)</span>, on every episode, logged or not. Phase 2 takes <span class="math inline">\(\sigma_v\)</span> from it. The fit also reports the steady-state gain, the fraction of each surprise the filter acts on, whose reciprocal is the effective averaging window in days. On the synthetic subject it finds <span class="math inline">\(\sigma_v = 0.488\)</span> kg against a true 0.45 (<a href="../../../body-weight/docs/walkthrough/03-phase1.html">walkthrough step 3</a>).</p>
+<p>by maximum likelihood over <span class="math inline">\((\sigma_\ell, \sigma_b, \sigma_v)\)</span>, on every episode, logged or not. Phase 2 takes <span class="math inline">\(\sigma_v\)</span> from it. The fit also reports the steady-state gain, the fraction of each surprise the filter acts on, whose reciprocal is the effective averaging window in days. On the synthetic subject it finds <span class="math inline">\(\sigma_v = 0.615\)</span> kg against a true 0.45 (<a href="../../../body-weight/docs/walkthrough/03-phase1.html">walkthrough step 3</a>).</p>
 </section>
 <section id="phase-2" class="level2">
 <h2 class="anchored" data-anchor-id="phase-2">Phase 2: joint state and parameter estimation</h2>
 <p>Phase 2 appends the parameters to the state and filters everything together:</p>
 <p><span class="math display">\[
-z_k = \bigl(\underbrace{T, F, G_c, G_n, A}_{x_k},\;
+z_k = \bigl(\underbrace{T, F, G_c, G_n, A, G_{\mathrm{gut}}}_{x_k},\;
             \underbrace{\eta}_{\in \mathbb{R}^9},\;
-            \underbrace{\eta_w}_{\in \mathbb{R}^2}\bigr) \in \mathbb{R}^{16}.
+            \underbrace{\eta_w}_{\in \mathbb{R}^2}\bigr) \in \mathbb{R}^{17}.
 \]</span></p>
 <p>The waist block exists only when some episode has a waist reading.</p>
 <section id="reparameterization" class="level3">
@@ -914,7 +915,7 @@ z_k = \bigl(\underbrace{T, F, G_c, G_n, A}_{x_k},\;
 </section>
 <section id="pooling" class="level3">
 <h3 class="anchored" data-anchor-id="pooling">Pooling across episodes</h3>
-<p>Each episode starts from its first weigh-in, with fat from the configured body-fat fraction or the Deurenberg et al.&nbsp;(1991) prediction. The parameter posterior carries forward as the next episode’s prior, its covariance relaxed toward the prior across the gap <span class="math inline">\(\Delta t\)</span> (days):</p>
+<p>Each episode starts from its first weigh-in <span class="math inline">\(y_0\)</span>. Gut content starts at the level of pre-diet eating, <span class="math inline">\(G_{\mathrm{gut}}(0) = k_{\mathrm{gut}}\)</span> times the weight-stable intake of the expenditure prior, and tissue at <span class="math inline">\(y_0\)</span> minus that; fat is the configured body-fat fraction of tissue, or the Deurenberg et al. (1991) prediction. The first weigh-in of a diet is the least reliable reading of tissue: pre-diet eating leaves gut content, glycogen and salt water above their habitual levels by an unknown amount that drains over the first days. So the initial belief gives tissue <span class="math inline">\(\pm 1.5\)</span> kg beyond the reading’s own noise, each water compartment <span class="math inline">\(0 \pm 1\)</span> kg, gut content <span class="math inline">\(\pm 0.4\)</span> kg, fat <span class="math inline">\(\pm 4\)</span> kg (about the Deurenberg standard error) and adaptation <span class="math inline">\(0 \pm 5\)</span> kcal/day, so that the early drop can be explained as water rather than forced into tissue, which inflated the maintenance estimate. The widths were chosen by real-data likelihood and backtest; wider still stopped helping. The parameter posterior carries forward as the next episode’s prior, its covariance relaxed toward the prior across the gap <span class="math inline">\(\Delta t\)</span> (days):</p>
 <p><span class="math display">\[
 P_\eta \leftarrow (1 - w) P_\eta + w P_\eta^{\mathrm{prior}},
 \qquad w = 1 - e^{-\Delta t / \tau_{\mathrm{forget}}},
@@ -934,17 +935,12 @@ R_k^{\mathrm{eff}} = R \cdot
 </section>
 <section id="waist-update" class="level2">
 <h2 class="anchored" data-anchor-id="waist-update">The waist update</h2>
-<p>The tape prediction <span class="math inline">\(a_w + b_w F\)</span> multiplies two uncertain entries, so its update is unscented, after the scale update. Between two readings, <span class="math inline">\(\Delta y^w \approx b_w\, p\, \Delta W\)</span>, so the data constrain only the product <span class="math inline">\(b_w p\)</span>: a 20% error in the fat share can hide behind a 20% error in the slope. What the tape adds is an independent anchor for the fat level, <span class="math inline">\(F = (y^w - a_w)/b_w\)</span>; on the synthetic subject it narrows the fat-mass interval by 10% (<a href="../../../body-weight/docs/walkthrough/05-waist.html">walkthrough step 5</a>).</p>
+<p>The tape prediction <span class="math inline">\(a_w + b_w F\)</span> multiplies two uncertain entries, so its update is unscented, after the scale update. Between two readings, <span class="math inline">\(\Delta y^w \approx b_w\, p\, \Delta W\)</span>, so the data constrain only the product <span class="math inline">\(b_w p\)</span>: a 20% error in the fat share can hide behind a 20% error in the slope. What the tape adds is an independent anchor for the fat level, <span class="math inline">\(F = (y^w - a_w)/b_w\)</span>; on the synthetic subject it narrows the fat-mass interval by 11% (<a href="../../../body-weight/docs/walkthrough/05-waist.html">walkthrough step 5</a>).</p>
 </section>
 <section id="identifiability" class="level2">
 <h2 class="anchored" data-anchor-id="identifiability">Identifiability</h2>
 <p>Read this before quoting any parameter.</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 23%">
-<col style="width: 23%">
-<col style="width: 53%">
-</colgroup>
 <thead>
 <tr class="header">
 <th style="text-align: left;">Status</th>
@@ -955,7 +951,7 @@ R_k^{\mathrm{eff}} = R \cdot
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Well identified</td>
-<td style="text-align: left;">Maintenance <span class="math inline">\(c_0 + c_1 W\)</span></td>
+<td style="text-align: left;">Maintenance <span class="math inline">\(c_0 + c_1 T\)</span></td>
 <td style="text-align: left;">Each coefficient is wide over one dataset’s narrow mass range, but their combination is well determined.</td>
 </tr>
 <tr class="even">
@@ -988,6 +984,11 @@ R_k^{\mathrm{eff}} = R \cdot
 <td style="text-align: left;">Thermic-effect coefficients</td>
 <td style="text-align: left;">Held fixed: their effect looks like a logging bias, which <span class="math inline">\(c_0\)</span> absorbs.</td>
 </tr>
+<tr class="even">
+<td style="text-align: left;">Not identified</td>
+<td style="text-align: left;"><span class="math inline">\(k_{\mathrm{gut}}\)</span>, <span class="math inline">\(\tau_{\mathrm{gut}}\)</span>, <span class="math inline">\(k_{St}\)</span>, <span class="math inline">\(\xi_C\)</span></td>
+<td style="text-align: left;">Held fixed (<a href="../../../body-weight/docs/theory/model.html#water">the model</a>): the data barely distinguish neighboring values, or confound them with the energy balance.</td>
+</tr>
 </tbody>
 </table>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -1006,12 +1007,12 @@ R_k^{\mathrm{eff}} = R \cdot
 </section>
 <section id="synthetic" class="level2">
 <h2 class="anchored" data-anchor-id="synthetic">Validation on synthetic data</h2>
-<p><code>wdm demo</code> simulates a subject with true parameters deliberately offset from the priors (if the truth sat at the prior center, an estimator that ignored the data would pass). All nine true values lie inside their 90% posterior intervals, and maintenance at 100 kg is estimated at 2923 kcal/day against a true 2843. This validates the inference, not the physiology; the <a href="../../../body-weight/docs/walkthrough/index.html">walkthrough</a> takes the same run apart step by step.</p>
+<p><code>wdm demo</code> simulates a subject with true parameters deliberately offset from the priors (if the truth sat at the prior center, an estimator that ignored the data would pass). All nine true values lie inside their 90% posterior intervals, and maintenance at 100 kg is estimated at 2902 kcal/day against a true 2843. This validates the inference, not the physiology; the <a href="../../../body-weight/docs/walkthrough/index.html">walkthrough</a> takes the same run apart step by step.</p>
 </section>
 <section id="backtest" class="level2">
 <h2 class="anchored" data-anchor-id="backtest">Backtest: forecasting readings not yet seen</h2>
-<p><code>wdm backtest</code> replays each phase-2 episode day by day. For every origin day <span class="math inline">\(j\)</span> and horizon <span class="math inline">\(h\)</span> (default 1 and 7 days) whose target morning has a weigh-in, it forecasts that reading from the filtered belief on morning <span class="math inline">\(j\)</span> and the food logged since, which separates model error from adherence. The scores are bias, RMSE, skill against persistence (tomorrow equals the last reading), which a model must beat at a week to earn its complexity, calibration (standardized-error sd and 50/90% coverage) and log predictive density. On the synthetic subject the skill is 21% at a day and 40% at a week (<a href="../../../body-weight/docs/walkthrough/06-backtest.html">walkthrough step 6</a>).</p>
-<p>On real data the first mornings of a diet drop more than the water compartments explain, most likely gut contents, which no state represents.</p>
+<p><code>wdm backtest</code> replays each phase-2 episode day by day. For every origin day <span class="math inline">\(j\)</span> and horizon <span class="math inline">\(h\)</span> (default 1 and 7 days) whose target morning has a weigh-in, it forecasts that reading from the filtered belief on morning <span class="math inline">\(j\)</span> and the food logged since, which separates model error from adherence. The scores are bias, RMSE, skill against persistence (tomorrow equals the last reading), which a model must beat at a week to earn its complexity, calibration (standardized-error sd and 50/90% coverage) and log predictive density. On the synthetic subject the skill is 30% at a day and 42% at a week (<a href="../../../body-weight/docs/walkthrough/06-backtest.html">walkthrough step 6</a>).</p>
+<p>The pooled bias can hide a model that is wrong in opposite directions at different times, such as too little predicted loss early in a diet and too much later, the signature of early water or gut loss counted as tissue. <code>wdm backtest --by-origin</code> scores the forecasts in 7-day bins of origin date, so a sign that flips between periods shows (<a href="../../../body-weight/docs/reading-output.html#by-origin">reading it</a>).</p>
 <p><strong>Caveats.</strong> Phase-1 noise is fitted on the whole record, so coverage is slightly optimistic. Forecasts from neighboring origins overlap (at <span class="math inline">\(h = 7\)</span>, consecutive forecasts share six days of inputs), so the effective sample is several times smaller than <span class="math inline">\(n\)</span>.</p>
 </section>
 <section id="references" class="level2">
