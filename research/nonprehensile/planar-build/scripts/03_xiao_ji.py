@@ -1,6 +1,6 @@
 """Planar build, Decision 9 (Xiao and Ji's construction): the counts and the landing figure.
 
-Run from c-gnn/cmg on branch phase1/planar (Python 3.14 env):
+Run from c-gnn/ccg on branch phase1/planar (Python 3.14 env):
 
     JAX_PLATFORMS=cpu .venv314/bin/python <this file> <website media dir>
 
@@ -9,7 +9,7 @@ For the counts before Decision 9, run the same file against the code of commit
     git archive 84827c0 cmg | tar -x -C <old dir>
 and pass --before; then only the counts are printed:
 
-    cd <old dir>/cmg && JAX_PLATFORMS=cpu PYTHONPATH=src <c-gnn>/cmg/.venv314/bin/python <this file> --before
+    cd <old dir>/cmg && JAX_PLATFORMS=cpu PYTHONPATH=src <c-gnn>/ccg/.venv314/bin/python <this file> --before
 
 Prints: the transfer relation (pairs, classified as Xiao-Ji containment, round a
 corner, or both features changing), the valid markings, the compound edges, and
@@ -25,13 +25,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from cmg.catalog.templates import Catalog
-from cmg.scene.spec import SceneSpec
+from ccg.catalog.templates import Catalog
+from ccg.scene.spec import SceneSpec
 
 BEFORE = "--before" in sys.argv
 OUT = Path(next((a for a in sys.argv[1:] if not a.startswith("--")), "."))
 
-spec = SceneSpec.from_yaml("src/cmg/scene/families/step2d.yaml")
+spec = SceneSpec.from_yaml("src/ccg/scene/families/step2d.yaml")
 cat = Catalog.from_spec(spec)
 A, R, H = 0.125, 0.015625, 0.125 / 4
 inv = {i: n for n, i in cat.named.items()}
@@ -76,7 +76,7 @@ print("  m_x <-> m_z a transfer:", any({a.template_id, b.template_id} == {mx, mz
 
 # ------------------------------------------------------------ markings and compound edges
 
-from cmg.marking.edits import EditSet  # noqa: E402
+from ccg.marking.edits import EditSet  # noqa: E402
 
 edits = EditSet(cat, spec)
 group = np.asarray(cat.slot if hasattr(cat, "slot") else cat._pair)
@@ -102,9 +102,9 @@ print(f"compound edges: {sorted(edits.labels[i] for i in multi)}; "
 
 # ------------------------------------------------------------ ties
 
-from cmg.storage import resolve_path  # noqa: E402
+from ccg.storage import resolve_path  # noqa: E402
 
-demo = np.load(resolve_path("src/cmg/scene/families/step_example_trajectory.npz"))["qpos"].astype(np.float32)
+demo = np.load(resolve_path("src/ccg/scene/families/step_example_trajectory.npz"))["qpos"].astype(np.float32)
 ties = jax.jit(jax.vmap(lambda c: cat.tie_breaks(config=c)))
 print(f"ties on the demo: {int((np.asarray(ties(jnp.asarray(demo))) > 0).sum())} of {len(demo)} frames")
 rng = np.random.default_rng(0)                     # the stress test's sample (test_tie_stress)

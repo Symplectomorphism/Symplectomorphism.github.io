@@ -1,6 +1,6 @@
 """Planar build, step 1: export the contact layer's results for the website.
 
-Run from c-gnn/cmg on branch phase1/planar (Python 3.14 env):
+Run from c-gnn/ccg on branch phase1/planar (Python 3.14 env):
 
     JAX_PLATFORMS=cpu .venv314/bin/python <this file> <website media dir>
 
@@ -27,13 +27,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle, Polygon
 
-from cmg.catalog.templates import Catalog
-from cmg.scene.spec import SceneSpec
+from ccg.catalog.templates import Catalog
+from ccg.scene.spec import SceneSpec
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 OUT.mkdir(parents=True, exist_ok=True)
 
-spec = SceneSpec.from_yaml("src/cmg/scene/families/step2d.yaml")
+spec = SceneSpec.from_yaml("src/ccg/scene/families/step2d.yaml")
 cat = Catalog.from_spec(spec)
 A, R, H = 0.125, 0.015625, 0.125 / 4
 EPS_ON = float(cat.epsilon_on)
@@ -204,7 +204,7 @@ for t, on in chain_out:
 
 # ------------------------------------------------------------ the demo
 
-qpos = np.load("src/cmg/scene/families/step_example_trajectory.npz")["qpos"].astype(np.float32)
+qpos = np.load("src/ccg/scene/families/step_example_trajectory.npz")["qpos"].astype(np.float32)
 Q = jnp.asarray(qpos)
 on = np.asarray(band(Q))
 ib = np.asarray(inband(Q))
@@ -305,8 +305,8 @@ print("wrote step1_scene.svg, step1_chain.svg, step1_tilt.svg")
 
 # ------------------------------------------------------------ the hold test on named poses
 
-from cmg.physics.hold import create_predicates
-from cmg.physics.world import ExecutionWorld, State
+from ccg.physics.hold import create_predicates
+from ccg.physics.world import ExecutionWorld, State
 
 _supported, _ = create_predicates(spec, cat, ExecutionWorld(spec.execution), tolerance=1e-3)
 _sup = lambda q, *names: bool(_supported(State(jnp.asarray(q, dtype=jnp.float32), jnp.zeros(5)),

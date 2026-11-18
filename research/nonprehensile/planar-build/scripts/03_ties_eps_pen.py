@@ -18,20 +18,20 @@ args = ap.parse_args()
 args.out = os.path.abspath(args.out)
 if args.cpu:
     os.environ["JAX_PLATFORMS"] = "cpu"
-CMG = os.path.expanduser("~/repos/research/c-gnn/cmg")
-os.chdir(CMG)
+CCG = os.path.expanduser("~/repos/research/c-gnn/ccg")
+os.chdir(CCG)
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 
-from cmg.catalog.templates import Catalog
-from cmg.scene.spec import SceneSpec
-from cmg.storage import resolve_path
+from ccg.catalog.templates import Catalog
+from ccg.scene.spec import SceneSpec
+from ccg.storage import resolve_path
 
-base = SceneSpec.from_yaml(resolve_path("src/cmg/scene/families/step2d.yaml"))
+base = SceneSpec.from_yaml(resolve_path("src/ccg/scene/families/step2d.yaml"))
 rng = np.random.default_rng(0)
-demo = np.load(resolve_path("src/cmg/scene/families/step_example_trajectory.npz"))["qpos"].astype(np.float32)
+demo = np.load(resolve_path("src/ccg/scene/families/step_example_trajectory.npz"))["qpos"].astype(np.float32)
 q = demo[rng.integers(0, len(demo), 4000)] + rng.normal(0, [0.003, 0.003, 0.03, 0.003, 0.003], (4000, 5)).astype(np.float32)
 out = {"poses": len(q), "eps_pen_mm": {}}
 for mm in [float(v) for v in args.values.split(",")]:

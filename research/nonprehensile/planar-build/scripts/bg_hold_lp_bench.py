@@ -3,7 +3,7 @@
 Same cases and float64 HiGHS reference as the step-2 hold benchmark (1,000
 random, 416 within 2 mm of disk height of the support boundary). Needs
 linrax importable (pip install linrax, or its source on PYTHONPATH). Run from
-c-gnn/cmg on branch phase1/planar:
+c-gnn/ccg on branch phase1/planar:
 
     JAX_PLATFORMS=cpu .venv314/bin/python <this file>          # float32, CPU
     python <this file>                                         # float32, GPU
@@ -18,16 +18,16 @@ now takes the less-constrained end), so run it from e29d96f:
 import json, math, os, sys, time, jax, jax.numpy as jnp, numpy as np
 sys.path.insert(0, "tests")
 import linrax
-from cmg.physics.world import State
+from ccg.physics.world import State
 from test_planar_step2 import _reference, pivot, lifted, disk_on, A, H, FLAT, FAR
-from cmg.catalog.templates import Catalog
-from cmg.scene.spec import SceneSpec
-from cmg.physics.world import ExecutionWorld
-from cmg.physics.planar_hold import PlanarHold
-from cmg.physics.hold import create_predicates
-spec = SceneSpec.from_yaml('src/cmg/scene/families/step2d.yaml'); cat = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)
+from ccg.catalog.templates import Catalog
+from ccg.scene.spec import SceneSpec
+from ccg.physics.world import ExecutionWorld
+from ccg.physics.planar_hold import PlanarHold
+from ccg.physics.hold import create_predicates
+spec = SceneSpec.from_yaml('src/ccg/scene/families/step2d.yaml'); cat = Catalog.from_spec(spec); world = ExecutionWorld(spec.execution)
 pair = np.asarray(cat._pair); rng = np.random.default_rng(10)
-demo = np.load('src/cmg/scene/families/step_example_trajectory.npz')['qpos'].astype(np.float32)
+demo = np.load('src/ccg/scene/families/step_example_trajectory.npz')['qpos'].astype(np.float32)
 band = jax.jit(lambda q: cat.band(config=q)); nonempty = jax.jit(lambda q: cat.query(config=q).nonempty)
 # random cases
 cases = []

@@ -1,12 +1,12 @@
 """Background tutorial: deciding support exactly (the planar hold test).
 
-Run from c-gnn/cmg on branch phase1/planar (Python 3.14 env):
+Run from c-gnn/ccg on branch phase1/planar (Python 3.14 env):
 
     JAX_PLATFORMS=cpu .venv314/bin/python <this file> <website media dir>
 
 Builds the worked example of the tutorial: a square box on the floor with
 mu = 0.2, held by both bottom corners (supported) or by one corner (not).
-Runs cmg's cone_test on it, prints every number the page quotes, and writes
+Runs ccg's cone_test on it, prints every number the page quotes, and writes
 bg_cone_slice.svg: the physical picture (top) and the cone seen through the
 slice f_z = 1 (bottom).
 """
@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import FancyArrowPatch, Polygon, Rectangle
 
-from cmg.physics.planar_hold import cone_test
+from ccg.physics.planar_hold import cone_test
 
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 MU = 0.2
