@@ -1,6 +1,6 @@
 ---
 title: "Results"
-subtitle: "From the scene alone, the planner finds the indirect lift — the block held at every instant — in 197 of 200 held-out searches (98.5%) and in all 34 of the original test set, with a learned value V₁ and ranker π."
+subtitle: "From the scene alone, the planner finds the indirect lift — the block held at every instant — in 199 of 200 held-out searches (99.5%) and in all 34 of the original test set, with a learned value V₁ and ranker π."
 aliases:
   - indirect-lift.html
 resources:
@@ -31,7 +31,8 @@ children (a call's child is the state it reached). Each edit that places the
 disk is offered at every placement along the face whose transition pose is a
 distinct node under the search's own rule for identifying nodes. Every dynamic outcome is
 rejected, so every solve is **held**. The motions are the quasi-static
-realizer Λ<sub>qs</sub> in MuJoCo. Both test sets are held out (never used
+realizer Λ<sub>qs</sub> in MuJoCo, with its contact rules on
+([the local solver](../planar-build/local-solver.qmd#lambda-qs-options)). Both test sets are held out (never used
 for training) and run at the band's two ends μ = 0.3 and 0.5, each search up
 to 192 calls: 100 random lift starts (F1 seed 13), 200 searches; and the
 original test set, the canonical start (the disk 10 cm from the block) and 16
@@ -41,30 +42,33 @@ with V₀'s measured edge lengths.
 
 | Held-out set | μ = 0.3 | μ = 0.5 | All (Wilson 95%) | Calls to solve (mean / median) |
 |---|---|---|---|---|
-| 100 random starts (F1 seed 13) | 99 / 100 | 98 / 100 | **197 / 200** (98.5%; 95.7–99.5%) | 82 / 83 |
-| Original: canonical + 16 (F1 seed 11) | 17 / 17 | 17 / 17 | **34 / 34** (100%; 90–100%) | 80 / 83 |
+| 100 random starts (F1 seed 13) | 100 / 100 | 99 / 100 | **199 / 200** (99.5%; 97.2–99.9%) | 82 / 83 |
+| Original: canonical + 16 (F1 seed 11) | 17 / 17 | 17 / 17 | **34 / 34** (100%; 90–100%) | 79 / 83 |
 
-Every solve is held and is the indirect lift; 19 of the 197 hold the block by its
-lower corner instead of its underside. Of the 3 failures among the 200, two
-reach the 192-call budget and one runs out of actions to try. The canonical
+Every solve is held and is the indirect lift; 4 of the 199 hold the block by its
+lower corner instead of its underside. The one failure among the 200 runs out
+of actions to try. The canonical
 start takes 86 calls at both μ (11 on the path).
 
 **Every distinct placement against one placement per edit.** With the edit
-offered only at the placement of largest margin, the same search (round 1 or
-round 2 of V₁ and π) solves 193 of 200 (94 and 99) and 33 of 34. Paired on the
-same machines, offering every distinct placement solves 6 searches of the 200
-that one placement does not and loses 2 (exact McNemar p = 0.29), and solves 1
-more of the 34 with none lost (p = 1): neither difference is significant at
-this sample size. Where both solve, it needs 81 calls against 88 on average.
-The 7 searches it gains each pass through break s<sub>v</sub> at a further
-placement, a call that keeps the formation, tilts the block further and is kept
-as a progress child; the 2 it loses reach the budget.
+offered only at the placement of largest margin and without the contact rules,
+the same search (round 1 or round 2 of V₁ and π) solves 193 of 200 (94 and 99)
+and 33 of 34. Paired on the same machines, every distinct placement with the
+contact rules solves 6 searches of the 200 that one placement does not and
+loses none (exact McNemar p = 0.031), and solves 1 more of the 34 (p = 1, run
+on another processor). Where both solve, it needs 81 calls against 88 on
+average. The two changes separate: without the contact rules, every distinct
+placement gains the same 6 and loses 2, which reach the budget (p = 0.29); the
+contact rules alone solve those 2 and lose none (p = 0.5), with the same calls
+(81.5 on average). The 7 searches distinct placements gain each pass through
+break s<sub>v</sub> at a further placement, a call that keeps the formation,
+tilts the block further and is kept as a progress child.
 
-**EULERDAMP off against on.** These searches run with MuJoCo's EULERDAMP
+**EULERDAMP off against on.** All these searches run with MuJoCo's EULERDAMP
 flag disabled, so MJX integrates the solved acceleration. With it on, MJX
 integrates a force sum that an unconverged contact solve can turn into a kick
-of a block at rest. On the same machines, the same searches with EULERDAMP on
-solve 192 of 200 and 33 of 34: 8 searches that fail with it on are solved
+of a block at rest. On the same machines, the one-placement searches with
+EULERDAMP on solve 192 of 200 and 33 of 34 (193 and 33 with it off): 8 searches that fail with it on are solved
 with it off, and 7 solved with it on fail with it off (exact McNemar p = 1).
 Replayed call by call, three of the failures with EULERDAMP on come from such
 a kick (one of them the first push, which flips the block upside down), two of
@@ -132,8 +136,10 @@ search reached {m<sub>z</sub>, s<sub>v</sub>} with the block at 51–57°, where
 
 Each clip replays the search's solution call by call on the processor that
 ran the search (AMD EPYC 9334), and every call reproduces the log bit for bit
-(43 of 43 calls). The clips come from the searches in the table above: every
-distinct placement offered, with V₁ and π. The typical and lower-corner starts
+(43 of 43 calls). The clips come from the searches with every
+distinct placement offered, with V₁ and π, run without the contact rules. With
+them the canonical start at μ = 0.3 and start 1 take the same routes and calls;
+the canonical start at μ = 0.5 goes by the lower corner (86 calls). The typical and lower-corner starts
 are chosen by a script, not by hand: the most common route, then the search
 closest to its median calls on the path and in the search.
 
@@ -166,14 +172,15 @@ tilts the block to 37° before the next edit.
 <video src="media/placement/s13_01_mu0.3.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
 **A typical held-out start (seed 13, start 1), μ = 0.3**: the most common
-route (59 of the 197 solves), with its median calls: 11 on the path, 83 in the
+route (71 of the 199 solves), with its median calls: 11 on the path, 83 in the
 search.
 
 <video src="media/placement/s13_37_mu0.3_lower_corner.mp4" controls muted playsinline preload="metadata" width="100%"></video>
 
 **The lower-corner variant (seed 13, start 37), μ = 0.3**: the disk holds the
 block by its lower corner and a transport rolls it onto the platform; 10 calls
-on the path, 75 in the search. In the closing transfer the disk sinks up to
+on the path, 75 in the search (without the contact rules; with them this start
+takes the common route, 83 calls). In the closing transfer the disk sinks up to
 5.8 mm into the block in MJX's soft contact; every other call stays under about
 2 mm ([issue #52](https://github.com/RobotControlLab/certified-contact-graphs/issues/52)).
 

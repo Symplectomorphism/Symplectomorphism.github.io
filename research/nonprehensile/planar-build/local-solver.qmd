@@ -83,6 +83,23 @@ in MuJoCo:
   step corner V instead of pressing along a chord, so the planned slide
   over V is 0.02 mm instead of 25.6 mm.
 
+- **The contact rules** (`touch_in_band`, `transfer_box_frame`,
+  `transfer_done`): the tracker's touching control, whose normal-force floor
+  grows with the gap, acts only while the disk's planned contact is within
+  ε<sub>on</sub>; farther out the disk closes the gap by position feedback
+  toward its planned place in the block's frame. A disk transfer tracks its
+  motion off the old contact and onto the new one in the block's frame. When a
+  transfer's approach already ends recognized as the destination formation, the
+  rest of the call is planned in that formation instead of re-imposing the old
+  contact 1–11 mm away, and the success test reads a tie between the two
+  exchanged contacts at the hand-over as the formation the recognizer reports.
+  Without them, an out-of-band touching start saturated the motors and flung
+  the disk ([#52](https://github.com/RobotControlLab/certified-contact-graphs/issues/52),
+  [#62](https://github.com/RobotControlLab/certified-contact-graphs/issues/62)).
+  With them the headline search solves 199 of 200 held-out searches against
+  197 without them, losing none. `CMG_TOUCH_IN_BAND`, `CMG_TRANSFER_BOX_FRAME`
+  and `CMG_TRANSFER_DONE` set to 0 turn each off.
+
 Every run records Λ<sub>qs</sub>'s options at their values
 (`ModeScheduledSolver.options()`; the teacher's instance rows and the chain
 search's `calls.json`).
