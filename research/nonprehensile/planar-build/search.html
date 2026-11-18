@@ -644,7 +644,7 @@ $$
 </div>
 <section id="the-search" class="level2">
 <h2 class="anchored" data-anchor-id="the-search">The search</h2>
-<p>A node is a simulated state, identified by its formation, the disk’s connected region and the box’s pose within a 10 mm test radius, merged only when the gate’s verdicts agree (<a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a>). From a node, the candidates are the edits that pass <a href="../../../research/nonprehensile/planar-build/hold-gate.html">the hold gate</a>; each expansion calls the <a href="../../../research/nonprehensile/planar-build/local-solver.html">local solver</a> Λ, which is the expensive part. The search is policy-guided heuristic search (PHS*, Orseau and Lelis 2021): a ranker gives a probability π to each candidate edit, nodes are expanded in order of a key built from their depth, the probability of their path and a heuristic factor η from a value estimate, Λ is charged when a node is expanded, and edits the gate rejects get π = 0. For this order the number of expansions is bounded by the depth and probability of the solution, scaled by η. The theory note extends the bound to duplicate states (with the safe duplicate rule and the node key of <a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a>), to a Λ that fails at random (with restarts), and to nodes popped in batches.</p>
+<p>A node is a simulated state, identified by its formation, the disk’s connected region and the box’s pose within a 10 mm test radius, merged only when the gate’s verdicts agree (<a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a>). From a node, the candidates are the edits that pass <a href="../../../research/nonprehensile/planar-build/hold-gate.html">the hold gate</a>; each expansion calls the <a href="../../../research/nonprehensile/planar-build/local-solver.html">local solver</a> Λ, which is the expensive part. The search is policy-guided heuristic search (PHS*, Orseau and Lelis 2021): a ranker gives a probability π to each candidate edit, nodes are expanded in order of a key built from their depth, the probability of their path and a heuristic factor ψ from a value estimate, Λ is charged when a node is expanded, and edits the gate rejects get π = 0. For this order the number of expansions is bounded by the depth and probability of the solution, scaled by ψ. The theory note extends the bound to duplicate states (with the safe duplicate rule and the node key of <a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a>), to a Λ that fails at random (with restarts), and to nodes popped in batches.</p>
 </section>
 <section id="design" class="level2">
 <h2 class="anchored" data-anchor-id="design">The search’s actions and acceptance</h2>
@@ -652,7 +652,7 @@ $$
 <li><strong>Outcome children.</strong> A call yields at most one child, labelled by the state it actually reaches. The child is accepted if it is the requested state, or if it lowers the value estimate by at least δ = 10 mm, the merge test radius of <a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a>. A call that does not end in the requested formation can still leave the box where a short route continues.</li>
 <li><strong>Box transports.</strong> Besides the edits, the box can be moved <em>within</em> its contact state, with its own gate: a box move is refused when no disk placement on the face can push the box along the planned path (a linear program at five poses). The push to the goal aims at the goal window’s centre.</li>
 <li><strong>Releases are off.</strong> Release edits (let the box go and let it come to rest in the next state) are in the code but not part of the method: the method’s lift is held at every instant.</li>
-<li><strong>The order</strong> is PHS* with its heuristic factor η from a value function, clipped to [1, η<sub>max</sub>], η<sub>max</sub> = 10. The ranker is uniform over the legal edits for now.</li>
+<li><strong>The order</strong> is PHS* with its heuristic factor ψ from a value function, clipped to [1, ψ<sub>max</sub>], ψ<sub>max</sub> = 10. The ranker is uniform over the legal edits for now.</li>
 <li><strong>The value.</strong> 𝒱₀: the distance to the goal in the edit graph plus the box’s distance to a fixed set of poses where the next edit passes the gate (<a href="#v0">How 𝒱₀ is built</a>). To follow: a learned value V₁, the expected number of Λ calls to the goal, trained by expert iteration with exploration on every logged call, failures included (a call that succeeds with probability p costs about 1/p calls); the distance to the goal enters only as shaping and as an input.</li>
 <li><strong>Which ends count.</strong> An end with the disk outside its workspace (the joint ranges) is invalid; quasi-static runs reject ends reached through a dynamic event.</li>
 <li><strong>No gap screen, no retries.</strong> No distance screen filters the candidates (the gate and box transport decide; distance only orders them); the disk’s clearance check is part of the gate. The planner and every reported result use no retries. The approach to an edit lasts as long as its path needs. The settle clause of the success test is off for formation edits and required for the final goal state.</li>
@@ -663,12 +663,12 @@ $$
 <p>𝒱₀ is not learned and not computed during the search. It is computed once per scene and per gate, before any search, and stored as tables; at a node the search only looks values up.</p>
 <p><strong>The value.</strong> For a node with formation σ and box pose q = (p, θ):</p>
 <div style="text-align:center">
-<p>𝒱₀ = w · d(σ) + min over ω in N(σ) of min( d<sub>B</sub>(q, T<sub>ω</sub>), D<sub>cap</sub> )</p>
+<p>𝒱₀ = w · d(σ) + min over e in N(σ) of min( d<sub>B</sub>(q, T<sub>e</sub>), D<sub>cap</sub> )</p>
 </div>
 <ul>
 <li><strong>d(σ), the graph term:</strong> the length of a shortest path from σ to a goal formation in the graph of the search’s edits (the edges of the contact-state graph W, plus the release edges when the search offers releases; a box move within σ is not an edge). An edge’s length is the expected number of Λ calls its kind of edit takes, so d is in calls.</li>
 <li><strong>N(σ):</strong> the first edits of those shortest paths.</li>
-<li><strong>T<sub>ω</sub>, the target poses:</strong> a fixed set of sampled box poses of σ at which the gate admits the edit ω with margin at least γ<sub>tr</sub> = 0.1.</li>
+<li><strong>T<sub>e</sub>, the target poses:</strong> a fixed set of sampled box poses of σ at which the gate admits the edit e with margin at least γ<sub>tr</sub> = 0.1.</li>
 <li><strong>d<sub>B</sub>(q, q′) = |p − p′| + ℓ |θ − θ′|</strong>, ℓ = a/2 = 62.5 mm: the box-pose distance of <a href="../../../research/nonprehensile/planar-build/node-identity.html">Node identity</a>, an angle counted as the arc a corner of the box travels.</li>
 <li><strong>D<sub>cap</sub> = 0.25 m</strong> caps the pose term, and <strong>w = 2 D<sub>cap</sub> = 0.5 m per call</strong> converts calls into metres. Because w &gt; D<sub>cap</sub>, one call less always outweighs any difference of pose: formations first, poses only within a formation.</li>
 <li>A goal state has 𝒱₀ = 0; in a goal formation the pose term is the distance to the sampled goal poses; a formation with no route to the goal gets the largest value, w (d<sub>max</sub> + 1) + D<sub>cap</sub>.</li>
@@ -701,7 +701,7 @@ $$
 </tr>
 <tr class="odd">
 <td>Gate</td>
-<td>T<sub>ω</sub>: each formation’s samples thinned to one per 5 mm cell (and at most 120), the search’s relaxed gate at each; one evaluation decides every edit at that pose</td>
+<td>T<sub>e</sub>: each formation’s samples thinned to one per 5 mm cell (and at most 120), the search’s relaxed gate at each; one evaluation decides every edit at that pose</td>
 <td>about 17,000 gate evaluations, a few CPU-hours, split across processes</td>
 </tr>
 <tr class="even">
@@ -714,7 +714,7 @@ $$
 <p>The tables belong to the gate that computed them: when the gate changes, they must be rebuilt.</p>
 <p><strong>How the search uses it.</strong></p>
 <ol type="1">
-<li><strong>Order.</strong> The heuristic factor η = clip(1 + h/g, 1, η<sub>max</sub>), with g = ν + 1 the calls on the path including this one and h the calls left: d(σ′) for an edit into σ′, 𝒱₀/w for a box move.</li>
+<li><strong>Order.</strong> The heuristic factor ψ = clip(1 + h/g, 1, ψ<sub>max</sub>), with g = ν + 1 the calls on the path including this one and h the calls left: d(σ′) for an edit into σ′, 𝒱₀/w for a box move.</li>
 <li><strong>Progress.</strong> A call that ends neither in its requested formation nor at the goal is kept if the box comes to rest with 𝒱₀ at least δ = 10 mm lower (a box move is also kept when it ends within δ of its target).</li>
 <li><strong>Box-move targets.</strong> A box move within σ aims at the target poses of every edit out of σ (not only the shortest route’s next one), leaving out targets already within δ; in a goal formation it aims at the goal window’s centre. No target, no box move.</li>
 </ol>
