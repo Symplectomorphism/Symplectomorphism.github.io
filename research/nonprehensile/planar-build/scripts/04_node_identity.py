@@ -1,11 +1,11 @@
 """Planar build, node identity (Decisions 17 and 18): which pairs of states the search treats as one node.
 
-Run from c-gnn/cmg on branch phase1/planar (Python 3.14 env):
+Run from c-gnn/ccg on branch phase1/planar (Python 3.14 env):
 
     JAX_PLATFORMS=cpu PYTHONPATH=src:tests .venv314/bin/python <this file> <website media dir>
 
-Uses the real code: the node key ``NodeKey`` (cmg/search/contact_state.py) with the
-merge rule of ``SearchState`` (cmg/search/__init__.py; merge by evaluation: equal gate
+Uses the real code: the node key ``NodeKey`` (ccg/search/contact_state.py) with the
+merge rule of ``SearchState`` (ccg/search/__init__.py; merge by evaluation: equal gate
 verdicts within the 10 mm test radius, using the search's gate signature from ``Cand``), the earlier grid key
 ``Discretizer`` (1 mm / 0.01 rad cells from step2d.yaml), and the recognizer
 ``Catalog.band``. For each example pair it prints and saves (node_identity.json):
@@ -24,18 +24,18 @@ import numpy as np
 
 import jax
 
-from cmg.catalog.templates import Catalog
-from cmg.marking.candidate import Cand
-from cmg.physics.world import ExecutionWorld
-from cmg.physics.world import State
-from cmg.scene.spec import SceneSpec
-from cmg.search import Discretizer, RealizedPath, SearchState
-from cmg.search.contact_state import NodeKey
-from cmg.storage import resolve_path
+from ccg.catalog.templates import Catalog
+from ccg.marking.candidate import Cand
+from ccg.physics.world import ExecutionWorld
+from ccg.physics.world import State
+from ccg.scene.spec import SceneSpec
+from ccg.search import Discretizer, RealizedPath, SearchState
+from ccg.search.contact_state import NodeKey
+from ccg.storage import resolve_path
 from test_planar_step2 import A, FLAT, H, R
 
 out = Path(sys.argv[1] if len(sys.argv) > 1 else ".")
-spec = SceneSpec.from_yaml(resolve_path("src/cmg/scene/families/step2d.yaml"))
+spec = SceneSpec.from_yaml(resolve_path("src/ccg/scene/families/step2d.yaml"))
 cat = Catalog.from_spec(spec)
 grid = Discretizer.from_spec(spec)
 nk = NodeKey.from_spec(spec, cat)
@@ -45,7 +45,7 @@ SIG = ("edge", "near", "hold", "local", "legal")
 
 
 def gate(st, f):
-    """The search's gate signature (as in cmg.search.Search): the per-edit verdict flags."""
+    """The search's gate signature (as in ccg.search.Search): the per-edit verdict flags."""
     r = {k: np.asarray(v) for k, v in jax.block_until_ready(_report(st, jnp.asarray(f, jnp.bool_))).items()}
     flags = {k: r[k].astype(np.bool_) for k in SIG}
     return {"legal": flags["legal"], "sig": b"".join(flags[k].tobytes() for k in SIG)}
