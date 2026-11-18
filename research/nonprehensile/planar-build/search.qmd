@@ -18,9 +18,9 @@ the edits that pass [the hold gate](hold-gate.qmd); each expansion calls the
 is policy-guided heuristic search (PHS\*, Orseau and Lelis 2021): a ranker
 gives a probability π to each candidate edit, nodes are expanded in order of
 a key built from their depth, the probability of their path and a heuristic
-factor η from a value estimate, Λ is charged when a node is expanded, and
+factor ψ from a value estimate, Λ is charged when a node is expanded, and
 edits the gate rejects get π = 0. For this order the number of expansions is
-bounded by the depth and probability of the solution, scaled by η. The
+bounded by the depth and probability of the solution, scaled by ψ. The
 theory note extends the bound to duplicate states (with the safe duplicate
 rule and the node key of [Node identity](node-identity.qmd)), to a Λ that
 fails at random (with restarts), and to nodes popped in batches.
@@ -40,8 +40,8 @@ fails at random (with restarts), and to nodes popped in batches.
 - **Releases are off.** Release edits (let the box go and let it come to
   rest in the next state) are in the code but not part of the method: the
   method's lift is held at every instant.
-- **The order** is PHS\* with its heuristic factor η from a value function,
-  clipped to [1, η<sub>max</sub>], η<sub>max</sub> = 10. The ranker is uniform
+- **The order** is PHS\* with its heuristic factor ψ from a value function,
+  clipped to [1, ψ<sub>max</sub>], ψ<sub>max</sub> = 10. The ranker is uniform
   over the legal edits for now.
 - **The value.** 𝒱₀: the distance to the goal in the edit graph plus the
   box's distance to a fixed set of poses where the next edit passes the gate
@@ -69,7 +69,7 @@ search only looks values up.
 **The value.** For a node with formation σ and box pose q = (p, θ):
 
 <div style="text-align:center">
-𝒱₀ = w · d(σ) + min over ω in N(σ) of min( d<sub>B</sub>(q, T<sub>ω</sub>), D<sub>cap</sub> )
+𝒱₀ = w · d(σ) + min over e in N(σ) of min( d<sub>B</sub>(q, T<sub>e</sub>), D<sub>cap</sub> )
 </div>
 
 - **d(σ), the graph term:** the length of a shortest path from σ to a goal
@@ -78,8 +78,8 @@ search only looks values up.
   move within σ is not an edge). An edge's length is the expected number of
   Λ calls its kind of edit takes, so d is in calls.
 - **N(σ):** the first edits of those shortest paths.
-- **T<sub>ω</sub>, the target poses:** a fixed set of sampled box poses of σ
-  at which the gate admits the edit ω with margin at least γ<sub>tr</sub> = 0.1.
+- **T<sub>e</sub>, the target poses:** a fixed set of sampled box poses of σ
+  at which the gate admits the edit e with margin at least γ<sub>tr</sub> = 0.1.
 - **d<sub>B</sub>(q, q′) = |p − p′| + ℓ |θ − θ′|**, ℓ = a/2 = 62.5 mm: the
   box-pose distance of [Node identity](node-identity.qmd), an angle counted
   as the arc a corner of the box travels.
@@ -105,7 +105,7 @@ length of 2 calls. If each call succeeded independently with probability p̂,
 |---|---|---|
 | Sample | 1,500 configurations of each of the 328 valid formations: random poses projected onto the formation's contacts, kept only if the recognizer reads exactly that formation, nothing penetrates and the disk is clear | split across processes |
 | Graph | the formations the box can be held in (by the gate's statics) at some sample; the edges between them; their lengths; the goal formations and goal poses of each task; d by Dijkstra; N(σ) | minutes, one process |
-| Gate | T<sub>ω</sub>: each formation's samples thinned to one per 5 mm cell (and at most 120), the search's relaxed gate at each; one evaluation decides every edit at that pose | about 17,000 gate evaluations, a few CPU-hours, split across processes |
+| Gate | T<sub>e</sub>: each formation's samples thinned to one per 5 mm cell (and at most 120), the search's relaxed gate at each; one evaluation decides every edit at that pose | about 17,000 gate evaluations, a few CPU-hours, split across processes |
 | Merge | one table file per scene | seconds |
 
 The tables belong to the gate that computed them: when the gate changes,
@@ -113,7 +113,7 @@ they must be rebuilt.
 
 **How the search uses it.**
 
-1. **Order.** The heuristic factor η = clip(1 + h/g, 1, η<sub>max</sub>), with
+1. **Order.** The heuristic factor ψ = clip(1 + h/g, 1, ψ<sub>max</sub>), with
    g = ν + 1 the calls on the path including this one and h the calls left:
    d(σ′) for an edit into σ′, 𝒱₀/w for a box move.
 2. **Progress.** A call that ends neither in its requested formation nor at the
