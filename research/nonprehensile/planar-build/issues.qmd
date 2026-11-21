@@ -6,11 +6,51 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-13, against `master` at `49aaf57` in
+**Last checked:** 2026-11-21, against `master` at `f09a8da8b` in
 [`RobotControlLab/certified-contact-graphs`](https://github.com/RobotControlLab/certified-contact-graphs). The full records are in the discussion
-compendium (`reports/supporting_docs/discussion-compendium/`).
+compendium (`reports/supporting_docs/discussion-compendium/`). The entries
+added on 2026-11-21 come first in each section; the older entries below them
+were last checked on 2026-11-13.
 
 ## Open
+
+::: {.callout-important collapse="true"}
+## Push → landing: the impact-window cover is rebuilt (open; running)
+The certified chain's last open link. After the back half of the chain was
+re-certified from slack-grown exits (issue #81), the push's certified exit
+moved, and the landing's impact-window cover was built for the earlier exit:
+in chain_check, push → landing (impact window) fails (the push's exit 0 is
+outside the cover's root 0 in s', stick:s<sub>v</sub> and stick:m<sub>z</sub>).
+The push and the landing run one law until the make's latch, so the link is a
+**same-law boundary** (decision 43 (a′)): it passes by containment with a
+margin above the float32 forward-error bound, not by a measured slack
+(decision 46). The cover's roots are the 16 re-certified push exits moved out
+by twice the float32 bound. A smoke on 6 units of the rebuilt root 0 gave 98
+leaves against the original's 98, 0 uncertified, in 0.92× the time, so the
+rebuild costs about the original's 1,125 core-hours (ccg `fd271699a`). The
+rebuild is running on Ganymede2; push → landing is **pending** until it
+finishes. [Results](../results/index.qmd#the-certified-chain-issue-81-back-half).
+:::
+
+::: {.callout-important collapse="true"}
+## Smaller open items found on 2026-11-19 … 11-21
+- **Phase II after a fired release restarts MJX without its warm start**
+  (issue #88). When the release trigger fires, phase II starts from MJX
+  `Data` rebuilt from the position and velocity, which drops the constraint
+  solver's warm start; MJX's contact forces depend on the warm start at
+  about 10⁻⁴ N. Kept through the RSS headline so that the calibration, the
+  paired runs and the headline run one code (decision 55 (a)); an opt-in
+  fix and a regrade of the calibration population follow.
+- **Gate modes: G1 admits undriven make(s).** The gate-modes check (G1)
+  admits a make(s) whose added contact no input drives. Post-RSS.
+- **The exact and the relaxed gate disagree at break(s<sub>v</sub>) poses.**
+  The relaxed gate refused where the exact gate admitted, so it is no sound
+  screen for the exact one. Post-RSS.
+- **Scaling to several manipulators** (issue #87): two to five
+  manipulators and several objects; the class enumeration, set
+  certification in higher dimensions and the contact-state graph grow
+  combinatorially. No milestone yet.
+:::
 
 ::: {.callout-important collapse="true"}
 ## Finding the indirect lift routinely (open; the target)
@@ -154,6 +194,56 @@ keep penetration under 0.22 mm but need the controller retuned first.
   graph.
 - **`tests/test_local_solver.py`** reads `gradient_warm_start`, which MPPI no
   longer has. For a fix-up PR to Angelo.
+:::
+
+## Closed (2026-11-19 … 11-21)
+
+::: {.callout-tip collapse="true"}
+## Roll → push: the junction compared the wrong entry set (closed; decision 54)
+The push tubes certify the block's rate s' about their own law's value
+ω<sub>law</sub>(θ<sub>h</sub>) at the hand-off (0.0313–0.0340 rad/s on the 16
+sub-box tubes), not about the anchor 0.01745 rad/s the push's orbit runs
+through. chain_check compared the roll's exit (s' ∈ [0.0157, 0.0192] rad/s)
+with an exported entry stated about the anchor, an entry the tubes never
+certified; against the tubes' own entry the link failed by −186 / +158
+slacks. Fixed (ccg `382b87886`): chain_check reads the tubes' certified
+entries, and an anchor-based record counts as "not certified". The push was
+then re-certified from the roll's grown exit with the **same law**: all 16
+sub-boxes hold, utilization 0.603–0.631, binding on progress (Juno 525614,
+fe64, ccg `13512e720`), with the same verdicts in float32 (fe32-poly,
+utilization 0.598–0.626, ccg `eddbd2aa8`). Roll → push now passes at +1
+slack in s', stick:s<sub>v</sub> and stick:m<sub>z</sub> (ccg `master`
+`eddbd2aa8`).
+:::
+
+::: {.callout-tip collapse="true"}
+## Smaller defects closed
+- **The settle extension crashed after a fired release.** The extension took
+  the call's record, a state without MJX `Data`, as its starting state, and
+  four of the judge-calibration searches died in it. It now continues from
+  the realized MJX state (ccg `3a5b83ed8`, branch `integ/principled`); the
+  four searches were rerun on the fix and completed.
+- **chain_check skipped rest junctions silently.** A certified junction with
+  no measured slack was skipped; it now fails as "no slack". The four rest
+  junctions have measured slacks: the hold's own one-step change at the
+  hand-off (decision 42 (a), ccg `51e827c02`; issue #81's back half). The
+  slack rule is enforced by default (ccg `a6161ffa5`).
+- **Missing inputs passed silently.** `held_summary` read a record without
+  the force fields as 0 unheld samples, that is "held" (a staircase replay
+  on a snapshot without them was discarded and rerun), and a run snapshot
+  without the held-slack record left the judge nothing to compare against,
+  so every call ended `no_held_record`. Each now refuses:
+  `held_summary` raises with the record, the call and the missing fields
+  (ccg `f226acf1c`), and a run refuses to start under the judge without the
+  held-slack record (ccg `e02e0b37d`).
+- **Placed scenes: the planner was not translation-invariant.** The validity
+  table's sampled single-edge test ran the float32 recognizer at world
+  coordinates, so a scene translated by (0.175, 0.020) m built a table whose
+  single edges differed from its unplaced scene's in 28 of about 1,124. The
+  frame-local planner (issue #86 Step 2, decision 56 (a′), branch
+  `feat/scene-generic-m2`) computes a placed scene's table and V₀ in the
+  scene's own frame and applies the offset once, at output: the rebuilt
+  table equals the unplaced one in every field.
 :::
 
 ## Decisions behind the current design

@@ -23,6 +23,190 @@ g<sub>v</sub>, s<sub>v</sub>} → {g<sub>v</sub>, s<sub>v</sub>} →
 {m<sub>z</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>,
 s<sub>v</sub>} → {m<sub>z</sub>, t} → (transport) goal.
 
+## 2026-11-19 … 11-21: the certified chain, the staircase, scene-generic learning {#latest}
+
+Four lines of work. Every number below is from a committed record in
+`RobotControlLab/certified-contact-graphs` (private); the commit or branch is
+given with each. Anything not yet final is marked **pending**.
+
+### The certified chain (issue #81, back half) {#the-certified-chain-issue-81-back-half}
+
+The chain is one route of the lift built as certified funnels
+([Certified funnels](../planar-build/funnels.qmd)): each edge certified for
+every state of its entry set and every disk friction in [0.3, 0.5], each
+junction a containment of certified sets. The junctions now need **real
+margins**, and chain_check enforces them by default (ccg `a6161ffa5`):
+
+- a link where the control switches holds by at least one measured one-step
+  95/95 slack: the realized state's change over one step at the hand-off;
+  for the rest links, the hold's own one-step change (decision 42 (a));
+- a boundary between two certificates of one law, with no switch, holds by
+  containment with a margin above the float32 forward-error bound of the
+  compared quantity (decision 43 (a′)).
+
+Every narrow link from the tip to the push passes (ccg `master` `eddbd2aa8`;
+`ccg/scripts/edge_tube/results/i81/back/roll_push_entry/swap_after/cc_narrow.txt`):
+
+| Link | Kind | Verdict |
+|---|---|---|
+| tip departure → tip funnel | same-law boundary | pass |
+| tip funnel → 23° switch → pivot | switch: slack | pass, ≥ 1 slack |
+| pivot → stop at 59.00° | switch: slack | pass, ≥ 1 slack |
+| stop at 59.00° → gentle break | rest: slack; force band | pass, ≥ 1 slack; force contained |
+| gentle break + make(m<sub>z</sub>) | one certificate (a node, no junction) | — |
+| make(m<sub>z</sub>) → tcbreak departure | rest: slack | pass, +1 slack |
+| tcbreak departure → tcbreak funnel | same-law boundary | pass |
+| tcbreak funnel → tcroll funnel (62°) | switch: slack | pass, ≥ 1 slack |
+| tcroll funnel → push | switch: slack | pass, +1 slack (decision 54) |
+| push → landing (impact window) | same-law boundary | **pending**: the cover is rebuilt |
+
+The wide chain, from the post-impact rest set S<sub>rest</sub> through the
+c3 departure, the wide funnel and the goal stop to the release, passes end
+to end under enforcement (`CHAIN PASS (wide)`, ccg `c875eb515`,
+`i81/back/goal_band_juno524821/cc_wide_band.txt`). S<sub>rest</sub>'s
+independent holdout: 0 of 773 rollouts outside (Clopper–Pearson 0.39%; ccg
+`c5354ee66`).
+
+**Commanded forces over measured bands** (decision 44 (2)). Where a hold's
+commanded force is handed from one certificate to the next, both
+certificates are now certified over the command ± δ, δ the one-sided 95/95
+bound on |realized − commanded| normal force at the hand-off, measured on
+1,536 rollouts of the realizer (calibration half 768, held-out half 768):
+
+| Junction | Command ± δ | Held out within δ | Record |
+|---|---|---|---|
+| stop at 59.00° → gentle break | 0.0311568 ± 1.07 × 10⁻⁴ N | 756 / 768 | `i81/slack/stop_force_break.json` |
+| goal stop → release | 0.15 ± 0.00859 N | 757 / 768 | `i81/slack/rest_force_stop_release.json` |
+
+At the goal stop the realized force lies one-sidedly above the command
+(0.1574–0.1586 N at both ends of the friction band). Both certificates hold
+over their bands (ccg `4313f9491`, `c875eb515`).
+
+**The push, re-certified from the roll's grown exit** (decision 54). The
+roll → push junction had compared the roll's exit with an entry the push
+tubes never certified ([Issues](../planar-build/issues.qmd)). The push was
+re-certified with the same law from the roll's exit grown by its slack: 16
+of 16 sub-boxes hold, utilization 0.603–0.631, binding on progress (Juno
+525614, ccg `13512e720`). Roll → push now passes at +1 slack.
+
+**The same verdicts in float32.** Every re-certified piece was rerun in
+float32 (fe32-poly) and holds with the same binding conditions: the lift
+funnels, the roll junction and both departures (ccg `5e679b9a9`), the stop
+(`8f15b80d4`), the goal stop and the release (`f7338e7b4`), and the
+re-seeded push (utilization 0.598–0.626; `eddbd2aa8`).
+
+**Pending: push → landing.** The landing's impact-window cover was certified
+for the push's earlier exit; it is rebuilt from the re-certified exits (about
+1,125 core-hours, measured on a smoke; ccg `fd271699a`) and is running on
+Ganymede2.
+
+### The staircase, with V₁ and π retrained on it {#staircase}
+
+Branch `meas/staircase-v1pi` (`f226acf1c`), the **v0.3.1 stack** (not the
+RSS headline's), on the 30 held-out starts (seed 13, starts 0–14, μ = 0.3
+and 0.5) of the earlier V₀-only staircase measurement. V₁ and π are
+retrained on the staircase (816 training searches, S_step's pipeline).
+
+| Task | V₀ only | V₀ + V₁ + π | Gained / lost (exact McNemar) | Median calls to solve |
+|---|---|---|---|---|
+| first tread (P1) | 1 / 30 | **29 / 30** (83–99%) | +28 / −0 (p = 7.5 × 10⁻⁹) | 76 |
+| top tread (P2) | 0 / 30 | **0 / 30** | +0 / −0 | — |
+| S_step (control, S_step's own model) | 1 / 30 | 30 / 30 | +29 / −0 (p = 3.7 × 10⁻⁹) | 83 |
+
+**Where the top tread stops.** All 30 searches land the block on P1 (first at
+call 51, median) and reach the second lift's start, the block on P1 against
+the second riser. There the gate offers V₀'s route edit, the tilt about P1's
+edge, at 94 of the 97 such nodes, and π ranks it **last of four at all 94**
+(median probability 0.001). No training search reached P2, so P2's goal
+enters training only through hindsight goals.
+
+**Held throughout** (the routes to the tread replayed as logged; both of
+G3's criteria):
+
+| Task | Ordering | Routes | Formation kept | Force in interval |
+|---|---|---|---|---|
+| first tread | V₀ only | 28 | 23 | 9 |
+| first tread | V₀ + V₁ + π | 30 | 21 | 13 |
+| route to P1 (top-tread task) | V₀ only | 30 | 24 | 10 |
+| route to P1 (top-tread task) | V₀ + V₁ + π | 30 | 21 | 15 |
+| S_step | V₀ only | 30 | 25 | 8 |
+| S_step | V₀ + V₁ + π | 30 | 19 | 18 |
+
+### Scene-generic V₁ and π (issue #86) {#scene-generic}
+
+The goal: a value and ranker that transfer to new scenes without retraining.
+
+**Step 1: S_step only** (branch `feat/scene-generic-v1`, `76c41cffb`). A
+transformer over the scene's geometry as tokens (world frame, no positional
+encoding), trained on S_step's 408 searches: 20 models (no augmentation,
+Augerino, Laplace, untrained; 5 seeds each). It ranks S_step's held-out
+searches as well as the current model (π top-1 95.2%, 95.1%, 92.6% against
+93.4%; V₁ Spearman 0.916, 0.920, 0.873 against 0.927). As predicted, **no
+variant learns the step-to-step symmetry** (invariant only if the P95 gap
+is at most the P95 seed spread; V in calls):
+
+| Variant | P95 gap / seed spread, step-to-step map |
+|---|---|
+| none | 7.45 / 3.52 |
+| Laplace | 8.01 / 2.61 |
+| Augerino | 6.19 / 2.34 |
+
+Laplace's marginal likelihood collapsed every candidate augmentation; only
+the far-field deletion (G6) collapsed as predicted, and the pre-registered
+predictions for the other five candidates (G1–G5) missed. Augerino's continuous candidates
+collapsed and its discrete ones went to their maximum, G6 included (a
+miss). A hand-built symmetry also fails (4.94 / 2.14), so the bottleneck is
+the staircase's unseen far field, not the frame. The misses are listed in
+the branch's `ccg/scripts/learn/scene_generic/README.md`.
+
+**Step 2: a pilot family** (branch `feat/scene-generic-m2`; in progress,
+cutoff Nov 28).
+
+- **The family.** 8 scenes drawn by Latin hypercube (seed 7830): 4
+  staircases and 2 single steps for training, one of each for validation;
+  the default staircase is held out. Validity tables and V₀ are built for
+  all 8.
+- **Round 0**: 450 searches (V₀ and the uniform ranker), launched on 11-21;
+  results **pending**.
+- **Global placement, pre-registered.** Round 1 runs each training scene at
+  one random placement (seed 7915), so the learner can discover translation
+  invariance from data; nothing imposes it.
+- **The frame-local planner** (decision 56 (a′)). A placed scene's table and
+  V₀ are computed in the scene's own frame, so they are exactly translation
+  invariant: F1g1p's rebuilt table is identical to F1g1's in every field,
+  where the world-frame build had differed in 28 of about 1,124 single edges.
+- **A learned-canonicalization arm, pre-registered**: the same network on
+  positions relative to a learned reference point (translation invariant by
+  construction, labeled "architectural, not discovered"). It enters the
+  online evaluation only if its 5-seed Laplace evidence separates from the
+  world-frame model's.
+- **At the cutoff.** If the pilot model solves the staircase's top tread
+  zero-shot, it is RSS's lead learning result; otherwise RSS reports the
+  top tread's 0 / 30 as the motivating limitation.
+
+### Judge calibration for the RSS headline {#judge-calibration}
+
+The judge ("held throughout", rule 3) compares each contact's measured stick
+and slide per step against maxima. The maxima are recalibrated on the
+headline's own realizer (decisions 45, 49, 50; branch
+`fix/judge-recalibrate`, `3a1104f21`):
+
+- **Population.** Fresh searches under the headline profile
+  (`principled-noinform`) with the judge record-only (it records, it does not
+  steer), from starts disjoint from the headline's (seed 7920), in batches of
+  60; every fourth start is held out.
+- **Thresholds.** For each (contact, quantity), the maximum over the
+  calibration half's **successful** executions. A row needs n ≥ 59: the
+  maximum of 59 samples is a 95/95 upper bound (0.95⁵⁹ < 0.05), and the
+  held-out exceedance is about 1/(n + 1). A row with fewer than 59 has no
+  threshold, and a call that needs one is unheld (decision 50).
+- **Status after batches 1 and 2** (120 searches; 4 that crashed in the
+  settle extension were rerun on its fix): 14 of 46 rows still have fewer
+  than 59 (from m<sub>z</sub>'s slides, 52, down to the disk sliding on
+  one block corner, 1); held out, 10 of 11,988 per-call checks exceed the calibration maximum.
+  Batch 3 (60 more, 180 in all, the last under the stopping rule) is running.
+  The final thresholds are **pending**.
+
 ## The planner finds it from the scene alone
 
 The search is given the scene and the goal, nothing else: every edit the gate
@@ -147,7 +331,7 @@ closest to its median calls on the path and in the search.
 ## How to read a clip
 
 - **View.** From the side, with +x to the **left**, as in the paper. The
-  green surface is the platform, the grey one the floor, the blue ball the
+  green surface is the platform, the gray one the floor, the blue ball the
   disk. A red stripe marks the face the block rests on at the start.
 - **Caption bar.** The run; the current edit *k/n* with its formations
   (σ → σ′); the call's outcome and the state it reached; the phase; the
