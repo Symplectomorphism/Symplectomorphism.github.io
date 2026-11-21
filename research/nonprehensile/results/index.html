@@ -590,6 +590,13 @@ window.MathJax = {
    
   <ul>
   <li><a href="#the-task" id="toc-the-task" class="nav-link active" data-scroll-target="#the-task">The task</a></li>
+  <li><a href="#latest" id="toc-latest" class="nav-link" data-scroll-target="#latest">2026-11-19 … 11-21: the certified chain, the staircase, scene-generic learning</a>
+  <ul class="collapse">
+  <li><a href="#the-certified-chain-issue-81-back-half" id="toc-the-certified-chain-issue-81-back-half" class="nav-link" data-scroll-target="#the-certified-chain-issue-81-back-half">The certified chain (issue #81, back half)</a></li>
+  <li><a href="#staircase" id="toc-staircase" class="nav-link" data-scroll-target="#staircase">The staircase, with V₁ and π retrained on it</a></li>
+  <li><a href="#scene-generic" id="toc-scene-generic" class="nav-link" data-scroll-target="#scene-generic">Scene-generic V₁ and π (issue #86)</a></li>
+  <li><a href="#judge-calibration" id="toc-judge-calibration" class="nav-link" data-scroll-target="#judge-calibration">Judge calibration for the RSS headline</a></li>
+  </ul></li>
   <li><a href="#the-planner-finds-it-from-the-scene-alone" id="toc-the-planner-finds-it-from-the-scene-alone" class="nav-link" data-scroll-target="#the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</a>
   <ul class="collapse">
   <li><a href="#clips" id="toc-clips" class="nav-link" data-scroll-target="#clips">Clips</a></li>
@@ -650,6 +657,269 @@ $$
 <h2 class="anchored" data-anchor-id="the-task">The task</h2>
 <p>The block starts at rest on the floor and must end fully on the platform, at rest. The disk alone cannot carry it. The <strong>indirect lift</strong> tips the block onto the step corner, lets the disk walk round to the block’s raised underside, lifts the block off the floor and rolls it onto the platform, the block held at every instant:</p>
 <p>{g} → {m<sub>x</sub>, g} → {m<sub>x</sub>, g, s} ⇒ {m<sub>x</sub>, g<sub>v</sub>, s<sub>v</sub>} → {g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>, g<sub>v</sub>, s<sub>v</sub>} → {m<sub>z</sub>, s<sub>v</sub>} → {m<sub>z</sub>, t} → (transport) goal.</p>
+</section>
+<section id="latest" class="level2">
+<h2 class="anchored" data-anchor-id="latest">2026-11-19 … 11-21: the certified chain, the staircase, scene-generic learning</h2>
+<p>Four lines of work. Every number below is from a committed record in <code>RobotControlLab/certified-contact-graphs</code> (private); the commit or branch is given with each. Anything not yet final is marked <strong>pending</strong>.</p>
+<section id="the-certified-chain-issue-81-back-half" class="level3">
+<h3 class="anchored" data-anchor-id="the-certified-chain-issue-81-back-half">The certified chain (issue #81, back half)</h3>
+<p>The chain is one route of the lift built as certified funnels (<a href="../../../research/nonprehensile/planar-build/funnels.html">Certified funnels</a>): each edge certified for every state of its entry set and every disk friction in [0.3, 0.5], each junction a containment of certified sets. The junctions now need <strong>real margins</strong>, and chain_check enforces them by default (ccg <code>a6161ffa5</code>):</p>
+<ul>
+<li>a link where the control switches holds by at least one measured one-step 95/95 slack: the realized state’s change over one step at the hand-off; for the rest links, the hold’s own one-step change (decision 42 (a));</li>
+<li>a boundary between two certificates of one law, with no switch, holds by containment with a margin above the float32 forward-error bound of the compared quantity (decision 43 (a′)).</li>
+</ul>
+<p>Every narrow link from the tip to the push passes (ccg <code>master</code> <code>eddbd2aa8</code>; <code>ccg/scripts/edge_tube/results/i81/back/roll_push_entry/swap_after/cc_narrow.txt</code>):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Link</th>
+<th>Kind</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>tip departure → tip funnel</td>
+<td>same-law boundary</td>
+<td>pass</td>
+</tr>
+<tr class="even">
+<td>tip funnel → 23° switch → pivot</td>
+<td>switch: slack</td>
+<td>pass, ≥ 1 slack</td>
+</tr>
+<tr class="odd">
+<td>pivot → stop at 59.00°</td>
+<td>switch: slack</td>
+<td>pass, ≥ 1 slack</td>
+</tr>
+<tr class="even">
+<td>stop at 59.00° → gentle break</td>
+<td>rest: slack; force band</td>
+<td>pass, ≥ 1 slack; force contained</td>
+</tr>
+<tr class="odd">
+<td>gentle break + make(m<sub>z</sub>)</td>
+<td>one certificate (a node, no junction)</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>make(m<sub>z</sub>) → tcbreak departure</td>
+<td>rest: slack</td>
+<td>pass, +1 slack</td>
+</tr>
+<tr class="odd">
+<td>tcbreak departure → tcbreak funnel</td>
+<td>same-law boundary</td>
+<td>pass</td>
+</tr>
+<tr class="even">
+<td>tcbreak funnel → tcroll funnel (62°)</td>
+<td>switch: slack</td>
+<td>pass, ≥ 1 slack</td>
+</tr>
+<tr class="odd">
+<td>tcroll funnel → push</td>
+<td>switch: slack</td>
+<td>pass, +1 slack (decision 54)</td>
+</tr>
+<tr class="even">
+<td>push → landing (impact window)</td>
+<td>same-law boundary</td>
+<td><strong>pending</strong>: the cover is rebuilt</td>
+</tr>
+</tbody>
+</table>
+<p>The wide chain, from the post-impact rest set S<sub>rest</sub> through the c3 departure, the wide funnel and the goal stop to the release, passes end to end under enforcement (<code>CHAIN PASS (wide)</code>, ccg <code>c875eb515</code>, <code>i81/back/goal_band_juno524821/cc_wide_band.txt</code>). S<sub>rest</sub>’s independent holdout: 0 of 773 rollouts outside (Clopper–Pearson 0.39%; ccg <code>c5354ee66</code>).</p>
+<p><strong>Commanded forces over measured bands</strong> (decision 44 (2)). Where a hold’s commanded force is handed from one certificate to the next, both certificates are now certified over the command ± δ, δ the one-sided 95/95 bound on |realized − commanded| normal force at the hand-off, measured on 1,536 rollouts of the realizer (calibration half 768, held-out half 768):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Junction</th>
+<th>Command ± δ</th>
+<th>Held out within δ</th>
+<th>Record</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>stop at 59.00° → gentle break</td>
+<td>0.0311568 ± 1.07 × 10⁻⁴ N</td>
+<td>756 / 768</td>
+<td><code>i81/slack/stop_force_break.json</code></td>
+</tr>
+<tr class="even">
+<td>goal stop → release</td>
+<td>0.15 ± 0.00859 N</td>
+<td>757 / 768</td>
+<td><code>i81/slack/rest_force_stop_release.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>At the goal stop the realized force lies one-sidedly above the command (0.1574–0.1586 N at both ends of the friction band). Both certificates hold over their bands (ccg <code>4313f9491</code>, <code>c875eb515</code>).</p>
+<p><strong>The push, re-certified from the roll’s grown exit</strong> (decision 54). The roll → push junction had compared the roll’s exit with an entry the push tubes never certified (<a href="../../../research/nonprehensile/planar-build/issues.html">Issues</a>). The push was re-certified with the same law from the roll’s exit grown by its slack: 16 of 16 sub-boxes hold, utilization 0.603–0.631, binding on progress (Juno 525614, ccg <code>13512e720</code>). Roll → push now passes at +1 slack.</p>
+<p><strong>The same verdicts in float32.</strong> Every re-certified piece was rerun in float32 (fe32-poly) and holds with the same binding conditions: the lift funnels, the roll junction and both departures (ccg <code>5e679b9a9</code>), the stop (<code>8f15b80d4</code>), the goal stop and the release (<code>f7338e7b4</code>), and the re-seeded push (utilization 0.598–0.626; <code>eddbd2aa8</code>).</p>
+<p><strong>Pending: push → landing.</strong> The landing’s impact-window cover was certified for the push’s earlier exit; it is rebuilt from the re-certified exits (about 1,125 core-hours, measured on a smoke; ccg <code>fd271699a</code>) and is running on Ganymede2.</p>
+</section>
+<section id="staircase" class="level3">
+<h3 class="anchored" data-anchor-id="staircase">The staircase, with V₁ and π retrained on it</h3>
+<p>Branch <code>meas/staircase-v1pi</code> (<code>f226acf1c</code>), the <strong>v0.3.1 stack</strong> (not the RSS headline’s), on the 30 held-out starts (seed 13, starts 0–14, μ = 0.3 and 0.5) of the earlier V₀-only staircase measurement. V₁ and π are retrained on the staircase (816 training searches, S_step’s pipeline).</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Task</th>
+<th>V₀ only</th>
+<th>V₀ + V₁ + π</th>
+<th>Gained / lost (exact McNemar)</th>
+<th>Median calls to solve</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>first tread (P1)</td>
+<td>1 / 30</td>
+<td><strong>29 / 30</strong> (83–99%)</td>
+<td>+28 / −0 (p = 7.5 × 10⁻⁹)</td>
+<td>76</td>
+</tr>
+<tr class="even">
+<td>top tread (P2)</td>
+<td>0 / 30</td>
+<td><strong>0 / 30</strong></td>
+<td>+0 / −0</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>S_step (control, S_step’s own model)</td>
+<td>1 / 30</td>
+<td>30 / 30</td>
+<td>+29 / −0 (p = 3.7 × 10⁻⁹)</td>
+<td>83</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Where the top tread stops.</strong> All 30 searches land the block on P1 (first at call 51, median) and reach the second lift’s start, the block on P1 against the second riser. There the gate offers V₀’s route edit, the tilt about P1’s edge, at 94 of the 97 such nodes, and π ranks it <strong>last of four at all 94</strong> (median probability 0.001). No training search reached P2, so P2’s goal enters training only through hindsight goals.</p>
+<p><strong>Held throughout</strong> (the routes to the tread replayed as logged; both of G3’s criteria):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Task</th>
+<th>Ordering</th>
+<th>Routes</th>
+<th>Formation kept</th>
+<th>Force in interval</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>first tread</td>
+<td>V₀ only</td>
+<td>28</td>
+<td>23</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>first tread</td>
+<td>V₀ + V₁ + π</td>
+<td>30</td>
+<td>21</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>route to P1 (top-tread task)</td>
+<td>V₀ only</td>
+<td>30</td>
+<td>24</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>route to P1 (top-tread task)</td>
+<td>V₀ + V₁ + π</td>
+<td>30</td>
+<td>21</td>
+<td>15</td>
+</tr>
+<tr class="odd">
+<td>S_step</td>
+<td>V₀ only</td>
+<td>30</td>
+<td>25</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>S_step</td>
+<td>V₀ + V₁ + π</td>
+<td>30</td>
+<td>19</td>
+<td>18</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="scene-generic" class="level3">
+<h3 class="anchored" data-anchor-id="scene-generic">Scene-generic V₁ and π (issue #86)</h3>
+<p>The goal: a value and ranker that transfer to new scenes without retraining.</p>
+<p><strong>Step 1: S_step only</strong> (branch <code>feat/scene-generic-v1</code>, <code>76c41cffb</code>). A transformer over the scene’s geometry as tokens (world frame, no positional encoding), trained on S_step’s 408 searches: 20 models (no augmentation, Augerino, Laplace, untrained; 5 seeds each). It ranks S_step’s held-out searches as well as the current model (π top-1 95.2%, 95.1%, 92.6% against 93.4%; V₁ Spearman 0.916, 0.920, 0.873 against 0.927). As predicted, <strong>no variant learns the step-to-step symmetry</strong> (invariant only if the P95 gap is at most the P95 seed spread; V in calls):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Variant</th>
+<th>P95 gap / seed spread, step-to-step map</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>none</td>
+<td>7.45 / 3.52</td>
+</tr>
+<tr class="even">
+<td>Laplace</td>
+<td>8.01 / 2.61</td>
+</tr>
+<tr class="odd">
+<td>Augerino</td>
+<td>6.19 / 2.34</td>
+</tr>
+</tbody>
+</table>
+<p>Laplace’s marginal likelihood collapsed every candidate augmentation; only the far-field deletion (G6) collapsed as predicted, and the pre-registered predictions for the other five candidates (G1–G5) missed. Augerino’s continuous candidates collapsed and its discrete ones went to their maximum, G6 included (a miss). A hand-built symmetry also fails (4.94 / 2.14), so the bottleneck is the staircase’s unseen far field, not the frame. The misses are listed in the branch’s <code>ccg/scripts/learn/scene_generic/README.md</code>.</p>
+<p><strong>Step 2: a pilot family</strong> (branch <code>feat/scene-generic-m2</code>; in progress, cutoff Nov 28).</p>
+<ul>
+<li><strong>The family.</strong> 8 scenes drawn by Latin hypercube (seed 7830): 4 staircases and 2 single steps for training, one of each for validation; the default staircase is held out. Validity tables and V₀ are built for all 8.</li>
+<li><strong>Round 0</strong>: 450 searches (V₀ and the uniform ranker), launched on 11-21; results <strong>pending</strong>.</li>
+<li><strong>Global placement, pre-registered.</strong> Round 1 runs each training scene at one random placement (seed 7915), so the learner can discover translation invariance from data; nothing imposes it.</li>
+<li><strong>The frame-local planner</strong> (decision 56 (a′)). A placed scene’s table and V₀ are computed in the scene’s own frame, so they are exactly translation invariant: F1g1p’s rebuilt table is identical to F1g1’s in every field, where the world-frame build had differed in 28 of about 1,124 single edges.</li>
+<li><strong>A learned-canonicalization arm, pre-registered</strong>: the same network on positions relative to a learned reference point (translation invariant by construction, labeled “architectural, not discovered”). It enters the online evaluation only if its 5-seed Laplace evidence separates from the world-frame model’s.</li>
+<li><strong>At the cutoff.</strong> If the pilot model solves the staircase’s top tread zero-shot, it is RSS’s lead learning result; otherwise RSS reports the top tread’s 0 / 30 as the motivating limitation.</li>
+</ul>
+</section>
+<section id="judge-calibration" class="level3">
+<h3 class="anchored" data-anchor-id="judge-calibration">Judge calibration for the RSS headline</h3>
+<p>The judge (“held throughout”, rule 3) compares each contact’s measured stick and slide per step against maxima. The maxima are recalibrated on the headline’s own realizer (decisions 45, 49, 50; branch <code>fix/judge-recalibrate</code>, <code>3a1104f21</code>):</p>
+<ul>
+<li><strong>Population.</strong> Fresh searches under the headline profile (<code>principled-noinform</code>) with the judge record-only (it records, it does not steer), from starts disjoint from the headline’s (seed 7920), in batches of 60; every fourth start is held out.</li>
+<li><strong>Thresholds.</strong> For each (contact, quantity), the maximum over the calibration half’s <strong>successful</strong> executions. A row needs n ≥ 59: the maximum of 59 samples is a 95/95 upper bound (0.95⁵⁹ &lt; 0.05), and the held-out exceedance is about 1/(n + 1). A row with fewer than 59 has no threshold, and a call that needs one is unheld (decision 50).</li>
+<li><strong>Status after batches 1 and 2</strong> (120 searches; 4 that crashed in the settle extension were rerun on its fix): 14 of 46 rows still have fewer than 59 (from m<sub>z</sub>’s slides, 52, down to the disk sliding on one block corner, 1); held out, 10 of 11,988 per-call checks exceed the calibration maximum. Batch 3 (60 more, 180 in all, the last under the stopping rule) is running. The final thresholds are <strong>pending</strong>.</li>
+</ul>
+</section>
 </section>
 <section id="the-planner-finds-it-from-the-scene-alone" class="level2">
 <h2 class="anchored" data-anchor-id="the-planner-finds-it-from-the-scene-alone">The planner finds it from the scene alone</h2>
@@ -785,7 +1055,7 @@ $$
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <ul>
-<li><strong>View.</strong> From the side, with +x to the <strong>left</strong>, as in the paper. The green surface is the platform, the grey one the floor, the blue ball the disk. A red stripe marks the face the block rests on at the start.</li>
+<li><strong>View.</strong> From the side, with +x to the <strong>left</strong>, as in the paper. The green surface is the platform, the gray one the floor, the blue ball the disk. A red stripe marks the face the block rests on at the start.</li>
 <li><strong>Caption bar.</strong> The run; the current edit <em>k/n</em> with its formations (σ → σ′); the call’s outcome and the state it reached; the phase; the formation the recognizer reads right now; and whether the replay matched the log.</li>
 <li><strong>Speed.</strong> The badge at the top left states it. The path plays as one motion: in real time while the block or the disk moves, easing to 3× while both rest. A call’s outcome stays on screen while the next call plays.</li>
 <li><strong>Card.</strong> The last frame carries the search’s summary.</li>
