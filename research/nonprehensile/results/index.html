@@ -668,7 +668,7 @@ $$
 <li>a link where the control switches holds by at least one measured one-step 95/95 slack: the realized state’s change over one step at the hand-off; for the rest links, the hold’s own one-step change (decision 42 (a));</li>
 <li>a boundary between two certificates of one law, with no switch, holds by containment with a margin above the float32 forward-error bound of the compared quantity (decision 43 (a′)).</li>
 </ul>
-<p>Every narrow link from the tip to the push passes (ccg <code>master</code> <code>eddbd2aa8</code>; <code>ccg/scripts/edge_tube/results/i81/back/roll_push_entry/swap_after/cc_narrow.txt</code>):</p>
+<p>Every narrow link from the tip through the landing passes, <code>CHAIN PASS (narrow)</code> (ccg branch <code>fix/i81-landing-cover</code> <code>2b7a20565</code>, <code>ccg/scripts/edge_tube/results/i81/back/landing_cover_swap/cc_narrow.txt</code>; the links up to the push are those of <code>master</code> <code>eddbd2aa8</code>):</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -731,7 +731,7 @@ $$
 <tr class="even">
 <td>push → landing (impact window)</td>
 <td>same-law boundary</td>
-<td><strong>pending</strong>: the cover is rebuilt</td>
+<td>pass, above the float32 bound (decisions 46, 63)</td>
 </tr>
 </tbody>
 </table>
@@ -770,7 +770,14 @@ $$
 <p>At the goal stop the realized force lies one-sidedly above the command (0.1574–0.1586 N at both ends of the friction band). Both certificates hold over their bands (ccg <code>4313f9491</code>, <code>c875eb515</code>).</p>
 <p><strong>The push, re-certified from the roll’s grown exit</strong> (decision 54). The roll → push junction had compared the roll’s exit with an entry the push tubes never certified (<a href="../../../research/nonprehensile/planar-build/issues.html">Issues</a>). The push was re-certified with the same law from the roll’s exit grown by its slack: 16 of 16 sub-boxes hold, utilization 0.603–0.631, binding on progress (Juno 525614, ccg <code>13512e720</code>). Roll → push now passes at +1 slack.</p>
 <p><strong>The same verdicts in float32.</strong> Every re-certified piece was rerun in float32 (fe32-poly) and holds with the same binding conditions: the lift funnels, the roll junction and both departures (ccg <code>5e679b9a9</code>), the stop (<code>8f15b80d4</code>), the goal stop and the release (<code>f7338e7b4</code>), and the re-seeded push (utilization 0.598–0.626; <code>eddbd2aa8</code>).</p>
-<p><strong>Pending: push → landing.</strong> The landing’s impact-window cover was certified for the push’s earlier exit; it is rebuilt from the re-certified exits (about 1,125 core-hours, measured on a smoke; ccg <code>fd271699a</code>) and is running on Ganymede2.</p>
+<p><strong>The landing, certified</strong> (decisions 46 and 63 (a); branch <code>fix/i81-landing-cover</code> <code>2b7a20565</code>, <code>ccg/scripts/landing_motion/results/zono_cover_i81/</code>). After the roll over the step corner, the disk pushes the block so that it lands on the platform while still moving. The impact window is the handful of 10 ms steps in which it strikes the platform and its contacts change. The certificate covers every state the push can hand over: the push’s 16 certified exits, each grown by twice the float32 bound, are split into units, and each unit is cut into pieces until one contact class (which contacts stick, slide or separate at each step) is proved on the whole piece, for every state in it and every disk friction in [0.3, 0.5].</p>
+<ul>
+<li><strong>All certified.</strong> All 16,384 units and all 138,286 pieces are certified, none left over (<code>growth/cover/report.json</code>).</li>
+<li><strong>Real margins, also in float32.</strong> Every contact condition clears its worst-case float32 rounding bound: the forward-error bound of the roundings along the code that forms the margin, scaled by the size of the quantities it is formed from and by the measured error growth of the solver’s own elimination (at most 5.49). The smallest margin is 1.0026 times its bound, the median 9,903 times. A float32 computation gives the same verdict on every piece.</li>
+<li><strong>The junction.</strong> The push into the landing passes the chain check (<code>PASS push -&gt; landing (impact window)</code>, then <code>CHAIN PASS (narrow)</code>): all 16 push exits lie inside the cover’s roots by more than the float32 bound.</li>
+<li><strong>Cost.</strong> Three passes on Ganymede2, 1,018 core-hours in all: the cover (607), the float32 check (325) and the elimination-growth check (86).</li>
+<li><strong>Running: the rest after the landing.</strong> The check that the block comes to rest on the platform from every state this cover hands over (the energy certificate, unit by unit) is running on Ganymede2; its result will be added here.</li>
+</ul>
 </section>
 <section id="staircase" class="level3">
 <h3 class="anchored" data-anchor-id="staircase">The staircase, with V₁ and π retrained on it</h3>
@@ -903,8 +910,20 @@ $$
 <p>Laplace’s marginal likelihood collapsed every candidate augmentation; only the far-field deletion (G6) collapsed as predicted, and the pre-registered predictions for the other five candidates (G1–G5) missed. Augerino’s continuous candidates collapsed and its discrete ones went to their maximum, G6 included (a miss). A hand-built symmetry also fails (4.94 / 2.14), so the bottleneck is the staircase’s unseen far field, not the frame. The misses are listed in the branch’s <code>ccg/scripts/learn/scene_generic/README.md</code>.</p>
 <p><strong>Step 2: a pilot family</strong> (branch <code>feat/scene-generic-m2</code>; in progress, cutoff Nov 28).</p>
 <ul>
-<li><strong>The family.</strong> 8 scenes drawn by Latin hypercube (seed 7830): 4 staircases and 2 single steps for training, one of each for validation; the default staircase is held out. Validity tables and V₀ are built for all 8.</li>
-<li><strong>Round 0</strong>: 450 searches (V₀ and the uniform ranker), launched on 11-21; results <strong>pending</strong>.</li>
+<li><strong>The first family, and the height limit it measured.</strong> The first pilot family (8 scenes by Latin hypercube, seed 7830, risers of different heights) ran its round 0: 450 searches with V₀ alone. Many stopped early, and the cause is physical: on a first riser of 0.41a or taller the disk cannot tilt the block up at μ = 0.3 (0 of 15), though it can at 0.5; risers up to 0.317a work at both. That family is kept only as the measurement behind this limit, not as training data.</li>
+<li><strong>The equal-riser family</strong> (decisions 57, 59b, 60). Both risers of every staircase are a/4 (31.25 mm), the height of S_step’s single step, so the scenes differ only in the width w of the first tread. Each riser is then the same local scene up to a translation, and that symmetry is exact.
+<ul>
+<li><strong>Lower bound on the tread.</strong> The first tread must hold the block where it comes to rest after the landing: w<sub>min</sub> = 1.266a (a + 33.2 mm), the 95/95 bound on the block’s first fully-on rest positions on S_step (305 rests; measured, not chosen).</li>
+<li><strong>The widths</strong> are the midpoints of 5 equal strata of [1.5125a, 2.5a]: 1.6112a, 1.8087a, 2.0062a (validation, F2m2), 2.2037a and 2.4012a. The stratum [1.266a, 1.5125a) holds the default staircase’s 1.5a and is excluded. The widths are deterministic, with no seed.</li>
+</ul></li>
+<li><strong>The direct step test</strong> (a diagnostic before the builds). Each step of the lift ran once from a settled staged start, on every scene at both μ (10 cases), with the default staircase’s V₀ as a stand-in:
+<ul>
+<li>the lower steps (the push to the riser, the pivot, the tilt-up and the regrip) succeed in 10 of 10;</li>
+<li>the block lands on the first tread in 9 of 10;</li>
+<li>it ends fully on within the budget in 4 of 10; the others run out of budget, or stop a few millimeters short where the stand-in V₀’s transport targets end.</li>
+</ul></li>
+<li><strong>The one non-landing is borderline</strong> (w = 2.2037a, μ = 0.3). After the regrip the block leans at 52.8° on the riser’s corner, its lower corner still on the floor and the disk at its lower back corner. The gate admits both ways on. Lifting the block’s corner off the floor fails in execution: the disk turns the block by only 0.1° and the corner stays down. Sliding the disk under the block’s bottom face turns it to 64.7°, but the disk ends 22 mm off its planned path and the judge rejects the call. Nothing else is on the route, and the search runs out after 8 calls. The same two moves succeed on the other scenes, from poses within 0.2–1.2° and under 1 mm of this one, and on this scene at μ = 0.5. At μ = 0.3 the lift-off near 53° is at the edge of what the disk can do; the physics allows the landing, and the failure is in the execution.</li>
+<li><strong>Stage A is running</strong> (decision 64): the validity tables and V₀ of the five scenes, on Ganymede2. Every build runs on one CPU model (AMD EPYC 9334), because V₀ builds on different CPU models differ (<a href="../../../research/nonprehensile/planar-build/issues.html">Issues</a>).</li>
 <li><strong>Global placement, pre-registered.</strong> Round 1 runs each training scene at one random placement (seed 7915), so the learner can discover translation invariance from data; nothing imposes it.</li>
 <li><strong>The frame-local planner</strong> (decision 56 (a′)). A placed scene’s table and V₀ are computed in the scene’s own frame, so they are exactly translation invariant: F1g1p’s rebuilt table is identical to F1g1’s in every field, where the world-frame build had differed in 28 of about 1,124 single edges.</li>
 <li><strong>A learned-canonicalization arm, pre-registered</strong>: the same network on positions relative to a learned reference point (translation invariant by construction, labeled “architectural, not discovered”). It enters the online evaluation only if its 5-seed Laplace evidence separates from the world-frame model’s.</li>
@@ -913,11 +932,15 @@ $$
 </section>
 <section id="judge-calibration" class="level3">
 <h3 class="anchored" data-anchor-id="judge-calibration">Judge calibration for the RSS headline</h3>
-<p>The judge (“held throughout”, rule 3) compares each contact’s measured stick and slide per step against maxima. The maxima are recalibrated on the headline’s own realizer (decisions 45, 49, 50; branch <code>fix/judge-recalibrate</code>, <code>3a1104f21</code>):</p>
+<p>The judge decides whether the block stayed <strong>held throughout</strong> a motion: at every step, each contact the plan keeps behaves as planned. A contact meant to stick must not creep, and a contact meant to slide must slide the planned way by the planned amount. The judge’s rule 3 measures each contact’s slip, per step and along the motion, and compares it with thresholds set per contact and quantity. The thresholds are measured, on calibration searches that run the headline’s own realizer (decisions 45, 49, 50 and 61):</p>
 <ul>
-<li><strong>Population.</strong> Fresh searches under the headline profile (<code>principled-noinform</code>) with the judge record-only (it records, it does not steer), from starts disjoint from the headline’s (seed 7920), in batches of 60; every fourth start is held out.</li>
-<li><strong>Thresholds.</strong> For each (contact, quantity), the maximum over the calibration half’s <strong>successful</strong> executions. A row needs n ≥ 59: the maximum of 59 samples is a 95/95 upper bound (0.95⁵⁹ &lt; 0.05), and the held-out exceedance is about 1/(n + 1). A row with fewer than 59 has no threshold, and a call that needs one is unheld (decision 50).</li>
-<li><strong>Status after batches 1 and 2</strong> (120 searches; 4 that crashed in the settle extension were rerun on its fix): 14 of 46 rows still have fewer than 59 (from m<sub>z</sub>’s slides, 52, down to the disk sliding on one block corner, 1); held out, 10 of 11,988 per-call checks exceed the calibration maximum. Batch 3 (60 more, 180 in all, the last under the stopping rule) is running. The final thresholds are <strong>pending</strong>.</li>
+<li><strong>The calibration searches.</strong> 180 fresh searches under the headline profile (<code>principled-noinform</code>), with the judge recording but not steering, from starts disjoint from the headline’s (seed 7920): batch 1 (Juno 524893; its 4 searches that crashed in the settle extension rerun on the fix, Juno 525149), batch 2 (Juno 525283) and batch 3 (Juno 525522). Every fourth start is held out.</li>
+<li><strong>A threshold needs at least 59 samples.</strong> A threshold is the largest value seen in the calibration half’s successful executions. The largest of n samples is a 95/95 upper bound only when n ≥ 59, since 0.95⁵⁹ &lt; 0.05; a fresh motion exceeds it with probability about 1/(n + 1).</li>
+<li><strong>34 of the 46 rows have a threshold</strong>: every contact of the block with the floor, the step and the platform, and the disk’s common contacts on the block. Held out, 10 of 16,836 per-call checks exceed their threshold.</li>
+<li><strong>12 rows have fewer than 59 samples, and no threshold</strong> (decision 50 (a)): the disk on three of the block’s corners, and the disk sliding on the block’s front face, motions the calibration searches rarely make (n from 2 to 38). A move that needs one of these rows is refused, logged as “rule 3: uncalibrated (n &lt; 59)”; there is no fallback constant. Over the calibration searches this refuses 359 of 17,291 recorded calls.</li>
+<li><strong>The unsettled first step is left out</strong> (decision 61 (a)). The searches started from geometric poses, the block exactly touching with zero velocity, so a motion from such a start began with one step of free fall. The record was recomputed without that step: no threshold changes, and the disk-sliding rows on the block’s back face lose 8 of their 566 samples. Searches now start from a state brought to rest in simulation.</li>
+<li><strong>The let-go window</strong> after a release: 84 samples (held out, 0 of 3,603 above).</li>
+<li><strong>The record</strong>: <code>ccg/scripts/edge_tube/results/i81/slack_held_phases.json</code>, md5 <code>b7597fe6</code>, branch <code>fix/settle-start</code> <code>b28d6ae6d</code> (in <code>integ/principled</code>), the decision-61 recomputation of <code>fix/judge-recalibrate</code> <code>5ebd7037a</code>’s record.</li>
 </ul>
 </section>
 </section>
