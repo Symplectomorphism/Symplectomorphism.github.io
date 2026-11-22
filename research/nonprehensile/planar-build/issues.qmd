@@ -7,7 +7,9 @@ aliases:
 ---
 
 **Last checked:** 2026-11-21, against `master` at `f09a8da8b` in
-[`RobotControlLab/certified-contact-graphs`](https://github.com/RobotControlLab/certified-contact-graphs). The full records are in the discussion
+[`RobotControlLab/certified-contact-graphs`](https://github.com/RobotControlLab/certified-contact-graphs)
+and the decisions through decision 66; work not yet on `master` names its
+branch. The full records are in the discussion
 compendium (`reports/supporting_docs/discussion-compendium/`). The entries
 added on 2026-11-21 come first in each section; the older entries below them
 were last checked on 2026-11-13.
@@ -15,21 +17,29 @@ were last checked on 2026-11-13.
 ## Open
 
 ::: {.callout-important collapse="true"}
-## Push → landing: the impact-window cover is rebuilt (open; running)
-The certified chain's last open link. After the back half of the chain was
-re-certified from slack-grown exits (issue #81), the push's certified exit
-moved, and the landing's impact-window cover was built for the earlier exit:
-in chain_check, push → landing (impact window) fails (the push's exit 0 is
-outside the cover's root 0 in s', stick:s<sub>v</sub> and stick:m<sub>z</sub>).
-The push and the landing run one law until the make's latch, so the link is a
-**same-law boundary** (decision 43 (a′)): it passes by containment with a
-margin above the float32 forward-error bound, not by a measured slack
-(decision 46). The cover's roots are the 16 re-certified push exits moved out
-by twice the float32 bound. A smoke on 6 units of the rebuilt root 0 gave 98
-leaves against the original's 98, 0 uncertified, in 0.92× the time, so the
-rebuild costs about the original's 1,125 core-hours (ccg `fd271699a`). The
-rebuild is running on Ganymede2; push → landing is **pending** until it
-finishes. [Results](../results/index.qmd#the-certified-chain-issue-81-back-half).
+## The rest after the landing, from the rebuilt cover (open; running)
+The landing's impact-window cover is rebuilt and certified, and push →
+landing passes the chain check (closed below). The next link, the block
+coming to rest on the platform after the impact, is certified by an energy
+(dissipation) inequality on each unit of the cover's hand-off set. It is
+being re-checked from the rebuilt cover's 16,384 units on Ganymede2; the
+wide chain's rows that start from the rest set are then re-checked against
+the new rest set. [Results](../results/index.qmd#the-certified-chain-issue-81-back-half).
+:::
+
+::: {.callout-important collapse="true"}
+## Diagnoses in progress (decisions 65 and 66)
+- **Planner tests must not be decided by float rounding** (decision 65 (a)).
+  The same scene's V₀, built on an Intel and on an AMD node, differs in 4
+  pose verdicts and in gate margins at the float32 level; the diagnosis
+  sorts every differing comparison (an exact zero, a value at its
+  threshold, or a tie) so that each is decided by construction, and the
+  builds are pinned to one CPU model until then.
+- **The first pivot fails because the block barely turns** (decision 66
+  (a)). In the searches' first move the disk should tip the block, flush
+  against the riser, onto its corners at the floor and at the step, but the
+  block turns only a few tenths of a degree and the call fails; it is compared with the pivot the feasibility study
+  accepted.
 :::
 
 ::: {.callout-important collapse="true"}
@@ -199,6 +209,23 @@ keep penetration under 0.22 mm but need the controller retuned first.
 ## Closed (2026-11-19 … 11-21)
 
 ::: {.callout-tip collapse="true"}
+## Push → landing: the impact-window cover rebuilt and certified (closed; decisions 46, 63)
+After the back half of the chain was re-certified (issue #81), the push's
+certified exit moved, and the landing's cover, built for the earlier exit,
+no longer contained it. The push and the landing run one law, so the link
+is a **same-law boundary** (decision 43 (a′)): it passes by containment with
+a margin above the float32 bound. The cover was rebuilt from the 16
+re-certified push exits, each grown by twice the float32 bound: 16,384
+units and 138,286 pieces, all certified. Every contact condition clears its
+worst-case float32 rounding bound, including the measured error growth of
+the solver's elimination (decision 63 (a)); the smallest ratio is 1.0026, the
+median 9,903. The chain check passes: `CHAIN PASS (narrow)`. Three passes,
+1,018 core-hours on Ganymede2 (ccg `fix/i81-landing-cover` `2b7a20565`).
+The rest after the landing is re-checked from this cover (open, above).
+[Results](../results/index.qmd#the-certified-chain-issue-81-back-half).
+:::
+
+::: {.callout-tip collapse="true"}
 ## Roll → push: the junction compared the wrong entry set (closed; decision 54)
 The push tubes certify the block's rate s' about their own law's value
 ω<sub>law</sub>(θ<sub>h</sub>) at the hand-off (0.0313–0.0340 rad/s on the 16
@@ -218,6 +245,20 @@ slack in s', stick:s<sub>v</sub> and stick:m<sub>z</sub> (ccg `master`
 
 ::: {.callout-tip collapse="true"}
 ## Smaller defects closed
+- **The searches started from poses that were not at rest** (decision 61
+  (a)). A search's start was a geometric pose, the block exactly touching
+  with zero velocity, so its first motion began with one step of free fall,
+  and the judge saw that fall as a contact not held. Every start is now
+  brought to rest in simulation first, the disk holding, before the search
+  (`CCG_SETTLE_START`, ccg `fix/settle-start`, in `integ/principled`). The
+  judge's record, recomputed without that step, keeps every threshold.
+- **The gate offered targets the disk cannot drive to** (decision 62 (a)).
+  After the pivot, the gate admitted transport targets at 66.7–70° of tilt,
+  but the disk can drive the block, held, only to about 63–64°: past that,
+  friction at the floor and at the step corner gives way. The gate now runs
+  the drive test of the hold check along the whole planned path and picks
+  the nearest drivable target, or refuses (`CCG_GATE_DRIVE_PATH`, ccg
+  `fix/gate-drive-path` `47013640d`, in `integ/principled`).
 - **The settle extension crashed after a fired release.** The extension took
   the call's record, a state without MJX `Data`, as its starting state, and
   four of the judge-calibration searches died in it. It now continues from
@@ -247,6 +288,26 @@ slack in s', stick:s<sub>v</sub> and stick:m<sub>z</sub> (ccg `master`
 :::
 
 ## Decisions behind the current design
+
+::: {.callout-tip collapse="true"}
+## Settled on 2026-11-21: the judge's thresholds, the equal-riser staircase, one CPU model
+- **The judge's thresholds are measured, and only where the data suffice**
+  (decisions 49, 50). Each threshold is the largest slip seen on 180
+  calibration searches run on the headline's own realizer, and it counts only
+  with at least 59 samples, the size at which the largest is a 95/95 bound.
+  The 12 rows short of 59 have no threshold, and a move through one is
+  refused. [Results](../results/index.qmd#judge-calibration).
+- **The staircase family has equal risers** (decisions 57, 59b, 60): both
+  risers a/4, the single step's height, so the scenes differ only in the
+  first tread's width, and each riser is the same local scene up to a
+  translation. The widths are five stratum midpoints from 1.6112a to 2.4012a,
+  above the measured lower bound 1.266a.
+  [Results](../results/index.qmd#scene-generic).
+- **Scene builds on one CPU model** (decision 64): V₀ builds differ across
+  CPU models, so the staircase family's tables and V₀ are built on AMD EPYC
+  9334 nodes only, and a build refuses to start elsewhere. Whether that is
+  needed at all is decision 65's diagnosis (open, above).
+:::
 
 ::: {.callout-tip collapse="true"}
 ## Settled: the stuttering motion, replays across processors, the box's rotation range
