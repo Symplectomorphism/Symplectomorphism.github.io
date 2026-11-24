@@ -6,11 +6,61 @@ aliases:
   - xiao-ji.html
 ---
 
-**Last checked:** 2026-11-13, against `master` at `49aaf57` in
-[`RobotControlLab/certified-contact-graphs`](https://github.com/RobotControlLab/certified-contact-graphs). The full records are in the discussion
-compendium (`reports/supporting_docs/discussion-compendium/`).
+**Last checked:** 2026-11-21, against `master` at `f09a8da8b` in
+[`RobotControlLab/certified-contact-graphs`](https://github.com/RobotControlLab/certified-contact-graphs)
+and the decisions through decision 66; work not yet on `master` names its
+branch. The full records are in the discussion
+compendium (`reports/supporting_docs/discussion-compendium/`). The entries
+added on 2026-11-21 come first in each section; the older entries below them
+were last checked on 2026-11-13.
 
 ## Open
+
+::: {.callout-important collapse="true"}
+## The rest after the landing, from the rebuilt cover (open; running)
+The landing's impact-window cover is rebuilt and certified, and push →
+landing passes the chain check (closed below). The next link, the block
+coming to rest on the platform after the impact, is certified by an energy
+(dissipation) inequality on each unit of the cover's hand-off set. It is
+being re-checked from the rebuilt cover's 16,384 units on Ganymede2; the
+wide chain's rows that start from the rest set are then re-checked against
+the new rest set. [Results](../results/index.qmd#the-certified-chain-issue-81-back-half).
+:::
+
+::: {.callout-important collapse="true"}
+## Diagnoses in progress (decisions 65 and 66)
+- **Planner tests must not be decided by float rounding** (decision 65 (a)).
+  The same scene's V₀, built on an Intel and on an AMD node, differs in 4
+  pose verdicts and in gate margins at the float32 level; the diagnosis
+  sorts every differing comparison (an exact zero, a value at its
+  threshold, or a tie) so that each is decided by construction, and the
+  builds are pinned to one CPU model until then.
+- **The first pivot fails because the block barely turns** (decision 66
+  (a)). In the searches' first move the disk should tip the block, flush
+  against the riser, onto its corners at the floor and at the step, but the
+  block turns only a few tenths of a degree and the call fails; it is compared with the pivot the feasibility study
+  accepted.
+:::
+
+::: {.callout-important collapse="true"}
+## Smaller open items found on 2026-11-19 … 11-21
+- **Phase II after a fired release restarts MJX without its warm start**
+  (issue #88). When the release trigger fires, phase II starts from MJX
+  `Data` rebuilt from the position and velocity, which drops the constraint
+  solver's warm start; MJX's contact forces depend on the warm start at
+  about 10⁻⁴ N. Kept through the RSS headline so that the calibration, the
+  paired runs and the headline run one code (decision 55 (a)); an opt-in
+  fix and a regrade of the calibration population follow.
+- **Gate modes: G1 admits undriven make(s).** The gate-modes check (G1)
+  admits a make(s) whose added contact no input drives. Post-RSS.
+- **The exact and the relaxed gate disagree at break(s<sub>v</sub>) poses.**
+  The relaxed gate refused where the exact gate admitted, so it is no sound
+  screen for the exact one. Post-RSS.
+- **Scaling to several manipulators** (issue #87): two to five
+  manipulators and several objects; the class enumeration, set
+  certification in higher dimensions and the contact-state graph grow
+  combinatorially. No milestone yet.
+:::
 
 ::: {.callout-important collapse="true"}
 ## Finding the indirect lift routinely (open; the target)
@@ -156,7 +206,108 @@ keep penetration under 0.22 mm but need the controller retuned first.
   longer has. For a fix-up PR to Angelo.
 :::
 
+## Closed (2026-11-19 … 11-21)
+
+::: {.callout-tip collapse="true"}
+## Push → landing: the impact-window cover rebuilt and certified (closed; decisions 46, 63)
+After the back half of the chain was re-certified (issue #81), the push's
+certified exit moved, and the landing's cover, built for the earlier exit,
+no longer contained it. The push and the landing run one law, so the link
+is a **same-law boundary** (decision 43 (a′)): it passes by containment with
+a margin above the float32 bound. The cover was rebuilt from the 16
+re-certified push exits, each grown by twice the float32 bound: 16,384
+units and 138,286 pieces, all certified. Every contact condition clears its
+worst-case float32 rounding bound, including the measured error growth of
+the solver's elimination (decision 63 (a)); the smallest ratio is 1.0026, the
+median 9,903. The chain check passes: `CHAIN PASS (narrow)`. Three passes,
+1,018 core-hours on Ganymede2 (ccg `fix/i81-landing-cover` `2b7a20565`).
+The rest after the landing is re-checked from this cover (open, above).
+[Results](../results/index.qmd#the-certified-chain-issue-81-back-half).
+:::
+
+::: {.callout-tip collapse="true"}
+## Roll → push: the junction compared the wrong entry set (closed; decision 54)
+The push tubes certify the block's rate s' about their own law's value
+ω<sub>law</sub>(θ<sub>h</sub>) at the hand-off (0.0313–0.0340 rad/s on the 16
+sub-box tubes), not about the anchor 0.01745 rad/s the push's orbit runs
+through. chain_check compared the roll's exit (s' ∈ [0.0157, 0.0192] rad/s)
+with an exported entry stated about the anchor, an entry the tubes never
+certified; against the tubes' own entry the link failed by −186 / +158
+slacks. Fixed (ccg `382b87886`): chain_check reads the tubes' certified
+entries, and an anchor-based record counts as "not certified". The push was
+then re-certified from the roll's grown exit with the **same law**: all 16
+sub-boxes hold, utilization 0.603–0.631, binding on progress (Juno 525614,
+fe64, ccg `13512e720`), with the same verdicts in float32 (fe32-poly,
+utilization 0.598–0.626, ccg `eddbd2aa8`). Roll → push now passes at +1
+slack in s', stick:s<sub>v</sub> and stick:m<sub>z</sub> (ccg `master`
+`eddbd2aa8`).
+:::
+
+::: {.callout-tip collapse="true"}
+## Smaller defects closed
+- **The searches started from poses that were not at rest** (decision 61
+  (a)). A search's start was a geometric pose, the block exactly touching
+  with zero velocity, so its first motion began with one step of free fall,
+  and the judge saw that fall as a contact not held. Every start is now
+  brought to rest in simulation first, the disk holding, before the search
+  (`CCG_SETTLE_START`, ccg `fix/settle-start`, in `integ/principled`). The
+  judge's record, recomputed without that step, keeps every threshold.
+- **The gate offered targets the disk cannot drive to** (decision 62 (a)).
+  After the pivot, the gate admitted transport targets at 66.7–70° of tilt,
+  but the disk can drive the block, held, only to about 63–64°: past that,
+  friction at the floor and at the step corner gives way. The gate now runs
+  the drive test of the hold check along the whole planned path and picks
+  the nearest drivable target, or refuses (`CCG_GATE_DRIVE_PATH`, ccg
+  `fix/gate-drive-path` `47013640d`, in `integ/principled`).
+- **The settle extension crashed after a fired release.** The extension took
+  the call's record, a state without MJX `Data`, as its starting state, and
+  four of the judge-calibration searches died in it. It now continues from
+  the realized MJX state (ccg `3a5b83ed8`, branch `integ/principled`); the
+  four searches were rerun on the fix and completed.
+- **chain_check skipped rest junctions silently.** A certified junction with
+  no measured slack was skipped; it now fails as "no slack". The four rest
+  junctions have measured slacks: the hold's own one-step change at the
+  hand-off (decision 42 (a), ccg `51e827c02`; issue #81's back half). The
+  slack rule is enforced by default (ccg `a6161ffa5`).
+- **Missing inputs passed silently.** `held_summary` read a record without
+  the force fields as 0 unheld samples, that is "held" (a staircase replay
+  on a snapshot without them was discarded and rerun), and a run snapshot
+  without the held-slack record left the judge nothing to compare against,
+  so every call ended `no_held_record`. Each now refuses:
+  `held_summary` raises with the record, the call and the missing fields
+  (ccg `f226acf1c`), and a run refuses to start under the judge without the
+  held-slack record (ccg `e02e0b37d`).
+- **Placed scenes: the planner was not translation-invariant.** The validity
+  table's sampled single-edge test ran the float32 recognizer at world
+  coordinates, so a scene translated by (0.175, 0.020) m built a table whose
+  single edges differed from its unplaced scene's in 28 of about 1,124. The
+  frame-local planner (issue #86 Step 2, decision 56 (a′), branch
+  `feat/scene-generic-m2`) computes a placed scene's table and V₀ in the
+  scene's own frame and applies the offset once, at output: the rebuilt
+  table equals the unplaced one in every field.
+:::
+
 ## Decisions behind the current design
+
+::: {.callout-tip collapse="true"}
+## Settled on 2026-11-21: the judge's thresholds, the equal-riser staircase, one CPU model
+- **The judge's thresholds are measured, and only where the data suffice**
+  (decisions 49, 50). Each threshold is the largest slip seen on 180
+  calibration searches run on the headline's own realizer, and it counts only
+  with at least 59 samples, the size at which the largest is a 95/95 bound.
+  The 12 rows short of 59 have no threshold, and a move through one is
+  refused. [Results](../results/index.qmd#judge-calibration).
+- **The staircase family has equal risers** (decisions 57, 59b, 60): both
+  risers a/4, the single step's height, so the scenes differ only in the
+  first tread's width, and each riser is the same local scene up to a
+  translation. The widths are five stratum midpoints from 1.6112a to 2.4012a,
+  above the measured lower bound 1.266a.
+  [Results](../results/index.qmd#scene-generic).
+- **Scene builds on one CPU model** (decision 64): V₀ builds differ across
+  CPU models, so the staircase family's tables and V₀ are built on AMD EPYC
+  9334 nodes only, and a build refuses to start elsewhere. Whether that is
+  needed at all is decision 65's diagnosis (open, above).
+:::
 
 ::: {.callout-tip collapse="true"}
 ## Settled: the stuttering motion, replays across processors, the box's rotation range
