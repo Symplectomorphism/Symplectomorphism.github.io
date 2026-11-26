@@ -1,0 +1,119 @@
+---
+title: "Tipping the block off the riser: deriving the departure ramp"
+subtitle: "The disk must change its command from the force that holds the block to the force that tips it, in steps small enough for the realizer to execute accurately. A schedule chosen from margins at one nominal state failed the certificate over the whole set of states; the ramp is now derived with the set-based certificate itself as the constraint."
+---
+
+*Status of November 25, 2026. Every number is from a committed record in
+`RobotControlLab/certified-contact-graphs` (private), branch
+`feat/certify-canonical-front`, and the decision log. The derivation described
+here is **running**; its results are pending.*
+
+## The physical situation
+
+Early in the canonical route the block rests flush against the riser (the
+step's vertical face), held there by the disk. The next piece of the route,
+**F6**, tips it: the block leaves that rest and starts to rotate. (In the paper's drawings +x points to the **left**, and the step is on
+the left of the block.)
+
+The disk holds the block with one force and tips it with another, the
+tipping law's. Its command cannot jump from one to the other in a single
+step: the realizer executes a jump in the command with a force error that
+grows with the size of the jump, and every certificate downstream has to
+absorb that error. So the command moves along a **ramp**. A parameter σ runs
+from 0 (the hold) to 1 (the tipping law), and the disk is commanded the
+corresponding blend at each step. For small σ the block stays at rest; at
+some σ short of 1 it breaks away and starts to tip.
+
+## Two regimes, two certificates
+
+The certificate is split at break-away:
+
+- **Rest steps.** Every command up to the last rest command σᵣ must be
+  certified at rest over the **whole box** of states the block can be in:
+  every motion other than "stays at rest" is excluded on every piece of a
+  branch-and-prune split, with the disturbance widened by that step's force
+  error.
+- **The break-away step.** At the break-away command σ_b the departure
+  certificate must show that leaving rest by the planned tipping motion is the
+  only way out, with a no-stick margin of at least the force error, and the
+  block's tilt rate at the next step must stay below a derived slip cap,
+  s′ₘₐₓ = 0.18350 rad/s. Faster, and the block's floor corner slips, and the
+  block misses the entry of the next certified piece.
+
+## The switch-error envelope
+
+The realizer's force error at a command jump Δ, measured on simulated
+departures (one-sided 95/95 bound):
+
+| Command jump Δ | 0.125 | 0.25 | 0.333 | 0.5 | 0.7 | 0.943 |
+|---|---|---|---|---|---|---|
+| Switch error e(Δ) (mN) | 5.17 | 10.36 | 13.08 | 19.68 | 27.47 | 37.22 |
+
+It grows steadily, about 39 mN per unit of σ. The two regimes pull against
+each other through it: a big break-away jump Δ_b = σ_b − σᵣ means a big error
+e(Δ_b), which every rest step must absorb and the break-away margin must
+exceed; small jumps keep the error small but need many steps.
+
+## Two schedules that did not work
+
+- **Greedy** (the largest admissible step each time): its first step reaches
+  σ = 0.738, where the block rests with a margin equal to the 37.2 mN error of
+  the jump that would follow. Breaking away from there needs a 37.2 mN D2
+  margin, which holds only at σ = 0.998, where the next tilt rate (0.208 rad/s)
+  exceeds the cap. No feasible completion.
+- **Minimax on the measured grid** (the smallest largest step, Δ = 0.125,
+  error 5.17 mN): rest steps at σ = 0.125, …, 0.75 and 0.8499, break-away at
+  0.9424. The hold and the rest steps up to σ = 0.75 are certified. The step
+  at σ = 0.8499 is not.
+
+## The lesson: a margin at one point is not a margin over the set
+
+At σ = 0.8499 the rest force at the **nominal** state clears its bound by
+5.23 mN, against a widening of 4.91 mN: 1.06 slack units, which passes the
+"at least one measured slack" rule. Yet the rest check over the **whole box**
+of states fails, at branch-and-prune depth 4 and again at depth 5. One motion
+class stays undecided, and its braking test barely moves with the extra depth
+(−55.96 at depth 4, −55.10 at depth 5).
+
+The nominal state is one point of the box. Other states in the box have less
+rest force, and a 0.3 mN spare at the nominal point does not cover them. A
+deeper split tightens the enclosure, but it cannot create a margin that the
+set itself does not have.
+
+> A pointwise margin of at least one slack is **necessary** for a set-based
+> certificate. It is not **sufficient**.
+
+## The derivation (decision 159 (a′))
+
+So the ramp is derived with the set-based rest check itself as the
+constraint, with no grid choice and no hand-picked spacing:
+
+1. **Break-away for each error level.** For each measured jump Δⱼ of the
+   envelope, σ_b is the smallest command past the rest edge whose certified
+   D2 margin is at least e(Δⱼ) and whose certified next-step tilt rate is at
+   most s′ₘₐₓ.
+2. **The rest edge by bisection.** The level is feasible if the whole-box rest
+   check (depth 4) passes at σ_b − Δⱼ with the disturbance widened by e(Δⱼ).
+   The last rest command σᵣ is found by bisection on that box check.
+3. **The earlier rest steps** are equal and no larger than Δ_b = σ_b − σᵣ, so
+   each one's error is at most e(Δ_b), the widening already certified.
+4. **After break-away** the steps follow the slip cap until the tipping law
+   takes over.
+
+Then, as for any schedule: the switch error is re-measured on the derived
+ramp, the full split certificate (rest, then break-away) is run, then the
+take-off, the tip funnel's entry and F6's junction into the next piece. If no
+level is feasible, that is the result: the tipping law cannot be certified
+for F6 with this realizer.
+
+**Pending:** the derived σᵣ, σ_b and schedule, and the certificates that
+follow. Certified so far, under the earlier schedule: the hold and the ramp
+steps up to σ = 0.75.
+
+## Related
+
+- [Results](index.qmd) for the indirect lift and the held-out runs.
+- [Lowering back and regrasping](lowering-regrasp.qmd), the other progress
+  page of this week.
+- [Certified funnels](../planar-build/funnels.qmd) for what "certified" means
+  for one piece of a route.
