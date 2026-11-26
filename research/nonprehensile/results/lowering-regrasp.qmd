@@ -1,0 +1,101 @@
+---
+title: "Lowering back and regrasping"
+subtitle: "After a landing near the tread's edge, the disk lowers the block back, held, lets its foot down, moves underneath and lifts it again. From the exact states of the planner's own runs this route reaches the goal from two of four starts; the search's preference, a dead zone in the value's aim and one unheld regrasp block the rest."
+---
+
+*Status of November 25, 2026. Every number is from a committed record in
+`RobotControlLab/certified-contact-graphs` (private), branch
+`diag/lowering-regrasp` (`71120a884`, `4156a1ae2`; summary in
+`ccg/scripts/diag/lowering_regrasp/FINDINGS.md`). This is a diagnosis, not a
+planner change.*
+
+## The physical situation
+
+In the indirect lift ([Results](index.qmd)) the disk lifts the block, pressing
+on the face away from the step, rolls it about the step's corner and puts it
+down on the tread (the platform's top). Some landings leave the block standing
+close to the tread's edge. The next disk move on the tread, the move round to
+the block's bottom corner before the final pushes, can then knock it back off
+the step: the block's center is only a few millimeters inside the edge, and the
+disk's drag carries it over.
+
+Aykut's decision (decision 140 (a), November 24): don't push on, and don't let
+the block fall. Lower it back, held, with the disk still on the far face (the
+lift in reverse), and regrasp underneath. His physical point: once the disk's
+place along the face passes below the step's corner, its normal force can no
+longer resist the gravity moment about the edge; only friction remains. So the
+block has to come down far enough for the disk to get under it and lift again
+from a place where the push does the work.
+
+(Directions follow the paper's drawings, where +x points to the **left**: the
+step is on the left of the block.)
+
+## The chain
+
+Starting from the block leaning on the step's corner at about 87° (the state
+the planner reaches when it lowers a near-edge landing back):
+
+1. **Keep lowering**, the disk on the far face: from about 87° to about 67°,
+   the block still leaning on the step's corner.
+2. **Foot down**: the block's floor corner comes down to the floor (about 61°);
+   the block now rests on the floor corner and the step's corner.
+3. **Disk to the bottom corner** on the side away from the step.
+4. **Disk onto the bottom face**, under the block.
+5. **Lift-off**: the disk lifts the floor corner off the floor (about 61° to
+   71°).
+6. **Onto the tread**: the block rolls about the step's corner and lands on the
+   tread, this time with the disk underneath, so the pushes that follow
+   move it from below instead of dragging across its top.
+7. **Two pushes** along the tread to the goal.
+
+No new move is involved: every link is an edit or transport the planner
+already offers, and the gate offers each of them in these states.
+
+## Results: from the exact state, on the same CPU type
+
+The four starts are the solved development starts that the slide-meter gate
+lever (L5) lost at μ = 0.5. Each chain was replayed from the exact captured
+lean (the full node state of the planner's own run, reproduced call for call)
+on the same CPU type as the original search, so that a verdict cannot flip on
+rounding between processors.
+
+| Start | Result from the exact 87° lean |
+|---|---|
+| `mu0.5_s13_07` | **GOAL**, every link held: lowered 86.9° → 67.0°, foot down at 60.7°, disk to the bottom corner and onto the bottom face, lift-off 60.7° → 70.9°, onto the tread at x = −6.2 mm, pushed to +77.2 mm |
+| `mu0.5_s13_13` | **GOAL**, every link held: foot down at 61.8°, onto the tread at x = −4.3 mm, pushed to +79.6 mm |
+| `mu0.5_s13_33` | Lowered, held, to 76.9°, then only "back onto the tread" is offered. From its own foot-down state (58.9°) it reaches GOAL, but the disk's move onto the bottom face is **unheld** (slip −2.4 mm) |
+| `mu0.5_s13_00` | Pending (on a local machine the foot did not settle: the block stopped at 64.5°) |
+
+: The chain from the exact captured lean, same CPU type. {tbl-colwidths="[22,78]"}
+
+"Held" is the planner's judge: the block keeps its formation along the whole
+motion. Several of these held links still have a **negative strict margin**
+(the smallest held margin along the motion, in units of the measured force
+noise): lowering −97.4 and −48.3, onto the tread −23.9 and −26.5, lift-off
+−14.9; the disk's move to the bottom corner has +0.4, below the one-unit margin
+every decision is meant to carry. They are held in simulation, not certified.
+
+## What blocks it
+
+- **The search's preference.** At the 87° lean the gate offers "keep lowering",
+  but in three of the four starts the search never tried it; it put the block
+  back on the tread instead, twice. Not a refusal: a choice made by the value
+  and the policy.
+- **A dead zone at 77°** (`mu0.5_s13_33`). The value V₀ aims a transport at the
+  nearest pose of a target set, and drops a set whose nearest pose is closer
+  than its progress step δ = 10 mm. At the 77° lean the foot-to-floor set is
+  5.6 mm away, so it is dropped, and the gate refuses the foot-down move there
+  directly. Nothing moves the block further down. Decided: wait for V₀'s target
+  sets rebuilt under the planner's own gate (running), δ unchanged; if the dead
+  zone persists, back to Aykut.
+- **The regrasp at 58.9°** (`mu0.5_s13_33`): the disk's move onto the bottom
+  face slips 2.4 mm and is unheld.
+- **Strict margins.** The RSS paper reports "held (formation kept)"; the strict
+  margins are recorded beside every result of this route, and making these
+  links strictly held is on the certification track's backlog.
+
+## Related
+
+- [Results](index.qmd) for the indirect lift and the held-out runs.
+- [Certified funnels](../planar-build/funnels.qmd) for what "certified" means
+  for one route.
